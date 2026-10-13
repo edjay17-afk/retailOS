@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Audit') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Audit log') }}</h1>
+{% if chain[0] is not none %}<div class="flash {{ 'ok' if chain[0] else 'err' }}">{% if chain[0] %}{{ t('Integrity check passed:') }} {{ chain[1] }} {{ t('events, chain unbroken.') }}{% else %}{{ t('Integrity check FAILED at event #') }}{{ chain[2] }}{{ t('. The log may have been altered.') }}{% endif %}</div>{% endif %}
+<form novalidate class="filters" method="get">
+<div><label>{{ t('Action contains') }}</label><input name="action" value="{{ action }}"></div>
+<div><label>{{ t('Entity') }}</label><input name="entity" value="{{ entity }}" placeholder="{{ t('issue, recommendation...') }}"></div>
+<button class="sec">{{ t('Filter') }}</button></form>
+<div class="tw"><table class="wide"><tr><th scope="col">#</th><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Who') }}</th><th scope="col">{{ t('Action') }}</th><th scope="col">{{ t('Entity') }}</th><th scope="col">{{ t('Details') }}</th></tr>
+{% for r in rows %}<tr><td>{{ r.id }}</td><td class="nowrap">{{ r.ts|local('%d %b %H:%M:%S') }}</td>
+<td>{% if r.actor_type == 'human' %}{{ users.get(r.actor_id, r.actor_id) }}{% else %}<span class="badge">{{ t(r.actor_type) }}</span> {{ r.actor_id or '' }}{% endif %}</td>
+<td>{{ r.action }}</td><td>{{ t(r.entity_type) }} {{ r.entity_id or '' }}</td>
+<td class="small">{% if r.reason %}<div>{{ t('Reason:') }} {{ r.reason }}</div>{% endif %}{% if r.before %}<div class="mute">{{ t('Before:') }} {{ r.before }}</div>{% endif %}{% if r.after %}<div>{{ t('After:') }} {{ r.after }}</div>{% endif %}</td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?action={{ action }}&entity={{ entity }}&page={{ page-1 }}">{{ t('Newer') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*60 + 1 }}&ndash;{{ page*60 if page*60 < total else total }} {{ t('of') }} {{ total }} {{ t('events') }}</span>
+{% if page * 60 < total %}<a class="btn sec sm" href="?action={{ action }}&entity={{ entity }}&page={{ page+1 }}">{{ t('Older') }}</a>{% endif %}</div>
+{% endblock %}

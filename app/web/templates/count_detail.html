@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Count #') }}{{ cc.id }}{% endblock %}
+{% block content %}
+<h1>{{ t('Count #') }}{{ cc.id }} <span class="mute" style="font-weight:400">{{ cc.location.name }}, {{ cc.business_date|day }}</span> <span class="badge {{ 'b-ok' if cc.status == 'approved' else 'b-warn' }}">{{ t(cc.status) }}</span></h1>
+<p class="small mute">{{ t('Count what is physically there and type the number. Type 0 if none is found. The system figure is refreshed from StoreHub when you save.') }}</p>
+<form novalidate method="post" action="/counts/{{ cc.id }}/save" data-guard><input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Why') }}</th><th scope="col" class="right">{{ t('System') }}</th><th scope="col" class="right">{{ t('Counted') }}</th><th scope="col" class="right">{{ t('Difference') }}</th><th scope="col">{{ t('Note') }}</th></tr>
+{% for l in cc.lines %}<tr><td>{{ l.product.name }}<div class="small mute">{{ l.product.barcode or '' }}</div></td><td class="small">{{ t(l.reason|replace('_',' ')) }}</td><td class="right">{{ l.system_qty|num }}</td>
+<td class="right">{% if cc.status == 'open' %}<input type="number" step="any" min="0" name="c_{{ l.id }}" value="{{ l.counted_qty|num if l.counted_qty is not none }}" inputmode="decimal">{% else %}{{ l.counted_qty|num if l.counted_qty is not none }}{% endif %}</td>
+<td class="right"><b style="{{ 'color:var(--bad)' if l.variance }}">{{ ('%+g'|format(l.variance)) if l.variance is not none else '' }}</b></td>
+<td>{% if cc.status == 'open' %}<input name="n_{{ l.id }}" value="{{ l.note or '' }}">{% else %}{{ l.note or '' }}{% endif %}</td></tr>{% endfor %}</table></div>
+{% if cc.status == 'open' %}<div class="chkbar" style="margin-top:10px;justify-content:flex-start;gap:10px"><button>{{ t('Save') }}</button><button name="submit" value="1" class="ok">{{ t('Save and submit for approval') }}</button></div>{% endif %}
+</form>
+{% if cc.status == 'submitted' and can('count.approve') %}
+<form novalidate method="post" action="/counts/{{ cc.id }}/approve" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok">{{ t('Approve count') }}</button></form>{% endif %}
+{% if cc.status == 'approved' %}<p><a class="btn" href="/counts/{{ cc.id }}.csv">{{ t('Download stock take file for StoreHub') }}</a></p>
+<p class="small mute">{{ t('In the StoreHub back office open Stock Management, then Stock Take, then Import Items by CSV. Match the columns to the template StoreHub gives you; the first column carries the StoreHub product id. Import after closing, and choose to leave uncounted items unchanged. The next sync checks that stock changed.') }}</p>{% endif %}
+{% endblock %}

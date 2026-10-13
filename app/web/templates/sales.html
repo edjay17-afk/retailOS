@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Sales') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Sales') }}</h1><p>{% if location %}{{ location.name }} &middot; {% endif %}{{ t('Philippine business days; cancelled sales excluded, returns subtracted. Last synced') }} {{ fr.last_success|ago }}.</p></div>
+{% if location %}<form novalidate class="filters" method="get" style="margin:0">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location.id }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Days') }}</label><select name="days" onchange="var cr=document.getElementById('sales-custom'); if(this.value==='custom'){cr.style.display='inline-flex';cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d in (1, 7, 14, 30, 60, 90) %}<option {{ 'selected' if not custom and d == days }} value="{{ d }}">{{ t('Today') if d == 1 else d }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
+  <span id="sales-custom" style="display:{{ 'inline-flex' if custom else 'none' }};gap:8px;align-items:flex-end">
+    <span><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></span>
+    <span><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></span>
+    <span><label>&nbsp;</label><button class="sec sm">{{ t('Apply') }}</button></span></span>
+  <div><label>&nbsp;</label><a class="btn sec sm" href="/sales?loc={{ location.id }}&days={{ 'custom' if custom else days }}{% if custom %}&frm={{ frm }}&to={{ to }}{% endif %}&export=csv">{{ t('Download CSV') }}</a></div></form>{% endif %}</div>
+{% if location %}
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Net sales (') }}{% if custom %}{{ frm }} → {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %})</div><div class="value">{{ totals.net|money }}</div>{% if days > 1 %}<div class="sub" style="white-space:nowrap">{{ t('Avg / day') }}: <b>{{ (totals.net / days)|money }}</b></div>{% endif %}</div>{{ sparkline(chart|map(attribute=1)|list, labels=chart|map(attribute=0)|list) }}</div>
+  <div class="card stat"><div><div class="label">{{ t('Transactions') }}</div><div class="value">{{ totals.tx|num(0) }}</div><div class="sub">{{ t('avg basket') }} {{ (totals.net / totals.tx)|money if totals.tx else '-' }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Cash sales') }}</div><div class="value">{{ totals.cash|money }}</div><div class="sub">{{ (totals.cash / totals.net * 100)|round(0)|int if totals.net else 0 }}{{ t('% of sales') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Cancelled') }}</div><div class="value">{{ totals.cancelled }}</div></div></div>
+</div>
+{% if chart %}<div class="grid" style="grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:14px;margin-bottom:14px">
+  <div class="card" style="margin:0"><div class="card-head"><h2>{{ t('Net sales per day') }}</h2>
+    <span class="chips" style="gap:6px"><button type="button" class="chip on" data-chart="sales-bars">{{ t('Bars') }}</button><button type="button" class="chip" data-chart="sales-line">{{ t('Line') }}</button></span></div>
+    <div id="sales-bars" data-chart-pane>{{ bars(chart, fmt=money_fmt, name=t('Net sales per day'), compare=compare) }}</div>
+    <div id="sales-line" data-chart-pane hidden>{{ area(chart, fmt=money_fmt, name=t('Net sales per day'), compare=compare) }}</div>
+    <div class="small mute" style="margin-top:8px">{{ t('hover for the exact amount') }}{% if compare and days > 1 %}{{ t('; the dashed line is the previous') }} {{ days }} {{ t('days') }}{% endif %}</div></div>
+  <div class="card" style="margin:0"><div class="card-head"><h2>{{ t('Cash vs other payments') }}</h2></div>
+    {{ donut([(t('Cash'), totals.cash, 'var(--primary)'), (t('Other payments'), totals.other, '#14b8a6')], center=(((totals.cash / totals.net * 100)|round(0)|int ~ t('% cash')) if totals.net else '')) }}</div>
+</div>{% endif %}
+<div class="split">
+<div><h2 style="margin-top:0">{{ t('By day') }}</h2>
+<div class="tw"><table class="wide"><tr><th scope="col" data-sort>{{ t('Date') }}</th><th></th><th scope="col" class="right" data-sort>{{ t('Net sales') }}</th><th scope="col" class="right" data-sort>{{ t('Transactions') }}</th><th scope="col" class="right" data-sort>{{ t('Cash') }}</th><th scope="col" class="right" data-sort>{{ t('Other') }}</th><th scope="col" class="right" data-sort>{{ t('Tax') }}</th><th scope="col" class="right" data-sort>{{ t('Cancelled') }}</th></tr>
+{% for r in rows %}<tr><td class="nowrap">{{ r.business_date|day }}</td><td style="width:18%"><div class="bar"><i style="width:{{ (r.net_sales / mx * 100)|round(1) }}%"></i></div></td>
+<td class="right">{{ r.net_sales|money }}</td><td class="right">{{ r.tx_count }}</td><td class="right">{{ r.cash_sales|money }}</td><td class="right">{{ r.other_sales|money }}</td><td class="right">{{ r.tax|money }}</td><td class="right">{{ r.cancelled_count }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">{{ t('No sales in this period.') }}</td></tr>{% endfor %}</table></div></div>
+<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">{{ t('Top products') }}</h2><a class="btn sec sm" href="/sales/products?loc={{ location.id }}&days={{ ('custom&frm=' ~ frm ~ '&to=' ~ to) if custom else days }}">{{ t('All products') }}</a></div>
+<div class="card">{% if top %}{{ hbars(top[:12]|map("top_item")|list) }}{% else %}<div class="empty">{{ t('No data.') }}</div>{% endif %}</div></div>
+</div>
+{% else %}<div class="card empty">{{ t('No stores are available to you.') }}</div>{% endif %}
+{% endblock %}

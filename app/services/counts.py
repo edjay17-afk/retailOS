@@ -1,0 +1,228 @@
+"""Targeted cycle counts and the StoreHub stock-take export. StoreHub stock can only be changed in its back office,
+so an approved count produces a file for the stock take import, and the next sync verifies the new quantity."""
+from __future__ import annotations
+
+import csv
+import io
+import random
+from datetime import timedelta
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
+
+from .. import audit
+from ..models import (CycleCount, CycleCountLine, InventoryCurrent, Location, Product, SalesDayProduct, User)
+from ..timeutil import now_utc, today_local
+from . import issues
+
+
+class CountError(Exception):
+    pass
+
+
+def suggest(db: Session, loc: Location, n: int = 30) -> list[tuple[Product, float, str]]:
+    """Pick what to count: negative stock first, then high value, high sales, repeat mismatches, then a random sample."""
+    inv = {r.product_id: r for r in db.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == loc.id))}
+    prods = {p.id: p for p in db.scalars(select(Product).where(Product.id.in_(list(inv) or [0]), Product.in_api.is_(True)))}
+    picked: dict[int, str] = {}
+
+    def add(pids, reason, limit):
+        c = 0
+        for pid in pids:
+            if pid in picked or pid not in prods:
+                continue
+            picked[pid] = reason
+            c += 1
+            if c >= limit or len(picked) >= n:
+                break
+
+    neg = sorted([pid for pid, r in inv.items() if r.on_hand < 0], key=lambda p: inv[p].on_hand)
+    add(neg, "negative_stock", max(n // 2, 5))
+    high_value = sorted([pid for pid in inv if prods.get(pid) and prods[pid].cost and inv[pid].on_hand > 0],
+                        key=lambda p: -(inv[p].on_hand * (prods[p].cost or 0)))
+    add(high_value, "high_value", n // 5 + 1)
+    since = today_local() - timedelta(days=14)
+    top_sales = [pid for pid, in db.execute(select(SalesDayProduct.product_id).where(
+        SalesDayProduct.location_id == loc.id, SalesDayProduct.business_date >= since).group_by(SalesDayProduct.product_id)
+        .order_by(func.sum(SalesDayProduct.units).desc()).limit(60))]
+    add(top_sales, "high_sales", n // 5 + 1)
+    repeat = [pid for pid, in db.execute(select(CycleCountLine.product_id).join(CycleCount, CycleCount.id == CycleCountLine.count_id).where(
+        CycleCount.location_id == loc.id, CycleCountLine.variance.is_not(None), func.abs(CycleCountLine.variance) > 0,
+        CycleCount.created_at >= now_utc() - timedelta(days=30)).group_by(CycleCountLine.product_id))]
+    add(repeat, "repeat_mismatch", n // 5 + 1)
+    pool = [pid for pid in inv if pid not in picked and pid in prods and inv[pid].on_hand > 0]
+    random.Random(today_local().toordinal() + loc.id).shuffle(pool)
+    add(pool, "random", n)
+    return [(prods[pid], inv[pid].on_hand, reason) for pid, reason in picked.items()]
+
+
+def create(db: Session, user: User, loc: Location, n: int = 30) -> CycleCount:
+    existing = db.scalar(select(CycleCount).where(CycleCount.location_id == loc.id, CycleCount.business_date == today_local(), CycleCount.status == "open"))
+    if existing:
+        return existing
+    cc = CycleCount(location_id=loc.id, business_date=today_local(), created_by=user.id)
+    for prod, qty, reason in suggest(db, loc, n):
+        cc.lines.append(CycleCountLine(product_id=prod.id, reason=reason, system_qty=qty))
+    db.add(cc)
+    db.flush()
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.create", entity_type="cycle_count", entity_id=cc.id, after={"lines": len(cc.lines)})
+    return cc
+
+
+def create_targeted(db: Session, user: User, loc: Location, product_ids: list[int]) -> CycleCount:
+    """A count for specific products (e.g. straight from a data-quality finding). Merges into today's open count
+    at the location instead of opening a second one; products already in it are skipped."""
+    inv = {r.product_id: r.on_hand for r in db.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == loc.id))}
+    cc = db.scalar(select(CycleCount).where(CycleCount.location_id == loc.id, CycleCount.business_date == today_local(), CycleCount.status == "open"))
+    if cc is None:
+        cc = CycleCount(location_id=loc.id, business_date=today_local(), created_by=user.id)
+        db.add(cc)
+        db.flush()
+    have = {l.product_id for l in cc.lines}
+    added = 0
+    for pid in dict.fromkeys(product_ids):  # keep the order, drop duplicates
+        if pid in have:
+            continue
+        qty = inv.get(pid, 0.0)
+        cc.lines.append(CycleCountLine(product_id=pid, reason="negative_stock" if qty < 0 else "targeted", system_qty=qty))
+        added += 1
+    db.flush()
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.create", entity_type="cycle_count", entity_id=cc.id,
+              after={"lines": added, "targeted": [p for p in dict.fromkeys(product_ids)]})
+    return cc
+
+
+def enter(db: Session, cc: CycleCount, user: User, rows: list[dict]) -> None:
+    if cc.status != "open":
+        raise CountError("This count is already submitted")
+    cur = {r.product_id: r.on_hand for r in db.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == cc.location_id))}
+    by_id = {l.id: l for l in cc.lines}
+    for r in rows:
+        l = by_id.get(r["line_id"])
+        if l is None or r.get("counted") is None:
+            continue
+        if r["counted"] < 0:
+            raise CountError("A count cannot be negative")
+        l.system_qty = cur.get(l.product_id, l.system_qty)  # compare against the freshest stock figure
+        l.counted_qty = r["counted"]
+        l.variance = round(r["counted"] - l.system_qty, 3)
+        l.note = (r.get("note") or None)
+
+
+def submit(db: Session, cc: CycleCount, user: User) -> CycleCount:
+    if cc.status != "open":
+        raise CountError("Already submitted")
+    if not any(l.counted_qty is not None for l in cc.lines):
+        raise CountError("Count at least one item")
+    cc.status = "submitted"
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.submit", entity_type="cycle_count", entity_id=cc.id)
+    return cc
+
+
+submit_count = submit
+
+
+def approve(db: Session, cc: CycleCount, user: User) -> CycleCount:
+    if cc.status != "submitted":
+        raise CountError("Only a submitted count can be approved")
+    diffs = [l for l in cc.lines if l.variance and abs(l.variance) > 1e-9]
+    cc.status, cc.approved_by, cc.approved_at = "approved", user.id, now_utc()
+    if diffs:
+        lines = [f"{l.product.name}: system {l.system_qty:g}, counted {l.counted_qty:g} ({l.variance:+g})" for l in diffs[:15]]
+        issues.create_issue(db, type="stock", severity="P2", location_id=cc.location_id, source="count", source_ref=f"count:{cc.id}", created_by=user.id,
+                            title=f"Cycle count {cc.business_date}: {len(diffs)} difference(s) at {cc.location.name}",
+                            description="; ".join(lines) + (f" (+{len(diffs) - 15} more)" if len(diffs) > 15 else "") +
+                            ". Enter the adjustment in StoreHub with the stock take import (download the file from the count page).",
+                            dedupe_key=f"count:{cc.id}")
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.approve", entity_type="cycle_count", entity_id=cc.id, after={"differences": len(diffs)})
+    return cc
+
+
+def delete(db: Session, cc: CycleCount, user: User) -> None:
+    """Remove a count and its lines. The audit trail keeps a record of what was deleted."""
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.delete", entity_type="cycle_count", entity_id=cc.id,
+              before={"status": cc.status, "date": str(cc.business_date), "location_id": cc.location_id, "lines": len(cc.lines)})
+    db.delete(cc)
+
+
+COUNT_TEMPLATE_CSV = "Product,Counted,Note,Location\n4800016644801,12,,\n"
+_COUNT_FIELDS = {
+    "product": ("product", "barcode", "sku", "item", "name", "product name", "item name", "description"),
+    "counted": ("counted", "counted qty", "counted quantity", "count", "qty", "quantity", "actual", "physical", "physical count"),
+    "note": ("note", "notes", "remark", "remarks", "comment"),
+    "location": ("location", "store", "branch", "outlet"),
+}
+
+
+def import_counts(db: Session, user: User, filename: str, data: bytes, locations: list[Location], default_location_id: int | None, submit: bool = False) -> dict:
+    """Record counted quantities from a CSV or Excel file. They go into today's open count at each store (or open one), where the differences against
+    StoreHub stock are worked out and can be reviewed before the count is submitted. A product named twice keeps its last quantity."""
+    from . import tabular
+    table = tabular.clean_rows(tabular.read_table(filename, data))
+    if not table:
+        raise ValueError("The file is empty")
+    col = tabular.map_columns(table[0], _COUNT_FIELDS, ("product", "counted"))
+    rows = tabular.body(table)
+    default = next((l for l in locations if l.id == default_location_id), None)
+    per_loc: dict[int, dict[int, tuple[float, str | None]]] = {}
+    errors: list[tuple[int, str]] = []
+    for n, row in enumerate(rows, start=2):
+        loc = default
+        if str(tabular.cell(row, col, "location") or "").strip():
+            loc = tabular.match_location(tabular.cell(row, col, "location"), locations)
+            if loc is None:
+                errors.append((n, f"location '{tabular.cell(row, col, 'location')}' not found or not allowed"))
+                continue
+        elif loc is None:
+            errors.append((n, "no location chosen"))
+            continue
+        key = str(tabular.cell(row, col, "product") if tabular.cell(row, col, "product") is not None else "").strip()
+        prod, why = tabular.find_product(db, key) if key else (None, "product is empty")
+        qty = tabular.to_qty(tabular.cell(row, col, "counted"))
+        if not why and (qty is None or qty < 0):
+            why = "counted quantity must be a number, zero or more"
+        if why:
+            errors.append((n, why))
+            continue
+        note = str(tabular.cell(row, col, "note") or "").strip()[:300] or None
+        per_loc.setdefault(loc.id, {})[prod.id] = (qty, note)
+    by_id = {l.id: l for l in locations}
+    counted = created = 0
+    submitted: list[int] = []
+    for lid, items in per_loc.items():
+        loc = by_id[lid]
+        inv = {r.product_id: r.on_hand for r in db.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == lid))}
+        cc = db.scalar(select(CycleCount).where(CycleCount.location_id == lid, CycleCount.business_date == today_local(), CycleCount.status == "open"))
+        if cc is None:
+            cc = CycleCount(location_id=lid, business_date=today_local(), created_by=user.id)
+            db.add(cc)
+            db.flush()
+            created += 1
+        have = {l.product_id: l for l in cc.lines}
+        for pid in items:
+            if pid not in have:
+                line = CycleCountLine(product_id=pid, reason="uploaded", system_qty=inv.get(pid, 0.0))
+                cc.lines.append(line)
+        db.flush()
+        have = {l.product_id: l for l in cc.lines}
+        enter(db, cc, user, [{"line_id": have[pid].id, "counted": qty, "note": note} for pid, (qty, note) in items.items()])
+        counted += len(items)
+        audit.log(db, actor_type="human", actor_id=user.id, action="count.import", entity_type="cycle_count", entity_id=cc.id, after={"file": filename, "lines": len(items)})
+        if submit:
+            submit_count(db, cc, user)
+            submitted.append(cc.id)
+    return {"lines": counted, "counts": len(per_loc), "created": created, "submitted": submitted, "errors": errors}
+
+
+def stock_take_csv(cc: CycleCount) -> str:
+    """File for StoreHub's Stock Take import. Columns follow the StoreHub export (product, SKU, category, quantity); each row
+    carries the StoreHub product id because the import needs it. Check the headers against the template you download."""
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["Product ID", "Product Name", "SKU", "Barcode", "Category", "System Quantity", "Counted Quantity"])
+    for l in cc.lines:
+        if l.counted_qty is None:
+            continue
+        p = l.product
+        w.writerow([p.storehub_id, p.name, p.sku or "", p.barcode or "", p.category or "", f"{l.system_qty:g}", f"{l.counted_qty:g}"])
+    return out.getvalue()

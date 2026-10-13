@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Issue #') }}{{ i.id }}{% endblock %}
+{% block content %}
+<h1>#{{ i.id }} {{ i.title }}</h1>
+<div class="card">
+  <span class="badge sev-{{ i.severity }}">{{ i.severity }} {{ t(sev_label[i.severity]) }}</span>
+  <span class="badge {{ 'b-ok' if i.status == 'closed' else 'b-warn' if i.status == 'resolved' else 'b-bad' if i.status == 'open' else 'b-blue' }}">{{ t(labels[i.status]) }}</span>
+  {% if i.escalation_level %}<span class="badge b-bad">{{ t('escalated (level') }} {{ i.escalation_level }})</span>{% endif %}
+  <div class="grid g4 small" style="margin-top:10px">
+    <div><span class="mute">{{ t('Location') }}</span><br>{{ i.location.name if i.location else '-' }}</div>
+    <div><span class="mute">{{ t('Owner') }}</span><br>{{ (i.owner.full_name or i.owner.username) if i.owner else t('unassigned') }}</div>
+    <div><span class="mute">{{ t('Opened') }}</span><br>{{ i.created_at|local }}</div>
+    <div><span class="mute">{{ t('Due') }}</span><br><span style="{{ 'color:var(--bad);font-weight:600' if i.status != 'closed' and i.due_at < now }}">{{ i.due_at|local }}</span></div>
+  </div>
+  {% if i.product %}<p class="small">{{ t('Product:') }} {{ i.product.name }}</p>{% endif %}
+  {% if i.description %}<p style="white-space:pre-line">{{ i.description }}</p>{% endif %}
+  {% if i.resolution_note %}<p><span class="mute">{{ t('Fix:') }}</span> {{ i.resolution_note }}</p>{% endif %}
+</div>
+
+{% if i.status != 'closed' %}
+<div class="card noprint">
+<h3>{{ t('Update') }}</h3>
+<form novalidate method="post" action="/issues/{{ i.id }}/act" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label>{{ t('Note or description of the fix') }}</label><textarea class="resize-none" name="note"></textarea>
+<label>{{ t('Photo evidence') }}</label><input type="file" name="photo" accept="image/*" capture="environment">
+<div class="row" style="margin-top:10px">
+  {% if i.status == 'open' %}<button name="action" value="acknowledge" class="sec">{{ t('Acknowledge') }}</button>{% endif %}
+  {% if i.status in ('open','acknowledged') %}<button name="action" value="start" class="sec">{{ t('Start work') }}</button>{% endif %}
+  {% if i.status != 'resolved' %}<button name="action" value="resolve" class="ok">{{ t('Mark resolved') }}</button>{% endif %}
+  <button name="action" value="comment" class="sec">{{ t('Add comment') }}</button>
+  {% if i.status == 'resolved' and can('issue.manage') %}<button name="action" value="close" class="ok">{{ t('Verify and close') }}</button>{% endif %}
+</div>
+{% if i.status == 'resolved' and not can('issue.manage') %}<p class="small mute">{{ t('A manager verifies the fix before the issue is closed.') }}</p>{% endif %}
+{% if can('issue.manage') %}
+<div class="row" style="margin-top:12px"><select name="assignee"><option value="">{{ t('Assign to...') }}</option>{% for o in owners %}<option value="{{ o.id }}">{{ o.full_name or o.username }}</option>{% endfor %}</select><button name="action" value="assign" class="sec sm">{{ t('Assign') }}</button></div>
+{% endif %}
+</form></div>
+{% elif can('issue.manage') %}
+<form novalidate method="post" action="/issues/{{ i.id }}/act" class="noprint"><input type="hidden" name="csrf" value="{{ csrf }}"><input name="note" placeholder="{{ t('Why reopen?') }}"><button name="action" value="reopen" class="sec">{{ t('Reopen') }}</button></form>
+{% endif %}
+
+<h2>{{ t('History') }}</h2>
+<div class="card">{% for e in i.events %}
+<div class="item"><div><span class="badge">{{ t(e.kind) }}</span> {{ e.text or '' }}
+{% if e.photo_path %}<div><a href="/uploads/{{ e.photo_path }}" target="_blank"><img src="/uploads/{{ e.photo_path }}" style="max-height:140px;border-radius:8px;margin-top:6px"></a></div>{% endif %}</div>
+<div class="small mute nowrap">{{ (e.user.full_name or e.user.username) if e.user else t('system') }} &middot; {{ e.at|local('%d %b %H:%M') }}</div></div>{% endfor %}</div>
+{% endblock %}

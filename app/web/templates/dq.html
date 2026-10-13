@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Data quality') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Data quality') }}</h1>
+<p class="mute">{{ t('Findings the system detected in the data. Each one clears by itself when the data is fixed in StoreHub.') }}</p>
+<div class="tabs"><a href="/data-quality" class="{{ '' if rule else 'on' }}">{{ t('All (') }}{{ counts.values()|sum }})</a>
+{% for r, n in counts.items()|sort %}<a href="/data-quality?rule={{ r }}" class="{{ 'on' if rule == r else '' }}">{{ t(labels.get(r, r)) }} ({{ n }})</a>{% endfor %}</div>
+<form novalidate class="filters" method="get"><input type="hidden" name="rule" value="{{ rule }}">
+<div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div></form>
+<div class="tw"><table><tr><th scope="col">{{ t('Severity') }}</th><th scope="col">{{ t('Finding') }}</th><th scope="col">{{ t('Where') }}</th><th scope="col">{{ t('First seen') }}</th></tr>
+{% for e in events %}<tr><td><span class="badge {{ 'b-bad' if e.severity == 'critical' else 'b-warn' if e.severity == 'warning' else '' }}">{{ t(e.severity) }}</span></td>
+<td>{{ t(e.message) }}{% if fixes.get(e.rule) %}{% if e.rule == 'negative_stock' and e.location_id and e.product_id %}
+ <form novalidate method="post" action="/counts/targeted" style="display:inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="location_id" value="{{ e.location_id }}"><input type="hidden" name="product_id" value="{{ e.product_id }}"><button class="btn sm">{{ t(fixes[e.rule][1]) }}</button></form>
+ <a href="/stock-events/new?kind=write_off&location_id={{ e.location_id }}&product_id={{ e.product_id }}" class="small">{{ t('Record a write-off') }}</a>{% else %}
+ <a href="{{ fixes[e.rule][0] }}" class="small">{{ t(fixes[e.rule][1]) }}</a>{% endif %}{% endif %}{% if e.issue_id %} <a href="/issues/{{ e.issue_id }}" class="small">{{ t('issue #') }}{{ e.issue_id }}</a>{% endif %}<div class="small mute">{{ t(labels.get(e.rule, e.rule)) }}</div></td>
+<td class="small">{{ locs.get(e.location_id, '') }}</td><td class="small nowrap">{{ e.first_seen|local('%d %b %H:%M') }}</td></tr>
+{% else %}<tr><td colspan="4" class="mute">{{ t('Nothing found.') }}</td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?rule={{ rule }}&loc={{ loc }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('findings') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?rule={{ rule }}&loc={{ loc }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

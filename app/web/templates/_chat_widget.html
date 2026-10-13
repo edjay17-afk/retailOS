@@ -1,0 +1,17 @@
+{% if can('ai.use') %}
+<button type="button" id="chat-fab" class="chat-fab" aria-label="{{ t('Ask the assistant') }}" title="{{ t('Ask the assistant') }}"><svg class="i"><use href="#i-sparkles"/></svg><span>{{ t('Ask AI') }}</span></button>
+<section id="chat-panel" class="chat-panel" hidden aria-label="{{ t('Assistant chat') }}">
+  <header><div class="chat-t"><span class="spk"><svg class="i" style="color:#fff"><use href="#i-sparkles"/></svg></span><div><b>{{ t('Assistant') }}</b><div class="small">{{ t('Answers come from your own data') }}</div></div></div>
+    <div><button type="button" id="chat-clear" class="iconbtn sm" title="{{ t('Start over') }}" aria-label="{{ t('Start over') }}">&#8635;</button><button type="button" id="chat-close" class="iconbtn sm" title="{{ t('Close') }}" aria-label="{{ t('Close') }}">&times;</button></div></header>
+  <div id="chat-log" class="chat-log" aria-live="polite"></div>
+  <div class="chat-sugg" id="chat-sugg">
+    <button type="button" class="chip" data-chat-ask="{{ t('What should I deal with first today?') }}">{{ t('What first today?') }}</button>
+    <button type="button" class="chip" data-chat-ask="{{ t('Which items are most likely to run out this week?') }}">{{ t('Likely to run out') }}</button>
+    <button type="button" class="chip" data-chat-ask="{{ t('Which purchase orders should we chase?') }}">{{ t('POs to chase') }}</button>
+    <button type="button" class="chip" data-chat-ask="{{ t('How are the stores doing compared with their usual sales?') }}">{{ t('Store sales vs usual') }}</button>
+  </div>
+  <form novalidate id="chat-form" class="chat-form" autocomplete="off"><input type="hidden" id="chat-csrf" value="{{ csrf }}">
+    <input id="chat-input" name="question" placeholder="{{ t('Ask about stock, sales, orders...') }}" maxlength="600" aria-label="{{ t('Your question') }}"><button id="chat-send" class="ai" aria-label="{{ t('Send') }}">{{ t('Send') }}</button></form>
+  <div class="chat-foot">{{ t('It can only suggest actions. You decide.') }}</div>
+</section>
+{% endif %}

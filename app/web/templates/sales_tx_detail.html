@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ tx.invoice_no or t('Transaction') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Transaction') }} {{ tx.invoice_no or '' }}</h1>
+  <p>{{ loc.name if loc else '' }} · {{ tx.tx_time|local('%d %b %Y') }} {{ tx.tx_time|clock }}{% if tx.terminal %} · {{ t('Terminal') }} {{ tx.terminal }}{% endif %}</p></div>
+  <div class="row"><button type="button" class="btn sec sm" onclick="history.back()">{{ t('Back') }}</button></div></div>
+
+<div class="split">
+<div class="card pad0">
+  <div class="card-head" style="padding:18px 18px 0"><h2>{{ t('Items sold') }}</h2><span class="badge {{ 'b-bad' if tx.cancelled else 'b-ok' }}">{{ t('Cancelled') if tx.cancelled else t(tx.tx_type) }}</span></div>
+  <div class="tw" style="border:0;box-shadow:none;border-radius:0"><table>
+    <tr><th>#</th><th>{{ t('Product') }}</th><th class="right">{{ t('Qty') }}</th><th class="right">{{ t('Unit price') }}</th>{% if has_disc %}<th class="right">{{ t('Discount') }}</th>{% endif %}<th class="right">{{ t('Total') }}</th></tr>
+    {% for l, pname, barcode in lines %}
+    <tr><td class="mute">{{ l.line_no }}</td>
+      <td><div style="font-weight:600">{% if l.product_id %}<a href="/sales/product/{{ l.product_id }}">{{ pname }}</a>{% else %}{{ pname or l.product_sh_id or l.item_type }}{% endif %}</div><div class="small mute">{{ barcode or '' }}</div></td>
+      <td class="right">{{ l.qty|num(0) if l.qty == l.qty|round(0) else l.qty|num(2) }}</td>
+      <td class="right">{{ l.unit_price|money if l.unit_price is not none else '—' }}</td>
+      {% if has_disc %}<td class="right">{{ l.discount|money if l.discount else '' }}</td>{% endif %}
+      <td class="right"><b>{{ l.total|money }}</b></td></tr>
+    {% else %}<tr><td colspan="6" class="empty">{{ t('No line items were synced for this transaction.') }}</td></tr>{% endfor %}
+  </table></div>
+</div>
+
+<div>
+<div class="card">
+  <div class="card-head"><h2>{{ t('Payment') }}</h2></div>
+  {% for m, a in pays %}<div class="item"><span>{{ m }}</span><b>{{ a|money }}</b></div>{% else %}<p class="mute small">{{ t('No payment lines synced.') }}</p>{% endfor %}
+  <div class="sep"></div>
+  <div class="item"><span class="mute">{{ t('Subtotal') }}</span><span>{{ tx.subtotal|money }}</span></div>
+  {% if tx.discount %}<div class="item"><span class="mute">{{ t('Discount') }}</span><span>−{{ tx.discount|money }}</span></div>{% endif %}
+  {% if tx.tax %}<div class="item"><span class="mute">{{ t('Tax') }}</span><span>{{ tx.tax|money }}</span></div>{% endif %}
+  {% if tx.service_charge %}<div class="item"><span class="mute">{{ t('Service charge') }}</span><span>{{ tx.service_charge|money }}</span></div>{% endif %}
+  {% if tx.rounded %}<div class="item"><span class="mute">{{ t('Rounding') }}</span><span>{{ tx.rounded|money }}</span></div>{% endif %}
+  <div class="item"><span><b>{{ t('Total') }}</b></span><b style="font-size:18px">{{ tx.total|money }}</b></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>{{ t('Details') }}</h2></div>
+  <div class="item"><span class="mute">{{ t('Employee') }}</span><b>{{ emp.name if emp else (tx.employee_sh_id or '—') }}</b></div>
+  <div class="item"><span class="mute">{{ t('Store') }}</span><span>{{ loc.name if loc else '' }}</span></div>
+  <div class="item"><span class="mute">{{ t('Channel') }}</span><span>{{ (tx.channel or '—').replace('_', ' ').title() }}</span></div>
+  <div class="item"><span class="mute">{{ t('Reference') }}</span><span class="small mute">{{ tx.refid }}</span></div>
+  {% if tx.cancelled %}<div class="item"><span class="mute">{{ t('Cancelled at') }}</span><span>{{ tx.cancelled_time|local }}</span></div>
+  {% if tx.return_reason %}<div class="item"><span class="mute">{{ t('Reason') }}</span><span>{{ tx.return_reason }}</span></div>{% endif %}{% endif %}
+  {% if tx.sale_invoice_no %}<div class="item"><span class="mute">{{ t('Original sale') }}</span><span>{{ tx.sale_invoice_no }}</span></div>{% endif %}
+</div>
+</div>
+</div>
+{% endblock %}

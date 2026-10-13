@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Product set-up') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Product set-up') }}</h1>
+<div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products" class="on">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
+<p class="small mute">{{ t('StoreHub has no supplier, case pack or minimum order per product. Set them here, one by one or by CSV. Suppliers marked') }} <span class="badge b-warn">{{ t('from PO history') }}</span> {{ t('were inferred from the latest purchase order and should be confirmed.') }}</p>
+<div class="row noprint" style="margin-bottom:10px">
+<a class="btn sec" href="?q={{ q }}&filt={{ filt }}&export=csv">{{ t('Export CSV') }}</a>
+<form novalidate method="post" action="/products/import" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="file" name="file" accept=".csv" required><button class="sec">{{ t('Import CSV') }}</button></form></div>
+<form novalidate class="filters" method="get"><div><label>{{ t('Search') }}</label><input name="q" value="{{ q }}"></div>
+<div><label>{{ t('Show') }}</label><select name="filt" onchange="this.form.submit()"><option value="">{{ t('All tracked products') }}</option><option value="no_supplier" {{ 'selected' if filt == 'no_supplier' }}>{{ t('No supplier') }}</option><option value="no_case_pack" {{ 'selected' if filt == 'no_case_pack' }}>{{ t('No case pack') }}</option><option value="inferred" {{ 'selected' if filt == 'inferred' }}>{{ t('Supplier from PO history') }}</option></select></div><button class="sec">{{ t('Apply') }}</button></form>
+<div class="tw editable-table"><table class="wide"><tr><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Supplier') }}</th><th scope="col">{{ t('Case pack') }}</th><th scope="col">{{ t('Multiple') }}</th><th scope="col">MOQ</th><th scope="col">{{ t('Safety days') }}</th><th scope="col">{{ t('Max stock') }}</th><th scope="col">{{ t('Perish.') }}</th><th scope="col">{{ t('Order') }}</th><th></th></tr>
+{% for p in prods %}<tr><td style="display:none"><form novalidate id="fprod{{ loop.index }}" method="post" action="/products/{{ p.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/products?q={{ q }}&filt={{ filt }}&page={{ page }}"></form></td>
+<td>{{ p.name }}<div class="small mute">{{ p.barcode or '' }}</div></td>
+<td><select form="fprod{{ loop.index }}" name="supplier" style="max-width:170px"><option value="0">-</option>{% for s in sups %}<option value="{{ s.id }}" {{ 'selected' if p.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select>{% if p.supplier_source == 'po_history' %}<div><span class="badge b-warn">{{ t('from PO history') }}</span></div>{% endif %}</td>
+<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="case_pack" value="{{ p.case_pack|num if p.case_pack }}" style="width:70px"></td>
+<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="order_multiple" value="{{ p.order_multiple|num if p.order_multiple }}" style="width:70px"></td>
+<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="moq" value="{{ p.moq|num if p.moq }}" style="width:70px"></td>
+<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="safety_days" value="{{ p.safety_days|num if p.safety_days is not none }}" style="width:70px"></td>
+<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="max_stock" value="{{ p.max_stock|num if p.max_stock }}" style="width:70px"></td>
+<td><input form="fprod{{ loop.index }}" type="checkbox" name="perishable" value="1" {{ 'checked' if p.perishable }}></td><td><input form="fprod{{ loop.index }}" type="checkbox" name="replenish" value="1" {{ 'checked' if p.replenish_enabled }}></td>
+<td><button form="fprod{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>
+{% else %}<tr><td colspan="10"><div class="empty">{{ t('No products.') }}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?q={{ q }}&filt={{ filt }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?q={{ q }}&filt={{ filt }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Settings') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Settings') }}</h1>
+<div class="tabs"><a href="/settings" class="on">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
+
+<h2>{{ t('Locations') }}</h2>
+<p class="small mute">{{ t('Only monitored locations are synced and shown. Stores are topped up from the warehouse; set the transfer lead time per store if it is not the default.') }}</p>
+<div class="tw editable-table"><table class="wide"><tr><th scope="col">{{ t('Name') }}</th><th scope="col">{{ t('Monitored') }}</th><th scope="col">{{ t('Type') }}</th><th scope="col">{{ t('Manager') }}</th><th scope="col">{{ t('Transfer lead (days)') }}</th><th scope="col">{{ t('Opens') }}</th><th scope="col">{{ t('Closes') }}</th><th></th></tr>
+{% for l in locs %}<tr><td style="display:none"><form novalidate id="floc{{ loop.index }}" method="post" action="/settings/locations/{{ l.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"></form></td>
+<td>{{ l.name }}<div class="small mute">{{ l.city or '' }}</div></td>
+<td><input form="floc{{ loop.index }}" type="checkbox" name="monitored" value="1" {{ 'checked' if l.monitored }}></td>
+<td><select form="floc{{ loop.index }}" name="type"><option {{ 'selected' if l.type == 'store' }} value="store">{{ t('store') }}</option><option {{ 'selected' if l.type == 'warehouse' }} value="warehouse">{{ t('warehouse') }}</option></select></td>
+<td><select form="floc{{ loop.index }}" name="manager"><option value="0">-</option>{% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if l.manager_user_id == m.id }}>{{ m.full_name or m.username }}</option>{% endfor %}</select></td>
+<td><input form="floc{{ loop.index }}" type="number" step="0.5" min="0" name="lead" value="{{ l.lead_time_days if l.lead_time_days is not none else '' }}" style="width:80px" inputmode="decimal"></td>
+<td><input form="floc{{ loop.index }}" name="opens" value="{{ l.opens_at }}" style="width:70px"></td><td><input form="floc{{ loop.index }}" name="closes" value="{{ l.closes_at }}" style="width:70px"></td><td><button form="floc{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>{% endfor %}</table></div>
+
+<h2>{{ t('Rules and limits') }}</h2>
+<div class="tw editable-table"><table><tr><th>{{ t('Setting') }}</th><th>{{ t('Value') }}</th><th>{{ t('What it does') }}</th></tr>
+{% for key, val, desc, complex in rows %}<tr><td style="display:none"><form novalidate id="fset{{ loop.index }}" method="post" action="/settings/value"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ key }}"></form></td>
+<td class="small"><code>{{ key }}</code></td>
+<td>{% if complex %}<textarea class="resize-none" form="fset{{ loop.index }}" name="value" style="min-width:260px;min-height:50px">{{ val|tojson }}</textarea>{% else %}<input form="fset{{ loop.index }}" name="value" value="{{ val }}" style="width:170px">{% endif %} <button form="fset{{ loop.index }}" class="sm sec">{{ t('Save') }}</button></td>
+<td class="small mute">{{ t(desc) }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

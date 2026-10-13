@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Stock events') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Stock events') }}</h1>
+<p class="small mute">{{ t('Every physical change to stock is recorded here — who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p>
+<div class="tabs"><a href="/stock-events" class="{{ 'on' if tab == 'all' else '' }}">{{ t('All (') }}{{ counts.values()|sum }})</a>
+<a href="/stock-events?tab=write_off" class="{{ 'on' if tab == 'write_off' else '' }}">{{ t('Write-offs (') }}{{ counts.get('write_off', 0) }})</a>
+<a href="/stock-events?tab=unplanned_receipt" class="{{ 'on' if tab == 'unplanned_receipt' else '' }}">{{ t('Unplanned receipts (') }}{{ counts.get('unplanned_receipt', 0) }})</a></div>
+<div class="row" style="margin-bottom:10px"><a class="btn sm ok" href="/stock-events/new?kind=write_off">{{ t('Record a write-off') }}</a><a class="btn sm sec" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a></div>
+<details class="exp-tool"><summary>{{ t('Upload a CSV or Excel file') }}</summary><div class="body">
+  <form novalidate method="post" action="/stock-events/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('File') }}</label><input type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
+    <div><button>{{ t('Upload') }}</button></div>
+    <div><label>{{ t('Type') }}</label><select name="kind"><option value="">{{ t('Type from the file') }}</option><option value="write_off">{{ t('Write-off') }}</option><option value="unplanned_receipt">{{ t('Unplanned receipt') }}</option></select></div>
+    <div style="grid-column:span 2;align-self:end"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:500;font-size:13px"><input type="checkbox" name="in_storehub" value="1">{{ t('These are already entered in StoreHub (no to-do to key them in)') }}</label></div>
+  </form>
+  <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Type (write-off or unplanned receipt), Reason (optional), Note (optional), Location (optional if one is chosen above), Supplier (optional, for receipts). The same line uploaded twice on one day is recorded once.') }} <a href="/stock-events/template.csv">{{ t('Download template') }}</a></div>
+</div></details>
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Kind') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('Photo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('By') }}</th></tr>
+{% for e in rows %}<tr><td class="small nowrap">{{ e.created_at|local('%d %b %H:%M') }}</td>
+<td><span class="badge {{ 'b-bad' if e.kind == 'write_off' else 'b-warn' }}">{{ t('Write-off') if e.kind == 'write_off' else t('Unplanned receipt') }}</span></td>
+<td>{{ e.product.name if e.product else '?' }}</td><td class="small">{{ e.location.name if e.location else '' }}</td><td class="right">{{ e.qty|num }}</td>
+<td class="small">{{ t(e.reason) }}{% if e.note %}<div class="small mute">{{ e.note }}</div>{% endif %}</td>
+<td>{% if e.photo_path %}<a class="small" href="/uploads/{{ e.photo_path }}" target="_blank">{{ t('photo') }}</a>{% endif %}</td>
+<td>{% if e.verified_at %}<span class="badge b-ok">{{ t('Verified') }}</span>{% else %}<span class="small mute">{{ t('waiting for StoreHub') }}</span>{% endif %}</td>
+<td class="small">{{ users.get(e.created_by, '') }}</td></tr>
+{% else %}<tr><td colspan="9" class="mute">{{ t('No stock events recorded yet.') }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

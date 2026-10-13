@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Sales by employee') }}{% endblock %}
+{% block content %}
+{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
+{% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
+<div class="page-head"><div><h1>{{ t('Sales by employee') }}</h1>
+  <p>{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}">{{ t('Transactions') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+
+<form novalidate class="filters" method="get" style="margin-bottom:14px">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, label in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t(label) }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
+  <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">
+    <div><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></div>
+    <div><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></div>
+    <div><label>&nbsp;</label><button class="sec">{{ t('Apply') }}</button></div>
+  </div>
+</form>
+
+{% if stats %}
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Employees with sales') }}</div><div class="value">{{ stats|length }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Transactions') }}</div><div class="value">{{ totals.txs|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Items sold') }}</div><div class="value">{{ totals.units|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ totals.net|money }}</div></div></div>
+</div>
+{% set mx = stats|map(attribute='net')|max %}
+<div class="tw"><table>
+  <tr><th>#</th><th>{{ t('Employee') }}</th><th>{{ t('Store') }}</th><th class="right">{{ t('Transactions') }}</th><th class="right">{{ t('Items sold') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Average basket') }}</th><th class="right">{{ t('Last sale') }}</th></tr>
+  {% for s in stats %}
+  <tr data-href="/sales/transactions?{{ qs }}&emp={{ s.sh_id }}"><td class="mute">{{ loop.index }}</td>
+    <td><b>{{ s.name }}</b>{% if s.cancelled %}<div class="small mute">{{ s.cancelled }} {{ t('cancelled') }}</div>{% endif %}</td>
+    <td class="small">{{ s.stores|join(', ') }}</td>
+    <td class="right">{{ s.txs|num(0) }}</td>
+    <td class="right">{{ s.units|num(0) if s.units == s.units|round(0) else s.units|num(2) }}</td>
+    <td class="right"><b>{{ s.net|money }}</b></td>
+    <td style="min-width:110px"><div class="bar" data-tip="{{ '%.1f'|format(s.net / totals.net * 100 if totals.net else 0) }}{{ t('% of net sales') }}"><i style="width:{{ (s.net / mx * 100)|round(1) if mx else 0 }}%"></i></div><div class="small mute">{{ '%.1f'|format(s.net / totals.net * 100 if totals.net else 0) }}%</div></td>
+    <td class="right">{{ s.avg|money }}</td>
+    <td class="right nowrap small mute">{{ s.last|ago }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}
+<div class="card empty">{{ t('No sales found for this selection. Warehouses record no sales, so choose a store or all locations.') }}</div>
+{% endif %}
+{% endblock %}

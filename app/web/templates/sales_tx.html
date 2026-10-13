@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Transactions') }}{% endblock %}
+{% block content %}
+{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&emp=' ~ emp ~ '&q=' ~ (q|urlencode) %}
+{% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
+<div class="page-head"><div><h1>{{ t('Transactions') }}</h1>
+  <p>{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}">{{ t('By employee') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+
+<form novalidate class="filters" method="get" style="margin-bottom:14px">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, label in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t(label) }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
+  <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">
+    <div><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></div>
+    <div><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></div>
+    <div><label>&nbsp;</label><button class="sec">{{ t('Apply') }}</button></div>
+  </div>
+  <div><label>{{ t('Employee') }}</label><select name="emp" onchange="this.form.submit()"><option value="">{{ t('All employees') }}</option>{% for sh_id, name in employees %}<option value="{{ sh_id }}" {{ 'selected' if sh_id == emp }}>{{ name }}</option>{% endfor %}</select></div>
+  <div style="flex:1;min-width:160px"><label>{{ t('Search') }}</label><input name="q" value="{{ q }}" placeholder="{{ t('Invoice number') }}"></div>
+  <div><label>&nbsp;</label><button class="sec">{{ t('Search') }}</button></div>
+</form>
+
+{% if txs %}
+<div class="tw"><table class="wide">
+  <tr><th>{{ t('Time') }}</th><th>{{ t('Invoice') }}</th><th>{{ t('Store') }}</th><th>{{ t('Employee') }}</th><th class="right">{{ t('Items') }}</th><th>{{ t('Payment') }}</th><th class="right">{{ t('Total') }}</th><th></th></tr>
+  {% for x in txs %}
+  <tr data-href="/sales/tx/{{ x.id }}">
+    <td class="nowrap"><b>{{ x.tx_time|clock }}</b><div class="small mute">{{ x.tx_time|local('%d %b') }}</div></td>
+    <td class="nowrap">{{ x.invoice_no or '—' }}{% if x.cancelled %} <span class="badge b-bad">{{ t('Cancelled') }}</span>{% endif %}{% if x.tx_type == 'Return' %} <span class="badge b-warn">{{ t('Return') }}</span>{% endif %}</td>
+    <td class="small">{{ loc_names.get(x.location_id, '') }}</td>
+    <td>{{ names.get(x.employee_sh_id, '—') if x.employee_sh_id else '—' }}</td>
+    <td class="right">{{ units.get(x.id, 0)|num(0) if units.get(x.id, 0) == units.get(x.id, 0)|round(0) else units.get(x.id, 0)|num(2) }}</td>
+    <td class="small">{% for m, a in pays.get(x.id, []) %}{{ m }}{% if not loop.last %}, {% endif %}{% else %}—{% endfor %}</td>
+    <td class="right"><b>{{ x.total|money }}</b></td>
+    <td class="right"><svg class="i" style="width:15px;height:15px;color:var(--mute2)"><use href="#i-arrow"/></svg></td>
+  </tr>
+  {% endfor %}
+</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page - 1 }}">{{ t('Previous') }}</a>{% endif %}
+  <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + per - 1) // per) or 1 }} {{ t('· showing') }} {{ offset + 1 }}&ndash;{{ offset + txs|length }} {{ t('of') }} {{ total }} {{ t('transactions') }}</span>
+  {% if page * per < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page + 1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% else %}
+<div class="card empty">{{ t('No transactions found for this selection.') }}</div>
+{% endif %}
+{% endblock %}

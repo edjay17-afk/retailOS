@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ t('PO #') }}{{ po.sh_po_id }}{% endblock %}
+{% block content %}
+<h1>{{ t('PO #') }}{{ po.sh_po_id }} <span class="badge {{ 'b-ok' if kind == 'incoming' else 'b-warn' if kind == 'stale' else '' }}">{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}</span></h1>
+<div class="card">
+<div class="grid g3 small">
+<div><span class="mute">{{ t('Supplier') }}</span><br><b>{{ po.supplier.name if po.supplier else '-' }}</b></div>
+<div><span class="mute">{{ t('Deliver to') }}</span><br><b>{{ po.location.name if po.location else '-' }}</b></div>
+<div><span class="mute">{{ t('Created') }}</span><br>{{ po.created_sh|local }}</div>
+<div><span class="mute">{{ t('Expected') }}</span><br>{{ po.expected_at|local('%Y-%m-%d') if po.expected_at else '-' }}</div>
+<div><span class="mute">{{ t('Subtotal / tax / discount') }}</span><br>{{ po.subtotal|money }} / {{ po.tax|money }} / {{ po.discount|money }}</div>
+<div><span class="mute">{{ t('Total') }}</span><br><b>{{ po.total|money }}</b></div>
+</div>
+{% if po.notes %}<p class="small">{{ t('Notes:') }} {{ po.notes }}</p>{% endif %}
+{% if kind == 'stale' %}<div class="flash err" style="margin-top:10px">{{ t('This PO is far past its expected date, so its quantities are not counted as incoming. If the goods arrived, receive the PO in StoreHub. If not, cancel it.') }}</div>{% endif %}
+{% if po.missing_from_api %}<div class="flash err" style="margin-top:10px">{{ t('StoreHub no longer returns this PO (it was deleted there).') }}</div>{% endif %}
+</div>
+{% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ t('Start receiving count') }}</button></form>{% endif %}
+<h2>{{ t('Lines') }}</h2>
+{% with kind='po' %}{% include '_order_document_actions.html' %}{% endwith %}
+{% if document.saved %}<h2>{{ t('Original StoreHub items and receiving') }}</h2>{% endif %}
+<div class="tw"><table><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Ordered') }}</th><th class="right">{{ t('Received (StoreHub)') }}</th><th class="right">{{ t('Supplier price') }}</th><th class="right">{{ t('Line total') }}</th></tr>
+{% for l in po.lines %}<tr><td>{{ l.product.name if l.product else l.product_sh_id }}</td><td class="right">{{ l.ordered_qty|num }}</td>
+<td class="right">{% if l.received_present %}{{ l.received_qty|num }}{% else %}<span class="mute">{{ t('none') }}</span>{% endif %}{% if l.received_present and l.received_qty < l.ordered_qty and po.status == 'completed' %} <span class="badge b-warn">{{ t('short') }}</span>{% endif %}</td>
+<td class="right">{{ l.supplier_price|money if l.supplier_price is not none else '' }}</td><td class="right">{{ l.subtotal|money }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

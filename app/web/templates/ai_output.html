@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_ai.html" import statement, action_row, rating with context %}
+{% block title %}{{ t('Assistant answer') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ out.question or (t('AI briefing') if out.kind == 'brief' else t('Answer')) }}</h1>
+  <p>{{ out.created_at|local }} &middot; {{ t(out.kind) }}{% if out.user %} {{ t('· asked by') }} {{ out.user.full_name or out.user.username }}{% endif %}</p></div>
+  <a class="btn sec" href="/assistant">{{ t('Back to assistant') }}</a></div>
+
+{% if out.status != 'ok' %}
+<div class="flash err">{{ t('The AI could not answer:') }} {{ t(out.error) }}</div>
+{% else %}
+<div class="ai-card">
+  <div class="ai-title" style="margin-bottom:8px"><span class="spk"><svg class="i" style="color:#fff"><use href="#i-sparkles"/></svg></span>{{ t('Answer') }}</div>
+  {% if out.kind == 'brief' %}
+    <p style="font-weight:600">{{ out.output_json.headline }}</p>
+    {% for it in out.output_json['items'] %}<div class="card flat" style="padding:12px 15px"><b>{{ it.title }}</b> <span class="badge {{ 'pill-hi' if it.priority == 'high' else 'pill-me' if it.priority == 'medium' else 'pill-lo' }}">{{ t(it.priority) }}</span>
+      {% for st in it.statements %}{{ statement(st, 'f', facts) }}{% endfor %}{% if it.recommended_action %}<div><b>{{ t('Suggested:') }}</b> {{ it.recommended_action }}</div>{% endif %}</div>{% endfor %}
+  {% else %}
+    {% for st in statements %}{{ statement(st, 'f', facts) }}{% endfor %}
+    {% if out.output_json.follow_ups %}<div class="chips" style="margin-top:10px">{% for q in out.output_json.follow_ups[:3] %}<form novalidate method="post" action="/assistant/ask" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="question" value="{{ q }}"><button class="chip sec" type="submit">{{ q }}</button></form>{% endfor %}</div>{% endif %}
+  {% endif %}
+  <div class="sep"></div>
+  <div class="row" style="justify-content:space-between">
+    <span class="small mute">{{ out.validation.statements - out.validation.unsupported }} {{ t('of') }} {{ out.validation.statements }} {{ t('statements verified') }}{% if out.validation.derived %}, {{ out.validation.derived }} {{ t('derived') }}{% endif %}</span>
+    {{ rating(out, csrf) }}
+  </div>
+</div>
+
+{% if out.actions %}
+<div class="card"><div class="card-head"><h2>{{ t('Proposed actions') }}</h2><span class="small mute">{{ t('Nothing runs until you press the button') }}</span></div>
+{% for a in out.actions %}{{ action_row(a, gate(a), csrf, '/assistant/output/' ~ out.id, tools) }}{% endfor %}</div>
+{% endif %}
+
+{% if out.tool_log %}
+<div class="card"><h3>{{ t('Extra data the assistant looked up') }}</h3>
+<ul class="plain small">{% for entry in out.tool_log %}<li><code>{{ entry.tool }}</code> {{ entry.args }} {% if entry.error %}<span class="flag">{{ entry.error }}</span>{% else %}{{ t('added') }} {{ entry.facts_added }} {{ t('fact(s)') }}{% endif %}</li>{% endfor %}</ul></div>
+{% endif %}
+
+<div class="card"><div class="card-head"><h2>{{ t('Evidence') }}</h2><span class="small mute">{{ t('The facts this answer cites') }}</span></div>
+{% for r in cited %}<div id="f{{ r }}" class="item" style="padding:8px 0"><div><span class="cite" style="margin:0 8px 0 0">{{ r }}</span>{{ facts[r].text }}</div>{% if facts[r].link %}<a class="small" href="{{ facts[r].link }}">{{ t('Open') }}</a>{% endif %}</div>{% else %}<p class="mute">{{ t('No facts were cited.') }}</p>{% endfor %}
+<details style="margin-top:10px"><summary>{{ t('Show everything the AI was given (') }}{{ facts|length }} {{ t('facts)') }}</summary>
+{% for id, f in facts.items() %}<div id="f{{ id }}" class="small" style="padding:3px 0"><span class="cite" style="margin:0 8px 0 0">{{ id }}</span><span class="mute">{{ f.section }}</span> {{ f.text }}</div>{% endfor %}</details></div>
+{% endif %}
+
+<div class="card flat small mute" style="background:var(--surface2)">{{ t('Audit details:') }} {{ out.provider }} / {{ out.model }} {{ t('· prompt') }} {{ out.prompt_version }} {{ t('· context') }} {{ out.context_version }} {{ t('· fingerprint') }} <code>{{ out.context_hash[:12] }}</code>
+ &middot; {{ ((out.duration_ms or 0) / 1000)|round(1) }} {{ t('s') }}{% if out.cost_usd %} &middot; ${{ '%.3f'|format(out.cost_usd) }}{% endif %}</div>
+{% endblock %}

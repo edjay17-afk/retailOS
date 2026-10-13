@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Suppliers') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Suppliers') }}</h1>
+<div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers" class="on">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
+<p class="small mute">{{ t('StoreHub only gives a supplier id on purchase orders, so the real names, lead times and minimums are set here. Until a lead time is set, the engine assumes the default and lowers its confidence.') }}</p>
+<details class="card" style="margin:10px 0">
+  <summary><b>{{ t('Add a supplier') }}</b></summary>
+  <p class="small mute">{{ t('Add a supplier that is not in the list. You can then assign it to products in Product set-up.') }}</p>
+  <form novalidate method="post" action="/suppliers/new"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row">
+      <div><label for="new-supplier-name">{{ t('Supplier name') }}</label><input id="new-supplier-name" name="name" required maxlength="160" autocomplete="organization"></div>
+      <div><label for="new-supplier-contact">{{ t('Contact') }}</label><input id="new-supplier-contact" name="contact" maxlength="200"></div>
+    </div>
+    <div class="row">
+      <div><label for="new-supplier-lead">{{ t('Lead time (days)') }}</label><input id="new-supplier-lead" name="lead" type="number" min="0" step="0.5"></div>
+      <div><label for="new-supplier-review">{{ t('Review period (days)') }}</label><input id="new-supplier-review" name="review" type="number" min="0" step="0.5"></div>
+      <div><label for="new-supplier-min">{{ t('Minimum order value') }} (PHP)</label><input id="new-supplier-min" name="min_value" type="number" min="0" step="0.01"></div>
+      <div><label for="new-supplier-days">{{ t('Order days') }}</label><input id="new-supplier-days" name="order_days" maxlength="60" placeholder="{{ t('Mon, Thu') }}"></div>
+    </div>
+    <p><button type="submit">{{ t('Create supplier') }}</button></p>
+  </form>
+</details>
+<div class="card" style="margin:10px 0">
+  <b>{{ t('Fill in the real supplier names') }}{% if unnamed %} <span class="badge b-warn">{{ unnamed }} {{ t('still unnamed') }}</span>{% endif %}</b>
+  <p class="small mute" style="margin:4px 0 8px">{{ t('StoreHub does not tell us the names, only a code. Each row below shows what the supplier usually delivers to help you recognise it. Type the name and press Save, or download the list, fill in the last column in Excel, and upload it here.') }}</p>
+  <form novalidate method="post" action="/suppliers/import" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <a class="btn sec sm" href="/suppliers?export=csv">{{ t('Download list (CSV)') }}</a><input type="file" name="file" accept=".csv,text/csv" required style="max-width:260px"><button class="sm">{{ t('Upload names') }}</button></form></div>
+<div class="card" style="margin:10px 0">
+  <b>{{ t('Best way: upload the StoreHub purchase order export') }}</b>
+  <p class="small mute" style="margin:4px 0 8px">{{ t('In the StoreHub back office, export your purchase orders (CSV) and upload it here. Each PO number is matched to its supplier, so the real names fill in by themselves. Names you typed yourself are never overwritten.') }}</p>
+  <form novalidate method="post" action="/suppliers/import-po-export" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="file" name="file" accept=".csv,text/csv" required style="max-width:260px"><button class="sm">{{ t('Upload PO export') }}</button></form></div>
+<div class="tw editable-table"><table class="wide"><tr><th scope="col">{{ t('Name') }}</th><th scope="col">{{ t('Products') }}</th><th scope="col">{{ t('Lead time (days)') }}</th><th scope="col">{{ t('Review period (days)') }}</th><th scope="col">{{ t('Minimum order value') }}</th><th scope="col">{{ t('Order days') }}</th><th scope="col">{{ t('Contact') }}</th><th scope="col">{{ t('Active') }}</th><th></th></tr>
+{% for s in sups %}<tr><td style="display:none"><form novalidate id="fsup{{ loop.index }}" method="post" action="/suppliers/{{ s.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"></form></td>
+<td><input form="fsup{{ loop.index }}" name="name" value="{{ s.name }}" style="width:170px"><div class="small mute">{{ t('Code') }} {{ s.storehub_id[-6:] if s.storehub_id else 'LOCAL-' ~ s.id }}{% set k = clues.get(s.id) %}{% if k %} &middot; {{ k.pos }} {{ t('PO') }}{{ 's' if k.pos != 1 and lang != 'zh' }}{% if k.last %}{{ t(', last') }} {{ k.last|day }}{% endif %}{% endif %}</div>{% if k and k['items'] %}<div class="small" style="color:var(--mute);max-width:240px">{{ t('Usually:') }} {{ k['items']|join(', ') }}</div>{% endif %}</td><td>{{ n_prod.get(s.id, 0) }}</td>
+<td><input form="fsup{{ loop.index }}" type="number" step="0.5" min="0" name="lead" value="{{ s.lead_time_days if s.lead_time_days is not none else '' }}" style="width:80px"></td>
+<td><input form="fsup{{ loop.index }}" type="number" step="0.5" min="0" name="review" value="{{ s.review_period_days if s.review_period_days is not none else '' }}" style="width:80px"></td>
+<td><input form="fsup{{ loop.index }}" type="number" step="0.01" min="0" name="min_value" value="{{ s.min_order_value if s.min_order_value is not none else '' }}" style="width:100px"></td>
+<td><input form="fsup{{ loop.index }}" name="order_days" value="{{ s.order_days or '' }}" style="width:100px" placeholder="{{ t('Mon, Thu') }}"></td><td><input form="fsup{{ loop.index }}" name="contact" value="{{ s.contact or '' }}" style="width:150px"></td>
+<td><input form="fsup{{ loop.index }}" type="checkbox" name="active" value="1" {{ 'checked' if s.active }}></td><td><button form="fsup{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>{% endfor %}</table></div>
+{% endblock %}

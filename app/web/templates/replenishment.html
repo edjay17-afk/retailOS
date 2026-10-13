@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Replenishment') }}{% endblock %}
+{% block content %}
+<div class="calm-page">
+{% set fqs = 'loc=' ~ loc ~ '&supplier=' ~ supplier %}
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} {{ t('/ Ordering') }}</div><h1>{{ t('Replenishment') }}</h1>
+    <p>{{ t('Stores are topped up by transfer from the warehouse; the warehouse orders from suppliers on combined demand. Every figure is calculated by code from StoreHub data — nothing is ordered until a manager approves it.') }}</p></div>
+  <div class="row noprint">
+    {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
+    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
+    <a class="btn sec" href="/replenishment/batches"><svg class="i"><use href="#i-file"/></svg>{{ t('Order batches') }}</a>
+  </div>
+</div>
+
+{% if sales_only %}<div class="card noprint" style="margin:0 0 12px;padding:12px 16px"><b>{{ t('Based on sales only for now.') }}</b> <span class="small mute">{{ t('Stock on hand is not used while inventory is not accurate. Each suggestion covers {days} days of sales, minus what is already on order, and anything approved in the last {days} days is not suggested again.', days=cover_days) }}</span></div>{% endif %}
+<div class="statgrid">
+  <a class="statcard {{ 'on' if status == 'pending' }}" href="?status=pending&{{ fqs }}"><span class="tile t-blue"><svg class="i"><use href="#i-trend"/></svg></span><span><span class="v">{{ counts.get('pending', 0) }}</span><div class="l">{{ t('Ready to review') }}</div></span></a>
+  <a class="statcard {{ 'on' if status == 'needs_review' }}" href="?status=needs_review&{{ fqs }}"><span class="tile t-red"><svg class="i"><use href="#i-alert"/></svg></span><span><span class="v">{{ counts.get('needs_review', 0) }}</span><div class="l">{{ t('Need review (data issue)') }}</div></span></a>
+  <a class="statcard {{ 'on' if status == 'decided' }}" href="?status=decided&{{ fqs }}"><span class="tile t-green"><svg class="i"><use href="#i-check"/></svg></span><span><span class="v">{{ counts.get('approved', 0) + counts.get('modified', 0) }}</span><div class="l">{{ t('Approved, not yet batched') }}</div></span></a>
+  <span class="statcard"><span class="tile t-purple"><svg class="i"><use href="#i-chart"/></svg></span><span><span class="v">{{ metrics.acceptance_rate|pct if metrics.acceptance_rate is not none else '-' }}</span><div class="l">{{ t('Accepted as suggested (60 days)') }}</div></span></span>
+</div>
+{% set oo = metrics.override_outcomes %}
+{% if oo.modified or oo.accepted %}<p class="small mute" style="margin:6px 0 0">{{ t('Do manager overrides work? Measured 7 days after the decision:') }} {{ oo.modified }} {{ t('modified suggestions stocked out at') }} {{ oo.modified_stockout_rate|pct if oo.modified_stockout_rate is not none else '-' }}; {{ oo.accepted }} {{ t('accepted-as-suggested at') }} {{ oo.accepted_stockout_rate|pct if oo.accepted_stockout_rate is not none else '-' }}. {% if oo.verdict %}<b>{{ t(oo.verdict) }}.</b>{% else %}{{ t('Not enough measured outcomes yet (need 10 of each) — overrides stay candidate context until outcomes prove them.') }}{% endif %}</p>{% endif %}
+{% if last %}<p class="small {{ 'mute' if last.status == 'ok' else '' }}" {% if last.status != 'ok' %}style="color:var(--bad)"{% endif %}>{{ t('Last run') }} {{ last.run_at|local }} ({{ t(last.status) }}){% if last.note %}: {{ t(last.note) }}{% endif %}</p>{% endif %}
+
+<form novalidate class="filters toolbar" method="get">
+  <div><label>{{ t('Show') }}</label><select name="status" onchange="this.form.submit()">
+    {% for v, l in (('pending','Ready to review'),('needs_review','Needs review'),('decided','Decided'),('all','All')) %}<option value="{{ v }}" {{ 'selected' if status == v }}>{{ t(l) }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Supplier') }}</label><select name="supplier" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if supplier == s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Search') }}</label><input type="search" name="search" value="{{ search }}" data-search placeholder="{{ t('Product name or barcode') }}" style="min-width:220px"></div>
+  <div style="align-self:flex-end"><button class="sm">{{ t('Search') }}</button>{% if search %} <a class="btn sec sm" href="?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}">{{ t('Clear') }}</a>{% endif %}</div>
+</form>
+
+<form novalidate method="post" action="/replenishment/bulk" id="bulk">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/replenishment?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page }}">
+{% if can('repl.decide') and status == 'pending' %}<div class="row noprint" style="margin-bottom:8px"><label style="margin:0"><input type="checkbox" onclick="document.querySelectorAll('.rc').forEach(x=>x.checked=this.checked)"> {{ t('Select all') }}</label><button class="sm ok">{{ t('Approve selected as suggested') }}</button></div>{% endif %}
+</form>
+<div class="tw stick1"><table class="wide rt repl">
+<thead><tr><th></th><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Where / from') }}</th><th scope="col" class="right" data-sort>{{ t('On hand') }}</th><th scope="col" class="right" data-sort>{{ t('Suggested') }}</th><th scope="col">{{ t('Decision') }}</th></tr></thead><tbody>
+{% for r in recs %}
+<tr>
+<td class="rt-sel">{% if r.status == 'pending' and can('repl.decide') %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" aria-label="{{ t('Select') }} {{ r.product.name }}">{% endif %}</td>
+<td class="rt-main"><b>{{ r.product.name }}</b><div class="small mute">{{ r.product.barcode or '' }}</div>
+  <button type="button" class="drawer-link" data-drawer="why-{{ r.id }}" data-drawer-title="{{ r.product.name }} {{ t('— why this number') }}">{{ t('Why this number') }}</button>
+  {% if r.needs_review_reasons %}<div class="small" style="color:var(--bad)"><b>{{ t('Needs review:') }}</b>
+    {% for x in r.needs_review_reasons %}{{ t(reason_labels.get(x, x|replace('_',' '))) }}{% if fixes.get(x) %} — <a href="{{ fixes[x][0] }}">{{ t(fixes[x][1]) }}</a>{% endif %}{{ '; ' if not loop.last }}{% endfor %}</div>{% endif %}
+  <template id="why-{{ r.id }}">
+  <div class="expl" style="margin-top:0">
+    {% set e = r.explanation %}
+    {% if e.mode == 'sales_only' %}<div class="small mute" style="margin-bottom:6px">{{ t('Sales-only suggestion: stock on hand is not used, so the figures below that mention stock are for reference.') }}</div>{% endif %}
+    <div><b>{{ t('Source:') }}</b> {{ t(e.source) }}</div>
+    <table><tr><td>{{ t('Units sold (') }}{{ e.inputs.trading_days }} {{ t('trading days)') }}</td><td class="right">{{ e.inputs.units_sold|num }}</td></tr>
+    <tr><td>{{ t('Average daily sales') }}</td><td class="right">{{ r.ads|num }}</td></tr>
+    <tr><td>{{ t('Lead time + review period') }}</td><td class="right">{{ r.lead_time|num }} + {{ r.review_period|num }} {{ t('days') }}</td></tr>
+    <tr><td>{{ t('Safety stock (') }}{{ r.safety_days|num }} {{ t('days)') }}</td><td class="right">{{ r.safety_stock|num }}</td></tr>
+    <tr><td><b>{{ t('Target stock') }}</b></td><td class="right"><b>{{ r.target_stock|num }}</b></td></tr>
+    <tr><td>{{ t('On hand (synced') }} {{ e.inputs.stock_synced_at[:16].replace('T',' ') }} UTC)</td><td class="right">{{ r.on_hand|num }}</td></tr>
+    <tr><td>{{ t('Incoming (open POs, not overdue)') }}</td><td class="right">{{ r.incoming|num }}</td></tr>
+    <tr><td><b>{{ t('Position') }}</b> {{ t('(on hand, not below 0, + incoming)') }}</td><td class="right"><b>{{ r.position|num }}</b></td></tr>
+    <tr><td>{{ t('Raw order = target - position') }}</td><td class="right">{{ r.raw_qty|num }}</td></tr>
+    {% for s in e.steps if s.step != 'raw' %}<tr><td>{{ t('Adjusted:') }} {{ t(s.step|replace('_',' ')) }}</td><td class="right">{{ s['from']|num }} {{ t('to') }} {{ s.to|num }}</td></tr>{% endfor %}
+    <tr><td><b>{{ t('Suggested quantity') }}</b></td><td class="right"><b>{{ r.final_qty|num }}</b></td></tr></table>
+    {% for n in e.notes %}<div class="small" style="color:var(--warn)">{{ n }}</div>{% endfor %}
+    {% if can('ai.use') %}<form novalidate method="post" action="/replenishment/{{ r.id }}/explain" data-explain style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm ai" type="submit"><svg class="i" style="width:14px;height:14px"><use href="#i-sparkles"/></svg><span class="idle">{{ t('Ask AI to explain') }}</span><span class="thinking">{{ t('Thinking...') }}</span></button></form>
+    <div class="explain-out" hidden></div>{% endif %}
+    {% if e.confidence_penalties %}<div class="small mute">{{ t('Confidence lowered by:') }} {% for p in e.confidence_penalties %}{{ t(p.reason) }} (-{{ (p.penalty*100)|int }}%){% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+  </div></template></td>
+<td class="small rt-loc" data-label="{{ t('Where / from') }}">{{ r.location.name }}<div class="mute">{{ r.supplier.name if r.supplier else (t('warehouse') if r.source_kind == 'transfer' else t('no supplier')) }}</div></td>
+<td class="right" data-label="{{ t('On hand') }}">{{ r.on_hand|num }}{% if r.incoming %}<div class="small mute">+{{ r.incoming|num }} {{ t('incoming') }}</div>{% endif %}<div class="small mute">{{ r.ads|num }}/{{ t('day') }}</div></td><td class="right" data-label="{{ t('Suggested') }}"><b>{{ r.final_qty|num }}</b>{% if r.cases %}<div class="small mute">{{ r.cases|num }} {{ t('cases') }}</div>{% endif %}</td>
+<td class="rt-act">
+  {% if r.status in ('pending','needs_review') and can('repl.decide') %}
+    <form novalidate method="post" action="/replenishment/{{ r.id }}/decide" class="decide">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/replenishment?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page }}">
+      {% if r.status == 'needs_review' %}<input name="note" class="d-note" placeholder="{{ t('Note (what you checked)') }}" aria-label="{{ t('Note (what you checked)') }}">{% endif %}
+      <input type="number" step="any" min="0" name="qty" value="{{ r.final_qty|num }}" inputmode="decimal" class="d-qty" aria-label="{{ t('Quantity to order') }}" title="{{ t('Quantity to order') }}">
+      <input name="reason" class="d-reason" maxlength="200" autocomplete="off" placeholder="{{ t('Reason (to reject)') }}" aria-label="{{ t('Reason (to reject)') }}">
+      <button name="action" value="approve" class="sm ok">{{ t('Approve') }}</button><button name="action" value="reject" class="sm bad">{{ t('Reject') }}</button>
+    </form>
+  {% else %}<span class="badge {{ 'b-ok' if r.status in ('approved','modified','ordered') else '' }}">{{ t(r.status) }}</span>{% if r.approved_qty is not none %} <span class="small">{{ r.approved_qty|num }}</span>{% endif %}{% endif %}
+</td></tr>
+{% else %}<tr class="rt-empty"><td colspan="6"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>{% endfor %}
+</tbody></table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 99) // 100) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*100 + 1 }}&ndash;{{ page*100 if page*100 < total else total }} {{ t('of') }} {{ total }} {{ t('suggestions · managers can approve up to') }} {{ limit|money }} {{ t('per line') }}</span>
+{% if page * 100 < total %}<a class="btn sec sm" href="?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+
+<div class="drawer-scrim" id="drawer-scrim" hidden></div>
+<dialog class="drawer" id="drawer" aria-labelledby="drawer-title" hidden>
+  <div class="drawer-head"><h2 id="drawer-title"></h2><button type="button" class="iconbtn" id="drawer-close" aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="drawer-body" id="drawer-body"></div>
+</dialog>
+</div>
+{% endblock %}

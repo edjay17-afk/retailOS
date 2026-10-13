@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Order batches') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Order batches') }}</h1><p>{{ t('StoreHub cannot receive orders through its API. Download the list, enter the order or warehouse transfer in the StoreHub back office, then record it here. Transfers are then dispatched by the warehouse and counted by the store.') }}</p></div>
+<a class="btn sec" href="/replenishment">{{ t('Back to suggestions') }}</a></div>
+{% for b in batches %}
+<div class="card">
+  <div class="item" style="border:0;padding:0">
+    <div><b style="font-size:15.5px">{{ t('Batch #') }}{{ b.id }}</b> <span class="badge b-blue">{{ t('Supplier order') if b.source_kind == 'supplier' else t('Warehouse transfer') }}</span>
+      <div style="margin-top:3px">{{ t('to') }} <b>{{ b.location.name }}</b>{% if b.supplier %} {{ t('from') }} <b>{{ b.supplier.name }}</b>{% if b.supplier.min_order_value and b.total_value < b.supplier.min_order_value %} <span class="badge b-warn">{{ t('below the supplier minimum of') }} {{ b.supplier.min_order_value|money }}</span>{% endif %}{% endif %}</div>
+      <div class="small mute">{{ t('Created') }} {{ b.created_at|local }} &middot; {{ b.lines|length }} {{ t('line(s) · value') }} {{ b.total_value|money }}</div></div>
+    <div style="text-align:right">
+      <span class="badge dot {{ 'b-ok' if b.status in ('entered','dispatched','received') else 'b-warn' }}">{{ t(b.status) }}{% if b.storehub_po_number %} {{ t('· PO #') }}{{ b.storehub_po_number }}{% endif %}</span>
+      {% if b.source_kind == 'transfer' %}<div class="small mute" style="margin-top:6px">{{ t('Approved') }} &rarr; {{ t('In StoreHub') }} &rarr; {{ t('Dispatched') }} &rarr; {{ t('Store counted') }}</div>{% endif %}
+    </div>
+  </div>
+  <details style="margin-top:8px"><summary>{{ t('Lines') }}</summary><div class="tw" style="margin-top:8px"><table><tr><th>{{ t('Product') }}</th><th>{{ t('Barcode') }}</th><th class="right">{{ t('Approved') }}</th>{% if b.status == 'received' %}<th class="right">{{ t('Store counted') }}</th>{% endif %}<th class="right">{{ t('Unit cost') }}</th></tr>
+  {% for r in b.lines %}<tr><td>{{ r.product.name }}</td><td class="small">{{ r.product.barcode or '' }}</td><td class="right"><b>{{ r.approved_qty|num }}</b></td>
+  {% if b.status == 'received' %}<td class="right">{{ r.received_qty|num }}{% if r.received_qty != r.approved_qty %} <span class="badge b-warn">{{ '%+g'|format(r.received_qty - r.approved_qty) }}</span>{% endif %}</td>{% endif %}
+  <td class="right">{{ r.unit_cost|money if r.unit_cost else '' }}</td></tr>{% endfor %}</table></div></details>
+  <div class="row noprint" style="margin-top:12px">
+    <a class="btn sec sm" href="/replenishment/batches/{{ b.id }}.csv">{{ t('Download list (CSV)') }}</a>
+    <button class="sec sm" onclick="window.print()" type="button">{{ t('Print pick list') }}</button>
+    {% if b.status == 'approved' and can('repl.decide') %}
+    <form novalidate method="post" action="/replenishment/batches/{{ b.id }}/entered" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <input name="po_number" placeholder="{{ t('StoreHub PO number') }}{{ t(' (optional)') if b.source_kind == 'transfer' }}" style="width:220px"><button class="sm ok">{{ t('Entered in StoreHub') }}</button></form>{% endif %}
+    {% if b.status == 'entered' and b.source_kind == 'transfer' and can('transfer.dispatch') %}
+    <form novalidate method="post" action="/replenishment/batches/{{ b.id }}/dispatch"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm ok">{{ t('Picked (oldest first) and dispatched') }}</button></form>{% endif %}
+  </div>
+  {% if b.status == 'dispatched' and can('transfer.receive') %}
+  <div class="expl" style="margin-top:12px"><b>{{ t('Store count') }}</b> <span class="small mute">{{ t('Count what arrived. Enter 0 if a line did not come.') }}</span>
+  <form novalidate method="post" action="/replenishment/batches/{{ b.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <table>{% for r in b.lines %}<tr><td>{{ r.product.name }}</td><td class="right small mute">{{ t('sent') }} {{ r.approved_qty|num }}</td><td><input type="number" step="any" min="0" name="q_{{ r.id }}" required style="width:90px"></td></tr>{% endfor %}</table>
+    <button class="sm ok" style="margin-top:8px">{{ t('Confirm received') }}</button></form></div>
+  {% endif %}
+</div>
+{% else %}<div class="card empty">{{ t('No batches yet. Approve suggestions, then create batches.') }}</div>{% endfor %}
+{% endblock %}

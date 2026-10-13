@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Wastage') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Wastage') }}</h1><p>{{ t('Record anything thrown away or lost. Every record also goes to the Wastage Record table in Lark.') }}</p></div></div>
+
+<div class="card"><div class="card-head"><h2>{{ t('Record wastage') }}</h2></div>
+<form novalidate method="post" action="/wastage/add"><input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="row" style="align-items:flex-end">
+<div><label>{{ t('Store') }}</label><select name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Date Created') }}</label><input type="date" name="on" value="{{ today }}" max="{{ today }}"></div>
+<div><label>{{ t('Product') }}</label><input name="product" placeholder="{{ t('Scan barcode or type product name') }}" required style="width:260px"></div>
+<div><label>{{ t('Quantity') }}</label><input name="qty" inputmode="decimal" required style="width:90px"></div>
+<div><label>{{ t('Reason') }}</label><select name="reason">{% for r in reasons %}<option value="{{ r }}">{{ t(r) }}</option>{% endfor %}</select></div>
+<div><button>{{ t('Add') }}</button></div></div></form></div>
+
+<form novalidate class="filters toolbar" method="get">
+  <div><label>{{ t('Store') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Period') }}</label><select name="days" onchange="this.form.submit()">{% for d in (7, 30, 90) %}<option value="{{ d }}" {{ 'selected' if days == d }}>{{ t('Last {n} days', n=d) }}</option>{% endfor %}</select></div>
+  <div class="small mute" style="align-self:center">{{ rows|length }} {{ t('records') }} &middot; {{ total_qty|num }} {{ t('units') }}</div>
+</form>
+
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Date Created') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Category') }}</th><th scope="col">{{ t('Supplier') }}</th><th scope="col" class="right">{{ t('Quantity') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('By') }}</th></tr>
+{% for e in rows %}<tr><td class="small">{{ e.location.name }}</td><td class="nowrap">{{ e.entry_date }}</td><td>{{ e.product.name }}</td><td class="small">{{ e.category or '-' }}</td><td class="small">{{ e.supplier_name or '-' }}</td>
+<td class="right">{{ e.qty|num }}</td><td class="small">{{ t(e.reason) }}</td><td class="small">{{ users.get(e.created_by, '') }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">{{ t('No wastage recorded in this period.') }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

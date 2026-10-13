@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('Edit') }} {{ doc.header.reference }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/documents.css?v=20261012-4">
+<div class="page-head"><div><h1>{{ t('Edit') }} {{ doc.header.reference }}</h1><p>{{ t('Change items, add rows, then save before printing or exporting.') }}</p></div><a class="btn sec" href="{{ base }}">{{ t('Back') }}</a></div>
+{% if doc.changed %}<div class="flash err">{{ t('StoreHub data changed after your last edit. Review your saved items before exporting.') }}</div>{% endif %}
+<details class="document-help small"><summary>{{ t('Import and printing help') }}</summary><p>{{ t('Saved edits are used for printing and exports. Import the item CSV into StoreHub to update it.') }}</p>
+<p>{{ t('In StoreHub, open the matching document and choose Import Items by CSV. Header details such as addresses, notes, tax and discount must be entered there separately.') }}</p>
+{% if kind == 'transfer' %}<p><b>{{ t('StoreHub transfer imports do not accept costs. The full report and printout keep your exact costs and totals.') }}</b></p>{% else %}<p>{{ t('StoreHub PO imports include supplier prices. Stores with fixed supplier pricing may keep their existing prices.') }}</p>{% endif %}
+<p>{{ t('Use full decimal costs. Totals are calculated before any rounding. If the old export rounded a cost, enter the original cost here.') }}</p></details>
+<form id="document-editor" data-base="{{ base }}" data-kind="{{ kind }}">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<details class="card document-details"><summary>{{ t('Report details') }}</summary><div class="document-header grid g2">
+{% for key,label in [('reference','Document number'),('date','Date')] %}<label>{{ t(label) }}<input data-header="{{ key }}" type="{{ 'date' if key == 'date' else 'text' }}" value="{{ doc.header[key] }}" {{ 'required maxlength=80' if key == 'reference' else '' }}></label>{% endfor %}
+{% if kind == 'po' %}<label>{{ t('Supplier') }}<input data-header="supplier" value="{{ doc.header.supplier }}" maxlength="300"></label><label>{{ t('Expected date of arrival') }}<input type="date" data-header="expected" value="{{ doc.header.expected }}"></label>{% else %}<label>{{ t('From') }}<input data-header="from_name" value="{{ doc.header.from_name }}" maxlength="300"></label><label>{{ t('From address') }}<textarea data-header="from_address" maxlength="2000">{{ doc.header.from_address }}</textarea></label>{% endif %}
+<label>{{ t('Deliver to') if kind == 'po' else t('To') }}<input data-header="to_name" value="{{ doc.header.to_name }}" maxlength="300"></label><label>{{ t('Delivery address') if kind == 'po' else t('To address') }}<textarea data-header="to_address" maxlength="2000">{{ doc.header.to_address }}</textarea></label>
+{% if kind == 'po' %}<label>{{ t('Phone') }}<input data-header="phone" value="{{ doc.header.phone }}" maxlength="100"></label>{% endif %}
+</div></details>
+<div class="row document-items-heading"><h2>{{ t('Order items') }}</h2><button type="button" class="sec" id="add-document-row">{{ t('Add row') }}</button></div>
+<p class="small mute">{{ t('Search and choose a product to fill in its details. You can also enter a SKU yourself.') }}</p>
+<div class="tw document-items-wrap"><table class="document-edit-table"><colgroup><col class="document-col-no"><col class="document-col-product"><col class="document-col-sku"><col class="document-col-serial"><col class="document-col-quantity"><col class="document-col-unit"><col class="document-col-cost"><col class="document-col-amount"><col class="document-col-remove"></colgroup>
+<thead><tr><th scope="col">{{ t('No.') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('SKU') }}</th><th scope="col">{{ t('Serial numbers') }}</th><th scope="col" class="right">{{ t('Quantity') }}</th><th scope="col">{{ t('Unit') }}</th><th scope="col" class="right">{{ t('Supplier price') if kind == 'po' else t('Unit cost') }} (PHP)</th><th scope="col" class="right">{{ t('Amount') }} (PHP)</th><th scope="col"><span class="document-visually-hidden">{{ t('Remove row') }}</span></th></tr></thead><tbody id="document-lines"></tbody></table></div>
+<div class="card grid g2 document-footer">
+<label>{{ t('Notes') }}<textarea data-header="notes" maxlength="10000">{{ doc.header.notes }}</textarea></label>
+<div>{% if kind == 'po' %}<div class="grid g2"><label>{{ t('Tax') }} (PHP)<input data-header="tax" inputmode="decimal" value="{{ doc.header.tax }}" required maxlength="200"></label><label>{{ t('Discount') }} (PHP)<input data-header="discount" inputmode="decimal" value="{{ doc.header.discount }}" required maxlength="200"></label></div>{% endif %}
+<p>{{ t('Subtotal') }}: <b>PHP <span id="document-subtotal">{{ exact(doc.subtotal, 2) }}</span></b></p><p class="document-total">{{ t('Total amount') }}: <b>PHP <span id="document-total">{{ exact(doc.total, 2) }}</span></b></p></div></div>
+<div class="row document-save"><button type="submit" id="save-document">{{ t('Save changes') }}</button><span id="document-status" role="status" aria-live="polite"></span></div>
+<div class="row document-exports"><button type="button" class="sec" data-document-export="print">{{ t('Print / Save PDF') }}</button><button type="button" class="sec" data-document-export="storehub">{{ t('Export for StoreHub') }}</button><button type="button" class="sec" data-document-export="report">{{ t('Export full report') }}</button></div>
+</form>
+<template id="document-row-template"><tr class="document-item">
+<th scope="row" class="document-row-number"></th>
+<td><label class="document-product"><span class="document-visually-hidden">{{ t('Product') }}</span><input data-line="name" required maxlength="300" autocomplete="off" placeholder="{{ t('Search products') }}"><div class="document-product-results" hidden></div></label><input data-line="product_id" type="hidden"></td>
+<td><label><span class="document-visually-hidden">{{ t('SKU') }}</span><input data-line="sku" maxlength="80"></label></td>
+<td><label><span class="document-visually-hidden">{{ t('Serial numbers') }}</span><input data-line="serial" maxlength="10000" title="{{ t('Separate serial numbers with semicolons') }}"></label></td>
+<td><label><span class="document-visually-hidden">{{ t('Quantity') }}</span><input data-line="quantity" inputmode="decimal" required maxlength="200" class="right"></label></td>
+<td><label><span class="document-visually-hidden">{{ t('Unit') }}</span><input data-line="unit" maxlength="80" title="{{ t('Base unit if blank') }}"></label></td>
+<td><label><span class="document-visually-hidden">{{ t('Supplier price') if kind == 'po' else t('Unit cost') }} (PHP)</span><input data-line="cost" inputmode="decimal" required maxlength="200" class="right"></label></td>
+<td class="document-item-amount right"><b data-line-amount></b></td>
+<td><button type="button" class="sec document-remove" aria-label="{{ t('Remove row') }}" title="{{ t('Remove row') }}">&times;</button></td>
+</tr></template>
+<script id="document-data" type="application/json">{{ doc|tojson }}</script>
+<script id="document-messages" type="application/json">{{ {'row': t('Row'), 'invalid': t('Check quantities and costs. Use a dot for decimals.'), 'saving': t('Saving...'), 'saved': t('Changes saved. You can now print or export.'), 'unsaved': t('You have unsaved changes.'), 'failed': t('Could not save. Your changes are still here. Try again.'), 'leave': t('You have unsaved changes.'), 'searchError': t('Product search failed. Try again.')}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="/static/documents.js?v=20261010-1"></script>{% endblock %}

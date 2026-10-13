@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Sales by product') }}{% endblock %}
+{% block content %}
+{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort %}
+{% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
+<div class="page-head"><div><h1>{{ t('Sales by product') }}</h1>
+  <p>{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/products?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+
+<form novalidate class="filters" method="get" style="margin-bottom:14px">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, t in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
+  <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">
+    <div><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></div>
+    <div><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></div>
+    <div><label>&nbsp;</label><button class="sec">{{ t('Apply') }}</button></div>
+  </div>
+  <div><label>{{ t('Category') }}</label><select name="category" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for k in cats %}<option {{ 'selected' if k == category }} value="{{ k }}">{{ k }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Sort by') }}</label><select name="sort" onchange="this.form.submit()">{% for k, t in (('sales', 'Net sales'), ('units', 'Units sold'), ('price', 'Average price'), ('name', 'Name')) %}<option value="{{ k }}" {{ 'selected' if k == sort }}>{{ t }}</option>{% endfor %}</select></div>
+  <div style="flex:1;min-width:180px"><label>{{ t('Search') }}</label><input name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"></div>
+  <div><label>&nbsp;</label><button class="sec">{{ t('Search') }}</button></div>
+</form>
+
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Products sold') }}</div><div class="value">{{ total|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Units sold') }}</div><div class="value">{{ total_units|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ total_net|money }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Average per unit') }}</div><div class="value">{{ (total_net / total_units)|money if total_units else '-' }}</div></div></div>
+</div>
+
+{% if rows %}
+{% set mx = rows|map(attribute=2)|max %}
+<div class="tw"><table>
+  <tr><th>#</th><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Avg price') }}</th>{% if labels %}<th>{{ t('Trend') }}</th>{% endif %}</tr>
+  {% for p, units, net, ds in rows %}
+  <tr><td class="mute">{{ offset + loop.index }}</td>
+    <td><div style="font-weight:600"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days if days >= 7 else 30 }}{% endif %}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}</div></td>
+    <td class="small">{{ p.category or '' }}</td>
+    <td class="right">{{ units|num(0) if units == units|round(0) else units|num(2) }}</td>
+    <td class="right"><b>{{ net|money }}</b></td>
+    <td style="min-width:110px"><div class="bar" data-tip="{{ p.name }}: {{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}{{ t('% of net sales') }}"><i style="width:{{ (net / mx * 100)|round(1) if mx else 0 }}%"></i></div><div class="small mute">{{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}%</div></td>
+    <td class="right">{{ (net / units)|money if units else '' }}</td>
+    {% if labels %}<td>{{ sparkline(series.get(p.id, []), 90, 28, labels=labels, fmt=unit_fmt) }}</td>{% endif %}
+  </tr>
+  {% endfor %}
+</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page - 1 }}">{{ t('Previous') }}</a>{% endif %}
+  <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + per - 1) // per) or 1 }} {{ t('· showing') }} {{ offset + 1 }}&ndash;{{ offset + rows|length }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
+  {% if page * per < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page + 1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% else %}
+<div class="card empty">{{ t('No sales found for this selection. Warehouses record no sales, so choose a store or all locations.') }}</div>
+{% endif %}
+{% endblock %}

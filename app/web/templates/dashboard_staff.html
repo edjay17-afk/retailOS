@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Today') }}{% endblock %}
+{% block content %}
+{% set completed = insp.get('completed', 0) + insp.get('late', 0) %}
+{% set total = insp.values()|sum %}
+{% set pct = ((completed / total * 100)|round(0)|int) if total else 0 %}
+{% set lh = (now.hour + 8) % 24 %}
+{% set nxt = my_tasks[0] if my_tasks else none %}
+<section class="sd-hero">
+  <div class="sd-hero-text">
+    <div class="sd-eyebrow">{{ places|join(' · ') or company }} &middot; {{ brief.date|day }}</div>
+    <h1>{{ t('Good morning') if lh < 12 else t('Good afternoon') if lh < 18 else t('Good evening') }}, {{ (user.full_name or user.username).split(' ')[0] }}.</h1>
+    <p>{% if not total %}{{ t('No checklists scheduled today.') }}{% elif completed >= total %}{{ t('All checklists are done. Great work today.') }}{% else %}{{ total - completed }} {{ t('checklist(s) still to do today.') }}{% endif %}</p>
+    {% if nxt %}<a class="sd-cta" href="/inspections/{{ nxt.id }}">{{ t('Start') }} {{ t(nxt.template.name|replace(' checklist', '')) }} <svg class="i"><use href="#i-arrow"/></svg></a>
+    {% elif total %}<span class="sd-done"><svg class="i"><use href="#i-check"/></svg>{{ t('All done') }}</span>{% endif %}
+  </div>
+  <div class="sd-ring" role="img" aria-label="{{ pct }}% {{ t('of checklists completed') }}">
+    <svg viewBox="0 0 120 120"><circle class="sd-ring-track" cx="60" cy="60" r="52"/><circle class="sd-ring-bar" cx="60" cy="60" r="52" stroke-dasharray="{{ (326.73 * pct / 100)|round(1) }} 326.73"/></svg>
+    <div class="sd-ring-label"><strong>{{ pct }}%</strong><small>{{ completed }} / {{ total }} {{ t('done') }}</small></div>
+  </div>
+</section>
+
+<div class="sd-tiles">
+  {% set tiles = [('/inspections','inspection.do','clipboard','Inspections','blue',none),('/counts','count.enter','count','Stock counts','teal',none),('/replenishment','repl.view','trend','Order suggestions','indigo',recs[0]),('/stock-events','count.enter','box','Stock changes','sky',none),('/inventory','inventory.view','search','Stock','navy',none),('/assistant','ai.use','sparkles','Assistant','violet',none)] %}
+  {% for href, perm, icon, label, tone, badge in tiles if can(perm) %}
+  <a class="sd-tile sd-{{ tone }}" href="{{ href }}"><span class="sd-icon"><svg class="i"><use href="#i-{{ icon }}"/></svg></span><span class="sd-label">{{ t(label) }}</span>{% if badge %}<span class="sd-badge">{{ badge }}</span>{% endif %}</a>
+  {% endfor %}
+</div>
+
+<div class="sd-grid">
+  <section class="sd-card">
+    <div class="sd-card-head"><h2>{{ t('Stock health') }}</h2><a href="/inventory">{{ t('View all') }} &rarr;</a></div>
+    {% if health.total %}
+    {% set C = 251.33 %}{% set f_ok = health.ok / health.total %}{% set f_low = health.low / health.total %}{% set f_out = health.out / health.total %}
+    <div class="sd-donut-row">
+      <div class="sd-donut" role="img" aria-label="{{ health.ok }} {{ t('in stock') }}, {{ health.low }} {{ t('running low') }}, {{ health.out }} {{ t('out of stock') }}">
+        <svg viewBox="0 0 100 100"><circle class="dn-track" cx="50" cy="50" r="40"/>
+          <circle class="dn-ok" cx="50" cy="50" r="40" stroke-dasharray="{{ (C * f_ok)|round(1) }} {{ C }}" stroke-dashoffset="0"/>
+          <circle class="dn-low" cx="50" cy="50" r="40" stroke-dasharray="{{ (C * f_low)|round(1) }} {{ C }}" stroke-dashoffset="-{{ (C * f_ok)|round(1) }}"/>
+          <circle class="dn-out" cx="50" cy="50" r="40" stroke-dasharray="{{ (C * f_out)|round(1) }} {{ C }}" stroke-dashoffset="-{{ (C * (f_ok + f_low))|round(1) }}"/></svg>
+        <div class="sd-donut-label"><strong>{{ (f_ok * 100)|round(0)|int }}%</strong><small>{{ t('healthy') }}</small></div>
+      </div>
+      <ul class="sd-legend">
+        <li><span class="sw sw-ok"></span>{{ t('In stock') }}<b>{{ health.ok }}</b></li>
+        <li><span class="sw sw-low"></span>{{ t('Running low') }}<b>{{ health.low }}</b></li>
+        <li><span class="sw sw-out"></span>{{ t('Out of stock') }}<b>{{ health.out }}</b></li>
+      </ul>
+    </div>
+    {% if low_items %}<div class="sd-sub">{{ t('Closest to running out') }}</div>
+    {% for it in low_items %}<div class="sd-low"><span class="n">{{ it.name }}</span><span class="v">{{ it.on_hand|num }} / {{ it.warn|num }}</span><div class="bar"><i style="width:{{ it.pct }}%"></i></div></div>{% endfor %}{% endif %}
+    {% else %}<p class="sd-empty">{{ t('No stock data for your store yet.') }}</p>{% endif %}
+  </section>
+
+  <section class="sd-card">
+    <div class="sd-card-head"><h2>{{ t("Today's checklists") }}</h2><a href="/inspections">{{ t('View all') }} &rarr;</a></div>
+    {% if total %}
+    <div class="sd-stack" role="img" aria-label="{{ completed }} {{ t('completed') }} {{ t('of') }} {{ total }}">
+      {% for key, cls in (('completed','sb-ok'),('late','sb-late'),('in_progress','sb-prog'),('pending','sb-pend'),('missed','sb-miss')) if insp.get(key) %}<span class="{{ cls }}" style="width:{{ (insp[key] / total * 100)|round(1) }}%" title="{{ t(key|replace('_',' ')) }}: {{ insp[key] }}"></span>{% endfor %}
+    </div>
+    <ul class="sd-legend sd-legend-row">
+      {% for key, cls in (('completed','sw-ok'),('late','sw-low'),('in_progress','sw-prog'),('pending','sw-pend'),('missed','sw-out')) if insp.get(key) %}<li><span class="sw {{ cls }}"></span>{{ t(key|replace('_',' ')|capitalize) }}<b>{{ insp[key] }}</b></li>{% endfor %}
+    </ul>
+    {% for task in my_tasks %}<a class="sd-task" href="/inspections/{{ task.id }}"><span class="sd-task-icon"><svg class="i"><use href="#i-clipboard"/></svg></span><span class="tt"><b>{{ t(task.template.name|replace(' checklist', '')) }}</b><small>{{ task.location.name|replace('The Daily Centro - ', '') }} &middot; {{ t('due') }} {{ task.due_at|clock }}</small></span><span class="badge {{ 'b-bad' if task.status == 'missed' else 'b-warn' }}">{{ t(task.status|replace('_',' ')) }}</span></a>{% endfor %}
+    {% if not my_tasks %}<p class="sd-empty">{{ t('All scheduled checklists are complete.') }}</p>{% endif %}
+    {% else %}<p class="sd-empty">{{ t('No checklists scheduled today.') }}</p>{% endif %}
+  </section>
+
+  {% if can('repl.view') %}
+  <a class="sd-card sd-orders" href="/replenishment">
+    <div class="sd-card-head"><h2>{{ t('Order suggestions') }}</h2><span>{{ t('Open') }} &rarr;</span></div>
+    <div class="sd-big"><strong>{{ recs[0] }}</strong><span>{{ t('waiting for your review') }}</span></div>
+    <div class="sd-orders-foot">{{ t('Check each suggestion, then approve, change or reject it.') }}</div>
+  </a>{% endif %}
+</div>
+
+<div class="sd-grid sd-grid-2">
+  <section class="sd-card">
+    <div class="sd-card-head"><h2>{{ t('Needs attention') }} <span class="sd-count">{{ brief['items']|length }}</span></h2></div>
+    {% if brief['all_clear'] %}<p class="sd-empty sd-clear"><svg class="i"><use href="#i-check"/></svg>{{ t('Nothing needs action right now.') }}</p>{% endif %}
+    {% for i in brief['items'] %}
+    <a class="sd-attn sd-p-{{ i.priority }}" href="{{ i.link }}"><span class="tt"><b>{{ t(i.title) }}</b><small>{{ t(i.recommendation) }}</small></span><svg class="i"><use href="#i-arrow"/></svg></a>
+    {% endfor %}
+  </section>
+  {% if ai %}
+  <section class="sd-ai">
+    <div class="sd-ai-head"><span class="sd-ai-icon"><svg class="i"><use href="#i-sparkles"/></svg></span><div><h2>{{ t('Ask the assistant') }}</h2><p>{{ t('Answers come from your own data') }}</p></div></div>
+    <div class="sd-ai-chips">
+      <button type="button" class="chip" data-chat-ask="{{ t('What should I deal with first today?') }}">{{ t('What first today?') }}</button>
+      <button type="button" class="chip" data-chat-ask="{{ t('Which items are most likely to run out this week?') }}">{{ t('Likely to run out') }}</button>
+      <button type="button" class="chip" data-chat-ask="{{ t('Which purchase orders should we chase?') }}">{{ t('POs to chase') }}</button>
+    </div>
+    <a class="sd-ai-link" href="/assistant">{{ t('Open assistant') }} <svg class="i"><use href="#i-arrow"/></svg></a>
+  </section>{% endif %}
+</div>
+{% endblock %}

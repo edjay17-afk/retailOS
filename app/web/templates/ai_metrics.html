@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Assistant metrics') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Is the assistant helping?') }}</h1><p>{{ t('Measured over the last 60 days. The aim is better operations, not more messages.') }}</p></div><a class="btn sec" href="/assistant">{{ t('Back') }}</a></div>
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Answers given') }}</div><div class="value">{{ m.answers }}</div><div class="sub">{{ m.failed_answers }} {{ t('failed') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Rated useful') }}</div><div class="value">{{ m.usefulness|pct if m.usefulness is not none else '-' }}</div><div class="sub">{{ m.rated }} {{ t('rated') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Unsupported claims') }}</div><div class="value">{{ m.unsupported_rate|pct if m.unsupported_rate is not none else '-' }}</div><div class="sub">{{ m.unsupported }} {{ t('of') }} {{ m.statements }} {{ t('statements') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Actions approved') }}</div><div class="value">{{ m.approval_rate|pct if m.approval_rate is not none else '-' }}</div><div class="sub">{{ m.actions_executed }} {{ t('of') }} {{ m.actions_proposed }} {{ t('proposed') }}</div></div></div>
+</div>
+<div class="grid g3" style="margin-bottom:14px">
+  <div class="card"><div class="label mute small">{{ t('Average answer time') }}</div><b style="font-size:20px">{{ m.avg_seconds|round(1) if m.avg_seconds is not none else '-' }} {{ t('s') }}</b></div>
+  <div class="card"><div class="label mute small">{{ t('Action success rate') }}</div><b style="font-size:20px">{{ m.action_success_rate|pct if m.action_success_rate is not none else '-' }}</b></div>
+  <div class="card"><div class="label mute small">{{ t('Estimated cost') }}</div><b style="font-size:20px">${{ '%.2f'|format(m.cost_usd) }}</b></div>
+</div>
+<h2>{{ t('Reliability by provider') }}</h2>
+<p class="small mute">{{ t('Provider chains fail; this table exists so reliability is managed, not discovered. Operations never block on the AI.') }}</p>
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Provider') }}</th><th scope="col" class="right">{{ t('Answered') }}</th><th scope="col" class="right">{{ t('Failed') }}</th><th scope="col" class="right">{{ t('Failure rate') }}</th><th scope="col">{{ t('Last error') }}</th></tr>
+{% for p, d in m.by_provider.items() %}<tr><td>{{ p }}</td><td class="right">{{ d.ok }}</td><td class="right">{{ d.failed }}</td>
+<td class="right"><span class="badge {{ 'b-bad' if d.failed and d.failed / (d.ok + d.failed) > 0.2 else 'b-ok' if d.failed == 0 else 'b-warn' }}">{{ (d.failed / (d.ok + d.failed))|pct }}</span></td>
+<td class="small mute">{{ (d.last_error or '')[:80] }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">{{ t('No AI calls yet.') }}</td></tr>{% endfor %}</table></div>
+<h2>{{ t('Actions by type') }}</h2>
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Action') }}</th><th scope="col">{{ t('Risk') }}</th><th scope="col" class="right">{{ t('Proposed') }}</th><th scope="col" class="right">{{ t('Executed') }}</th><th scope="col" class="right">{{ t('Dismissed') }}</th><th scope="col" class="right">{{ t('Failed') }}</th><th scope="col" class="right">{{ t('Denied') }}</th></tr>
+{% for tool, d in m.by_tool.items() %}<tr><td>{{ t(tool|replace('_',' ')) }}</td><td><span class="badge {{ 'b-bad' if d.risk == 'high' else 'b-blue' }}">{{ t(d.risk) }}</span></td><td class="right">{{ d.proposed }}</td><td class="right">{{ d.executed }}</td><td class="right">{{ d.rejected }}</td><td class="right">{{ d.failed }}</td><td class="right">{{ d.denied }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">{{ t('No actions proposed yet.') }}</td></tr>{% endfor %}</table></div>
+<h2>{{ t('Recent answers') }}</h2>
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Type') }}</th><th scope="col">{{ t('Question') }}</th><th scope="col">{{ t('Checked') }}</th><th scope="col">{{ t('Rating') }}</th><th scope="col" class="right">{{ t('Seconds') }}</th></tr>
+{% for o in recent %}<tr><td class="nowrap small">{{ o.created_at|local('%d %b %H:%M') }}</td><td>{{ t(o.kind) }}</td><td><a href="/assistant/output/{{ o.id }}">{{ (o.question or t('Daily briefing'))[:70] }}</a></td>
+<td>{% if o.validation %}<span class="badge {{ 'b-ok' if o.validation.verified else 'b-warn' }}">{{ o.validation.statements - o.validation.unsupported }}/{{ o.validation.statements }}</span>{% else %}<span class="badge b-bad">{{ t('failed') }}</span>{% endif %}</td>
+<td>{{ '' if o.rating is none else (t('useful') if o.rating else t('not useful')) }}</td><td class="right">{{ ((o.duration_ms or 0) / 1000)|round(1) }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

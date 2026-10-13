@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Today') }}{% endblock %}
+{% block content %}
+{% set completed = insp.get('completed', 0) + insp.get('late', 0) %}
+{% set checklist_total = insp.values()|sum %}
+{% set urgent = open_issues.get('P0', 0) + open_issues.get('P1', 0) %}
+<div class="page-head dashboard-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Daily overview') }}</div><h1>{% set lh = (now.hour + 8) % 24 %}{{ t('Good morning') if lh < 12 else t('Good afternoon') if lh < 18 else t('Good evening') }}, {{ (user.full_name or user.username).split(' ')[0] }}.</h1><p>{{ t('Your stores, stock and priorities in one place.') }}</p></div>
+  <span class="date-label"><svg class="i"><use href="#i-clock"/></svg>{{ brief.date|day }}</span>
+</div>
+<div class="dashboard-grid">
+  {% if can('sales.view') %}
+  <section class="overview-panel sales-summary">
+    <div class="section-head"><h2>{{ t('Sales summary') }}</h2><span class="small mute">{{ t('Last 14 complete days') }}</span></div>
+    {% if sales.series %}
+    {% set total_sales = sales.series|sum %}{% set peak = sales.series|max %}{% set lowest = sales.series|min %}
+    <div class="sales-summary-body">
+      <div class="sales-summary-numbers">
+        <div class="metric-label">{{ t('Total net sales') }} <span class="currency-label">PHP</span></div>
+        <div class="hero-number">{{ total_sales|money }}</div>
+        <dl class="sales-breakdown">
+          <div><dt>{{ t('Daily average') }}</dt><dd>{{ (total_sales / sales.series|length)|money }}</dd></div>
+          <div><dt>{{ t('Highest day') }}</dt><dd>{{ peak|money }}</dd></div>
+          <div><dt>{{ t('Lowest day') }}</dt><dd>{{ lowest|money }}</dd></div>
+        </dl>
+        <a class="summary-link" href="/sales">{{ t('Explore sales') }} <svg class="i"><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="block-chart" role="group" aria-label="{{ t('Net sales over the last 14 complete days') }}">
+        {% for value in sales.series %}
+        <div class="block-column" tabindex="0" data-tip="{{ sales.labels[loop.index0] }}: PHP {{ value|money }}" aria-label="{{ sales.labels[loop.index0] }}: PHP {{ value|money }}">
+          <div class="block-cells" aria-hidden="true"><span class="block-bar" style="height:{{ ((value / peak * 100) if peak > 0 else 0)|round(2) }}%"></span></div>
+          <span class="block-day">{{ sales.labels[loop.index0][-6:] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="summary-foot"><span class="legend-dot"></span>{{ t('Net sales across your stores') }}<span class="mute small">PHP 0–{{ peak|money }} · {{ t('Focus or hover for exact amounts') }}</span></div>
+    {% else %}<div class="empty">{{ t('Sales will appear after your first StoreHub sync.') }}{% if can('sync.view') %} <a href="/sync">{{ t('Check sync status') }}</a>{% endif %}</div>{% endif %}
+  </section>
+  {% endif %}
+  {% if stores %}
+  <section class="overview-panel store-summary">
+    <div class="section-head"><h2>{{ t('Sales by store') }}</h2><span class="small mute">{{ t('Today · PHP') }}</span></div>
+    {% for s in stores %}
+    <div class="store-row">
+      <span class="store-symbol store-symbol-{{ loop.index0 % 3 }}"><svg class="i"><use href="#i-box"/></svg></span>
+      <div class="store-data"><span class="mute small">{{ s.name|replace('The Daily Centro - ', '') }}</span><strong>{{ s.today|money }}</strong></div>
+      <span class="small mute" title="{{ t('Yesterday') }}">{{ t('Yesterday') }} {{ s.yesterday|money }}</span>
+    </div>
+    {% endfor %}<div class="small mute store-note">{{ t('Today so far, from the latest sync.') }}</div>
+  </section>
+  {% endif %}
+</div>
+<div class="overview-metrics">
+  {% if can('sales.view') %}<a class="overview-metric" href="/sales"><span class="metric-label">{{ t('Net sales today') }} <svg class="i"><use href="#i-cash"/></svg></span><strong><small>PHP</small> {{ sales.today|money }}</strong><span class="small mute">{{ t('Yesterday') }} PHP {{ sales.yesterday|money }}{% if sales.delta is not none %} · <span class="delta {{ 'up' if sales.delta >= 2 else 'down' if sales.delta <= -2 else 'flat' }}">{{ '%+.0f'|format(sales.delta) }}%</span>{% endif %}</span></a>{% endif %}
+  {% if can('issue.view') %}<a class="overview-metric" href="/issues"><span class="metric-label">{{ t('Open issues') }} <svg class="i"><use href="#i-alert"/></svg></span><strong>{{ open_issues.values()|sum }}</strong><span class="small mute">{% if urgent %}<span class="status-dot urgent-dot"></span>{{ urgent }} {{ t('urgent') }}{% else %}{{ t('No urgent issues') }}{% endif %}</span></a>{% endif %}
+  <a class="overview-metric" href="/inspections"><span class="metric-label">{{ t('Checklists completed') }} <svg class="i"><use href="#i-clipboard"/></svg></span><strong>{{ completed }} <small>/ {{ checklist_total }}</small></strong><span class="small mute">{{ t("For today's operations") }}</span></a>
+  {% if can('repl.view') %}<a class="overview-metric" href="/replenishment"><span class="metric-label">{{ t('Orders ready for review') }} <svg class="i"><use href="#i-trend"/></svg></span><strong>{{ recs[0] }}</strong><span class="small mute">{{ t('Suggested value: PHP') }} {{ recs[1]|money }}</span></a>{% endif %}
+</div>
+{% if ops %}
+<div class="section-head ops-head"><h2>{{ t('Operations at a glance') }}</h2><span class="small mute">{{ t('Order suggestions, stock, purchase orders and transfers') }}</span></div>
+<div class="ops-grid">
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Order suggestions today') }}</h3><p class="small mute">{{ t('How many suggestions are waiting, being decided or done') }}</p>
+    {% if ops.repl_total %}{{ donut(ops.repl_status, size=150, fmt=fmt_int, center=ops.repl_total|string) }}{% else %}<p class="small mute">{{ t('No suggestions yet today.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Waiting to be ordered, by store') }}</h3><p class="small mute">{{ t('Value of suggestions not yet turned into an order') }}</p>
+    {% if ops.repl_by_store %}{{ hbars(ops.repl_by_store, color='#2563eb') }}{% else %}<p class="small mute">{{ t('Nothing waiting.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Ordering need, last 14 days') }}</h3><p class="small mute">{{ t('Total value of the suggestions raised each day') }}</p>
+    {% if ops.repl_trend|length > 1 %}{{ area(ops.repl_trend, w=380, h=200, color='#4f46e5') }}{% else %}<p class="small mute">{{ t('Not enough days yet.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Days of stock left') }}</h3><p class="small mute">{{ t('Open suggestions grouped by how long stock will last') }}</p>
+    {% if ops.cover_total %}{{ bars(ops.cover, w=380, h=200, color='#0d9488', fmt=fmt_int) }}{% else %}<p class="small mute">{{ t('No open suggestions.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Stock health by store') }}</h3><p class="small mute">{{ t('Items that sold in the last 30 days: in stock, running low, out of stock') }}</p>
+    {% for h in ops.health %}
+    <div class="ops-stack-row"><span class="n">{{ h.name }}</span>
+      <div class="sd-stack" role="img" aria-label="{{ h.name }}: {{ h.ok }} {{ t('in stock') }}, {{ h.low }} {{ t('running low') }}, {{ h.out }} {{ t('out of stock') }}">
+        <span class="sb-ok" style="width:{{ (h.ok / h.total * 100)|round(1) }}%" title="{{ t('In stock') }}: {{ h.ok }}"></span><span class="sb-late" style="width:{{ (h.low / h.total * 100)|round(1) }}%" title="{{ t('Running low') }}: {{ h.low }}"></span><span class="sb-miss" style="width:{{ (h.out / h.total * 100)|round(1) }}%" title="{{ t('Out of stock') }}: {{ h.out }}"></span></div>
+      <span class="v">{{ (h.ok / h.total * 100)|round(0)|int }}%</span></div>
+    {% else %}<p class="small mute">{{ t('No stock data yet.') }}</p>{% endfor %}
+    {% if ops.health %}<ul class="sd-legend sd-legend-row"><li><span class="sw sw-ok"></span>{{ t('In stock') }}</li><li><span class="sw sw-low"></span>{{ t('Running low') }}</li><li><span class="sw sw-out"></span>{{ t('Out of stock') }}</li></ul>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Purchase orders') }}</h3><p class="small mute">{{ t('By status') }}{% if ops.po_overdue %} &middot; <b style="color:var(--bad)">{{ ops.po_overdue }} {{ t('overdue') }}</b>{% endif %}</p>
+    {% if ops.po_total %}{{ donut(ops.po_status, size=150, fmt=fmt_int, center=ops.po_total|string) }}{% else %}<p class="small mute">{{ t('No purchase orders yet.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Stock transfers') }}</h3><p class="small mute">{{ t('From the StoreHub export, by status') }}</p>
+    {% if ops.st_total %}{{ donut(ops.st_status, size=150, fmt=fmt_int, center=ops.st_total|string) }}{% else %}<p class="small mute">{{ t('No transfers imported yet.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Best sellers, last 7 days') }}</h3><p class="small mute">{{ t('By net sales across your stores') }}</p>
+    {% if ops.top_sellers %}{{ hbars(ops.top_sellers, color='#0d9488') }}{% else %}<p class="small mute">{{ t('No sales yet.') }}</p>{% endif %}
+  </section>
+  <section class="overview-panel ops-card">
+    <h3>{{ t('Expiry exposure') }}</h3><p class="small mute">{{ t('Batches still on the shelf, by how soon they expire') }}</p>
+    {% if ops.expiry_total %}{{ bars(ops.expiry, w=380, h=200, color='#f59e0b', fmt=fmt_int) }}{% else %}<p class="small mute">{{ t('No batches recorded.') }}</p>{% endif %}
+  </section>
+</div>
+{% endif %}
+<div class="dashboard-grid priorities-grid">
+  <section class="overview-panel attention-panel">
+    <div class="section-head"><h2>{{ t('Needs attention') }} <span class="count-label">{{ brief['items']|length }}</span></h2><span class="small mute">{{ t('Most urgent first') }}</span></div>
+    {% if brief['all_clear'] %}<div class="empty"><svg class="i" style="color:var(--ok)"><use href="#i-check"/></svg><p>{{ t('Nothing needs management action right now.') }}</p></div>{% endif %}
+    {% for i in brief['items'] %}
+    <article class="attention-row">
+      <span class="attention-icon priority-{{ i.priority }}"><svg class="i"><use href="#i-{{ 'alert' if i.priority == 'high' else 'clipboard' }}"/></svg></span>
+      <div class="attention-copy"><div class="attention-title"><h3>{{ t(i.title) }}</h3><span class="badge {{ 'pill-hi' if i.priority == 'high' else 'pill-me' if i.priority == 'medium' else 'pill-lo' }}">{{ t(i.priority) }}</span></div>
+        <p>{{ t(i.recommendation) }}</p><details><summary>{{ t('View supporting facts') }}</summary><ul class="plain small">{% for f in i.facts %}<li>{{ t(f) }}</li>{% endfor %}</ul></details>
+      </div>
+      <a class="attention-open" href="{{ i.link }}" aria-label="{{ t('Open:') }} {{ t(i.title) }}" title="{{ t('Open:') }} {{ t(i.title) }}"><svg class="i"><use href="#i-arrow"/></svg></a>
+    </article>
+    {% endfor %}
+  </section>
+  <div class="overview-side">
+    <section class="overview-panel checklist-panel">
+      <div class="section-head"><h2>{{ t('Daily checklists') }}</h2><a class="small" href="/inspections">{{ t('View all') }} <span aria-hidden="true">↗</span></a></div>
+      <div class="completion-caption"><strong>{{ ((completed / checklist_total * 100)|round(0)|int) if checklist_total else 0 }}%</strong><span class="mute small">{{ completed }} / {{ checklist_total }} {{ t('completed') }}</span></div>
+      <div class="completion-track" role="progressbar" aria-label="{{ t('Checklists completed') }}" aria-valuenow="{{ completed }}" aria-valuemin="0" aria-valuemax="{{ checklist_total or 1 }}"><span style="width:{{ (completed / checklist_total * 100) if checklist_total else 0 }}%"></span></div>
+      {% for task in my_tasks %}<a class="checklist-row" href="/inspections/{{ task.id }}"><span><strong>{{ t(task.template.name|replace(' checklist', '')) }}</strong><small>{{ task.location.name|replace('The Daily Centro - ', '') }}</small></span><span class="checklist-time {{ 'overdue' if task.due_at < now }}">{{ t('Late · ') if task.due_at < now }}{{ task.due_at|clock }}</span></a>
+      {% else %}<p class="small mute">{{ t('All scheduled checklists are complete.') if checklist_total else t('No checklists scheduled today.') }}</p>{% endfor %}
+    </section>
+    {% if ai %}
+    <section class="overview-panel assistant-summary">
+      <div class="section-head"><h2><span class="ai-square" aria-hidden="true"><svg class="i"><use href="#i-sparkles"/></svg></span> {{ t('AI briefing') }}</h2><a class="attention-open" href="/assistant" aria-label="{{ t('Open assistant') }}"><svg class="i"><use href="#i-arrow"/></svg></a></div>
+      {% if ai.row %}<p class="assistant-headline">{{ ai.row.output_json.headline }}</p>
+      {% for it in ai.row.output_json['items'][:2] %}<div class="brief-line"><span class="status-dot {{ 'urgent-dot' if it.priority == 'high' }}"></span><div><strong>{{ it.title }}</strong><p>{{ it.recommended_action }}</p></div></div>{% endfor %}
+      <div class="small mute">{{ t('Generated') }} {{ ai.row.created_at|ago }} · {{ ai.row.validation.statements - ai.row.validation.unsupported }} / {{ ai.row.validation.statements }} {{ t('statements verified') }}</div>
+      {% else %}<p class="small mute">{% if ai.status.available %}{{ t('Your next briefing is ready to generate.') }}{% else %}{{ t('Connect your AI provider to get daily briefings.') }}{% endif %}</p>{% endif %}
+      <a class="assistant-cta" href="/assistant">{{ t('Read the briefing') if ai.row else t('Open assistant') }}<svg class="i"><use href="#i-arrow"/></svg></a>
+    </section>{% endif %}
+  </div>
+</div>
+<div class="freshness-strip"><span class="small mute">{{ t('Data status') }}</span>{% for f in fresh %}<span class="badge dot {{ 'b-ok' if f.status == 'fresh' else 'b-bad' }}" title="{{ t(f.label) }}: {{ t('last synced') }} {{ f.last_success|ago }}">{{ t(f.label) }}</span>{% endfor %}{% if can('sync.view') %}<a class="small" href="/sync">{{ t('Sync details') }} <span aria-hidden="true">↗</span></a>{% endif %}</div>
+{% endblock %}

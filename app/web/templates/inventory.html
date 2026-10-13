@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Inventory') }}{% endblock %}
+{% block content %}
+{% if location %}
+{% set base_qs = 'loc=' ~ location.id ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&inc=' ~ inc %}
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ location.name }}</div><h1>{{ t('Inventory') }}</h1>
+    <p>{{ t('Stock is a read-only copy of StoreHub, synced') }} {{ fr.last_success|ago }}{{ t('. Incoming counts every open purchase order; overdue ones are marked. To change a quantity, record a stock event or adjust in StoreHub.') }}</p></div>
+  <div class="row">
+    {% if can('count.enter') %}<a class="btn sec" href="/stock-events/new?kind=write_off&location_id={{ location.id }}"><svg class="i"><use href="#i-camera"/></svg>{{ t('Record stock event') }}</a>{% endif %}
+    <a class="btn sec" href="?{{ base_qs }}&status={{ status }}&export=csv"><svg class="i"><use href="#i-file"/></svg>{{ t('Export CSV') }}</a>
+  </div>
+</div>
+
+<div class="statgrid">
+  <a class="statcard {{ 'on' if not status }}" href="?{{ base_qs }}"><span class="tile t-blue"><svg class="i"><use href="#i-box"/></svg></span><span><span class="v">{{ stats.count|num(0) }}</span><div class="l">{{ t('Products in this view') }}</div></span></a>
+  <span class="statcard"><span class="tile t-green"><svg class="i"><use href="#i-cash"/></svg></span><span><span class="v">₱{{ stats.value|num(0) }}</span><div class="l">{{ t('Stock value at cost') }}</div></span></span>
+  <a class="statcard {{ 'on' if status == 'negative' }}" href="?{{ base_qs }}&status=negative"><span class="tile t-red"><svg class="i"><use href="#i-alert"/></svg></span><span><span class="v">{{ stats.negative|num(0) }}</span><div class="l">{{ t('Negative stock') }}</div></span></a>
+  <a class="statcard {{ 'on' if status == 'zero' }}" href="?{{ base_qs }}&status=zero"><span class="tile t-amber"><svg class="i"><use href="#i-x"/></svg></span><span><span class="v">{{ stats.zero|num(0) }}</span><div class="l">{{ t('Zero stock') }}</div></span></a>
+  <a class="statcard {{ 'on' if status == 'low' }}" href="?{{ base_qs }}&status=low"><span class="tile t-purple"><svg class="i"><use href="#i-clock"/></svg></span><span><span class="v">{{ stats.low|num(0) }}</span><div class="l">{{ t('Under 3 days of cover') }}</div></span></a>
+</div>
+
+<form novalidate class="filters toolbar" method="get">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location.id }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div style="flex:1;min-width:200px"><label>{{ t('Search') }}</label><input name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU — press Enter') }}" inputmode="search" style="width:100%"></div>
+  <div><label>{{ t('Incoming (open POs)') }}</label><select name="inc" onchange="this.form.submit()">
+    <option value="">{{ t('All') }}</option><option value="yes" {{ 'selected' if inc=='yes' }}>{{ t('Has incoming') }}</option><option value="ontime" {{ 'selected' if inc=='ontime' }}>{{ t('Incoming, on time') }}</option>
+    <option value="late" {{ 'selected' if inc=='late' }}>{{ t('Incoming, overdue') }}</option><option value="none" {{ 'selected' if inc=='none' }}>{{ t('Nothing incoming') }}</option></select></div>
+  <div><label>{{ t('Category') }}</label><select name="category" onchange="this.form.submit()"><option value="">{{ t('All') }}</option>{% for ct in cats %}<option {{ 'selected' if ct == category }} value="{{ ct }}">{{ ct }}</option>{% endfor %}</select></div>
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <button class="sec">{{ t('Apply') }}</button>
+</form>
+
+<div class="tw stick1"><table class="wide">
+<tr><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Category') }}</th><th scope="col" class="right" data-sort>{{ t('On hand') }}</th><th scope="col" class="right" data-sort>{{ t('Incoming') }}</th><th scope="col" class="right" data-sort>{{ t('Avg daily sales') }}</th><th scope="col" class="right" data-sort>{{ t('Days of cover') }}</th><th scope="col" data-sort>{{ t('Supplier') }}</th></tr>
+{% for r in rows %}<tr>
+<td><b>{{ r.p.name }}</b><div class="small mute">{{ r.p.barcode or '' }}</div></td><td class="small">{{ r.p.category or '' }}</td>
+<td class="right"><b style="{{ 'color:var(--bad)' if r.on_hand < 0 }}">{{ r.on_hand|num }}</b></td>
+<td class="right">{% if r.incoming %}<span data-tip="{% for o in r.pos %}{{ t('PO #') }}{{ o.no }} ({{ t('partly received') if o.status == 'partiallyReceived' else t('open') }}): {{ o.qty|num }}{% if o.expected %}{{ t(', expected') }} {{ o.expected|day }}{% if o.late %}, {{ o.days_late }} {{ t('days overdue') }}{% endif %}{% endif %}{{ ' | ' if not loop.last }}{% endfor %}"><b>{{ r.incoming|num }}</b>{% if r.late %}<div class="small"><span class="badge b-warn">{{ r.late|num }} {{ t('overdue') }}</span></div>{% endif %}</span>{% endif %}</td>
+<td class="right">{{ r.ads|num if r.ads else '' }}</td>
+<td class="right">{% if r.cover is not none %}<span class="covercell" data-tip="{{ r.cover|num(1) }} {{ t('days of stock at current sales') }}"><span class="coverbar {{ 'crit' if r.cover < 3 else 'risk' if r.cover < 7 }}"><i style="width:{{ [100, r.cover / 14 * 100]|min|round(1) }}%"></i></span><b>{{ r.cover|num(1) }}</b></span>{% endif %}</td>
+<td class="small">{{ r.p.supplier.name if r.p.supplier else '' }}</td></tr>
+{% else %}<tr><td colspan="7"><div class="empty">{{ t('No products match.') }}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?loc={{ location.id }}&q={{ q }}&status={{ status }}&category={{ category }}&inc={{ inc }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products · average sales over') }} {{ days }} {{ t('trading days') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?loc={{ location.id }}&q={{ q }}&status={{ status }}&category={{ category }}&inc={{ inc }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% else %}<div class="card">{{ t('No locations are available to you.') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{# Shared AI building blocks #}
+{% macro statement(st, anchor_prefix='', facts=None) %}
+<div class="st {{ 'bad' if st.check in ('unsupported_number','no_citation','bad_reference','bad_type') }}">
+  {% if st.type != 'message' %}<span class="ty ty-{{ st.type if st.type in ('fact','calculation','hypothesis','recommendation') else 'hypothesis' }}">{{ t({'fact':'Fact','calculation':'Calc','hypothesis':'Maybe','recommendation':'Advice'}.get(st.type, st.type)) }}</span>{% endif %}
+  <div class="tx">{{ st.text }}{% for r in st.refs or [] %}{% set fc = facts.get(r) if facts else none %}{% if fc %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}" data-tip="[{{ fc.section|replace('_',' ') }}] {{ fc.text }}" aria-label="{{ r }}: {{ fc.text }}">{{ r }}</a>{% else %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}">{{ r }}</a>{% endif %}{% endfor %}
+    {% if st.check == 'derived' %}<div class="flag d">{{ t('Derived by the AI from the cited facts, not read directly from data') }}</div>
+    {% elif st.check == 'unsupported_number' %}<div class="flag">{{ t('Unverified: contains a number that is not in the cited facts') }}</div>
+    {% elif st.check == 'no_citation' %}<div class="flag">{{ t('Unverified: no source cited') }}</div>
+    {% elif st.check in ('bad_reference','bad_type') %}<div class="flag">{{ t('Unverified: invalid citation') }}</div>{% endif %}</div>
+</div>
+{% endmacro %}
+
+{% macro action_row(a, g, csrf, back, tools) %}
+{% set tool_info = tools[a.tool] %}
+<div class="act">
+  <div style="min-width:0"><div class="t"><span class="badge {{ 'b-bad' if tool_info.risk == 'high' else 'b-blue' }}">{{ t('High risk') if tool_info.risk == 'high' else t('Low risk') }}</span> {{ t(a.tool|replace('_',' ')|capitalize) }}</div>
+    {% if a.why %}<div class="small mute">{{ a.why }}</div>{% endif %}
+    <pre>{% for k, v in a.args.items() %}{{ k }}: {{ v }}{{ '\n' if not loop.last }}{% endfor %}</pre>
+    {% if a.status in ('proposed','needs_approval') %}
+      {% if g.decision == 'deny' %}<div class="flag" style="margin-top:4px">{{ t('Not allowed for you:') }} {{ g.reasons|join('; ') }}</div>
+      {% elif g.decision == 'needs_approval' %}<div class="small" style="margin-top:4px;color:var(--warn)">{{ t('Needs your approval:') }} {{ g.reasons|join('; ') }}</div>{% endif %}
+    {% else %}<div class="small" style="margin-top:4px"><span class="badge {{ 'b-ok' if a.status == 'executed' else 'b-bad' if a.status in ('failed','denied') else '' }}">{{ t(a.status) }}</span>
+      {% if a.result %}{{ a.result.summary or a.result.error }}{% endif %}</div>{% endif %}
+  </div>
+  {% if a.status in ('proposed','needs_approval') and g.decision != 'deny' %}
+  <form novalidate method="post" action="/assistant/action/{{ a.id }}/run" class="row" style="flex:none;flex-wrap:nowrap" data-busy>
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ back }}">
+    {% if a.tool == 'approve_replenishment' %}<input name="note" placeholder="{{ t('What you checked (needed if flagged)') }}" style="width:200px">{% endif %}
+    <button class="sm ok">{{ t('Approve') if tool_info.risk == 'high' else t('Run') }}</button>
+    <button class="sm sec" formaction="/assistant/action/{{ a.id }}/reject">{{ t('Dismiss') }}</button>
+  </form>
+  {% elif a.status in ('proposed','needs_approval') %}
+  <form novalidate method="post" action="/assistant/action/{{ a.id }}/reject" style="flex:none"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ back }}"><button class="sm sec">{{ t('Dismiss') }}</button></form>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro rating(out, csrf) %}
+<form novalidate method="post" action="/assistant/output/{{ out.id }}/rate" class="row">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if out.rating is none %}<span class="small mute">{{ t('Was this useful?') }}</span>
+  <button class="sm sec" name="useful" value="1"><svg class="i" style="width:15px;height:15px"><use href="#i-thumb-up"/></svg>{{ t('Yes') }}</button>
+  <button class="sm sec" name="useful" value="0"><svg class="i" style="width:15px;height:15px"><use href="#i-thumb-down"/></svg>{{ t('No') }}</button>
+  {% else %}<span class="small mute">{{ t('You rated this') }} {{ t('useful') if out.rating else t('not useful') }}.</span>{% endif %}
+</form>
+{% endmacro %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Issues') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Issues') }}</h1>
+<div class="row" style="margin-bottom:10px">
+  <div class="tabs" style="margin:0"><a href="?view=open&mine={{ mine }}" class="{{ 'on' if view == 'open' }}">{{ t('Open') }}</a><a href="?view=closed" class="{{ 'on' if view == 'closed' }}">{{ t('Closed') }}</a><a href="?view=all" class="{{ 'on' if view == 'all' }}">{{ t('All') }}</a><a href="?view=open&mine=1" class="{{ 'on' if mine }}">{{ t('Assigned to me') }}</a></div>
+  {% if can('issue.manage') %}<a class="btn" href="/issues/new">{{ t('New issue') }}</a>{% endif %}
+</div>
+<form novalidate class="filters" method="get"><input type="hidden" name="view" value="{{ view }}">
+<div><label>{{ t('Severity') }}</label><select name="sev" onchange="this.form.submit()"><option value="">{{ t('All') }}</option>{% for s in ('P0','P1','P2','P3') %}<option {{ 'selected' if sev == s }} value="{{ s }}">{{ s }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div></form>
+<div class="tw"><table class="wide"><tr><th scope="col" data-sort>#</th><th scope="col" data-sort>{{ t('Sev') }}</th><th scope="col" data-sort>{{ t('Issue') }}</th><th scope="col" data-sort>{{ t('Where') }}</th><th scope="col" data-sort>{{ t('Owner') }}</th><th scope="col" data-sort>{{ t('Status') }}</th><th scope="col" data-sort>{{ t('Due') }}</th></tr>
+{% for i in rows %}<tr data-href="/issues/{{ i.id }}">
+<td>{{ i.id }}</td><td><span class="badge sev-{{ i.severity }}">{{ i.severity }}</span></td>
+<td><a href="/issues/{{ i.id }}"><b>{{ i.title }}</b></a><div class="small mute">{{ t(i.type|replace('_',' ')) }} {{ t('· opened') }} {{ i.created_at|local('%d %b %H:%M') }}</div></td>
+<td class="small">{{ i.location.name if i.location else '' }}</td><td class="small">{{ (i.owner.full_name or i.owner.username) if i.owner else t('unassigned') }}</td>
+<td><span class="badge {{ 'b-ok' if i.status == 'closed' else 'b-warn' if i.status == 'resolved' else 'b-bad' if i.status == 'open' else 'b-blue' }}">{{ t(labels[i.status]) }}</span>{% if i.escalation_level %} <span class="badge b-bad">{{ t('escalated') }} {{ i.escalation_level }}</span>{% endif %}</td>
+<td class="small nowrap" style="{{ 'color:var(--bad);font-weight:600' if i.status != 'closed' and i.due_at < now }}">{{ i.due_at|local('%d %b %H:%M') }}</td></tr>
+{% else %}<tr><td colspan="7"><div class="empty">{{ t('No issues here.') }}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view }}&sev={{ sev }}&loc={{ loc }}&mine={{ mine }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('issues') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view }}&sev={{ sev }}&loc={{ loc }}&mine={{ mine }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% from "_ai.html" import statement with context %}
+{% for st in statements %}{{ statement(st, 'chat', facts) }}{% endfor %}
+{% if not statements %}<p class="mute" style="margin:0">{{ t('I could not find an answer in the data.') }}</p>{% endif %}
+{% if n_actions %}<div class="chat-note"><b>{{ n_actions }} {{ t('action') }}{{ 's' if n_actions != 1 and lang != 'zh' }} {{ t('proposed.') }}</b> {{ t('Nothing has run.') }} <a href="/assistant/output/{{ out.id }}">{{ t('Review and approve') }}</a></div>{% endif %}
+{% if out.provider != 'built-in' %}<div class="chat-meta">{{ out.validation.statements - out.validation.unsupported }} {{ t('of') }} {{ out.validation.statements }} {{ t('statements verified against system data ·') }} <a href="/assistant/output/{{ out.id }}">{{ t('evidence') }}</a></div>{% endif %}
+{% if follow_ups %}<div class="chips chat-fu">{% for q in follow_ups %}<button type="button" class="chip" data-chat-ask="{{ q }}">{{ q }}</button>{% endfor %}</div>{% endif %}

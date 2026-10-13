@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ p.name }}</h1>
+  <p>{{ p.category or t('No category') }}{% if p.barcode %} {{ t('· barcode') }} {{ p.barcode }}{% endif %}{% if p.supplier %} {{ t('· supplier') }} {{ p.supplier.name }}{% endif %}{{ t('.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% else %}{{ t('Last') }} {{ days }} {{ t('days') }}. {% endif %}{{ t('Cancelled sales excluded, returns subtracted. Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <div class="row"><a class="btn sec sm" href="/sales/products{% if custom %}?days=custom&frm={{ frm }}&to={{ to }}{% else %}?days={{ days }}{% endif %}">{{ t('All products') }}</a>
+    <form novalidate method="get" class="row" style="margin:0;gap:8px;align-items:center"><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d in (7, 14, 30, 60, 90, 180) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t('Last') }} {{ d }} {{ t('days') }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select><span id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:center"><input type="date" name="frm" value="{{ frm }}"><input type="date" name="to" value="{{ to }}"><button class="sec sm">{{ t('Apply') }}</button></span></form></div></div>
+
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Units sold') }}</div><div class="value">{{ total_units|num(0) }}</div><div class="sub">{{ (total_units / days)|num(1) }} {{ t('per day') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ total_net|money }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Average price') }}</div><div class="value">{{ (total_net / total_units)|money if total_units else '-' }}</div><div class="sub">{{ t('shelf price') }} {{ p.unit_price|money if p.unit_price is not none else '-' }} {{ t('before tax') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Best day') }}</div><div class="value">{{ best[1][1]|money if best else '-' }}</div><div class="sub">{{ best[0]|day if best else t('no sales') }}</div></div></div>
+</div>
+
+{% if total_units %}
+<div class="card" style="margin-bottom:14px"><div class="card-head"><h2>{{ t('Units sold per day') }}</h2><span class="small mute">{{ t('hover a point for the exact figure') }}</span></div>
+  {{ area(series_units, fmt=unit_fmt, name=t('Units sold per day'), h=220) }}</div>
+{% endif %}
+
+<div class="split">
+<div><h2 style="margin-top:0">{{ t('By store') }}</h2>
+<div class="tw"><table><tr><th>{{ t('Store') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th class="right">{{ t('Days sold') }}</th><th class="right">{{ t('On hand') }}</th><th class="right">{{ t('Incoming') }}</th><th class="right">{{ t('Days of cover') }}</th></tr>
+{% for s in stores %}<tr><td><b>{{ s.loc.name|replace('The Daily Centro - ','') }}</b></td>
+<td class="right">{{ s.units|num(0) }}</td><td class="right"><b>{{ s.net|money }}</b></td><td class="right">{{ s.days_sold }}</td>
+<td class="right" style="{{ 'color:var(--bad);font-weight:600' if s.on_hand is not none and s.on_hand < 0 }}">{{ s.on_hand|num if s.on_hand is not none else '' }}</td>
+<td class="right">{{ s.incoming|num if s.incoming else '' }}</td>
+<td class="right">{% if s.cover is not none %}<span class="badge {{ 'b-bad' if s.cover < 3 else 'b-warn' if s.cover < 7 else 'b-ok' }}">{{ s.cover|num(1) }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
+{% if total_net %}<div class="card" style="margin-top:12px"><div class="card-head"><h2>{{ t('Share of sales by store') }}</h2></div>
+  {{ hbars(stores|selectattr('net')|map('store_item')|list) }}</div>{% endif %}</div>
+<div><h2 style="margin-top:0">{{ t('Day by day') }}</h2>
+<div class="tw"><table><tr><th>{{ t('Date') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th></tr>
+{% for d, v in daily[:40] %}<tr><td class="nowrap">{{ d|day }}</td><td class="right">{{ v[0]|num(0) if v[0] == v[0]|round(0) else v[0]|num(2) }}</td><td class="right">{{ v[1]|money }}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">{{ t('No sales of this product in the period.') }}</td></tr>{% endfor %}</table></div></div>
+</div>
+{% endblock %}

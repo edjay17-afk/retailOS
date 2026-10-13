@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Expiry') }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ t('Expiry tracker') }}</h1>
+  <form novalidate class="filters" method="get" style="margin:0"><div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div></form></div>
+
+{% set n_exp = rows|selectattr('1', 'lt', 0)|list|length %}
+{% set n_week = rows|selectattr('1', 'ge', 0)|selectattr('1', 'le', 7)|list|length %}
+{% set n_month = rows|selectattr('1', 'gt', 7)|selectattr('1', 'le', 30)|list|length %}
+<div class="expiry-chips">
+  <span>{{ t('Expired') }} <b style="color:var(--bad)">{{ n_exp }}</b></span>
+  <span>{{ t('Within 7 days') }} <b style="color:#b45309">{{ n_week }}</b></span>
+  <span>{{ t('8 to 30 days') }} <b>{{ n_month }}</b></span>
+  <span>{{ t('Batches tracked') }} <b>{{ rows|length }}</b></span>
+</div>
+
+<div class="tw"><table class="wide rt"><thead><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Expiry') }}</th><th scope="col">{{ t('Days left') }}</th><th scope="col">{{ t('Batch') }}</th><th></th></tr></thead><tbody>
+{% for b, left, stage in rows %}<tr><td data-label="{{ t('Product') }}" class="rt-main">{{ b.product.name }}</td><td data-label="{{ t('Location') }}" class="small">{{ b.location.name }}</td><td data-label="{{ t('Qty') }}" class="right">{{ b.qty|num }}</td><td data-label="{{ t('Expiry') }}" class="nowrap">{{ b.expiry_date }}</td>
+<td data-label="{{ t('Days left') }}"><span class="badge {{ 'b-bad' if left <= 3 else 'b-warn' if left <= 14 else 'b-ok' }}">{{ t('expired') if left < 0 else left }}</span></td><td data-label="{{ t('Batch') }}" class="small">{{ b.batch_no or '—' }}</td>
+<td class="rt-act"><details><summary class="small">{{ t('Clear') }}</summary><div class="expl"><form novalidate method="post" action="/expiry/{{ b.id }}/clear"><input type="hidden" name="csrf" value="{{ csrf }}"><input name="note" placeholder="{{ t('Note') }}" style="width:100%">
+<div class="row" style="margin-top:6px"><button name="status" value="cleared" class="sm sec">{{ t('Sold / returned') }}</button><button name="status" value="written_off" class="sm bad">{{ t('Written off') }}</button></div></form></div></details></td></tr>
+{% else %}<tr class="rt-empty"><td colspan="7"><div class="empty">{{ t('No batches recorded yet.') }}</div></td></tr>{% endfor %}</tbody></table></div>
+
+<details class="exp-tool"><summary>{{ t('Record a batch') }}</summary><div class="body">
+  <form novalidate method="post" action="/expiry/add" class="ffi ffi-record"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label>{{ t('Location') }}</label><select name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('Product') }}</label><input name="search" placeholder="{{ t('Scan barcode or type product name') }}" required></div>
+    <div><label>{{ t('Qty') }}</label><input type="number" step="any" min="0.01" name="qty" required inputmode="decimal"></div>
+    <div><label>{{ t('Expiry') }}</label><input type="date" name="expiry" required></div>
+    <div><label>{{ t('Batch (optional)') }}</label><input name="batch_no"></div>
+    <div><button>{{ t('Add') }}</button></div>
+  </form></div></details>
+<details class="exp-tool"><summary>{{ t('Upload a CSV or Excel file') }}</summary><div class="body">
+  <form novalidate method="post" action="/expiry/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('File') }}</label><input type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
+    <div><button>{{ t('Upload') }}</button></div>
+  </form>
+  <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Expiry date, Batch (optional), Location (optional if one is chosen above). Uploading the same file twice does not duplicate batches.') }} <a href="/expiry/template.csv">{{ t('Download template') }}</a></div>
+  </div></details>
+<p class="small mute" style="max-width:760px;margin-top:12px">{{ t('StoreHub has no expiry dates, so they are captured here: when receiving a PO, or during the expiry sweep. Warnings come at 30, 14, 7 and 3 days. Only items recorded here are tracked.') }}</p>
+{% endblock %}

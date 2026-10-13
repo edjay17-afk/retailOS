@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Inspections') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Inspections') }}</h1>
+<div class="row" style="margin-bottom:10px">
+  <a class="btn sec sm" href="?on={{ prev }}&loc={{ loc }}">&larr; {{ prev|day }}</a>
+  <b>{{ day|day }}{% if day == today %} {{ t('(today)') }}{% endif %}</b>
+  <a class="btn sec sm" href="?on={{ nxt }}&loc={{ loc }}">{{ nxt|day }} &rarr;</a>
+  {% if user.role != 'staff' and locations|length > 1 %}<form novalidate method="get" class="row"><input type="hidden" name="on" value="{{ day }}"><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></form>{% endif %}
+</div>
+<div class="tw insp-list"><table class="wide"><thead><tr><th scope="col">{{ t('Checklist') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Due') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('Result') }}</th><th></th></tr></thead><tbody>
+{% for i in rows %}<tr>
+<td><b>{{ t(i.template.name) }}</b></td><td>{{ i.location.name }}</td><td class="nowrap">{{ i.due_at|clock }}</td>
+<td><span class="badge {{ 'b-ok' if i.status == 'completed' else 'b-warn' if i.status == 'late' else 'b-bad' if i.status == 'missed' else 'b-warn' if i.status == 'in_progress' else '' }}">{{ t(i.status|replace('_',' ')) }}</span></td>
+<td class="small">{% if i.status in ('completed', 'late') %}{{ i.completed_at|clock }}{% if i.status == 'late' %} &middot; <b>{{ t('sent after') }} {{ i.due_at|clock }}</b>{% endif %}{% if i.fail_count %} &middot; <span style="color:var(--bad)">{{ i.fail_count }} {{ t('failed') }}</span>{% else %} {{ t('· all passed') }}{% endif %}{% endif %}</td>
+<td><a class="btn sm {{ 'sec' if i.status in ('completed', 'late') }}" href="/inspections/{{ i.id }}">{{ t('View') if i.status in ('completed', 'late') else t('Open') }}</a></td></tr>
+{% else %}<tr><td colspan="6" class="mute">{{ t('No checklists for this day.') }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

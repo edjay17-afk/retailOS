@@ -1,0 +1,12 @@
+.env
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+planogram/
+*.tar.gz
+.jolli/
+*.db-shm
+*.db-wal

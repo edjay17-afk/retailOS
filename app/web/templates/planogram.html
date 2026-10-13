@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Planogram') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Planogram') }}</h1><p>{{ t('Walk through the store in 3D and see where each product goes on the shelf.') }}</p></div>
+  {% if available %}<div class="actions"><a class="btn sec" href="/planogram-app/" target="_blank" rel="noopener">{{ t('Open full screen') }}</a></div>{% endif %}</div>
+{% if available %}
+<div class="planogram-frame"><iframe src="/planogram-app/" title="{{ t('Planogram') }}" allow="fullscreen; pointer-lock" loading="lazy"></iframe></div>
+{% else %}
+<div class="card empty">{{ t('The 3D store has not been added yet. Run scripts/sync_planogram.py once to copy it in.') }}</div>
+{% endif %}
+{% endblock %}

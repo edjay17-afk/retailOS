@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Users') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Users') }}</h1>
+<div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users" class="on">{{ t('Users') }}</a></div>
+
+<div class="card"><h3>{{ t('Add a user') }}</h3>
+<form novalidate method="post" action="/users/new"><input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="row"><input name="username" placeholder="{{ t('username') }}" required><input name="full_name" placeholder="{{ t('Full name') }}">
+<input name="password" type="text" placeholder="{{ t('Password (min 4 characters)') }}" required minlength="4" autocomplete="off">
+<select name="role">{% for r in roles %}<option value="{{ r }}">{{ t(ROLE_LABELS[r]) }}</option>{% endfor %}</select>
+<select name="employee"><option value="">{{ t('Not linked to a StoreHub employee') }}</option>{% for e in employees %}<option value="{{ e.storehub_id }}">{{ e.name }}</option>{% endfor %}</select></div>
+<div class="ucard-locs" style="margin-top:10px"><span class="small mute">{{ t('Locations (none = all):') }}</span><div class="uchips">{% for l in locations %}<label class="uchip"><input type="checkbox" name="location_ids" value="{{ l.id }}"><span>{{ l.name }}</span></label>{% endfor %}</div></div>
+<p><button>{{ t('Create user') }}</button></p></form></div>
+
+<form method="get" action="/users" class="card ufilter" data-nobusy>
+  <div><label>{{ t('Store / branch') }}</label><select name="loc" onchange="this.form.submit()"><option value="">{{ t('All users') }} ({{ total_users }})</option>
+    {% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id|string }}>{{ l.name }}</option>{% endfor %}
+    <option value="all" {{ 'selected' if loc == 'all' }}>{{ t('Access to all locations') }}</option></select></div>
+  <div><label>{{ t('Search') }}</label><input type="search" name="q" value="{{ q }}" placeholder="{{ t('Name or username') }}"></div>
+  <div class="ufilter-btns"><button class="sm">{{ t('Filter') }}</button>{% if loc or q %}<a class="btn sec sm" href="/users">{{ t('Clear') }}</a>{% endif %}</div>
+</form>
+{% if loc or q %}<p class="small mute">{{ t('Showing {n} of {total} users.', n=users|length, total=total_users) }}</p>{% endif %}
+<div class="ucards">
+{% for u in users %}<form novalidate method="post" action="/users/{{ u.id }}" class="card ucard"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="ucard-head"><div><b>{{ u.username }}</b>{% if u.must_change_password %} <span class="small mute">&middot; {{ t('must change password') }}</span>{% endif %}</div>
+    <label class="uactive"><input type="checkbox" name="active" value="1" {{ 'checked' if u.active }}> {{ t('Active') }}</label></div>
+  <div class="ucard-grid">
+    <div><label>{{ t('Full name') }}</label><input name="full_name" value="{{ u.full_name }}"></div>
+    <div><label>{{ t('Role') }}</label><select name="role">{% for r in roles %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ t(ROLE_LABELS[r]) }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('StoreHub employee') }}</label><select name="employee"><option value="">-</option>{% for e in employees %}<option value="{{ e.storehub_id }}" {{ 'selected' if u.storehub_employee_id == e.storehub_id }}>{{ e.name }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('Password') }}</label>{% if u.password_plain %}<code class="upw">{{ u.password_plain }}</code>{% else %}<span class="small mute">{{ t('not recorded') }}</span>{% endif %}
+      <input name="new_password" type="text" placeholder="{{ t('New password') }}" minlength="4" autocomplete="off"></div>
+  </div>
+  <div class="ucard-locs"><span class="small mute">{{ t('Locations') }}{% if not u.location_ids %} &middot; {{ t('all locations') }}{% endif %}</span>
+    <div class="uchips">{% for l in locations %}<label class="uchip"><input type="checkbox" name="location_ids" value="{{ l.id }}" {{ 'checked' if u.location_ids and l.id in u.location_ids }}><span>{{ l.name }}</span></label>{% endfor %}</div></div>
+  <div class="ucard-foot"><button class="sm">{{ t('Save') }}</button>
+    <button type="submit" formaction="/users/{{ u.id }}/delete" formnovalidate class="sec sm" style="color:var(--bad)" data-confirm="{{ t('Delete user {name}? Their access will be removed and past records kept.', name=u.username) }}" {% if u.id == user.id or (u.role == 'admin' and u.active and active_admins <= 1) %}disabled title="{{ t('You cannot delete your own account or the last active admin.') }}"{% endif %}>{{ t('Delete user') }}</button></div>
+</form>{% else %}<div class="card empty">{{ t('No users match this filter.') }}</div>{% endfor %}
+</div>
+<p class="small mute">{{ t('Passwords are visible here so you can tell staff their sign-in directly. Leave the new-password box empty to keep the current one.') }}</p>
+{% endblock %}

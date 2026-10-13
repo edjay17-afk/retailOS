@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ t(insp.template.name) }}{% endblock %}
+{% block content %}
+{% set po = insp.template.photo_only %}
+<h1>{{ t(insp.template.name) }}</h1>
+<p class="mute">{{ insp.location.name }} &middot; {{ insp.business_date|day }} {{ t('· due') }} {{ insp.due_at|clock }}
+ <span class="badge {{ 'b-ok' if insp.status == 'completed' else 'b-warn' if insp.status == 'late' else 'b-bad' if insp.status == 'missed' else 'b-warn' if insp.status == 'in_progress' else '' }}">{{ t(insp.status|replace('_',' ')) }}</span></p>
+
+{% if soon %}<div class="card" style="border-color:#e9b949"><b>{{ t('Expiring within 3 days at this location') }}</b>
+<ul class="plain small">{% for b in soon %}<li>{{ b.product.name }}: {{ b.qty|num }} {{ t('units, expiry') }} {{ b.expiry_date }}</li>{% endfor %}</ul>
+<div class="small mute">{{ t('Check these on the shelf and mark them in') }} <a href="/expiry">{{ t('Expiry') }}</a>{{ t('. Write-offs must be entered in StoreHub.') }}</div></div>{% endif %}
+
+{% if insp.status in ('completed', 'late') %}
+  <div class="card">{{ t('Completed by') }} {{ names.get(insp.completed_by, '') }} {{ t('at') }} {{ insp.completed_at|local }}{% if insp.status == 'late' %} <span class="badge b-warn">{{ t('late: due') }} {{ insp.due_at|clock }}</span>{% endif %}.</div>
+  <div class="card">{% for it in insp.template.items %}{% set r = results.get(it.id) %}
+    <div class="chk-item"><b>{{ t(it.label) }}</b>
+      {% if r and it.kind == 'video' %}{% if r.photo_path %}<div><video controls preload="metadata" style="max-width:100%;max-height:320px;border-radius:8px;margin-top:6px" src="/uploads/{{ r.photo_path }}"></video></div>{% else %}<span class="badge b-bad">{{ t('no video') }}</span>{% endif %}
+      {% elif r and po %}{% if it.kind == 'number' %}<span class="small">{{ t('reading') }} {{ r.value }} {{ it.unit or '' }}</span>{% endif %}
+      {% elif r %}<span class="badge {{ 'b-ok' if r.passed else 'b-bad' if r.passed is false else '' }}">{{ (t('pass') if r.passed else t('fail')) if r.passed is not none else t('noted') }}</span>
+      {% if it.kind == 'number' %} <span class="small">{{ t('reading') }} {{ r.value }} {{ it.unit or '' }}{% if it.min_value is not none or it.max_value is not none %} {{ t('(allowed') }} {{ it.min_value|num }} {{ t('to') }} {{ it.max_value|num }}){% endif %}</span>{% endif %}
+      {% endif %}
+      {% if r and r.note %}<div class="small">{{ t('Note:') }} {{ r.note }}</div>{% endif %}
+      {% if r and r.photos %}<div class="inspection-photos">{% for photo in r.photos %}<a href="/uploads/{{ photo }}" target="_blank" rel="noopener"><img src="/uploads/{{ photo }}" alt="{{ t('Photo {number}', number=loop.index) }}" loading="lazy"></a>{% endfor %}</div>{% endif %}
+    </div>{% endfor %}</div>
+{% else %}
+  <form novalidate method="post" action="/inspections/{{ insp.id }}/submit" enctype="multipart/form-data" data-total="{{ insp.template.items|length }}" data-guard{% if po %} data-photo-only{% endif %}>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="card">
+  {% for it in insp.template.items %}
+    <div class="chk-item">
+      <div><b>{{ t(it.label) }}</b> {% if not po %}<span class="badge sev-{{ it.fail_severity }}">{{ it.fail_severity }} {{ t('if it fails') }}</span>{% endif %}</div>
+      {% if it.kind == 'video' %}
+        <div class="upl">
+          <div class="upl-drop">
+            <input type="file" name="f_{{ it.id }}" accept="video/*" capture="environment" required aria-label="{{ t('Walkthrough video') }}">
+            <div class="upl-face"><span class="upl-ic"><svg class="i"><use href="#i-video"/></svg></span>
+              <span><b>{{ t('Record the walkthrough video') }}</b><small>{{ t('Tap to record or choose · MP4, MOV or WebM, up to 300 MB · include chillers and refs') }}</small></span></div>
+          </div>
+          <div class="upl-prev" hidden></div>
+        </div>
+      {% elif it.kind == 'number' %}
+        <div class="row" style="margin-top:6px"><input type="number" step="any" name="v_{{ it.id }}" required placeholder="{{ t('reading') }}" inputmode="decimal"> <span>{{ it.unit or '' }}</span>
+        {% if it.min_value is not none or it.max_value is not none %}<span class="small mute">{{ t('allowed') }} {{ it.min_value|num }} {{ t('to') }} {{ it.max_value|num }}</span>{% else %}<span class="small mute">{{ t('record the reading') }}</span>{% endif %}</div>
+      {% elif it.kind == 'text' %}
+        <input name="v_{{ it.id }}" style="width:100%;margin-top:6px">
+      {% elif not po %}
+        <div class="pf">
+          <label class="pf-pass"><input type="radio" name="p_{{ it.id }}" value="pass" required><svg class="i"><use href="#i-check"/></svg>{{ t('Pass') }}</label>
+          <label class="pf-fail"><input type="radio" name="p_{{ it.id }}" value="fail"><svg class="i"><use href="#i-x"/></svg>{{ t('Fail') }}</label>
+        </div>
+      {% endif %}
+      {% if it.kind != 'video' and not po %}<input name="n_{{ it.id }}" placeholder="{{ t('Note (required if it fails)') }}" style="width:100%;margin-top:8px">{% endif %}
+      {% if it.kind != 'video' %}<div class="upl" data-photos>
+          <div class="upl-drop">
+            <input type="file" name="f_{{ it.id }}" accept="image/jpeg,image/png,image/webp" multiple aria-label="{{ t('Photos for') }} {{ t(it.label) }}" aria-describedby="photo-help-{{ it.id }}">
+            <div class="upl-face"><b>+</b></div>
+          </div>
+          <div class="upl-prev photo-previews" hidden></div>
+          <div class="photo-count small mute" aria-live="polite"></div>
+        </div>
+        <div class="small mute" id="photo-help-{{ it.id }}">{% if po %}{{ t('Add photos for the manager to review.') }}{% elif it.photo_on_fail %}{{ t('Add at least one photo if this item fails.') }}{% else %}{{ t('Photos are optional.') }}{% endif %}</div>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  <div class="chkbar"><span class="row" style="gap:10px">{% if not po %}<button type="button" class="sec sm" id="chk-pass">{{ t('Mark all pass') }}</button>{% endif %}<span id="chk-prog" class="small mute"></span></span><button>{{ t('Submit checklist') }}</button></div>
+  </form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Purchase orders') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Purchase orders') }}</h1>
+<p class="small mute">{{ t('Copied from StoreHub. A PO that is open more than') }} {{ stale_days }} {{ t('days past its expected date is shown as') }} <span class="badge b-warn">{{ t('stale') }}</span> {{ t('and is not counted as incoming stock. Receive or cancel it in StoreHub.') }}</p>
+<div class="tabs"><a href="?view=open&loc={{ loc }}" class="{{ 'on' if view == 'open' }}">{{ t('Open') }}</a><a href="?view=closed&loc={{ loc }}" class="{{ 'on' if view == 'closed' }}">{{ t('Closed') }}</a><a href="?view=all&loc={{ loc }}" class="{{ 'on' if view == 'all' }}">{{ t('All') }}</a></div>
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('PO #') }}</th><th scope="col">{{ t('Supplier') }}</th><th scope="col">{{ t('Deliver to') }}</th><th scope="col">{{ t('Created') }}</th><th scope="col">{{ t('Expected') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col" class="right">{{ t('Lines') }}</th><th scope="col" class="right">{{ t('Still to arrive') }}</th><th scope="col" class="right">{{ t('Total') }}</th><th></th></tr>
+{% for po, kind, remaining in rows %}<tr>
+<td><a href="/purchase-orders/{{ po.id }}"><b>#{{ po.sh_po_id }}</b></a></td><td>{{ po.supplier.name if po.supplier else '' }}</td><td class="small">{{ po.location.name if po.location else '' }}</td>
+<td class="small nowrap">{{ po.created_sh|local('%d %b') }}</td><td class="small nowrap">{{ po.expected_at|local('%d %b') if po.expected_at else '' }}</td>
+<td><span class="badge {{ 'b-ok' if kind == 'incoming' else 'b-warn' if kind == 'stale' else 'b-bad' if kind == 'deleted' else '' }}">{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}{{ t(' (deleted)') if kind == 'deleted' }}</span></td>
+<td class="right">{{ po.lines|length }}</td><td class="right">{{ remaining|num if kind in ('incoming','stale') else '' }}</td><td class="right">{{ po.total|money }}</td>
+<td>{% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm">{{ t('Receive') }}</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="10"><div class="empty">{{ t('No purchase orders.') }}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('POs') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ t('New issue') }}{% endblock %}
+{% block content %}
+<h1>{{ t('New issue') }}</h1>
+<div class="card" style="max-width:640px">
+<form novalidate method="post" action="/issues/new"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label>{{ t('Title') }}</label><input name="title" required style="width:100%" maxlength="240">
+<label>{{ t('What is wrong') }}</label><textarea class="resize-none" name="description"></textarea>
+<div class="row">
+<div><label>{{ t('Severity') }}</label><select name="severity">{% for s in sevs %}<option value="{{ s }}" {{ 'selected' if s == 'P2' }}>{{ s }} {{ t(sev_label[s]) }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Type') }}</label><select name="type">{% for issue_type in types %}<option value="{{ issue_type }}">{{ t(issue_type|replace('_',' ')) }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('None') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Owner') }}</label><select name="owner_id"><option value="0">{{ t('Default for the location') }}</option>{% for o in owners %}<option value="{{ o.id }}">{{ o.full_name or o.username }} ({{ t(ROLE_LABELS[o.role]) }})</option>{% endfor %}</select></div>
+</div>
+<p class="small mute">{{ t('The due time is set from the severity. Owner and due time are always required, so this issue cannot be left without someone responsible.') }}</p>
+<p><button>{{ t('Create issue') }}</button></p></form></div>
+{% endblock %}

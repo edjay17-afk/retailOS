@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Counts') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Cycle counts') }}</h1>
+<p class="small mute">{{ t('Replenishment is only as good as stock accuracy. A count list picks what matters most: negative stock first, then high value, high sales, items that were wrong before, and a random sample. Approved differences are entered in StoreHub with the stock take import.') }}</p>
+<div class="card" style="max-width:560px"><form novalidate method="post" action="/counts/create" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+<select name="location_id">{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+<label style="margin:0">{{ t('Items') }}</label><input type="number" name="size" value="30" min="5" max="100" style="width:80px"><button>{{ t('Start today\'s count') }}</button></form></div>
+<details class="exp-tool"><summary>{{ t('Upload a CSV or Excel file') }}</summary><div class="body">
+  <form novalidate method="post" action="/counts/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+    <div><label>{{ t('File') }}</label><input type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
+    <div><button>{{ t('Upload') }}</button></div>
+    <div style="grid-column:1/-1"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:500;font-size:13px"><input type="checkbox" name="submit" value="1">{{ t('Send for approval right away (otherwise it stays open so you can review the differences)') }}</label></div>
+  </form>
+  <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Counted, Note (optional), Location (optional if one is chosen above). Counts go into today\'s open count and are compared with the StoreHub stock.') }} <a href="/counts/template.csv">{{ t('Download template') }}</a></div>
+</div></details>
+<div class="tw"><table class="wide"><tr><th scope="col">#</th><th scope="col">{{ t('Date') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Items') }}</th><th scope="col">{{ t('Counted') }}</th><th scope="col">{{ t('Differences') }}</th><th scope="col">{{ t('Status') }}</th><th></th></tr>
+{% for r in rows %}<tr><td>{{ r.id }}</td><td>{{ r.business_date|day }}</td><td>{{ r.location.name }}</td><td>{{ r.lines|length }}</td>
+<td>{{ r.lines|selectattr('counted_qty','ne',none)|list|length }}</td><td>{{ r.lines|selectattr('variance')|list|length }}</td>
+<td><span class="badge {{ 'b-ok' if r.status == 'approved' else 'b-warn' }}">{{ t(r.status) }}</span></td><td><div class="row"><a class="btn sm sec" href="/counts/{{ r.id }}">{{ t('Open') }}</a>
+{% if r.status != 'approved' or can('count.approve') %}<form novalidate method="post" action="/counts/{{ r.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="sec sm" style="color:var(--bad)" data-confirm="{{ t('Delete count #{id}? Its entered quantities will be lost. This is recorded in the audit log.', id=r.id) }}">{{ t('Delete') }}</button></form>{% endif %}</div></td></tr>
+{% else %}<tr><td colspan="8"><div class="empty">{{ t('No counts yet.') }}</div></td></tr>{% endfor %}</table></div>
+{% endblock %}

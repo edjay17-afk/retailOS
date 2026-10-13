@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<script>(function(){try{var th=localStorage.getItem('ros-theme');if(th!=='dark'&&th!=='light'){th='dark'}document.documentElement.dataset.theme=th}catch(e){document.documentElement.dataset.theme='dark'}})();</script>
+<title>{{ t('Sign in') }} | Retail OS</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" href="/static/style.css?v=20261012-2"><link rel="stylesheet" href="/static/workspace.css?v=20261012-9"></head>
+<body>
+<div class="auth">
+  <section class="hero">
+    <div class="brand"><span class="mark">R<span>OS</span></span><span>Retail OS<small>{{ company }}</small></span></div>
+    <div>
+      <h2>{{ t('Run every store from one calm screen.') }}</h2>
+      <p>{{ t('Sales and stock from StoreHub, checked and explained. Orders suggested, issues owned, nothing lost.') }}</p>
+      <ul>
+        <li><svg class="i"><use href="#i-check"/></svg>{{ t('Every number traces back to StoreHub data') }}</li>
+        <li><svg class="i"><use href="#i-check"/></svg>{{ t('An AI assistant that cites its facts and asks before it acts') }}</li>
+        <li><svg class="i"><use href="#i-check"/></svg>{{ t('Full audit trail of who did what, and why') }}</li>
+      </ul>
+    </div>
+    <div class="mute small">{{ t('The Daily Centro · Cebu') }}</div>
+  </section>
+  <section class="panel">
+    <form novalidate method="post" action="/login">
+      <h1>{{ t('Welcome back') }}</h1>
+      <p class="mute" style="margin:0 0 18px">{{ t('Sign in to continue.') }}</p>
+      {% if err %}<div class="flash err">{{ t(err) }}</div>{% endif %}
+      {% if ok %}<div class="flash ok">{{ t(ok) }}</div>{% endif %}
+      <input type="hidden" name="next" value="{{ next or '/' }}">
+      <label for="login-username">{{ t('Username') }}</label><input id="login-username" name="username" autocomplete="username" autofocus required style="width:100%">
+      <label for="login-password">{{ t('Password') }}</label><input id="login-password" name="password" type="password" autocomplete="current-password" required style="width:100%">
+      <p style="margin-top:18px"><button style="width:100%;justify-content:center;padding:11px">{{ t('Sign in') }}</button></p>
+      <p class="small mute" style="text-align:center;margin-top:16px"><a href="/lang/en?back=/login">{{ t('English') }}</a> · <a href="/lang/zh?back=/login">中文</a></p>
+    </form>
+    <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false" style="position:fixed;top:14px;right:14px"><svg class="i"><use href="#i-moon"/></svg></button>
+  </section>
+</div>
+{% include "_icons.html" %}
+<script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
+<script src="/static/app.js?v=20261012-2"></script>
+</body></html>

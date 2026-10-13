@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}</h1>
+<p class="small mute">{{ t('This records what physically happened. The same change must also be keyed into the StoreHub back office — only then does stock update.') }}</p>
+<div class="card" style="max-width:640px">
+<form novalidate method="post" action="/stock-events/new" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+<div class="row">
+<div><label>{{ t('Location') }}</label><select name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
+<div><label>{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div>{{ product.name }}</div>
+{% else %}<input name="search" placeholder="{{ t('Scan barcode or type product name') }}" required style="width:260px">{% endif %}</div>
+<div><label>{{ t('Qty') }}</label><input name="qty" inputmode="decimal" required style="width:100px"></div>
+<div><label>{{ t('Reason') }}</label><select name="reason">{% for r in reasons %}<option value="{{ r }}">{{ t(r) }}</option>{% endfor %}</select></div>
+{% if kind == 'unplanned_receipt' %}<div><label>{{ t('Supplier') }}</label><select name="supplier_id"><option value="0">{{ t('Unknown') }}</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
+</div>
+<label>{{ t('Note') }}</label><input name="note" style="width:100%" maxlength="300">
+<label>{{ t('Photo (optional evidence)') }}</label><input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+<p><button>{{ t('Record') }}</button> <a class="btn sec sm" href="/stock-events">{{ t('Cancel') }}</a></p></form></div>
+{% endblock %}

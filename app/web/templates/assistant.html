@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_ai.html" import statement, action_row, rating with context %}
+{% block title %}{{ t('Assistant') }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ t('Assistant') }}</h1><p>{{ t('An AI analyst that reads your data, explains what matters, and proposes actions. It cannot act on its own: you decide.') }}</p></div>
+  <div class="row">
+    {% if can('ai.metrics') %}<a class="btn sec sm" href="/assistant/metrics">{{ t('How well is it doing?') }}</a>{% endif %}
+    <span class="badge dot {{ 'b-ok' if st.available else 'b-bad' }}">{{ (t('Connected: ') ~ ('Gemini' if st.provider == 'gemini' else t('Local Ollama') if st.provider == 'ollama' else 'Claude') ~ (' (' ~ st.model ~ ')' if st.provider in ('api', 'gemini', 'ollama') else '')) if st.available else t('Not connected') }}</span>
+    {% if st.available %}<span class="small mute">{{ st.used_today }} / {{ st.limit }} {{ t('requests today') }}</span>{% endif %}
+  </div>
+</div>
+
+{% if not st.available %}
+<div class="card"><b>{{ t('The assistant is not connected yet.') }}</b>
+  <p class="mute" style="margin:6px 0 0">{% if not st.enabled %}{{ t('It is switched off in Settings (') }}<code>ai.enabled</code>).{% else %}{{ t('Add') }} <code>GEMINI_API_KEY=...</code> {{ t('(or') }} <code>ANTHROPIC_API_KEY=...</code>{{ t(') to') }} <code>C:\RetailOS\.env</code> {{ t('and restart, or install Claude on this computer and sign in. Everything else in Retail OS works without it.') }}{% endif %}</p></div>
+{% else %}
+
+<div class="ai-card">
+  <div class="card-head">
+    <div class="ai-title"><span class="spk"><svg class="i" style="color:#fff"><use href="#i-sparkles"/></svg></span>{{ t('Daily briefing') }}</div>
+    <form novalidate method="post" action="/assistant/brief" data-busy><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ai"><span class="idle">{{ t('Refresh briefing') if brief else t('Generate briefing') }}</span><span class="thinking">{{ t('Reading your data, about 20 seconds...') }}</span></button></form>
+  </div>
+  {% if brief %}
+    {% if brief_notice %}<div class="small" style="color:var(--bad);margin-bottom:8px"><b>{{ t('The latest briefing attempt failed') }}</b> ({{ t(brief_notice) }}{{ t('). Showing the last good briefing from') }} {{ brief.created_at|local }} {{ t('— everything else in Retail OS works without the AI.') }}</div>{% endif %}
+    {% set o = brief.output_json %}
+    <p style="font-size:16px;font-weight:600;margin:0 0 4px">{{ o.headline }}</p>
+    <div class="small mute">{{ t('Generated') }} {{ brief.created_at|local }} &middot; {{ brief.validation.statements - brief.validation.unsupported }} {{ t('of') }} {{ brief.validation.statements }} {{ t('statements verified against system data') }}{% if brief.validation.derived %}, {{ brief.validation.derived }} {{ t('derived') }}{% endif %}
+      &middot; <a href="/assistant/output/{{ brief.id }}">{{ t('evidence and details') }}</a></div>
+    {% for it in o['items'] %}
+    <div class="card flat pri-{{ it.priority }}" style="margin-top:12px;padding:15px 17px">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><span class="badge {{ 'pill-hi' if it.priority == 'high' else 'pill-me' if it.priority == 'medium' else 'pill-lo' }}">{{ t(it.priority) }}</span> <b style="font-size:15px">{{ it.title }}</b>
+          {% if it.confidence %}<span class="small mute"> {{ t('· confidence') }} {{ (it.confidence * 100)|int }}%</span>{% endif %}</div>
+        {% if it.link %}<a class="btn sec sm" href="{{ it.link }}">{{ t('Open') }}</a>{% endif %}
+      </div>
+      <div style="margin-top:6px">{% for st in it.statements %}{{ statement(st, 'f', brief_facts) }}{% endfor %}</div>
+      {% if it.recommended_action %}<div style="margin-top:6px"><b>{{ t('Suggested:') }}</b> {{ it.recommended_action }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    {% if not o['items'] %}<p class="mute">{{ t('Nothing needs attention according to the data.') }}</p>{% endif %}
+    <div style="margin-top:12px">{{ rating(brief, csrf) }}</div>
+  {% else %}
+    <p class="mute" style="margin:0">{{ t('No briefing yet. Press') }} <b>{{ t('Generate briefing') }}</b>{{ t('; it takes about 20 seconds. A new one is also made automatically at 06:15 and 16:15.') }}</p>
+  {% endif %}
+</div>
+
+{% if pending %}
+<div class="card"><div class="card-head"><h2>{{ t('Proposed actions') }}</h2><span class="small mute">{{ t('Nothing runs until you press the button') }}</span></div>
+{% for a in pending %}{{ action_row(a, gate(a), csrf, '/assistant', tools) }}{% endfor %}</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h2>{{ t('Ask a question') }}</h2></div>
+  <form novalidate method="post" action="/assistant/ask" class="ask" id="askform" data-busy><input type="hidden" name="csrf" value="{{ csrf }}">
+    <input name="question" placeholder="{{ t('Ask about stock, sales, orders, issues...') }}" maxlength="600" required autocomplete="off"><button class="ai"><span class="idle">{{ t('Ask') }}</span><span class="thinking">{{ t('Thinking...') }}</span></button></form>
+  <div class="chips" style="margin-top:12px">{% for q in questions %}<button type="button" class="chip" data-ask="{{ t(q) }}">{{ t(q) }}</button>{% endfor %}</div>
+</div>
+
+{% if mine %}
+<div class="card"><div class="card-head"><h2>{{ t('Your recent questions') }}</h2></div>
+{% for m in mine %}<div class="item"><div><a href="/assistant/output/{{ m.id }}"><b>{{ m.question }}</b></a><div class="small mute">{{ m.created_at|local('%d %b %H:%M') }}{% if m.status != 'ok' %} {{ t('· failed') }}{% endif %}</div></div>
+  {% if m.validation %}<span class="badge {{ 'b-ok' if m.validation.verified else 'b-warn' }}">{{ t('verified') if m.validation.verified else m.validation.unsupported ~ t(' unverified') }}</span>{% endif %}</div>{% endfor %}</div>
+{% endif %}
+
+<div class="card flat" style="background:var(--surface2)">
+  <b>{{ t('How the assistant is kept honest') }}</b>
+  <ul class="plain small mute" style="margin-bottom:0">
+    <li>{{ t('It only sees numbered facts written by the system from your own data, never a raw copy of the database.') }}</li>
+    <li>{{ t('Every statement is labelled fact, calculation, maybe or advice, and must cite its facts. Numbers that are not in the cited facts are flagged as unverified.') }}</li>
+    <li>{{ t('It can only') }} <i>{{ t('propose') }}</i> {{ t('actions. A policy gate checks your permissions, order limits, store access and data freshness, and high-risk actions always need your approval.') }}</li>
+    <li>{{ t('Every answer is saved with exactly what it was given, so it can be audited later.') }}</li>
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

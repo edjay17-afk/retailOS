@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Performance') }}{% endblock %}
+{% block content %}
+{% macro st(label, value, sub='') %}<div class="card stat"><div><div class="label">{{ t(label) }}</div><div class="value">{{ value }}</div>{% if sub %}<div class="sub">{{ sub }}</div>{% endif %}</div></div>{% endmacro %}
+<div class="page-head"><div><h1>{{ t('Performance') }}</h1><p>{{ t('Are operations improving, or is the software just being used?') }} {% if custom %}{{ frm }} → {{ to }}.{% else %}{{ t('Last') }} {{ days }} {{ t('days.') }}{% endif %}</p></div>
+<form novalidate method="get" class="filters" style="margin:0"><div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('perf-custom'); if(this.value==='custom'){cr.style.display='inline-flex';cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d in (30, 60, 90, 180) %}<option {{ 'selected' if not custom and d == days }} value="{{ d }}">{{ d }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
+  <span id="perf-custom" style="display:{{ 'inline-flex' if custom else 'none' }};gap:8px;align-items:flex-end">
+    <span><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></span>
+    <span><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></span>
+    <span><label>&nbsp;</label><button class="sec sm">{{ t('Apply') }}</button></span></span></form></div>
+
+<h2 style="margin-top:0">{{ t('Replenishment') }}</h2>
+<div class="grid g4">
+  {{ st('Accepted as suggested', m.replenishment.acceptance_rate|pct if m.replenishment.acceptance_rate is not none else '-', m.replenishment.decided ~ t(' decisions')) }}
+  {{ st('Changed or rejected', m.replenishment.override_rate|pct if m.replenishment.override_rate is not none else '-', t('avg change ') ~ (m.replenishment.avg_override_size|num if m.replenishment.avg_override_size is not none else '-') ~ t(' units')) }}
+  {{ st('Stocked out after ordering', m.replenishment.stockout_rate|pct if m.replenishment.stockout_rate is not none else '-', m.replenishment.measured ~ t(' measured (needs a week of history)')) }}
+  {{ st('Stock count accuracy', m.inventory.accuracy|pct if m.inventory.accuracy is not none else '-', m.inventory.counted_lines ~ t(' items counted')) }}
+</div>
+<div class="grid g3" style="margin-top:14px">
+  {{ st('Items with negative stock', m.inventory.negative_items, t('unrecorded deliveries or transfers')) }}
+  {{ st('Dead stock items', m.inventory.dead_stock_items, t('in stock, no sales in 60 days')) }}
+  {{ st('Dead stock value', m.inventory.dead_stock_value|money, t('at cost')) }}
+</div>
+
+<h2>{{ t('Operations') }}</h2>
+<div class="grid g4">
+  {{ st('Issues open', m.issues.open, m.issues.overdue ~ t(' overdue')) }}
+  {{ st('Median time to acknowledge', (m.issues.median_ack_h|round(1) ~ t(' h')) if m.issues.median_ack_h is not none else '-', m.issues.created ~ t(' issues raised')) }}
+  {{ st('Median time to resolve', (m.issues.median_resolve_h|round(1) ~ t(' h')) if m.issues.median_resolve_h is not none else '-') }}
+  {{ st('Repeat issues', m.issues.repeat_rate|pct if m.issues.repeat_rate is not none else '-', t('same problem at the same place again')) }}
+</div>
+<div class="grid g4" style="margin-top:14px">
+  {{ st('Checklists completed', m.inspections.completion_rate|pct if m.inspections.completion_rate is not none else '-', m.inspections.completed ~ t(' of ') ~ m.inspections.due ~ t(' due (30 days)')) }}
+  {{ st('Completed on time', m.inspections.on_time, t('of those completed')) }}
+  {{ st('Receiving with differences', m.receiving.discrepancy_rate|pct if m.receiving.discrepancy_rate is not none else '-', m.receiving.with_differences ~ t(' of ') ~ m.receiving.completed) }}
+</div>
+
+<h2>{{ t('Data health') }}</h2>
+<div class="grid g3">
+  {{ st('Sync success (7 days)', m.data.sync_success_rate|pct if m.data.sync_success_rate is not none else '-', m.data.sync_runs ~ t(' runs')) }}
+  {{ st('Domains fresh now', m.data.fresh_domains ~ ' / ' ~ m.data.domains) }}
+  {{ st('Open data findings', m.data.open_findings, t('see Data quality')) }}
+</div>
+{% endblock %}

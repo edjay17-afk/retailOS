@@ -1,0 +1,363 @@
+{
+  "captured_at_utc": "2026-10-09T02:08:57.404197+00:00",
+  "evidence_class": "SYSTEM CONFIRMED",
+  "database_access": "SQLite read-only URI; consistent read transaction; no live workflow changes",
+  "baseline_sha256": {
+    "RETAIL_OS_V2_1_FREEZE_CANDIDATE.md": "704b34542d7c801765e505b54cfafce1207e0f0996b5efa0c79ca1cdd8b08ea5",
+    "WAREHOUSE_ONSITE_VALIDATION_CHECKLIST.md": "3ef5d766e3a8105abe81fe293e0832eb768c43c2a9a26c10b769e082b87e1496"
+  },
+  "record_counts": {
+    "receiving": 0,
+    "receiving_line": 0,
+    "order_batch": 0,
+    "stock_event": 0,
+    "cycle_count": 2,
+    "cycle_count_line": 31
+  },
+  "sync": [
+    {
+      "domain": "people",
+      "last_success_at": "2026-10-09 02:00:10.213620"
+    },
+    {
+      "domain": "products",
+      "last_success_at": "2026-10-09 01:58:56.230827"
+    },
+    {
+      "domain": "inventory",
+      "last_success_at": "2026-10-09 01:59:08.105439"
+    },
+    {
+      "domain": "purchase_orders",
+      "last_success_at": "2026-10-09 01:59:26.651945"
+    },
+    {
+      "domain": "sales",
+      "last_success_at": "2026-10-09 02:04:47.943030"
+    },
+    {
+      "domain": "reconcile",
+      "last_success_at": "2026-10-07 07:26:19.116111"
+    },
+    {
+      "domain": "snapshot",
+      "last_success_at": "2026-10-09 02:02:06.361698"
+    }
+  ],
+  "negative_cases": [
+    {
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "product_id": 159,
+      "storehub_id": "6a88e700b302a100072c0496",
+      "product": "Baygon Mosq Coil Scented 150g",
+      "sku": null,
+      "barcode": "4801234134426",
+      "on_hand": -540.0,
+      "cost": 18.035714,
+      "synced_at": "2026-10-09 01:59:06.258519",
+      "indicative_value": 9739.29,
+      "recent_inventory_changes": [],
+      "po_history": [
+        {
+          "sh_po_id": 90,
+          "status": "completed",
+          "location_id": 1,
+          "created_sh": "2026-09-21 07:42:04.282000",
+          "expected_at": "2026-09-20 16:00:00.000000",
+          "ordered_qty": 180.0,
+          "received_qty": 180.0
+        }
+      ],
+      "sales_last_90_days": {
+        "first_day": null,
+        "last_day": null,
+        "net_units": null,
+        "net_sales": null
+      },
+      "count_history": [],
+      "root_cause": "Unverified; records do not establish a causal physical-event chain."
+    },
+    {
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "product_id": 158,
+      "storehub_id": "6a88e7291d74e00007d1b541",
+      "product": "Baygon Coil Jumbo Lavander 10s",
+      "sku": null,
+      "barcode": "4801234134495",
+      "on_hand": -420.0,
+      "cost": 18.035714,
+      "synced_at": "2026-10-09 01:59:06.258519",
+      "indicative_value": 7575.0,
+      "recent_inventory_changes": [],
+      "po_history": [
+        {
+          "sh_po_id": 90,
+          "status": "completed",
+          "location_id": 1,
+          "created_sh": "2026-09-21 07:42:04.282000",
+          "expected_at": "2026-09-20 16:00:00.000000",
+          "ordered_qty": 180.0,
+          "received_qty": 180.0
+        }
+      ],
+      "sales_last_90_days": {
+        "first_day": null,
+        "last_day": null,
+        "net_units": null,
+        "net_sales": null
+      },
+      "count_history": [],
+      "root_cause": "Unverified; records do not establish a causal physical-event chain."
+    },
+    {
+      "location_id": 5,
+      "location": "The Daily Centro - Bantayan",
+      "product_id": 640,
+      "storehub_id": "6ab07b1dccfee30007d2ac2d",
+      "product": "Hotdog Roll",
+      "sku": null,
+      "barcode": "100110",
+      "on_hand": -128.0,
+      "cost": 35.0,
+      "synced_at": "2026-10-09 01:59:06.258519",
+      "indicative_value": 4480.0,
+      "recent_inventory_changes": [
+        {
+          "id": 96,
+          "old_qty": -124.0,
+          "new_qty": -128.0,
+          "delta": -4.0,
+          "observed_at": "2026-10-07 23:40:46.967112"
+        },
+        {
+          "id": 54,
+          "old_qty": -123.0,
+          "new_qty": -124.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-07 09:00:46.979490"
+        }
+      ],
+      "po_history": [],
+      "sales_last_90_days": {
+        "first_day": "2026-09-21",
+        "last_day": "2026-10-07",
+        "net_units": 133.0,
+        "net_sales": 5985.0
+      },
+      "count_history": [
+        {
+          "id": 1,
+          "status": "open",
+          "business_date": "2026-10-07",
+          "system_qty": -123.0,
+          "counted_qty": null,
+          "variance": null
+        }
+      ],
+      "root_cause": "Unverified; records do not establish a causal physical-event chain."
+    },
+    {
+      "location_id": 5,
+      "location": "The Daily Centro - Bantayan",
+      "product_id": 1003,
+      "storehub_id": "6ab07b7b19402b0007a6ffd8",
+      "product": "Peach Mango Pie",
+      "sku": null,
+      "barcode": "100112",
+      "on_hand": -99.0,
+      "cost": 45.0,
+      "synced_at": "2026-10-09 01:59:06.258519",
+      "indicative_value": 4455.0,
+      "recent_inventory_changes": [
+        {
+          "id": 296,
+          "old_qty": -98.0,
+          "new_qty": -99.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-08 06:37:11.567200"
+        },
+        {
+          "id": 219,
+          "old_qty": -97.0,
+          "new_qty": -98.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-08 01:58:26.882990"
+        },
+        {
+          "id": 124,
+          "old_qty": -96.0,
+          "new_qty": -97.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-07 23:40:46.967112"
+        },
+        {
+          "id": 23,
+          "old_qty": -94.0,
+          "new_qty": -96.0,
+          "delta": -2.0,
+          "observed_at": "2026-10-07 07:57:57.356694"
+        }
+      ],
+      "po_history": [],
+      "sales_last_90_days": {
+        "first_day": "2026-09-21",
+        "last_day": "2026-10-08",
+        "net_units": 104.0,
+        "net_sales": 5720.0
+      },
+      "count_history": [
+        {
+          "id": 1,
+          "status": "open",
+          "business_date": "2026-10-07",
+          "system_qty": -96.0,
+          "counted_qty": null,
+          "variance": null
+        }
+      ],
+      "root_cause": "Unverified; records do not establish a causal physical-event chain."
+    },
+    {
+      "location_id": 5,
+      "location": "The Daily Centro - Bantayan",
+      "product_id": 1353,
+      "storehub_id": "6ab07b620f76d000075dfcf9",
+      "product": "Tuna Pie",
+      "sku": null,
+      "barcode": "100111",
+      "on_hand": -62.0,
+      "cost": 45.0,
+      "synced_at": "2026-10-09 01:59:06.258519",
+      "indicative_value": 2790.0,
+      "recent_inventory_changes": [
+        {
+          "id": 408,
+          "old_qty": -61.0,
+          "new_qty": -62.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-08 12:30:02.611859"
+        },
+        {
+          "id": 317,
+          "old_qty": -60.0,
+          "new_qty": -61.0,
+          "delta": -1.0,
+          "observed_at": "2026-10-08 07:17:11.533911"
+        }
+      ],
+      "po_history": [],
+      "sales_last_90_days": {
+        "first_day": "2026-09-21",
+        "last_day": "2026-10-08",
+        "net_units": 67.0,
+        "net_sales": 3685.0
+      },
+      "count_history": [
+        {
+          "id": 1,
+          "status": "open",
+          "business_date": "2026-10-07",
+          "system_qty": -60.0,
+          "counted_qty": null,
+          "variance": null
+        }
+      ],
+      "root_cause": "Unverified; records do not establish a causal physical-event chain."
+    }
+  ],
+  "stale_po_cases": [
+    {
+      "id": 28,
+      "sh_po_id": 36,
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "status": "open",
+      "expected_at": "2026-08-14 16:00:00.000000",
+      "created_sh": "2026-08-15 07:10:02.407000",
+      "last_seen": "2026-10-09 01:59:26.607870",
+      "total": 187723.38,
+      "reference_age_days": 55,
+      "line_summary": {
+        "lines": 62,
+        "ordered_units": 2416.0,
+        "received_units": 0.0
+      }
+    },
+    {
+      "id": 91,
+      "sh_po_id": 101,
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "status": "partiallyReceived",
+      "expected_at": "2026-09-23 16:00:00.000000",
+      "created_sh": "2026-09-24 09:17:59.880000",
+      "last_seen": "2026-10-09 01:59:26.607870",
+      "total": 37570.09,
+      "reference_age_days": 15,
+      "line_summary": {
+        "lines": 35,
+        "ordered_units": 743.0,
+        "received_units": 743.0
+      }
+    },
+    {
+      "id": 102,
+      "sh_po_id": 112,
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "status": "open",
+      "expected_at": "2026-09-24 16:00:00.000000",
+      "created_sh": "2026-09-25 05:28:14.041000",
+      "last_seen": "2026-10-09 01:59:26.607870",
+      "total": 6308.98,
+      "reference_age_days": 14,
+      "line_summary": {
+        "lines": 8,
+        "ordered_units": 816.0,
+        "received_units": 0.0
+      }
+    },
+    {
+      "id": 104,
+      "sh_po_id": 114,
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "status": "open",
+      "expected_at": "2026-09-24 16:00:00.000000",
+      "created_sh": "2026-09-25 05:48:35.812000",
+      "last_seen": "2026-10-09 01:59:26.607870",
+      "total": 32778.0,
+      "reference_age_days": 14,
+      "line_summary": {
+        "lines": 17,
+        "ordered_units": 318.0,
+        "received_units": 0.0
+      }
+    },
+    {
+      "id": 105,
+      "sh_po_id": 115,
+      "location_id": 1,
+      "location": "TheDailyCentro Warehouse",
+      "status": "open",
+      "expected_at": "2026-09-24 16:00:00.000000",
+      "created_sh": "2026-09-25 06:46:23.754000",
+      "last_seen": "2026-10-09 01:59:26.607870",
+      "total": 23381.46,
+      "reference_age_days": 14,
+      "line_summary": {
+        "lines": 5,
+        "ordered_units": 888.0,
+        "received_units": 0.0
+      }
+    }
+  ],
+  "current_stale_days": 7,
+  "audit_verification": {
+    "ok": true,
+    "rows_checked": 201,
+    "first_bad_id": null
+  }
+}

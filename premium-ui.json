@@ -1,0 +1,14 @@
+{
+  "profile": "product-admin",
+  "canonicalMap": "UX-CONTRACT.md",
+  "sourceRoots": ["app/web/static", "app/web/templates"],
+  "requiredCapabilities": ["Table Selection", "Select/Listbox", "Date", "Form", "Scrollbar", "Toast", "CRUD"],
+  "ownership": {"Select/Listbox": "native", "Date": "native"},
+  "requiredCommands": ["tests", "syntax", "designLint"],
+  "commands": {
+    "tests": ".venv/Scripts/python.exe -m pytest tests/test_web.py tests/test_i18n.py tests/test_chat_charts.py tests/test_users_admin.py tests/test_suppliers_admin.py -q",
+    "syntax": "node --check app/web/static/app.js",
+    "designLint": "npx -p @google/design.md designmd lint DESIGN.md"
+  },
+  "evidence": {"crudFullFlow": "tests/test_users_admin.py", "failurePaths": "tests/test_suppliers_admin.py"}
+}

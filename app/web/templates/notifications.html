@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Notifications') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Notifications') }}</h1>
+<form novalidate method="post" action="/notifications/read" class="noprint"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec sm">{{ t('Mark all as read') }}</button></form>
+<div class="card" style="margin-top:10px">
+{% for n in items %}
+<div class="item"><div>
+  <span class="badge {{ 'b-bad' if n.level == 'critical' else 'b-warn' if n.level == 'warning' else '' }}">{{ t(n.level) }}</span>
+  {% if n.link %}<a href="{{ n.link }}"><b>{{ n.title }}</b></a>{% else %}<b>{{ n.title }}</b>{% endif %}
+  {% if not n.read_at %}<span class="badge b-blue">{{ t('new') }}</span>{% endif %}
+  {% if n.body %}<div class="small mute" style="white-space:pre-line">{{ n.body }}</div>{% endif %}
+</div><div class="small mute nowrap">{{ n.created_at|local }}</div></div>
+{% else %}<p class="mute">{{ t('No notifications.') }}</p>{% endfor %}
+</div>
+{% endblock %}
