@@ -344,7 +344,7 @@ def test_cycle_count_puts_negative_stock_first_and_approval_opens_issue(sync, fa
     u = mkuser(session)
     cc = counts.create(session, u, loc, 10); session.commit()
     assert cc.lines[0].reason == "negative_stock" and cc.lines[0].product.storehub_id == "P2"
-    counts.enter(session, cc, u, [{"line_id": cc.lines[0].id, "counted": 4.0}])
+    counts.enter(session, cc, u, [{"line_id": cc.lines[0].id, "counted": 4.0, "note": "found 4 on shelf"}])
     counts.submit(session, cc, u); counts.approve(session, cc, u)
     assert cc.lines[0].variance == 7.0
     assert session.scalar(select(Issue).where(Issue.type == "stock"))

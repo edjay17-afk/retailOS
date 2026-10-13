@@ -85,7 +85,7 @@ def test_transaction_detail_404_for_unknown_and_scope_blocks_other_stores(client
     login(client, "alpha")
     assert client.get("/sales/tx/99999").status_code == 404
     r = client.get("/sales/transactions")
-    assert "T4" in r.text and "T1" not in r.text                  # only Beta's sale is visible
+    assert "T4" in r.text and "T1" not in re.sub(r'value="[^"]*"', "", r.text)                  # only Beta's sale is visible
 
 
 def test_sales_by_employee_aggregates_and_excludes_cancelled(client, session, sync, fake):
@@ -107,7 +107,7 @@ def test_employee_filter_narrows_the_transaction_list(client, session, sync, fak
     _seed_sales(sync, fake, session)
     login(client, "mgr")
     r = client.get("/sales/transactions", params={"emp": "E2"})
-    assert "T3" in r.text and "T1" not in r.text
+    assert "T3" in r.text and "T1" not in re.sub(r'value="[^"]*"', "", r.text)
 
 
 def test_custom_range_and_csv_export(client, session, sync, fake):

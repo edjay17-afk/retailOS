@@ -11,7 +11,7 @@ from . import audit
 from .config import get_config
 from .db import SessionLocal
 from .models import Recommendation
-from .services import (backup, brief, dq, expiry, inspections, issues, notifications, receiving, replenishment, stock_events, transfer_inbox)
+from .services import (backup, brief, counts, dq, expiry, inspections, issues, notifications, receiving, replenishment, stock_events, transfer_inbox)
 from .storehub.client import AuthError
 from .storehub.sync import SyncService
 from .timeutil import now_utc, today_local
@@ -46,7 +46,7 @@ def _db_job(fn):
 @_safe("sync_sales")
 def sync_sales(): _sync.sync_transactions()
 @_safe("sync_inventory")
-def sync_inventory(): _sync.sync_inventory(); _db_job(lambda db: (receiving.verify_with_storehub(db), stock_events.verify_with_sync(db)))
+def sync_inventory(): _sync.sync_inventory(); _db_job(lambda db: (receiving.verify_with_storehub(db), stock_events.verify_with_sync(db), counts.reconcile_events(db)))
 @_safe("sync_pos")
 def sync_pos(): _sync.sync_purchase_orders(); _db_job(lambda db: replenishment.sync_batches_with_pos(db))
 @_safe("sync_people")

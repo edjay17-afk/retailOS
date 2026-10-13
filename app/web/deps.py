@@ -203,11 +203,12 @@ NAV_GROUPS = [
                     ("/stock-events", "Stock events", "camera", "count.enter", ""),
                     ("/wastage", "Wastage", "alert", "wastage.record", ""),
                     ("/expiry", "Expiry", "clock", "expiry.view", ""), ("/compliance", "Permits", "shield", "compliance.view", ""), ("/planogram", "Planogram", "box", "planogram.view", "")]),
-    ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
+    ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/replenishment/repairs", "Repair queue", "alert", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
                             ("/stock-transfers", "Stock transfers", "sync", "transfer.view", ""),
                             ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "box", "sales.view", ""),
                             ("/sales/transactions", "Transactions", "list", "sales.detail", ""), ("/sales/employees", "Sales by employee", "user", "sales.detail", "")]),
     ("Intelligence", [("/assistant", "Assistant", "sparkles", "ai.use", "AI"), ("/performance", "Performance", "chart", "performance.view", ""), ("/data-quality", "Data quality", "shield", "dq.view", ""),
+                      ("/traceability", "Traceability", "list", "traceability.view", ""),
                       ("/sync", "Sync status", "sync", "sync.view", "")]),
     ("Administration", [("/settings", "Settings", "settings", "settings.manage", ""), ("/audit", "Audit log", "list", "audit.view", "")]),
 ]

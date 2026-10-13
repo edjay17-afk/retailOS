@@ -525,7 +525,7 @@ def test_stock_counts_and_stock_changes_upload_csv_and_excel(client, session):
     login(client, "mgr_imp")
     tok = csrf_of(client, "/counts")
     # ---- stock counts
-    csv_text = "Product,Counted,Note\n480101,7,two broken\nBread,3,\nNope,1,\n480101,-2,\n"
+    csv_text = "Product,Counted,Note\n480101,7,two broken\nBread,3,miscount\nNope,1,\n480101,-2,\n"
     r = client.post("/counts/import", data={"csrf": tok, "location_id": str(loc.id)}, files={"file": ("c.csv", csv_text.encode(), "text/csv")})
     assert r.status_code == 303 and "ok=" in r.headers["location"] and "skipped%202" in r.headers["location"]
     session.expire_all()
@@ -533,7 +533,7 @@ def test_stock_counts_and_stock_changes_upload_csv_and_excel(client, session):
     lines = {l.product_id: l for l in cc.lines}
     assert cc.status == "open" and lines[p1.id].counted_qty == 7 and lines[p1.id].variance == -3 and lines[p1.id].note == "two broken" and lines[p2.id].counted_qty == 3
     # a second file adds to the same open count instead of opening another
-    client.post("/counts/import", data={"csrf": tok, "location_id": str(loc.id), "submit": "1"}, files={"file": ("c2.csv", b"Product,Counted\n480101,9\n", "text/csv")})
+    client.post("/counts/import", data={"csrf": tok, "location_id": str(loc.id), "submit": "1"}, files={"file": ("c2.csv", b"Product,Counted,Note\n480101,9,recount\n", "text/csv")})
     session.expire_all()
     assert session.query(CycleCount).count() == 1 and session.scalar(select(CycleCount)).status == "submitted"
     assert client.get("/counts/template.csv").status_code == 200 and client.get("/counts").status_code == 200

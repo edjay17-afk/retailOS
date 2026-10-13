@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Traceability') }}{% endblock %}
+{% block content %}
+{% macro pct(v) %}{{ ('%.0f%%'|format(v * 100)) if v is not none else '—' }}{% endmacro %}
+<div class="page-head"><div><h1>{{ t('Traceability') }}</h1><p>{{ t('Every real stock movement should leave a trace, and each trace is checked against StoreHub. — means no data yet.') }}</p></div>
+<form novalidate class="filters" method="get" style="margin:0">
+  <div><label>{{ t('Period') }}</label><select name="days" onchange="this.form.submit()">{% for d in (7, 30, 90) %}<option value="{{ d }}" {{ 'selected' if days == d }}>{{ t('Last {n} days', n=d) }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Show') }}</label><select name="status" onchange="this.form.submit()"><option value="open" {{ 'selected' if status == 'open' }}>{{ t('Needs attention') }}</option><option value="all" {{ 'selected' if status == 'all' }}>{{ t('All events') }}</option></select></div>
+</form></div>
+
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Receiving confirmation') }}</div><div class="value">{{ pct(m.receiving_confirmation_rate) }}</div><div class="sub">{{ m.completed_deliveries }} {{ t('completed deliveries') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Transfer confirmation') }}</div><div class="value">{{ pct(m.transfer_confirmation_rate) }}</div><div class="sub">{{ m.dispatched_transfers }} {{ t('dispatched') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Unexplained stock changes') }}</div><div class="value">{{ pct(m.unexplained_delta_rate) }}</div><div class="sub">{{ m.unexplained }} / {{ m.deltas }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Changes with a trace') }}</div><div class="value">{{ pct(m.traceability_rate) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Receiving variance') }}</div><div class="value">{{ pct(m.receiving_variance_rate) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Receiving matched in StoreHub') }}</div><div class="value">{{ pct(m.receiving_reconciled_rate) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Count accuracy') }}</div><div class="value">{{ pct(m.cycle_count_accuracy) }}</div><div class="sub">{{ m.counted_lines }} {{ t('lines counted') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Repeat count differences') }}</div><div class="value">{{ pct(m.repeat_variance_rate) }}</div><div class="sub">{{ t('Negative stock rows') }}: {{ m.negative_rows }}</div></div></div>
+</div>
+
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Recorded') }}</th><th scope="col">{{ t('Type') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col" class="right">{{ t('Quantity') }}</th><th scope="col">{{ t('By') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('Note') }}</th></tr>
+{% for e in events %}<tr><td class="small nowrap">{{ e.recorded_at|local }}</td><td class="small">{{ t(e.event_type|replace('_', ' ')) }}</td><td class="small">{{ e.location.name if e.location else '' }}</td><td>{{ e.product.name if e.product else '' }}</td>
+<td class="right">{{ e.direction }}{{ e.quantity|num }}</td><td class="small">{{ users.get(e.actor_user_id, '') }}</td>
+<td><span class="badge {{ 'b-ok' if e.reconciliation_status == 'matched' else 'b-bad' if e.reconciliation_status in ('mismatch', 'needs_review') else 'b-warn' }}">{{ t(e.reconciliation_status|replace('_', ' ')) }}</span></td>
+<td class="small">{{ e.reconciliation_note or e.reason_text or '' }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">{{ t('No events to show.') }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

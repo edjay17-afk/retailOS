@@ -15,7 +15,7 @@ from ..config import get_config
 from ..db import init_engine
 from ..dbinit import init_db
 from .deps import MustChangePassword, NotAuthenticated, render_public
-from . import routes_admin, routes_ai, routes_core, routes_ops, routes_stock, routes_transfers, routes_documents, routes_planogram, routes_wastage
+from . import routes_admin, routes_ai, routes_core, routes_ops, routes_stock, routes_transfers, routes_documents, routes_planogram, routes_wastage, routes_v21
 
 
 def setup_logging() -> None:
@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
         return render_public(request, "error.html", status_code=500, title="Something went wrong",
                              detail="The error was logged. Please try again, or tell the administrator.")
 
-    for r in (routes_core, routes_stock, routes_ops, routes_ai, routes_admin, routes_transfers, routes_documents, routes_planogram, routes_wastage):
+    for r in (routes_core, routes_stock, routes_ops, routes_ai, routes_admin, routes_transfers, routes_documents, routes_planogram, routes_wastage, routes_v21):
         app.include_router(r.router)
     return app
 

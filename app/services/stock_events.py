@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .. import audit
 from ..models import InventoryChange, Issue, IssueEvent, Location, Product, StockEvent, User
 from ..timeutil import now_utc
-from . import issues, notifications
+from . import inventory_events as iev, issues, notifications
 
 KINDS = ("write_off", "unplanned_receipt")
 REASONS = {
@@ -45,6 +45,9 @@ def create(db: Session, user: User, *, kind: str, location_id: int, product_id: 
     audit.log(db, actor_type="human", actor_id=user.id, action="stock_event.create", entity_type="stock_event", entity_id=ev.id,
               after={"kind": kind, "location_id": location_id, "product_id": product_id, "qty": qty, "reason": reason,
                      "note": note, "photo": bool(photo_path), "supplier_id": supplier_id})
+    iev.record(db, uid=f"stockevt:{ev.id}", event_type="write_off" if kind == "write_off" else "supplier_receiving", user=user, product_id=product_id,
+               location_id=location_id, quantity=qty, direction="-" if kind == "write_off" else "+", reason_code=reason, reason_text=note,
+               evidence_path=photo_path, status="matched" if already_in_storehub else "pending")
     if already_in_storehub:
         return ev
     prod, loc = db.get(Product, product_id), db.get(Location, location_id)
@@ -173,6 +176,9 @@ def verify_with_sync(db: Session) -> dict:
             continue
         ev.verified_at = now_utc()
         verified += 1
+        traced = db.scalar(select(iev.InventoryEvent).where(iev.InventoryEvent.event_uid == f"stockevt:{ev.id}"))
+        if traced is not None:
+            iev.resolve(db, traced, "matched", "StoreHub stock moved as recorded")
         issue = db.get(Issue, ev.verify_issue_id) if ev.verify_issue_id else None
         if issue is not None and issue.status in issues.OPEN_STATES:
             before = issue.status

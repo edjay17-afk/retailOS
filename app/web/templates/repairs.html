@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Repair queue') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Repair queue') }}</h1><p>{{ t('Suggestions the system refuses to trust. Fix the cause and the next run turns them into normal suggestions.') }}</p></div>
+  <div class="row"><a class="btn sec sm" href="/replenishment">{{ t('Back to suggestions') }}</a></div></div>
+
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Blocked now') }}</div><div class="value">{{ rows|length }}</div><div class="sub">{{ total|money }} {{ t('at risk') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Unblocked this week') }}</div><div class="value">{{ kpi.unblocked_week_value|money }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Average days to repair') }}</div><div class="value">{{ ('%.1f'|format(kpi.mean_days_to_repair)) if kpi.mean_days_to_repair is not none else '—' }}</div><div class="sub">{{ kpi.repairs }} {{ t('repairs') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Blocked again after repair') }}</div><div class="value">{{ ('%d%%'|format(kpi.repeat_blocker_rate * 100)) if kpi.repeat_blocker_rate is not none else '—' }}</div></div></div>
+</div>
+<p class="small mute">{{ t('Blocked value, last 14 days') }}: {% for d, v in kpi.trend %}<span title="{{ d }}">{{ v|money }}</span>{{ ' · ' if not loop.last }}{% endfor %}</p>
+
+<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Severity') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Why it is blocked') }}</th><th scope="col" class="right">{{ t('Value at risk') }}</th><th scope="col">{{ t('Fix') }}</th></tr>
+{% for r in rows %}<tr>
+<td><span class="badge {{ 'b-bad' if r.severity == 'high' else 'b-warn' if r.severity == 'medium' else '' }}">{{ t(r.severity) }}</span></td>
+<td class="small">{{ r.rec.location.name }}</td>
+<td>{{ r.rec.product.name }}<div class="small mute">{{ r.rec.product.barcode or '' }}</div></td>
+<td>{% for x in r.causes %}<div><b>{{ t(x.label) }}</b><div class="small mute">{{ t(x.why) }}</div></div>{% endfor %}</td>
+<td class="right">{{ r.value|money }}</td>
+<td class="nowrap">{% for x in r.causes %}{% if x.fix_url %}<a class="btn sec sm" href="{{ x.fix_url }}">{{ t(x.fix_label) }}</a> {% endif %}{% endfor %}
+{% if r.count_task %}<form novalidate method="post" action="/counts/targeted" style="display:inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="location_id" value="{{ r.rec.location_id }}"><input type="hidden" name="product_id" value="{{ r.rec.product_id }}"><button class="sm">{{ t('Create count task') }}</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">{{ t('Nothing is blocked. Every suggestion today can be trusted.') }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

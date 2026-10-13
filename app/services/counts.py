@@ -11,9 +11,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from .. import audit
+from .. import settings_service as cfg
 from ..models import (CycleCount, CycleCountLine, InventoryCurrent, Location, Product, SalesDayProduct, User)
 from ..timeutil import now_utc, today_local
-from . import issues
+from . import inventory_events as ev, issues
 
 
 class CountError(Exception):
@@ -114,6 +115,9 @@ def submit(db: Session, cc: CycleCount, user: User) -> CycleCount:
         raise CountError("Already submitted")
     if not any(l.counted_qty is not None for l in cc.lines):
         raise CountError("Count at least one item")
+    unexplained = [l for l in cc.lines if l.counted_qty is not None and l.variance and abs(l.variance) > 1e-9 and not (l.note or "").strip()]
+    if unexplained:  # V2.1 MUST 3: an adjustment is only proposed with a reason
+        raise CountError(f"{len(unexplained)} counted item(s) differ from the system. Write the reason in the note for each of them.")
     cc.status = "submitted"
     audit.log(db, actor_type="human", actor_id=user.id, action="count.submit", entity_type="cycle_count", entity_id=cc.id)
     return cc
@@ -127,6 +131,7 @@ def approve(db: Session, cc: CycleCount, user: User) -> CycleCount:
         raise CountError("Only a submitted count can be approved")
     diffs = [l for l in cc.lines if l.variance and abs(l.variance) > 1e-9]
     cc.status, cc.approved_by, cc.approved_at = "approved", user.id, now_utc()
+    _record_events(db, cc, user)
     if diffs:
         lines = [f"{l.product.name}: system {l.system_qty:g}, counted {l.counted_qty:g} ({l.variance:+g})" for l in diffs[:15]]
         issues.create_issue(db, type="stock", severity="P2", location_id=cc.location_id, source="count", source_ref=f"count:{cc.id}", created_by=user.id,
@@ -209,8 +214,11 @@ def import_counts(db: Session, user: User, filename: str, data: bytes, locations
         counted += len(items)
         audit.log(db, actor_type="human", actor_id=user.id, action="count.import", entity_type="cycle_count", entity_id=cc.id, after={"file": filename, "lines": len(items)})
         if submit:
-            submit_count(db, cc, user)
-            submitted.append(cc.id)
+            try:
+                submit_count(db, cc, user)
+                submitted.append(cc.id)
+            except CountError as e:
+                errors.append((0, f"{loc.name}: {e} The count is saved but not submitted."))
     return {"lines": counted, "counts": len(per_loc), "created": created, "submitted": submitted, "errors": errors}
 
 
@@ -226,3 +234,58 @@ def stock_take_csv(cc: CycleCount) -> str:
         p = l.product
         w.writerow([p.storehub_id, p.name, p.sku or "", p.barcode or "", p.category or "", f"{l.system_qty:g}", f"{l.counted_qty:g}"])
     return out.getvalue()
+
+
+# ======================================================================================= V2.1 MUST 3: events, reconciliation, repeat variance
+def _record_events(db: Session, cc: CycleCount, user: User) -> None:
+    """Each counted line leaves a cycle_count event. A difference stays `pending` (an adjustment is only proposed) until StoreHub shows the change;
+    a count that agrees with the system is settled at once. Several differences on the same product and place raise a root-cause issue."""
+    threshold = int(cfg.get(db, "counts.repeat_variance_count"))
+    for l in cc.lines:
+        if l.counted_qty is None:
+            continue
+        var = l.variance or 0.0
+        has_var = abs(var) > 1e-9
+        ev.record(db, uid=f"cnt:{l.id}", event_type="cycle_count", user=user, product_id=l.product_id, location_id=cc.location_id, quantity=abs(var),
+                  direction="+" if var >= 0 else "-", occurred_at=cc.approved_at, reason_code=l.reason, reason_text=l.note,
+                  status="pending" if has_var else "matched")
+        if has_var and threshold > 0:
+            since = now_utc() - timedelta(days=90)
+            n = db.scalar(select(func.count()).select_from(ev.InventoryEvent).where(
+                ev.InventoryEvent.event_type == "cycle_count", ev.InventoryEvent.quantity > 0, ev.InventoryEvent.product_id == l.product_id,
+                ev.InventoryEvent.location_id == cc.location_id, ev.InventoryEvent.recorded_at >= since)) or 0
+            if n >= threshold:
+                issues.create_issue(db, type="stock", severity="P2", location_id=cc.location_id, product_id=l.product_id, source="count",
+                                    source_ref=f"count:{cc.id}", created_by=user.id,
+                                    title=f"Repeated count differences: {l.product.name if l.product else l.product_id} at {cc.location.name}",
+                                    description=f"{n} cycle counts in the last 90 days found a difference for this product. Find the cause (receiving, picking, "
+                                                "theft, wrong barcode) instead of adjusting again.",
+                                    dedupe_key=f"repeatvar:{cc.location_id}:{l.product_id}:{today_local().isocalendar()[1]}")
+
+
+def reconcile_events(db: Session) -> dict:
+    """A count difference is reconciled when a later StoreHub stock change shows the counted quantity (or the proposed correction).
+    Still unsupported after the grace period, it is flagged for review once."""
+    from ..models import InventoryChange
+    grace = timedelta(days=int(cfg.get(db, "counts.reconcile_grace_days")))
+    matched = review = 0
+    q = select(ev.InventoryEvent).where(ev.InventoryEvent.event_type == "cycle_count", ev.InventoryEvent.reconciliation_status == "pending",
+                                        ev.InventoryEvent.recorded_at >= now_utc() - timedelta(days=60))
+    for e in list(db.scalars(q)):
+        line = db.get(CycleCountLine, int(e.event_uid.split(":")[1]))
+        if line is None:
+            continue
+        signed = e.quantity if e.direction == "+" else -e.quantity
+        changes = db.scalars(select(InventoryChange).where(InventoryChange.location_id == e.location_id, InventoryChange.product_id == e.product_id,
+                                                           InventoryChange.observed_at >= e.recorded_at))
+        if any(abs(c.new_qty - (line.counted_qty or 0)) < 1e-6 or abs(c.delta - signed) < 1e-6 for c in changes):
+            ev.resolve(db, e, "matched", "StoreHub stock changed to the counted quantity")
+            matched += 1
+        elif now_utc() - e.recorded_at > grace:
+            ev.resolve(db, e, "needs_review", f"StoreHub still has not reflected the count after {grace.days} days")
+            issues.create_issue(db, type="stock", severity="P3", location_id=e.location_id, product_id=e.product_id, source="count", source_ref=f"count_event:{e.id}",
+                                title="Count adjustment is not in StoreHub yet",
+                                description=f"A count found a difference of {signed:+g} but StoreHub stock has not changed. Enter the stock take in StoreHub.",
+                                dedupe_key=f"cntpend:{e.id}")
+            review += 1
+    return {"matched": matched, "needs_review": review}

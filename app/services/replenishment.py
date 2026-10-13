@@ -443,7 +443,7 @@ def mark_entered(db: Session, batch: OrderBatch, user: User, po_number: int | No
 def sync_batches_with_pos(db: Session) -> int:
     """When StoreHub shows the PO as completed, mark the batch received."""
     n = 0
-    for b in db.scalars(select(OrderBatch).where(OrderBatch.status == "entered", OrderBatch.storehub_po_number.is_not(None))):
+    for b in db.scalars(select(OrderBatch).where(OrderBatch.status == "entered", OrderBatch.source_kind == "supplier", OrderBatch.storehub_po_number.is_not(None))):
         po = db.scalar(select(PurchaseOrder).where(PurchaseOrder.sh_po_id == b.storehub_po_number))
         if po and po.status == "completed":
             b.status = "received"

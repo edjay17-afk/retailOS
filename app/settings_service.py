@@ -29,6 +29,8 @@ DEFAULTS: dict[str, tuple[Any, str]] = {
     "repl.max_cover_days": (30, "Never recommend more than this many days of cover (maximum-stock protection)"),
     "repl.default_pack": (12, "Order in whole packs of this many units (12, 24, 36...) when the product has no case pack of its own. Use 1 to allow single units"),
     "repl.min_weekly_units": (6, "Only suggest products that sell at least this many units a week (a store, or all stores for the warehouse). Slower sellers are left out"),
+    "counts.repeat_variance_count": (3, "Raise a root-cause issue when this many cycle counts in 90 days found a difference for the same product and place"),
+    "counts.reconcile_grace_days": (3, "Days to wait for StoreHub to show a count adjustment before flagging it for review"),
     "repl.require_case_pack": (False, "Block recommendations for products with no case pack"),
     "repl.approval_limit_manager": (20000.0, "Order value above which a store manager cannot approve (needs management)"),
     "repl.reason_codes": ([
