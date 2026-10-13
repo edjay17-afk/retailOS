@@ -298,7 +298,7 @@ def test_receiving_mismatch_opens_issue_and_records_expiry(sync, fake, session):
     with pytest.raises(receiving.ReceivingError):
         receiving.complete(session, rec, u)  # nothing counted yet
     line = rec.lines[0]
-    receiving.save_counts(session, rec, u, [{"line_id": line.id, "counted": 8.0, "damaged": 1.0, "expiry": today_local() + timedelta(days=20), "batch": "B1", "note": ""}])
+    receiving.save_counts(session, rec, u, [{"line_id": line.id, "counted": 8.0, "damaged": 1.0, "expiry": today_local() + timedelta(days=20), "batch": "B1", "note": "1 box crushed, 1 short"}])
     receiving.complete(session, rec, u); session.commit()
     assert rec.status == "mismatch"
     assert session.scalar(select(Issue).where(Issue.type == "receiving", Issue.title.like("Receiving difference%")))
@@ -539,3 +539,70 @@ def test_approve_with_a_typed_quantity_needs_no_reason(sync, fake, session):
     boss = mkuser(session, "boss2", "management")
     replenishment.decide(session, rec, boss, "approve", qty=rec.final_qty + 6)
     assert rec.status == "modified" and rec.approved_qty == rec.final_qty + 6
+
+
+# =============================================================================== V2.1 MUST 1: receiving truth (inventory events)
+def _counted(sync, fake, session, counted=10.0, damaged=0.0, note=""):
+    po = _po(sync, fake, session)
+    u = mkuser(session, "wh", "warehouse")
+    rec = receiving.start(session, u, po)
+    receiving.save_counts(session, rec, u, [{"line_id": rec.lines[0].id, "counted": counted, "damaged": damaged, "note": note}])
+    receiving.complete(session, rec, u); session.commit()
+    return po, rec, u
+
+
+def test_at_rcv_01_receiving_leaves_a_trace(sync, fake, session):
+    from app.models import InventoryEvent
+    po, rec, u = _counted(sync, fake, session)
+    e = session.scalar(select(InventoryEvent).where(InventoryEvent.event_type == "supplier_receiving"))
+    assert (e.actor_user_id, e.actor_role, e.quantity, e.direction) == (u.id, "warehouse", 10.0, "+")
+    assert e.related_po_id == po.id and e.storehub_reference == "7" and e.occurred_at and e.audit_event_id
+    assert e.reconciliation_status == "pending" and e.source_system == "retailos"
+
+
+def test_variance_needs_a_reason_and_leaves_variance_and_damage_events(sync, fake, session):
+    from app.models import InventoryEvent
+    po = _po(sync, fake, session)
+    u = mkuser(session, "wh", "warehouse")
+    rec = receiving.start(session, u, po)
+    receiving.save_counts(session, rec, u, [{"line_id": rec.lines[0].id, "counted": 8.0, "damaged": 1.0, "note": ""}])
+    with pytest.raises(receiving.ReceivingError):
+        receiving.complete(session, rec, u)  # a difference without a reason is refused
+    receiving.save_counts(session, rec, u, [{"line_id": rec.lines[0].id, "counted": 8.0, "damaged": 1.0, "note": "box crushed"}])
+    receiving.complete(session, rec, u); session.commit()
+    types = {e.event_type: e for e in session.scalars(select(InventoryEvent))}
+    assert set(types) == {"supplier_receiving", "receiving_variance", "damage"}
+    assert (types["receiving_variance"].quantity, types["receiving_variance"].direction, types["receiving_variance"].reason_text) == (2.0, "-", "box crushed")
+    assert (types["damage"].quantity, types["damage"].direction) == (1.0, "-")
+
+
+def test_at_rcv_02_matching_storehub_receipt_reconciles(sync, fake, session):
+    from app.models import InventoryEvent
+    po, rec, u = _counted(sync, fake, session)
+    po.status = "completed"; po.lines[0].received_qty = 10.0; session.commit()
+    out = receiving.verify_with_storehub(session); session.commit()
+    e = session.scalar(select(InventoryEvent).where(InventoryEvent.event_type == "supplier_receiving"))
+    assert out["matched"] == 1 and e.reconciliation_status == "matched" and e.reconciled_at
+    assert receiving.verify_with_storehub(session)["matched"] == 0  # re-running settles nothing twice
+    from app.services import inventory_events
+    assert inventory_events.kpis(session)["receiving_reconciled_rate"] == 1.0
+
+
+def test_at_rcv_03_storehub_difference_is_a_mismatch_with_an_issue(sync, fake, session):
+    from app.models import InventoryEvent
+    po, rec, u = _counted(sync, fake, session)
+    po.status = "completed"; po.lines[0].received_qty = 7.0; session.commit()
+    receiving.verify_with_storehub(session); session.commit()
+    e = session.scalar(select(InventoryEvent).where(InventoryEvent.event_type == "supplier_receiving"))
+    assert e.reconciliation_status == "mismatch" and "StoreHub received 7" in e.reconciliation_note
+    assert session.scalar(select(Issue).where(Issue.title.like("%StoreHub received quantity differs%")))
+
+
+def test_at_idemp_01_events_are_recorded_once(sync, fake, session):
+    from app.models import InventoryEvent
+    from app.services import inventory_events as iev
+    po, rec, u = _counted(sync, fake, session)
+    n = session.scalar(select(func.count()).select_from(InventoryEvent))
+    again = iev.record(session, uid=f"rcv:{rec.lines[0].id}", event_type="supplier_receiving", user=u, product_id=rec.lines[0].product_id, location_id=rec.location_id, quantity=99)
+    session.commit()
+    assert session.scalar(select(func.count()).select_from(InventoryEvent)) == n and again.quantity == 10.0  # the first record stands

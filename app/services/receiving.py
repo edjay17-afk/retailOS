@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from .. import audit
 from ..models import ExpiryBatch, PurchaseOrder, Receiving, ReceivingLine, User
 from ..timeutil import now_utc, today_local
-from . import issues, purchasing
+from . import inventory_events as ev, issues, purchasing
 
 
 class ReceivingError(Exception):
@@ -59,8 +59,12 @@ def complete(db: Session, rec: Receiving, user: User) -> Receiving:
         short = l.ordered_qty - l.counted_qty
         if abs(short) > 1e-9 or l.damaged_qty > 0:
             mism.append(l)
+    unexplained = [l for l in mism if not (l.note or "").strip()]
+    if unexplained:
+        raise ReceivingError(f"{len(unexplained)} line(s) differ from the order or have damaged goods. Write the reason in the note for each of them.")
     rec.completed_at = now_utc()
     rec.status = "mismatch" if mism else "completed"
+    _record_events(db, rec, user)
     for l in rec.lines:
         good = (l.counted_qty or 0) - (l.damaged_qty or 0)
         if l.expiry_date and good > 0 and l.product_id and rec.location_id:
@@ -79,6 +83,51 @@ def complete(db: Session, rec: Receiving, user: User) -> Receiving:
     audit.log(db, actor_type="human", actor_id=user.id, action="receiving.complete", entity_type="receiving", entity_id=rec.id,
               after={"status": rec.status, "mismatched_lines": len(mism)})
     return rec
+
+
+def _record_events(db: Session, rec: Receiving, user: User) -> None:
+    """Trace the count (spec MUST 1): one supplier_receiving event per line, plus a variance and a damage event where they apply.
+    The uids come from the receiving line, so completing or re-running never records a line twice."""
+    po_ref = str(rec.po.sh_po_id)
+    for l in rec.lines:
+        common = dict(user=user, product_id=l.product_id, location_id=rec.location_id, occurred_at=rec.completed_at, related_po_id=rec.po_id,
+                      storehub_reference=po_ref, evidence_path=rec.photo_path)
+        ev.record(db, uid=f"rcv:{l.id}", event_type="supplier_receiving", quantity=l.counted_qty or 0.0, direction="+", reason_text=l.note, **common)
+        diff = (l.counted_qty or 0.0) - l.ordered_qty
+        if abs(diff) > 1e-9:
+            ev.record(db, uid=f"rcvvar:{l.id}", event_type="receiving_variance", quantity=abs(diff), direction="+" if diff > 0 else "-",
+                      reason_code="over" if diff > 0 else "short", reason_text=l.note, **common)
+        if (l.damaged_qty or 0) > 0:
+            ev.record(db, uid=f"rcvdmg:{l.id}", event_type="damage", quantity=l.damaged_qty, direction="-", reason_code="damaged_on_receipt", reason_text=l.note, **common)
+
+
+def _reconcile_events(db: Session) -> dict:
+    """A counted receiving is matched once the StoreHub PO is completed and its received quantity agrees with the count (all counted, or only the good part).
+    Different quantities mark it as a mismatch (the issue is raised by verify_with_storehub). Re-running changes nothing that is already settled."""
+    matched = mismatched = 0
+    q = select(ev.InventoryEvent).where(ev.InventoryEvent.event_type == "supplier_receiving", ev.InventoryEvent.reconciliation_status.in_(("pending", "mismatch")),
+                                        ev.InventoryEvent.related_po_id.is_not(None), ev.InventoryEvent.recorded_at >= now_utc() - timedelta(days=60))
+    for e in list(db.scalars(q)):
+        po = db.get(PurchaseOrder, e.related_po_id)
+        line = db.get(ReceivingLine, int(e.event_uid.split(":")[1]))
+        if po is None or line is None or po.status != "completed":
+            continue
+        got = next((pl.received_qty for pl in po.lines if pl.product_id == e.product_id), None)
+        if got is None:
+            continue
+        good = (line.counted_qty or 0) - (line.damaged_qty or 0)
+        ok = abs(got - (line.counted_qty or 0)) < 1e-9 or abs(got - good) < 1e-9
+        status = "matched" if ok else "mismatch"
+        note = "StoreHub received quantity agrees with the count" if ok else f"counted {line.counted_qty:g}, StoreHub received {got:g}"
+        if e.reconciliation_status != status:
+            ev.resolve(db, e, status, note)
+            matched += ok
+            mismatched += not ok
+            for uid in (f"rcvvar:{line.id}", f"rcvdmg:{line.id}"):
+                child = db.scalar(select(ev.InventoryEvent).where(ev.InventoryEvent.event_uid == uid))
+                if child is not None:
+                    ev.resolve(db, child, status, note)
+    return {"matched": matched, "mismatch": mismatched}
 
 
 def verify_with_storehub(db: Session) -> dict:
@@ -109,7 +158,8 @@ def verify_with_storehub(db: Session) -> dict:
                                         description=f"{l.product.name if l.product else l.product_id}: counted {l.counted_qty:g} (damaged {l.damaged_qty:g}), StoreHub received {po_lines[l.product_id].received_qty:g}",
                                         dedupe_key=f"recv_diff:{rec.id}:{l.product_id}")
                     flagged += 1
-    return {"refreshed": refreshed, "flagged": flagged}
+    db.flush()
+    return {"refreshed": refreshed, "flagged": flagged, **_reconcile_events(db)}
 
 
 def candidates(db: Session, location_ids: list[int]) -> list[PurchaseOrder]:

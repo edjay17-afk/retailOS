@@ -10,7 +10,7 @@ from .db import Base, SessionLocal, get_engine
 from .models import InspectionTemplate, SchemaVersion, TemplateItem
 from .timeutil import now_utc
 
-CURRENT_VERSION = 15
+CURRENT_VERSION = 16
 
 # (version, [sql, ...]) applied in order to databases created by an earlier version.
 MIGRATIONS: list[tuple[int, list[str]]] = [
@@ -42,6 +42,7 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
           "DROP TABLE compliance_item_old",
           "CREATE INDEX ix_compliance_item_due_date ON compliance_item (due_date)"]),
     (15, []),  # StoreHub wastage records mirror: new tables only (created automatically)
+    (16, []),  # V2.1 inventory_event trace table: new table only (created automatically)
 ]
 
 TRIGGERS = [

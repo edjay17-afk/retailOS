@@ -292,6 +292,7 @@
   "Not enough measured outcomes yet (need 10 of each) — overrides stay candidate context until outcomes prove them.": "结果样本尚不足（每类需 10 个）。在结果证实有效前，人工调整仅作为参考。",
   "Not linked to a StoreHub employee": "未关联 StoreHub 员工",
   "Note": "备注",
+  "Note (reason if different or damaged)": "备注（数量不符或有损坏时写明原因）",
   "Note (required if it fails)": "备注（不通过时必填）",
   "Note (what you checked)": "备注（你检查了什么）",
   "Note or description of the fix": "备注或修复说明",

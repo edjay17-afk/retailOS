@@ -628,6 +628,36 @@ class StockEvent(Base):
     supplier: Mapped[Optional[Supplier]] = relationship()
 
 
+class InventoryEvent(Base):
+    """V2.1 spec 4: the trace of one inventory-changing real-world event. It is NOT a second ledger: StoreHub stays the stock number.
+    The event says what a person saw or did and whether a later StoreHub state supports it (reconciliation_status)."""
+    __tablename__ = "inventory_event"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_uid: Mapped[str] = mapped_column(String(80), unique=True)  # idempotency key: the same real event is never recorded twice
+    event_type: Mapped[str] = mapped_column(String(24), index=True)
+    product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("product.id"), nullable=True)
+    location_id: Mapped[Optional[int]] = mapped_column(ForeignKey("location.id"), nullable=True, index=True)
+    quantity: Mapped[float] = mapped_column(Float, default=0)  # always positive; direction carries the sign
+    direction: Mapped[str] = mapped_column(String(1), default="+")
+    actor_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    actor_role: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    reason_code: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    reason_text: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    evidence_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    source_system: Mapped[str] = mapped_column(String(12), default="retailos")
+    storehub_reference: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    related_po_id: Mapped[Optional[int]] = mapped_column(ForeignKey("purchase_order.id"), nullable=True, index=True)
+    related_transfer_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    reconciliation_status: Mapped[str] = mapped_column(String(12), default="pending", index=True)
+    reconciled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    reconciliation_note: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    audit_event_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    product: Mapped[Optional[Product]] = relationship()
+    location: Mapped[Optional[Location]] = relationship()
+
+
 # --------------------------------------------------------------------------- inspections / issues
 PHOTO_ONLY_TEMPLATES = ("store_daily",)  # checklists reviewed from their photos (they go to Lark): no pass/fail and no comment per item
 
