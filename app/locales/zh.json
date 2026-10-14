@@ -1293,5 +1293,20 @@
   "Employees with sales": "有销售的员工",
   "Average basket": "平均客单价",
   "Last sale": "最近销售",
-  "Sale": "销售"
+  "Sale": "销售",
+  "Stock accuracy": "库存准确性",
+  "Counts in this list": "此列表中的盘点",
+  "Open now": "进行中",
+  "Waiting for approval": "等待审批",
+  "Differences found": "发现的差异",
+  "New count": "新建盘点",
+  "The system picks the items that matter most for today.": "系统会挑选今天最重要的商品。",
+  "Progress": "进度",
+  "items counted": "项已盘点",
+  "Write-offs": "报损",
+  "Unplanned receipts": "计划外收货",
+  "Verified in StoreHub": "已在 StoreHub 核实",
+  "Waiting for StoreHub": "等待 StoreHub",
+  "Daily work": "日常工作",
+  "Daily checklists for the warehouse and each store. Open one to fill it in — late or missed checklists become problems.": "仓库和每家门店的每日检查清单。打开一个即可填写——逾期或遗漏的检查会成为问题。"
 }

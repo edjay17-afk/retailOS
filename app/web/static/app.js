@@ -151,6 +151,28 @@
     setRail(expanded);
     try { localStorage.setItem('retailos.navigation', expanded ? 'expanded' : 'compact'); } catch (e) { /* optional preference */ }
   });
+  // Collapsible sidebar groups. The group holding the current page always stays open.
+  (function () {
+    var KEY = 'retailos.navgroups';
+    var collapsed = [];
+    try { collapsed = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { collapsed = []; }
+    document.querySelectorAll('#sidebar-nav .nav-group').forEach(function (g) {
+      var name = g.getAttribute('data-group'), btn = g.querySelector('[data-ng-toggle]');
+      if (!btn) return;
+      if (collapsed.indexOf(name) !== -1 && !g.querySelector('a.nl.on')) {
+        g.classList.add('collapsed');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+      btn.addEventListener('click', function () {
+        var isCollapsed = g.classList.toggle('collapsed');
+        btn.setAttribute('aria-expanded', String(!isCollapsed));
+        var idx = collapsed.indexOf(name);
+        if (isCollapsed && idx === -1) collapsed.push(name);
+        if (!isCollapsed && idx !== -1) collapsed.splice(idx, 1);
+        try { localStorage.setItem(KEY, JSON.stringify(collapsed)); } catch (e) { /* optional preference */ }
+      });
+    });
+  })();
   var mobileMenu = document.getElementById('mobile-menu'), sidebar = document.getElementById('sidebar');
   var mainWorkspace = document.querySelector('.main'), narrowNavigation = window.matchMedia('(max-width:1000px)');
   function setMobile(open) {

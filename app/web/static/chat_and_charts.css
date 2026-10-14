@@ -46,6 +46,6 @@ svg.chart text{font-size:10.5px}
 .chat-form{display:flex;gap:8px;padding:11px 12px;border-top:1px solid var(--line);background:var(--surface)}
 .chat-form input[name=question]{flex:1;min-width:0}
 .chat-foot{font-size:11px;color:var(--mute2);text-align:center;padding:0 0 8px;background:var(--surface)}
-@media (max-width:640px){.chat-panel{right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh;border-radius:0}.chat-fab{right:14px;bottom:14px}}
+@media (max-width:640px){.chat-panel{right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh;border-radius:0}.chat-fab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));padding:13px;border-radius:50%}.chat-fab span{display:none}}
 .bar .b{pointer-events:none}
 .chat-panel header>div:last-child{display:flex;gap:4px}.chat-panel header .iconbtn{margin-left:0}

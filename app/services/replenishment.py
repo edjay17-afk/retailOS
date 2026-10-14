@@ -184,9 +184,12 @@ def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplR
                   entity_type="repl_run", entity_id=run_row.id, reason=run_row.note)
         return run_row
 
-    # yesterday's undecided suggestions are no longer valid
-    for r in db.scalars(select(Recommendation).where(Recommendation.business_date < today, Recommendation.status.in_(("pending", "needs_review")))):
-        r.status = "expired"
+    # yesterday's undecided suggestions are no longer valid; warehouse order suggestions were dropped —
+    # stores are topped up from the warehouse, and the warehouse orders directly in StoreHub
+    wh_ids = set(db.scalars(select(Location.id).where(Location.type == "warehouse")))
+    for r in db.scalars(select(Recommendation).where(Recommendation.status.in_(("pending", "needs_review")))):
+        if r.business_date < today or r.location_id in wh_ids:
+            r.status = "expired"
 
     lookback = int(s["repl.lookback_days"])
     start, end = today - timedelta(days=lookback), today - timedelta(days=1)
@@ -235,7 +238,7 @@ def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplR
         recently_ordered = {(r.location_id, r.product_id) for r in db.scalars(select(Recommendation).where(
             Recommendation.business_date >= cut, Recommendation.business_date < today, Recommendation.status.in_(("approved", "modified", "ordered")),
             Recommendation.approved_qty > 0))}
-    jobs: list[tuple[Location, str]] = [(l, "transfer") for l in stores] + [(l, "supplier") for l in warehouses]
+    jobs: list[tuple[Location, str]] = [(l, "transfer") for l in stores]  # stores only: the warehouse orders directly in StoreHub
     # warehouse stock available for transfers
     wh_on_hand = {pid: sum(max(inv[(w.id, pid)].on_hand, 0) for w in warehouses if (w.id, pid) in inv) for pid in products}
 

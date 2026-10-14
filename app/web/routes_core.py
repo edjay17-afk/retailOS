@@ -128,23 +128,24 @@ def _ops_data(db, ids, today, t):
     ids0 = ids or [0]
     short = lambda n: (n or "").replace("The Daily Centro - ", "")  # noqa: E731
     out: dict = {}
+    sids = list(db.scalars(select(Location.id).where(Location.id.in_(ids0), Location.type == "store")))  # order suggestions exist for stores only
     # order suggestions today, by status
     colours = {"pending": "#2563eb", "needs_review": "#ef4444", "approved": "#10b981", "modified": "#14b8a6", "rejected": "#94a3b8", "ordered": "#6366f1", "expired": "#cbd5e1"}
-    rows = db.execute(select(Recommendation.status, func.count()).where(Recommendation.business_date == today, Recommendation.location_id.in_(ids0)).group_by(Recommendation.status)).all()
+    rows = db.execute(select(Recommendation.status, func.count()).where(Recommendation.business_date == today, Recommendation.location_id.in_(sids)).group_by(Recommendation.status)).all()
     out["repl_status"] = [(t(s.replace("_", " ").capitalize()), n, colours.get(s, "#cbd5e1")) for s, n in rows]
     out["repl_total"] = sum(n for _, n in rows)
     # what is waiting to be ordered, by store
     out["repl_by_store"] = [(short(n), float(v or 0), f"{c} items") for n, v, c in db.execute(
         select(Location.name, func.sum(Recommendation.value), func.count()).join(Location, Location.id == Recommendation.location_id)
-        .where(Recommendation.business_date == today, Recommendation.status.in_(("pending", "needs_review", "approved", "modified")), Recommendation.location_id.in_(ids0))
+        .where(Recommendation.business_date == today, Recommendation.status.in_(("pending", "needs_review", "approved", "modified")), Recommendation.location_id.in_(sids))
         .group_by(Location.name).order_by(func.sum(Recommendation.value).desc()).limit(8))]
     # how much ordering need was raised each day
     out["repl_trend"] = [(d.strftime("%d %b"), float(v or 0)) for d, v in db.execute(
         select(Recommendation.business_date, func.sum(Recommendation.value)).where(Recommendation.business_date >= today - timedelta(days=13), Recommendation.business_date <= today,
-                                                                                   Recommendation.location_id.in_(ids0)).group_by(Recommendation.business_date).order_by(Recommendation.business_date))]
+                                                                                   Recommendation.location_id.in_(sids)).group_by(Recommendation.business_date).order_by(Recommendation.business_date))]
     # days of stock left on the suggestions that are still open
     buckets = [("Under 2 days", 0), ("2 to 4 days", 0), ("5 to 9 days", 0), ("10 to 14 days", 0), ("15+ days", 0)]
-    for (cover,) in db.execute(select(Recommendation.days_cover).where(Recommendation.business_date == today, Recommendation.location_id.in_(ids0),
+    for (cover,) in db.execute(select(Recommendation.days_cover).where(Recommendation.business_date == today, Recommendation.location_id.in_(sids),
                                                                        Recommendation.status.in_(("pending", "needs_review", "approved", "modified")), Recommendation.days_cover.is_not(None))):
         i = 0 if cover < 2 else 1 if cover < 5 else 2 if cover < 10 else 3 if cover < 15 else 4
         buckets[i] = (buckets[i][0], buckets[i][1] + 1)
@@ -222,8 +223,9 @@ def dashboard(c: Ctx = Depends(need("dashboard.view"))):
     tot_avg = sum(tot[:-1]) / 13 if tot and any(tot[:-1]) else 0
     labels = [d.strftime("%a %d %b") for d in sorted(total_series)]
     sales = {"series": tot, "labels": labels, "yesterday": tot[-1] if tot else 0, "today": sum(today_sales.values()), "delta": ((tot[-1] - tot_avg) / tot_avg * 100) if tot_avg else None}
+    sids = list(db.scalars(select(Location.id).where(Location.id.in_(ids or [0]), Location.type == "store")))
     recs = db.execute(select(func.count(), func.coalesce(func.sum(Recommendation.value), 0)).where(
-        Recommendation.business_date == today, Recommendation.status == "pending", Recommendation.location_id.in_(ids or [0]))).one()
+        Recommendation.business_date == today, Recommendation.status == "pending", Recommendation.location_id.in_(sids))).one()
     ai_brief = None
     if c.can("ai.use"):
         from ..ai import service as ai_service

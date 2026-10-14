@@ -88,8 +88,8 @@ INF = label("Inferred", "推断", WARN)
 story.append(Paragraph("RETAIL OS V2.1", s_title))
 story.append(Paragraph("FINAL FROZEN — proposal for management approval", s_h2))
 story.append(Paragraph("最终冻结版 — 提交管理层审批的提案", s_sub))
-story.append(Paragraph("Management edition | English / Chinese | 12 October 2026", s_sub))
-story.append(Paragraph("管理层审阅版 | 英文／中文 | 2026年10月12日", s_sub))
+story.append(Paragraph("Management edition | English / Chinese | 14 October 2026", s_sub))
+story.append(Paragraph("管理层审阅版 | 英文／中文 | 2026年10月14日", s_sub))
 story.append(Spacer(1, 6))
 simple_table([
     [P("VERSION / 版本", s_cellh), P("PROPOSED POSITION / 提案状态", s_cellh)],
@@ -214,16 +214,17 @@ simple_table([
     [P("PO · SUPPLIER / 供应商", s_cellh), P("STATE (12 Oct) / 状态", s_cellh), P("DISPOSITION · OWNER / 结论 · 责任人", s_cellh)],
     [P("PO36<br/>River Valley Distribution"), P("open · 2416 / 0<br/>58 days / 天"),
      P("<b>Supported: superseded duplicate → cancel.</b> PO74 (15 Sep, completed 2420/2420) re-creates PO36 "
-       "line-for-line: 62/62 identical products, 61/62 identical quantities. Cancel after purchasing confirms no "
-       "second delivery is owed.<br/>有证据支持：已被PO74取代的重复单→取消。Owner: warehouse admin / 仓库管理员")],
+       "line-for-line: 62/62 identical products, 61/62 identical quantities. Cancel after the assigned warehouse "
+       "owner confirms no second delivery is owed.<br/>有证据支持：已被PO74取代的重复单→取消。Owner: warehouse admin "
+       "(assigned warehouse owner) / 仓库管理员（指定仓库负责人）")],
     [P("PO101<br/>H-MART PHILIPPINES"), P("partiallyReceived · 743 / 743<br/>header not closed / 表头未结"),
      P("<b>Supported: delivered in full → close.</b> All 35 lines fully received (743/743); only the header status "
        "is stuck. Close in StoreHub after the warehouse confirms there were no rejects. Same-day PO102/PO103 "
-       "closed normally.<br/>有证据支持：已足额交货→结单。Owner: warehouse admin / 仓库管理员")],
+       "closed normally.<br/>有证据支持：已足额交货→结单。Owner: warehouse admin (assigned warehouse owner) / 仓库管理员（指定仓库负责人）")],
     [P("PO112<br/>Akroasia Trading"), P("open · 816 / 0<br/>17 days / 天"),
      P("<b>Supported: partial duplicate of PO111 → cancel or verify.</b> Same supplier, same morning (28 min "
        "apart): PO111 completed with the 6 shared lines at exactly double PO112's quantities; PO112 adds 2 yoghurt "
-       "lines not in PO111.<br/>有证据支持：与PO111部分重复→取消或核实。Owner: warehouse admin / 仓库管理员")],
+       "lines not in PO111.<br/>有证据支持：与PO111部分重复→取消或核实。Owner: warehouse admin (assigned warehouse owner) / 仓库管理员（指定仓库负责人）")],
     [P("PO114<br/>Basic Essential Marketing"), P("open · 318 / 0<br/>17 days / 天"),
      P("<b>OPEN — unresolved.</b> No duplicate pattern. Missing: supplier invoice/delivery receipt and a named "
        "warehouse confirmation of non-delivery.<br/>未结。缺少：供应商发票／送货单及具名仓库未交货确认。")],
@@ -311,7 +312,7 @@ H("6. Test command and result / 测试命令与结果")
 simple_table([
     [P("FIELD / 字段", s_cellh), P("VALUE / 内容", s_cellh)],
     [P("Command / 命令"), P("<font face='ZH'>.venv\\Scripts\\python -m pytest tests -q</font>")],
-    [P("Result / 结果"), P("<b>263 passed, 0 failed</b> in 86.4 s · run 13 October 2026, this code revision")],
+    [P("Result / 结果"), P("<b>279 passed, 0 failed</b> in 91 s · run 14 October 2026, on the tagged commit")],
     [P("Scope / 范围"),
      P("Full suite: formulas, sync, idempotency, permissions, workflows, AI grounding and policy gate, "
        "migrations, order documents, stock-transfer import, i18n, web routes. Disposable databases; fake "
@@ -319,18 +320,18 @@ simple_table([
        "数据迁移、单据、调拨导入、多语言、网页路由。使用临时数据库与模拟StoreHub客户端，不触碰真实数据。")],
     [P("Note on 112 vs 78 / 关于112与78"),
      P("112 was the full-suite count in the earlier technical review; 78 was a four-file subset run for the "
-       "warehouse review. The current full suite is 252; both earlier counts are superseded by this run.<br/>"
-       "112为此前技术审查的全量数；78为仓库审查的四个文件子集。本次252项为当前全量，取代前两者。")],
+       "warehouse review. The current full suite is 279; all earlier counts are superseded by this run.<br/>"
+       "112为此前技术审查的全量数；78为仓库审查的四个文件子集。本次279项为当前全量，取代此前所有数字。")],
 ], [40 * mm, 138 * mm])
 
 # ---------------------------------------------------------------- section 7
 H("7. Exact code revision / 确切代码版本")
 EN("The baseline is the git commit tagged <b>v2.1-spec-frozen</b>. As additional evidence, every tracked file was hashed "
-   "with SHA-256 on 13 October 2026. Code changed after the 12 October manifest (26 files, listed by comparing that manifest "
-   "with the files on disk), so the 12 October manifest is kept as history and this one supersedes it. The manifest is stored at:")
-ZH("基线为带有标签 <b>v2.1-spec-frozen</b> 的git提交。作为补充证据，2026年10月13日对全部受跟踪文件计算了SHA-256。"
-   "10月12日清单之后代码有变更（26个文件），该清单仅作历史保留，本清单取代之。清单存于：")
-EN("<b>docs/v2.1-validation/CODE_REVISION_2026-10-13.sha256</b>")
+   "with SHA-256 on 14 October 2026. The 12 and 13 October manifests are kept as history; the 14 October manifest supersedes "
+   "them and covers the approved baseline exactly. The manifest is stored at:")
+ZH("基线为带有标签 <b>v2.1-spec-frozen</b> 的git提交。作为补充证据，2026年10月14日对全部受跟踪文件计算了SHA-256。"
+   "10月12日与13日的清单仅作历史保留；10月14日清单取代之，并与获批基线完全一致。清单存于：")
+EN("<b>docs/v2.1-validation/CODE_REVISION_2026-10-14.sha256</b>")
 simple_table([
     [P("MANIFEST SHA-256 / 清单哈希", s_cellh)],
     [P(f"<font face='ZH'>{os.environ.get('MANIFEST_HASH', 'MANIFEST HASH NOT SET')}</font>")],

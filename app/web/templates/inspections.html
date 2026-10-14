@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Inspections') }}{% endblock %}
 {% block content %}
-<h1>{{ t('Inspections') }}</h1>
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Daily work') }}</div><h1>{{ t('Inspections') }}</h1>
+    <p>{{ t('Daily checklists for the warehouse and each store. Open one to fill it in — late or missed checklists become problems.') }}</p></div>
+</div>
 <div class="row" style="margin-bottom:10px">
   <a class="btn sec sm" href="?on={{ prev }}&loc={{ loc }}">&larr; {{ prev|day }}</a>
   <b>{{ day|day }}{% if day == today %} {{ t('(today)') }}{% endif %}</b>

@@ -329,8 +329,9 @@ def stock_events_page(tab: str = "all", c: Ctx = Depends(need("count.enter"))):
         tab = "all"
     rows = list(db.scalars(q.order_by(StockEvent.id.desc()).limit(100)))
     counts = {k: n for k, n in db.execute(select(StockEvent.kind, func.count()).where(StockEvent.location_id.in_(ids)).group_by(StockEvent.kind))}
+    verified = db.scalar(select(func.count()).select_from(StockEvent).where(StockEvent.location_id.in_(ids), StockEvent.verified_at.isnot(None))) or 0
     users = {u.id: (u.full_name or u.username) for u in db.scalars(select(User))}
-    return render(c, "stock_events.html", rows=rows, tab=tab, counts=counts, users=users, locations=c.locations())
+    return render(c, "stock_events.html", rows=rows, tab=tab, counts=counts, verified=verified, users=users, locations=c.locations())
 
 
 @router.get("/stock-events/template.csv")

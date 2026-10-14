@@ -12,17 +12,17 @@ from fastapi import Depends, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import pass_context
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import i18n
 from .. import settings_service as cfg
 from ..config import get_config
 from ..db import SessionLocal
-from ..models import Location, User, WebSession
+from ..models import Issue, Location, Recommendation, User, WebSession
 from ..security import ROLE_LABELS, allowed_location_ids, has_perm, load_session
-from ..services import freshness, notifications
-from ..timeutil import fmt_clock, fmt_local, now_utc, to_local
+from ..services import freshness, issues, notifications
+from ..timeutil import fmt_clock, fmt_local, now_utc, to_local, today_local
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
@@ -201,16 +201,16 @@ NAV_GROUPS = [
     ("Operations", [("/issues", "Issues", "alert", "issue.view", ""), ("/inspections", "Inspections", "clipboard", "inspection.do", ""),
                     ("/counts", "Cycle counts", "count", "count.enter", ""),
                     ("/stock-events", "Stock events", "camera", "count.enter", ""),
-                    ("/wastage", "Wastage", "alert", "wastage.record", ""),
-                    ("/expiry", "Expiry", "clock", "expiry.view", ""), ("/compliance", "Permits", "shield", "compliance.view", ""), ("/planogram", "Planogram", "box", "planogram.view", "")]),
-    ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/replenishment/repairs", "Repair queue", "alert", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
+                    ("/wastage", "Wastage", "trash", "wastage.record", ""),
+                    ("/expiry", "Expiry", "clock", "expiry.view", ""), ("/compliance", "Permits", "shield", "compliance.view", ""), ("/planogram", "Planogram", "grid", "planogram.view", "")]),
+    ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/replenishment/repairs", "Repair queue", "wrench", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
                             ("/stock-transfers", "Stock transfers", "sync", "transfer.view", ""),
-                            ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "box", "sales.view", ""),
+                            ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "tag", "sales.view", ""),
                             ("/sales/transactions", "Transactions", "list", "sales.detail", ""), ("/sales/employees", "Sales by employee", "user", "sales.detail", "")]),
-    ("Intelligence", [("/assistant", "Assistant", "sparkles", "ai.use", "AI"), ("/performance", "Performance", "chart", "performance.view", ""), ("/data-quality", "Data quality", "shield", "dq.view", ""),
-                      ("/traceability", "Traceability", "list", "traceability.view", ""),
-                      ("/sync", "Sync status", "sync", "sync.view", "")]),
-    ("Administration", [("/settings", "Settings", "settings", "settings.manage", ""), ("/audit", "Audit log", "list", "audit.view", "")]),
+    ("Intelligence", [("/assistant", "Assistant", "sparkles", "ai.use", "AI"), ("/performance", "Performance", "gauge", "performance.view", ""), ("/data-quality", "Data quality", "shield", "dq.view", ""),
+                      ("/traceability", "Traceability", "link", "traceability.view", ""),
+                      ("/sync", "Sync status", "pulse", "sync.view", "")]),
+    ("Administration", [("/settings", "Settings", "settings", "settings.manage", ""), ("/audit", "Audit log", "history", "audit.view", "")]),
 ]
 
 
@@ -219,14 +219,28 @@ def render(c: Ctx, name: str, **kw):
     lang = i18n.norm(req.cookies.get(i18n.COOKIE_NAME))
     fr = freshness.freshness(c.db)
     stale = [f for f in fr if f["status"] != "fresh" and f["critical"]]
+    pills = _nav_pills(c)
     base = dict(request=req, user=c.user, csrf=c.csrf, can=c.can, company=cfg.get(c.db, "app.company"),
-                nav_groups=[(t, [(u, l, i, tag) for u, l, i, p, tag in links if c.can(p)]) for t, links in NAV_GROUPS if any(c.can(p) for _, _, _, p, _ in links)],
+                nav_groups=[(t, [(u, l, i, str(pills[u]) if pills.get(u) else tag) for u, l, i, p, tag in links if c.can(p)]) for t, links in NAV_GROUPS if any(c.can(p) for _, _, _, p, _ in links)],
                 path=req.url.path, stale=stale, lang=lang, t=c.t,
                 ui_messages={key: c.t(key) for key in i18n.JS_MESSAGES},
                 unit_fmt=lambda value: c.t("{count} units", count=f"{value:g}"),
                 unread=notifications.unread_count(c.db, c.user), ok=req.query_params.get("ok"), err=req.query_params.get("err"))
     base.update(kw)
     return templates.TemplateResponse(req, name, base)
+
+
+def _nav_pills(c: Ctx) -> dict:
+    """Live work-waiting counts shown as small pills next to nav entries."""
+    pills = {}
+    ids = c.location_ids
+    if c.can("repl.view"):
+        pills["/replenishment"] = c.db.scalar(select(func.count()).select_from(Recommendation).join(Location, Location.id == Recommendation.location_id).where(
+            Recommendation.business_date == today_local(), Recommendation.location_id.in_(ids or [0]), Recommendation.status == "pending", Location.type == "store")) or 0
+    if c.can("issue.view"):
+        pills["/issues"] = c.db.scalar(select(func.count()).select_from(Issue).where(
+            (Issue.location_id.in_(ids or [0])) | Issue.location_id.is_(None), Issue.status.in_(issues.OPEN_STATES))) or 0
+    return pills
 
 
 def render_public(request: Request, name: str, status_code: int = 200, **kw):

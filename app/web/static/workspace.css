@@ -37,8 +37,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex="0"]:focus-
 .brand small{font-size:11px;font-weight:500;color:var(--mute);white-space:nowrap;margin-top:1px}
 .rail-toggle{display:grid;place-items:center;background:var(--surface2);color:var(--mute);border:0;padding:0;width:30px;height:30px;margin:0 4px 10px;border-radius:9px;flex-shrink:0}
 .rail-toggle:hover{background:var(--primary-soft);color:var(--primary)}
-.ng{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;height:auto;background:none;margin:14px 0 5px;padding:0 10px;color:var(--mute2)}
-.ng:first-child{margin-top:2px}
+.ng{display:flex;align-items:center;justify-content:space-between;width:100%;font-family:inherit;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;height:auto;background:none;border:0;margin:14px 0 5px;padding:0 10px;color:var(--mute2);cursor:pointer;text-align:left}
+.ng:hover{color:var(--ink)}
+.ng .ng-chev{width:13px;height:13px;stroke-width:2;color:var(--mute2);transition:transform .16s ease}
+.nav-group.collapsed .ng .ng-chev{transform:rotate(-90deg)}
+.nav-group.collapsed .ng-links{display:none}
+.nav-group:first-child .ng{margin-top:2px}
 .sidebar a.nl{width:auto;height:auto;min-height:38px;justify-content:flex-start;padding:8px 10px;margin:1px 0;border-radius:11px;gap:11px;font-size:13px;font-weight:550;color:var(--mute)}
 .sidebar a.nl .i{width:18px;height:18px;stroke-width:1.8}
 .sidebar a.nl:hover{background:var(--surface2);color:var(--ink)}
@@ -56,7 +60,9 @@ body:not(.rail-expanded) .brand{justify-content:center;padding:0 0 16px}
 body:not(.rail-expanded) .brand .mark{width:42px;height:42px}
 body:not(.rail-expanded) .brand-name,body:not(.rail-expanded) .nav-label,body:not(.rail-expanded) .sidebar .tag{display:none}
 body:not(.rail-expanded) .rail-toggle{margin:0 auto 12px}
-body:not(.rail-expanded) .ng{font-size:0;margin:12px 10px 8px;padding:0;height:1px;background:var(--line)}
+body:not(.rail-expanded) .ng{font-size:0;margin:12px 10px 8px;padding:0;height:1px;min-height:0;border-radius:0;box-shadow:none;background:var(--line);pointer-events:none}
+body:not(.rail-expanded) .ng .ng-chev{display:none}
+body:not(.rail-expanded) .nav-group.collapsed .ng-links{display:block}
 body:not(.rail-expanded) .ng:first-child{margin-top:0}
 body:not(.rail-expanded) .sidebar a.nl{width:44px;min-height:42px;padding:0;justify-content:center;margin:2px auto}
 body:not(.rail-expanded) .rail-assistant{width:46px;min-height:46px;justify-content:center;padding:0;margin:18px auto 0;border-radius:var(--r)}
@@ -73,7 +79,7 @@ body:not(.rail-expanded) .rail-assistant .nav-label{display:none}
 .topbar .me{padding:4px 8px;border:0;background:var(--surface);border-radius:var(--r2);gap:9px;box-shadow:none;flex:none}
 .avatar{background:var(--primary);color:#fff;border-radius:999px;width:30px;height:30px}
 .me .n{font-size:12.5px}.me .r{font-size:10.5px}
-.content{padding:24px 28px 36px;max-width:1500px;width:100%;min-width:0}
+.content{padding:24px 28px 96px;max-width:1500px;width:100%;min-width:0}
 .page-head{margin-bottom:22px}.page-head p{font-size:13px}
 
 /* ---------- surfaces: white floating cards */
@@ -311,8 +317,8 @@ th[data-sort]:focus-visible{outline:2px solid var(--primary);outline-offset:-3px
 }
 @media(max-width:640px){
   .topbar .mobile-search{display:grid}
-  .topbar{padding:8px 12px;height:auto;min-height:60px;gap:8px}.workspace-title{font-size:18px;flex:1 1 auto;min-width:0;max-width:none;overflow:hidden;text-overflow:ellipsis}.topbar .search{display:none}.topbar .me{display:none}
-  .content{padding:18px 14px}.dashboard-head{gap:14px}.dashboard-head h1{font-size:23px}.date-label{font-size:11px}.dashboard-head p{font-size:12.5px}
+  .topbar{padding:8px 12px;height:auto;min-height:60px;gap:8px}.workspace-title{display:none}.topbar .search{display:none}.topbar .me{display:none}
+  .content{padding:18px 14px 110px}.dashboard-head{gap:14px}.dashboard-head h1{font-size:23px}.date-label{font-size:11px}.dashboard-head p{font-size:12.5px}
   .dashboard-grid,.overview-side{grid-template-columns:minmax(0,1fr);gap:24px}.sales-summary-body{gap:16px}.hero-number{font-size:29px}.section-head{margin-bottom:18px}.section-head h2{font-size:16px}
   .sales-summary-numbers{display:block}.sales-breakdown{margin:8px 0}.sales-breakdown>div{padding:7px 0}
   .overview-panel,.overview-side .card,.assistant-summary{padding:18px}
@@ -323,7 +329,7 @@ th[data-sort]:focus-visible{outline:2px solid var(--primary);outline-offset:-3px
   .split,.grid.g2,.grid.g3{grid-template-columns:minmax(0,1fr)}.card{padding:16px}.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{flex-wrap:wrap}.stat .value{font-size:23px}.chat-panel{border-radius:0}
   .statgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.statcard{padding:12px;gap:10px;align-items:flex-start}.statcard>div{min-width:0}.statcard .tile{width:32px;height:32px;border-radius:8px}.statcard .v{font-size:20px;white-space:normal;overflow:visible;overflow-wrap:anywhere}
 }
-@media(max-width:480px){.topbar .mobile-search{display:none}.topbar .workspace-title{font-size:17px}.topbar .lang-toggle a{padding:5px 7px}}
+@media(max-width:480px){.topbar .mobile-search{display:none}.topbar .lang-toggle a{padding:5px 7px}}
 /* ---------- phone-first refinements */
 @media(max-width:640px){
   .page-head{flex-direction:column;align-items:flex-start;gap:12px}
@@ -556,6 +562,8 @@ body.nav-loading::before{content:"";position:fixed;top:0;left:0;height:3px;width
 .calm-page .decide button.bad{background:var(--surface);color:var(--bad);border:1px solid var(--line2)}
 .calm-page .decide button.bad:hover{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
 .calm-page .badge.b-ok,.calm-page .badge.b-warn{background:var(--surface2);color:var(--mute)}
+/* phones: the actionable list comes first; summary cards and filters drop below it */
+@media(max-width:700px){.rep-flow{display:flex;flex-direction:column}.rep-work{order:-1}.rep-meta{order:1}}
 
 /* Users: one card per person, one form per card */
 .ucards{display:grid;gap:12px}

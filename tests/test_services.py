@@ -7,7 +7,7 @@ from sqlalchemy import func, select, text
 from app import audit
 from app import settings_service as cfgsvc
 from app.models import (CycleCount, DqEvent, ExpiryBatch, Inspection, Issue, Location, OrderBatch, Product, PurchaseOrder, Receiving,
-                        Recommendation, SyncState, User)
+                        Recommendation, Supplier, SyncState, User)
 from app.security import hash_password
 from app.services import counts, dq, expiry, freshness, inspections, issues, purchasing, receiving, replenishment
 from app.timeutil import now_utc, today_local
@@ -127,16 +127,17 @@ def test_decisions_audit_limits_and_batches(sync, fake, session):
 
 def test_supplier_batch_needs_a_po_number(sync, fake, session):
     seeded(sync, fake, session)
-    fake.data["inventory"]["S_WH"][0]["quantityOnHand"] = 0  # warehouse is out of Cola
-    sync.sync_inventory()
-    replenishment.run(session)
-    boss = mkuser(session, "boss", "management"); session.commit()
-    rec = session.scalar(select(Recommendation).where(Recommendation.source_kind == "supplier"))
-    assert rec is not None
-    if rec.status == "needs_review":
-        replenishment.decide(session, rec, boss, "approve", note="checked")
-    else:
-        replenishment.decide(session, rec, boss, "approve")
+    run = replenishment.run(session)  # the engine no longer raises warehouse supplier suggestions, so build one directly
+    boss = mkuser(session, "boss", "management")
+    loc = session.scalar(select(Location).where(Location.type == "warehouse"))
+    prod = session.scalar(select(Product).limit(1))
+    sup = Supplier(name="Test Supplier"); session.add(sup); session.flush()
+    prod.supplier_id = sup.id
+    rec = Recommendation(run_id=run.id, location_id=loc.id, product_id=prod.id, supplier_id=prod.supplier_id,
+                         business_date=today_local(), calc_version=replenishment.CALC_VERSION, source_kind="supplier",
+                         ads=5, trading_days=10, on_hand=0, raw_qty=50, final_qty=50, status="pending")
+    session.add(rec); session.commit()
+    replenishment.decide(session, rec, boss, "approve")
     b = replenishment.create_batches(session, boss)[0]
     with pytest.raises(replenishment.DecisionError):
         replenishment.mark_entered(session, b, boss, None)

@@ -423,7 +423,8 @@ def sales_by_employee(loc: int = 0, days: str = "14", frm: str = "", to: str = "
 def replenishment_page(loc: int = 0, status: str = "pending", supplier: int = 0, page: int = 1, search: str = "", c: Ctx = Depends(need("repl.view"))):
     db = c.db
     ids = c.location_ids
-    q = (select(Recommendation).where(Recommendation.location_id.in_(ids or [0]), Recommendation.business_date == today_local())
+    q = (select(Recommendation).join(Location, Location.id == Recommendation.location_id)
+         .where(Recommendation.location_id.in_(ids or [0]), Recommendation.business_date == today_local(), Location.type == "store")
          .options(selectinload(Recommendation.product), selectinload(Recommendation.location), selectinload(Recommendation.supplier)))
     if loc:
         c.check_loc(loc)
@@ -441,11 +442,16 @@ def replenishment_page(loc: int = 0, status: str = "pending", supplier: int = 0,
     page = max(page, 1)
     recs = list(db.scalars(q.limit(100).offset((page - 1) * 100)))
     last = db.scalar(select(ReplRun).order_by(ReplRun.id.desc()).limit(1))
-    counts = dict(db.execute(select(Recommendation.status, func.count()).where(Recommendation.business_date == today_local(), Recommendation.location_id.in_(ids or [0]))
-                             .group_by(Recommendation.status)).all())
+    counts_q = (select(Recommendation.status, func.count()).join(Location, Location.id == Recommendation.location_id)
+                .where(Recommendation.business_date == today_local(), Recommendation.location_id.in_(ids or [0]), Location.type == "store"))
+    if loc:
+        counts_q = counts_q.where(Recommendation.location_id == loc)
+    if supplier:
+        counts_q = counts_q.where(Recommendation.supplier_id == supplier)
+    counts = dict(db.execute(counts_q.group_by(Recommendation.status)).all())
     sups = list(db.scalars(select(Supplier).order_by(Supplier.name)))
     return render(c, "replenishment.html", recs=recs, last=last, counts=counts, status=status, loc=loc, supplier=supplier, suppliers=sups, search=term,
-                  locations=c.locations(), page=page, total=total, reasons=cfg.get(db, "repl.reason_codes"), metrics=replenishment.metrics(db),
+                  locations=[l for l in c.locations() if l.type == "store"], page=page, total=total, reasons=cfg.get(db, "repl.reason_codes"), metrics=replenishment.metrics(db),
                   sales_only=cfg.get(db, "repl.mode") != "stock_and_sales", cover_days=int(cfg.get(db, "repl.sales_only_cover_days")),
                   limit=float(cfg.get(db, "repl.approval_limit_manager")), conf=replenishment.confidence_label,
                   reason_labels=replenishment.REASON_LABELS, fixes=dq.FIXES)

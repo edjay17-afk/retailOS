@@ -1,12 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Stock events') }}{% endblock %}
 {% block content %}
-<h1>{{ t('Stock events') }}</h1>
-<p class="small mute">{{ t('Every physical change to stock is recorded here — who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p>
-<div class="tabs"><a href="/stock-events" class="{{ 'on' if tab == 'all' else '' }}">{{ t('All (') }}{{ counts.values()|sum }})</a>
-<a href="/stock-events?tab=write_off" class="{{ 'on' if tab == 'write_off' else '' }}">{{ t('Write-offs (') }}{{ counts.get('write_off', 0) }})</a>
-<a href="/stock-events?tab=unplanned_receipt" class="{{ 'on' if tab == 'unplanned_receipt' else '' }}">{{ t('Unplanned receipts (') }}{{ counts.get('unplanned_receipt', 0) }})</a></div>
-<div class="row" style="margin-bottom:10px"><a class="btn sm ok" href="/stock-events/new?kind=write_off">{{ t('Record a write-off') }}</a><a class="btn sm sec" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a></div>
+{% set total_ev = counts.values()|sum %}
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
+    <p>{{ t('Every physical change to stock is recorded here — who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p></div>
+  <div class="row">
+    <a class="btn ok" href="/stock-events/new?kind=write_off">{{ t('Record a write-off') }}</a>
+    <a class="btn sec" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a>
+  </div>
+</div>
+
+<div class="statgrid">
+  <a class="statcard {{ 'on' if tab == 'all' }}" href="/stock-events"><span><span class="v">{{ total_ev }}</span><div class="l">{{ t('All events') }}</div></span></a>
+  <a class="statcard {{ 'on' if tab == 'write_off' }}" href="/stock-events?tab=write_off"><span><span class="v">{{ counts.get('write_off', 0) }}</span><div class="l">{{ t('Write-offs') }}</div></span></a>
+  <a class="statcard {{ 'on' if tab == 'unplanned_receipt' }}" href="/stock-events?tab=unplanned_receipt"><span><span class="v">{{ counts.get('unplanned_receipt', 0) }}</span><div class="l">{{ t('Unplanned receipts') }}</div></span></a>
+  <span class="statcard"><span><span class="v">{{ verified }}</span><div class="l">{{ t('Verified in StoreHub') }}</div></span></span>
+  <span class="statcard"><span><span class="v">{{ total_ev - verified }}</span><div class="l">{{ t('Waiting for StoreHub') }}</div></span></span>
+</div>
+
 <details class="exp-tool"><summary>{{ t('Upload a CSV or Excel file') }}</summary><div class="body">
   <form novalidate method="post" action="/stock-events/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
     <div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
@@ -17,13 +29,16 @@
   </form>
   <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Type (write-off or unplanned receipt), Reason (optional), Note (optional), Location (optional if one is chosen above), Supplier (optional, for receipts). The same line uploaded twice on one day is recorded once.') }} <a href="/stock-events/template.csv">{{ t('Download template') }}</a></div>
 </div></details>
-<div class="tw"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Kind') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('Photo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('By') }}</th></tr>
-{% for e in rows %}<tr><td class="small nowrap">{{ e.created_at|local('%d %b %H:%M') }}</td>
-<td><span class="badge {{ 'b-bad' if e.kind == 'write_off' else 'b-warn' }}">{{ t('Write-off') if e.kind == 'write_off' else t('Unplanned receipt') }}</span></td>
-<td>{{ e.product.name if e.product else '?' }}</td><td class="small">{{ e.location.name if e.location else '' }}</td><td class="right">{{ e.qty|num }}</td>
+
+<div class="tw stick1"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Kind') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('Photo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('By') }}</th></tr>
+{% for e in rows %}<tr><td class="small nowrap">{{ e.created_at|local('%d %b') }}<div class="mute">{{ e.created_at|local('%H:%M') }}</div></td>
+<td><span class="badge dot {{ 'b-bad' if e.kind == 'write_off' else 'b-warn' }}">{{ t('Write-off') if e.kind == 'write_off' else t('Unplanned receipt') }}</span></td>
+<td><b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<div class="small mute">{{ e.product.barcode }}</div>{% endif %}</td>
+<td class="small">{{ e.location.name if e.location else '' }}</td>
+<td class="right">{% if e.kind == 'write_off' %}<b style="color:var(--bad)">&minus;{{ e.qty|num }}</b>{% else %}<b style="color:var(--ok)">+{{ e.qty|num }}</b>{% endif %}</td>
 <td class="small">{{ t(e.reason) }}{% if e.note %}<div class="small mute">{{ e.note }}</div>{% endif %}</td>
 <td>{% if e.photo_path %}<a class="small" href="/uploads/{{ e.photo_path }}" target="_blank">{{ t('photo') }}</a>{% endif %}</td>
-<td>{% if e.verified_at %}<span class="badge b-ok">{{ t('Verified') }}</span>{% else %}<span class="small mute">{{ t('waiting for StoreHub') }}</span>{% endif %}</td>
+<td>{% if e.verified_at %}<span class="badge b-ok dot">{{ t('Verified') }}</span>{% else %}<span class="small mute">{{ t('waiting for StoreHub') }}</span>{% endif %}</td>
 <td class="small">{{ users.get(e.created_by, '') }}</td></tr>
-{% else %}<tr><td colspan="9" class="mute">{{ t('No stock events recorded yet.') }}</td></tr>{% endfor %}</table></div>
+{% else %}<tr><td colspan="9"><div class="empty">{{ t('No stock events recorded yet.') }}</div></td></tr>{% endfor %}</table></div>
 {% endblock %}
