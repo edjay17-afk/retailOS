@@ -1,0 +1,29 @@
+/* Expiry page layout; modal forms keep their shared styling. */
+.expiry-workspace{max-width:1280px;margin:0 auto}
+.expiry-head{align-items:center;margin-bottom:24px}
+.expiry-head h1{margin:5px 0 0;font-size:26px;letter-spacing:-.03em}
+.expiry-actions{gap:10px;flex-wrap:wrap}
+.expiry-actions button{height:40px;font-size:13px;padding:0 16px}
+.expiry-toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:20px}
+.expiry-location{margin:0;display:flex;align-items:center;gap:12px;min-width:0}
+.expiry-location label{margin:0;font-size:12px;color:var(--mute);font-weight:500}
+.expiry-location select{max-width:280px;min-width:180px;height:40px;font-size:13px;background:var(--bg)}
+.expiry-workspace .expiry-chips{display:flex;gap:0;flex-wrap:wrap;margin:0}
+.expiry-workspace .expiry-chips>span{display:flex;flex-direction:column;gap:4px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;padding:0 20px;font-size:11px;white-space:nowrap}
+.expiry-workspace .expiry-chips>span:first-child{border-left:0}
+.expiry-workspace .expiry-chips>span:last-child{padding-right:0}
+.expiry-workspace .expiry-chips b{font-size:22px;font-weight:650;margin:0;line-height:1.2;font-variant-numeric:tabular-nums}
+.expiry-workspace #expiry-records{border-radius:12px;box-shadow:none;border-color:var(--line)}
+.expiry-workspace #expiry-records th{font-size:11px;text-transform:none;letter-spacing:0;font-weight:500;padding:13px 16px;background:var(--surface2)}
+.expiry-workspace #expiry-records td{padding:16px;vertical-align:middle;font-size:13px}
+.expiry-workspace #expiry-records td.rt-main{font-weight:600;overflow-wrap:anywhere}
+.expiry-workspace #expiry-records td.right{font-weight:600;font-variant-numeric:tabular-nums}
+.expiry-workspace #expiry-records .rt-act summary{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:7px;color:var(--mute);cursor:pointer}
+.expiry-workspace .expiry-help{max-width:900px;font-size:11px;line-height:1.6;margin:16px 2px}
+@media(min-width:761px){.expiry-workspace #expiry-records table{min-width:0;width:100%;table-layout:fixed}.expiry-workspace #expiry-records th:first-child{width:26%}.expiry-workspace #expiry-records th:nth-child(2){width:21%}.expiry-workspace #expiry-records th:nth-child(3){width:8%}.expiry-workspace #expiry-records th:nth-child(4){width:13%}.expiry-workspace #expiry-records td{overflow-wrap:anywhere;white-space:normal}.expiry-workspace .rt-act .expl{min-width:0}.expiry-workspace .rt-act .row{flex-wrap:wrap}}
+@media(max-width:1100px){.expiry-toolbar{align-items:flex-start;flex-wrap:wrap;gap:18px}.expiry-workspace .expiry-chips{flex:1;justify-content:flex-end}.expiry-workspace .expiry-chips>span{padding:0 12px}}
+@media(max-width:760px){.expiry-head{gap:16px;align-items:flex-start;flex-direction:column}.expiry-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.expiry-actions button{padding:0 10px;font-size:12px}.expiry-toolbar{padding:16px;gap:18px}.expiry-location{width:100%;flex-direction:column;align-items:stretch;gap:6px}.expiry-location select{width:100%;max-width:none;min-width:0}.expiry-workspace .expiry-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;flex-basis:100%}.expiry-workspace .expiry-chips>span{padding:0;border:0;white-space:normal}.expiry-workspace .expiry-chips b{font-size:19px}.expiry-workspace #expiry-records{border:0}.expiry-workspace #expiry-records td{padding:0;font-size:12px}}
+
+#expiry-record .expiry-scan-row{display:flex;gap:8px;align-items:center}
+#expiry-record .expiry-scan-row input{flex:1;min-width:0}
+#expiry-record .expiry-scan-row button{width:44px;flex:0 0 44px;height:44px;padding:0;display:grid;place-items:center}

@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="{{ 'zh' if lang == 'zh' else 'en' }}">
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <script>(function(){try{var th=localStorage.getItem('ros-theme');if(th!=='dark'&&th!=='light'){th='light'}document.documentElement.dataset.theme=th}catch(e){document.documentElement.dataset.theme='light'}})();</script>
 <title>{% block title %}{{ company }}{% endblock %} | Retail OS</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/static/style.css?v=20261013-3">
-<link rel="stylesheet" href="/static/chat_and_charts.css?v=20261014-1">
-<link rel="stylesheet" href="/static/workspace.css?v=20261014-1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23cee43b'/%3E%3Ctext x='8' y='25' font-family='Georgia' font-size='28' font-weight='bold' fill='%23262829'%3ER%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ asset_v('style.css') }}">
+<link rel="stylesheet" href="/static/chat_and_charts.css?v={{ asset_v('chat_and_charts.css') }}">
+<link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}">
+<link rel="stylesheet" href="/static/assistant_chat.css?v={{ asset_v('assistant_chat.css') }}">
+{% if path != "/" %}<link rel="stylesheet" href="/static/list_workspace.css?v={{ asset_v('list_workspace.css') }}">{% endif %}
+<link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}">
 </head>
 <body>
 <a class="skip-link" href="#main-content">{{ t('Skip to content') }}</a>
@@ -20,7 +22,7 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <button class="iconbtn drawer-close" id="navigation-close" type="button" aria-label="{{ t('Close navigation') }}"><svg class="i"><use href="#i-x"/></svg></button>
-    <a class="brand" href="/" aria-label="{{ t('Retail OS home') }}"><span class="mark">R<span>OS</span></span><span class="brand-name">Retail OS<small>{{ company }}</small></span></a>
+    <a class="brand" href="/" aria-label="{{ t('Retail OS home') }}"><span class="mark"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" alt="" width="38" height="38"></span><span class="brand-name">Retail OS<small>{{ company }}</small></span></a>
     <button class="rail-toggle" id="rail-toggle" type="button" aria-label="{{ t('Expand navigation') }}" aria-expanded="false" aria-controls="sidebar-nav" title="{{ t('Expand navigation') }}"><svg class="i"><use href="#i-menu"/></svg></button>
     <nav id="sidebar-nav" aria-label="{{ t('Main navigation') }}">
     {% for title, links in nav_groups %}
@@ -28,8 +30,8 @@
       <button class="ng" type="button" data-ng-toggle aria-expanded="true"><span>{{ t(title) }}</span><svg class="i ng-chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
       <div class="ng-links">
       {% for url, label, icon, tag in links %}
-      {% set active = (path == url or (url != '/' and path.startswith(url) and not (url == '/sales' and path != '/sales' and path.startswith('/sales/'))) or (url == '/sales/products' and path.startswith('/sales/product'))) %}
-      <a class="nl {{ 'on' if active else '' }}" href="{{ url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span class="nav-label">{{ t(label) }}</span>{% if tag %}<span class="tag">{{ tag }}</span>{% endif %}</a>
+      {% set active = (path == url or (url != '/' and path.startswith(url) and not (url == '/sales' and path != '/sales' and path.startswith('/sales/')) and not (url == '/purchase-orders' and path.startswith('/purchase-orders/new'))) or (url == '/sales/products' and path.startswith('/sales/product'))) %}
+      <a class="nl {{ 'on' if active else '' }}" href="{{ sales_products_url if url == '/sales/products' and sales_products_url is defined else url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span class="nav-label">{{ t(label) }}</span>{% if tag %}<span class="tag">{{ tag }}</span>{% endif %}</a>
       {% endfor %}
       </div>
       </div>
@@ -41,15 +43,16 @@
   <div class="main">
     <header class="topbar">
       <button class="iconbtn menu-btn" id="mobile-menu" type="button" aria-label="{{ t('Open navigation') }}" aria-expanded="false" aria-controls="sidebar"><svg class="i"><use href="#i-menu"/></svg></button>
-      <div class="workspace-title">{% if path == '/' %}{{ t('Dashboard') }}{% else %}{{ self.title() }}{% endif %}</div>
+      <div class="workspace-title">{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}{{ t('Dashboard') }}{% else %}{{ self.title() }}{% endif %}</div>
       <span class="grow"></span>
+      <div class="header-actions">
       <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false"><svg class="i"><use href="#i-moon"/></svg></button>
       <button type="button" class="btn ghost print-report hide-m" data-print><svg class="i"><use href="#i-file"/></svg>{{ t('Print report') }}</button>
       <span class="lang-toggle" role="group" aria-label="{{ t('Language / 语言') }}"><a href="/lang/en?back={{ path }}" class="{{ 'on' if lang == 'en' }}" hreflang="en">EN</a><a href="/lang/zh?back={{ path }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh">中文</a></span>
       <a class="iconbtn" href="/notifications" title="{{ t('Notifications') }}" aria-label="{{ t('Notifications') }}"><svg class="i"><use href="#i-bell"/></svg>{% if unread %}<b>{{ unread if unread < 100 else '99+' }}</b>{% endif %}</a>
-      <span class="me"><span class="avatar">{{ (user.full_name or user.username)[:1]|upper }}{{ ((user.full_name or '').split(' ')[1:2] or [''])[0][:1]|upper }}</span><span><div class="n">{{ user.full_name or user.username }}</div><div class="r">{{ t(ROLE_LABELS[user.role]) }}</div></span></span>
-      <a class="iconbtn hide-m" href="/password" title="{{ t('Change password') }}" aria-label="{{ t('Change password') }}"><svg class="i"><use href="#i-user"/></svg></a>
-      <form novalidate method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="iconbtn" style="padding:0;background:var(--surface);color:var(--ink);border:1px solid var(--line)" title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i"><use href="#i-logout"/></svg></button></form>
+      <a class="me header-account" href="/password" title="{{ t('Change password') }}"><span class="avatar" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}{{ ((user.full_name or '').split(' ')[1:2] or [''])[0][:1]|upper }}</span><span class="account-copy"><span class="n">{{ user.full_name or user.username }}</span>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<span class="r">{{ t(ROLE_LABELS[user.role]) }}</span>{% endif %}</span><svg class="i account-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+      <form novalidate method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="iconbtn"  title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i"><use href="#i-logout"/></svg></button></form>
+      </div>
     </header>
     <main class="content" id="main-content" tabindex="-1">
       {% if ok %}<div class="flash ok" role="status"><svg class="i"><use href="#i-check"/></svg>{{ t(ok) }}</div>{% endif %}
@@ -71,7 +74,9 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 </dialog>
 <div id="tip" class="tip" role="tooltip" hidden></div>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
-<script src="/static/app.js?v=20261013-1"></script>
+<script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
+<script src="/static/assistant_chat.js?v={{ asset_v('assistant_chat.js') }}"></script>
+<script src="/static/tabs.js?v={{ asset_v('tabs.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

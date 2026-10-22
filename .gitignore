@@ -10,3 +10,5 @@ planogram/
 .jolli/
 *.db-shm
 *.db-wal
+ui.log
+uiserver.log

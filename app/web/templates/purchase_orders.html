@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Purchase orders') }}{% endblock %}
 {% block content %}
-<h1>{{ t('Purchase orders') }}</h1>
+<div class="page-head"><h1>{{ t('Purchase orders') }}</h1>{% if can('po.create') %}<a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div>
 <p class="small mute">{{ t('Copied from StoreHub. A PO that is open more than') }} {{ stale_days }} {{ t('days past its expected date is shown as') }} <span class="badge b-warn">{{ t('stale') }}</span> {{ t('and is not counted as incoming stock. Receive or cancel it in StoreHub.') }}</p>
+<form class="filters" method="get"><input type="hidden" name="view" value="{{ view }}"><div><label for="po-location">{{ t('Location') }}</label><select id="po-location" name="loc"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div><button type="submit">{{ t('Apply') }}</button>{% if loc %}<a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% endif %}</form>
 <div class="tabs"><a href="?view=open&loc={{ loc }}" class="{{ 'on' if view == 'open' }}">{{ t('Open') }}</a><a href="?view=closed&loc={{ loc }}" class="{{ 'on' if view == 'closed' }}">{{ t('Closed') }}</a><a href="?view=all&loc={{ loc }}" class="{{ 'on' if view == 'all' }}">{{ t('All') }}</a></div>
 <div class="tw"><table class="wide"><tr><th scope="col">{{ t('PO #') }}</th><th scope="col">{{ t('Supplier') }}</th><th scope="col">{{ t('Deliver to') }}</th><th scope="col">{{ t('Created') }}</th><th scope="col">{{ t('Expected') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col" class="right">{{ t('Lines') }}</th><th scope="col" class="right">{{ t('Still to arrive') }}</th><th scope="col" class="right">{{ t('Total') }}</th><th></th></tr>
 {% for po, kind, remaining in rows %}<tr>
@@ -11,7 +12,7 @@
 <td><span class="badge {{ 'b-ok' if kind == 'incoming' else 'b-warn' if kind == 'stale' else 'b-bad' if kind == 'deleted' else '' }}">{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}{{ t(' (deleted)') if kind == 'deleted' }}</span></td>
 <td class="right">{{ po.lines|length }}</td><td class="right">{{ remaining|num if kind in ('incoming','stale') else '' }}</td><td class="right">{{ po.total|money }}</td>
 <td>{% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm">{{ t('Receive') }}</button></form>{% endif %}</td></tr>
-{% else %}<tr><td colspan="10"><div class="empty">{{ t('No purchase orders.') }}</div></td></tr>{% endfor %}</table></div>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('POs') }}</span>
-{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% else %}<tr><td colspan="10"><div class="empty">{{ t('No purchase orders.') }}{% if loc %}<a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% elif view != 'all' %}<a class="btn sec" href="?view=all">{{ t('View all orders') }}</a>{% elif can('po.create') %}<a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('POs') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
 {% endblock %}

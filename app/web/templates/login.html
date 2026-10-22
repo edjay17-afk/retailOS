@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="{{ 'zh' if lang == 'zh' else 'en' }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
 <script>(function(){try{var th=localStorage.getItem('ros-theme');if(th!=='dark'&&th!=='light'){th='light'}document.documentElement.dataset.theme=th}catch(e){document.documentElement.dataset.theme='light'}})();</script>
-<title>{{ t('Sign in') }} | Retail OS</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23cee43b'/%3E%3Ctext x='8' y='25' font-family='Georgia' font-size='28' font-weight='bold' fill='%23262829'%3ER%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" href="/static/style.css?v=20261013-3"><link rel="stylesheet" href="/static/workspace.css?v=20261014-1"></head>
+<title>{{ t('Sign in') }} | Retail OS</title><link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/style.css?v={{ asset_v('style.css') }}"><link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}"></head>
 <body>
 <div class="auth">
   <section class="hero">
-    <div class="brand"><span class="mark">R<span>OS</span></span><span>Retail OS<small>{{ company }}</small></span></div>
+    <div class="brand"><span class="mark"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" alt="" width="38" height="38"></span><span>Retail OS<small>{{ company }}</small></span></div>
     <div>
       <h2>{{ t('Run every store from one calm screen.') }}</h2>
       <p>{{ t('Sales and stock from StoreHub, checked and explained. Orders suggested, issues owned, nothing lost.') }}</p>

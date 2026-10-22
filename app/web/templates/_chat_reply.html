@@ -1,6 +1,13 @@
 {% from "_ai.html" import statement with context %}
+<div class="chat-answer-content">
 {% for st in statements %}{{ statement(st, 'chat', facts) }}{% endfor %}
 {% if not statements %}<p class="mute" style="margin:0">{{ t('I could not find an answer in the data.') }}</p>{% endif %}
+{% include '_chat_table.html' %}
+</div>
+{% if page and page.url %}<div class="chat-answer-actions"><a class="btn sec sm" href="{{ page.url }}">Open {{ page.label }}</a></div>{% endif %}
+{% for preview in previews %}<div class="chat-action-preview"><strong>{{ preview.title }}</strong><p>{{ preview.description }}</p>{% if preview.lines %}<ul>{% for line in preview.lines %}<li>{{ line.product }} <b>&times; {{ line.qty }}</b></li>{% endfor %}</ul>{% endif %}</div>{% endfor %}
 {% if n_actions %}<div class="chat-note"><b>{{ n_actions }} {{ t('action') }}{{ 's' if n_actions != 1 and lang != 'zh' }} {{ t('proposed.') }}</b> {{ t('Nothing has run.') }} <a href="/assistant/output/{{ out.id }}">{{ t('Review and approve') }}</a></div>{% endif %}
 {% if out.provider != 'built-in' %}<div class="chat-meta">{{ out.validation.statements - out.validation.unsupported }} {{ t('of') }} {{ out.validation.statements }} {{ t('statements verified against system data ·') }} <a href="/assistant/output/{{ out.id }}">{{ t('evidence') }}</a></div>{% endif %}
+{% if cited_facts %}<details class="chat-sources"><summary>Sources and supporting details</summary><ul>{% for ref, fact in cited_facts.items() %}<li><b>{{ ref }}</b> {{ fact.text }}{% if fact.link %} <a href="{{ fact.link }}">Open record</a>{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+<div class="chat-answer-actions"><button type="button" class="sec sm" data-chat-copy>Copy answer</button><a href="/assistant/output/{{ out.id }}">Details &amp; feedback</a></div>
 {% if follow_ups %}<div class="chips chat-fu">{% for q in follow_ups %}<button type="button" class="chip" data-chat-ask="{{ q }}">{{ q }}</button>{% endfor %}</div>{% endif %}

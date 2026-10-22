@@ -57,7 +57,7 @@ def compute(db: Session, location_ids: list[int], days: int = 60, until=None) ->
 
     # ---- inspections, receiving
     insp = list(db.scalars(select(Inspection).where(Inspection.business_date >= today_local() - timedelta(days=30), Inspection.location_id.in_(location_ids or [0]), Inspection.due_at < now)))
-    done = sum(1 for i in insp if i.status in ("completed", "late"))
+    done = sum(1 for i in insp if i.status in ("completed", "late", "submitted"))
     out["inspections"] = {"due": len(insp), "completed": done, "completion_rate": (done / len(insp)) if insp else None,
                           "on_time": sum(1 for i in insp if i.status == "completed" and i.completed_at and i.completed_at <= i.due_at)}
     rec = list(db.scalars(select(Receiving).where(Receiving.status != "open", Receiving.created_at >= since, Receiving.created_at <= now)))

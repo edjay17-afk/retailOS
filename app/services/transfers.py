@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import audit
-from ..models import Location, OrderBatch, Recommendation, User
+from ..models import Location, OrderBatch, Recommendation, StockTransfer, StockTransferReceipt, StockTransferReceiptLine, User
 from ..timeutil import now_utc
 from . import inventory_events as ev, issues, notifications
 
@@ -84,3 +84,60 @@ def _record_store_events(db: Session, user: User, batch: OrderBatch, lines: list
             e = db.scalar(select(ev.InventoryEvent).where(ev.InventoryEvent.event_uid == uid))
             if e is not None:
                 ev.resolve(db, e, verdict, why)
+
+
+def confirm_store_receipt(db: Session, user: User, transfer: StockTransfer, counts: dict[int, float], note: str | None = None) -> StockTransferReceipt:
+    """V2.1 Gate 3 loop: the destination store counts what physically arrived on a StoreHub-created transfer.
+    One confirmation per transfer. Every line leaves a store_receiving trace event; a difference also leaves a
+    transfer_variance event and opens one issue for the warehouse. related_transfer_id stays empty here — that column
+    carries RetailOS order-batch ids, not stock-transfer ids (storehub_reference holds the ST number instead)."""
+    if transfer.status == "Cancelled":
+        raise TransferError("A cancelled transfer cannot be confirmed")
+    if not transfer.lines:
+        raise TransferError("This transfer has no item lines to count")
+    if db.scalar(select(StockTransferReceipt.id).where(StockTransferReceipt.transfer_id == transfer.id)) is not None:
+        raise TransferError("This transfer is already confirmed")
+    missing = [l for l in transfer.lines if l.id not in counts or counts[l.id] is None]
+    if missing:
+        raise TransferError(f"Enter the counted quantity for every line ({len(missing)} missing). Enter 0 if nothing arrived.")
+    receipt = StockTransferReceipt(transfer_id=transfer.id, location_id=transfer.target_location_id, counted_by=user.id,
+                                   counted_at=now_utc(), note=(note or "").strip() or None)
+    diffs: list[tuple] = []
+    for l in transfer.lines:
+        q = counts[l.id]
+        if q < 0:
+            raise TransferError("A count cannot be negative")
+        receipt.lines.append(StockTransferReceiptLine(transfer_line_id=l.id, expected_qty=l.quantity, counted_qty=q))
+        if abs(q - l.quantity) > 1e-9:
+            diffs.append((l, q))
+    receipt.differences = len(diffs)
+    db.add(receipt)
+    db.flush()
+    for l in transfer.lines:
+        got = counts[l.id]
+        ev.record(db, uid=f"strcv:{l.id}", event_type="store_receiving", user=user, product_id=l.product_id,
+                  location_id=transfer.target_location_id, quantity=got, direction="+", occurred_at=receipt.counted_at,
+                  storehub_reference=transfer.reference, reason_code="store_count", reason_text=note)
+        if abs(l.quantity - got) > 1e-9:
+            ev.record(db, uid=f"stvar:{l.id}", event_type="transfer_variance", user=user, product_id=l.product_id,
+                      location_id=transfer.target_location_id, quantity=abs(l.quantity - got),
+                      direction="-" if got < l.quantity else "+", occurred_at=receipt.counted_at,
+                      storehub_reference=transfer.reference, reason_code="short" if got < l.quantity else "over",
+                      reason_text=note, status="mismatch")
+    if diffs:
+        shown = [f"{l.product_name}: sent {l.quantity:g}, counted {q:g}" for l, q in diffs[:12]]
+        short = any(q < l.quantity for l, q in diffs)
+        issues.create_issue(db, type="receiving", severity="P2" if short else "P3", created_by=user.id,
+                            location_id=transfer.source_location_id or transfer.target_location_id,
+                            source="receiving", source_ref=f"stocktransfer:{transfer.id}",
+                            title=f"Stock transfer {transfer.reference} to {transfer.target_name}: {len(diffs)} line(s) differ from what was sent",
+                            description="; ".join(shown) + (f" (+{len(diffs) - 12} more)" if len(diffs) > 12 else "") +
+                            ". The store's count is recorded in Retail OS. Check the warehouse pick, then correct stock with a stock take or a transfer adjustment in StoreHub.",
+                            dedupe_key=f"st:{transfer.id}")
+        notifications.notify(db, role="warehouse", level="warning",
+                             title=f"{transfer.reference}: the store counted {len(diffs)} line(s) differently",
+                             link=f"/stock-transfers/{transfer.id}", location_id=transfer.source_location_id,
+                             dedupe_key=f"st:{transfer.id}:diff")
+    audit.log(db, actor_type="human", actor_id=user.id, action="stock_transfer.store_confirm", entity_type="stock_transfer",
+              entity_id=transfer.id, after={"reference": transfer.reference, "lines": len(transfer.lines), "differences": len(diffs)})
+    return receipt

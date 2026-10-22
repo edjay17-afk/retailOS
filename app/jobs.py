@@ -11,7 +11,7 @@ from . import audit
 from .config import get_config
 from .db import SessionLocal
 from .models import Recommendation
-from .services import (backup, brief, counts, dq, expiry, inspections, issues, notifications, receiving, replenishment, stock_events, transfer_inbox)
+from .services import (backup, brief, counts, dq, expiry, inspections, issues, notifications, receiving, po_prices, replenishment, sales_profit, stock_events, transfer_inbox, transfer_sheets)
 from .storehub.client import AuthError
 from .storehub.sync import SyncService
 from .timeutil import now_utc, today_local
@@ -49,6 +49,8 @@ def sync_sales(): _sync.sync_transactions()
 def sync_inventory(): _sync.sync_inventory(); _db_job(lambda db: (receiving.verify_with_storehub(db), stock_events.verify_with_sync(db), counts.reconcile_events(db)))
 @_safe("sync_pos")
 def sync_pos(): _sync.sync_purchase_orders(); _db_job(lambda db: replenishment.sync_batches_with_pos(db))
+@_safe("sync_staff")
+def sync_staff(): _sync.sync_employees()
 @_safe("sync_people")
 def sync_people(): _sync.sync_timesheets()
 @_safe("sync_reference")
@@ -68,7 +70,7 @@ def inspection_tasks(): _db_job(lambda db: inspections.generate_tasks(db, today_
 @_safe("expiry")
 def expiry_check(): _db_job(lambda db: expiry.check(db))
 @_safe("replenish")
-def replenish(): _db_job(lambda db: replenishment.run(db))
+def replenish(): _db_job(lambda db: replenishment.ensure_current(db))
 @_safe("outcomes")
 def outcomes(): _db_job(lambda db: replenishment.track_outcomes(db))
 @_safe("backup")
@@ -78,12 +80,13 @@ def import_transfer_inbox():
     out = _db_job(transfer_inbox.process_inbox)
     if out and out.get("files"):
         log.info("transfer inbox: %s", out)
+    _db_job(lambda db: transfer_sheets.match_storehub(db))  # a warehouse sheet is linked to the StoreHub transfer that carries the same goods
 
 
 @_safe("transfer_robot")
 def run_transfer_robot():
     def go(db):
-        if not transfer_inbox.robot_due(db):  # checked every 10 minutes; it only runs when an hour has passed since the last import
+        if not transfer_inbox.robot_due(db):  # checked every minute; fetch only when the configured interval has elapsed
             return {"ran": False}
         transfer_inbox.mark_robot_attempt(db)
         db.commit()
@@ -91,6 +94,30 @@ def run_transfer_robot():
     out = _db_job(go)
     if out and out.get("ran"):
         log.info("stock transfer robot: %s", out)
+
+
+@_safe("sales_profit")
+def run_sales_profit():
+    """StoreHub's Gross Profit per day (read from its Sales over time report); checked every 15 minutes, it only runs every few hours."""
+    def go(db):
+        if not sales_profit.due(db):
+            return {"ran": False}
+        return sales_profit.run(db)
+    out = _db_job(go)
+    if out and out.get("ran"):
+        log.info("gross profit report: %s", out)
+
+
+@_safe("po_prices")
+def run_po_prices():
+    """The exact supplier prices of purchase orders (read from StoreHub's own PO pages); checked every 15 minutes, it only runs when a PO still lacks them."""
+    def go(db):
+        if not po_prices.due(db):
+            return {"ran": False}
+        return po_prices.run(db)
+    out = _db_job(go)
+    if out and out.get("ran"):
+        log.info("purchase order prices: %s", out)
 
 
 @_safe("transfer_fresh")
@@ -175,12 +202,12 @@ def start() -> BackgroundScheduler | None:
     soon = lambda sec: datetime.now() + timedelta(seconds=sec)  # noqa: E731
     # data syncs (spec 6.1 defaults); first run shortly after start-up so a restart catches up at once
     s.add_job(sync_reference, "interval", hours=6, next_run_time=soon(2), id="reference")
-    s.add_job(sync_products, "cron", hour=3, minute=10, id="products")
-    s.add_job(sync_products, "date", run_date=soon(8), id="products_boot")
-    s.add_job(sync_inventory, "interval", minutes=10, next_run_time=soon(20), id="inventory")
-    s.add_job(sync_pos, "interval", minutes=10, next_run_time=soon(40), id="pos")
-    s.add_job(sync_sales, "interval", minutes=5, next_run_time=soon(60), id="sales")
-    s.add_job(sync_people, "interval", minutes=20, next_run_time=soon(80), id="people")
+    s.add_job(sync_products, "interval", minutes=1, next_run_time=soon(8), id="products")  # one job also handles the initial catch-up
+    s.add_job(sync_inventory, "interval", minutes=1, next_run_time=soon(20), id="inventory")
+    s.add_job(sync_pos, "interval", minutes=1, next_run_time=soon(40), id="pos")
+    s.add_job(sync_sales, "interval", minutes=1, next_run_time=soon(60), id="sales")
+    s.add_job(sync_staff, "interval", minutes=1, next_run_time=soon(30), id="staff")
+    s.add_job(sync_people, "interval", minutes=1, next_run_time=soon(50), id="people")
     s.add_job(run_dq, "interval", minutes=10, next_run_time=soon(150), id="dq")
     s.add_job(escalate, "interval", minutes=5, next_run_time=soon(30), id="escalate")
     s.add_job(inspection_tasks, "cron", minute=5, id="inspection_tasks")
@@ -189,7 +216,7 @@ def start() -> BackgroundScheduler | None:
     s.add_job(snapshot, "cron", hour=23, minute=55, id="snapshot")
     s.add_job(snapshot, "date", run_date=soon(200), id="snapshot_boot")
     s.add_job(expiry_check, "cron", hour=6, minute=30, id="expiry")
-    s.add_job(replenish, "cron", hour="6,16", minute=0, id="replenish")
+    s.add_job(replenish, "interval", minutes=5, next_run_time=soon(90), id="replenish")
     s.add_job(outcomes, "cron", hour=4, id="outcomes")
     s.add_job(daily_brief_note, "cron", hour=6, minute=45, id="brief")
     s.add_job(ai_brief, "cron", hour="6,16", minute=15, id="ai_brief")
@@ -198,7 +225,9 @@ def start() -> BackgroundScheduler | None:
     s.add_job(lark_alerts, "interval", minutes=2, next_run_time=soon(260), id="lark_alerts")
     s.add_job(import_transfer_inbox, "interval", minutes=5, next_run_time=soon(280), id="transfer_inbox")
     s.add_job(check_transfer_freshness, "cron", minute=10, id="transfer_fresh")
-    s.add_job(run_transfer_robot, "interval", minutes=10, next_run_time=soon(240), id="transfer_robot")  # hourly in effect, and self-healing after the PC sleeps
+    s.add_job(run_transfer_robot, "interval", minutes=1, next_run_time=soon(240), id="transfer_robot")  # due-check only; actual fetching defaults to every 20 minutes
+    s.add_job(run_sales_profit, "interval", minutes=15, next_run_time=soon(330), id="sales_profit")
+    s.add_job(run_po_prices, "interval", minutes=15, next_run_time=soon(420), id="po_prices")
     s.add_job(compliance_check, "cron", hour=6, minute=20, id="compliance")
     s.add_job(compliance_check, "date", run_date=soon(120), id="compliance_boot")
     s.start()

@@ -32,7 +32,8 @@ echo "== 4/7 Browser for the StoreHub robot"
 echo "== 5/7 Settings"
 sed -i "s|^DATA_DIR=.*|DATA_DIR=$APP/data|; s|^HOST=.*|HOST=127.0.0.1|; s|^PORT=.*|PORT=8000|" .env
 grep -q '^BEHIND_PROXY=' .env && sed -i 's|^BEHIND_PROXY=.*|BEHIND_PROXY=true|' .env || echo 'BEHIND_PROXY=true' >> .env
-sed -i "s|^BASE_URL=.*|BASE_URL=https://$DOMAIN|" .env
+grep -q '^BASE_URL=' .env && sed -i "s|^BASE_URL=.*|BASE_URL=https://$DOMAIN|" .env || echo "BASE_URL=https://$DOMAIN" >> .env
+grep -q '^REQUIRE_HTTPS=' .env && sed -i 's|^REQUIRE_HTTPS=.*|REQUIRE_HTTPS=true|' .env || echo 'REQUIRE_HTTPS=true' >> .env
 chmod 600 .env
 
 echo "== 6/7 Background service"

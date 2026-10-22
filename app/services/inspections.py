@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
 
 from .. import audit
@@ -19,6 +19,15 @@ class InspectionError(Exception):
 DONE = ("completed", "late")  # submitted on time / submitted after the due time
 
 
+def enabled_location():
+    """Zenwok Warehouse no longer participates in inspection tasks."""
+    return func.lower(func.trim(Location.name)) != "zenwok warehouse"
+
+
+def active_scope():
+    return Inspection.location.has(enabled_location())
+
+
 def _due_utc(d: date, hhmm: str) -> datetime:
     h, m = (int(x) for x in hhmm.split(":"))
     local = datetime(d.year, d.month, d.day, h, m, tzinfo=tz())
@@ -30,7 +39,7 @@ def generate_tasks(db: Session, d: date) -> int:
     n = 0
     have = {(i.template_id, i.location_id) for i in db.scalars(select(Inspection).where(Inspection.business_date == d))}
     templates = list(db.scalars(select(InspectionTemplate).where(InspectionTemplate.active.is_(True))))
-    for loc in db.scalars(select(Location).where(Location.monitored.is_(True))):
+    for loc in db.scalars(select(Location).where(Location.monitored.is_(True), enabled_location())):
         for t in templates:
             if t.location_type != loc.type or (t.id, loc.id) in have:
                 continue
@@ -82,7 +91,7 @@ def evaluate(item: TemplateItem, value: str | None, passed: bool | None, photo_o
 
 
 def complete(db: Session, insp: Inspection, user: User, answers: dict[int, dict],
-             photos: dict[int, str | list[str] | None], videos: dict[int, str | None] | None = None) -> Inspection:
+             photos: dict[int, str | list[str] | None], videos: dict[int, str | list[str] | None] | None = None) -> Inspection:
     """Save all photos per item. Older callers may pass a single photo or walkthrough path."""
     if insp.status in DONE:
         raise InspectionError("This inspection is already completed")
@@ -100,14 +109,15 @@ def complete(db: Session, insp: Inspection, user: User, answers: dict[int, dict]
         note = None if photo_only else ((a.get("note") or "").strip() or None)
         supplied = photos.get(iid)
         paths = list(supplied) if isinstance(supplied, list) else ([supplied] if supplied else [])
-        video = None
+        clips: list[str] = []
         if item.kind == "video":
             if videos is None:  # compatibility with the original single-video service calls
-                video, paths = (paths[0] if paths else None), []
+                clips, paths = (paths[:1] if paths else []), []
             else:
-                video = videos.get(iid)
-        if item.kind == "video" and not video:
-            raise InspectionError(f"'{item.label}': attach the video before sending the checklist")
+                got = videos.get(iid)
+                clips = [v for v in (got if isinstance(got, list) else [got]) if v]
+        if item.kind == "video" and not clips:
+            raise InspectionError(f"'{item.label}': attach at least one video before sending the checklist")
         if passed is False:
             fails += 1
             if not note:
@@ -116,7 +126,8 @@ def complete(db: Session, insp: Inspection, user: User, answers: dict[int, dict]
                 raise InspectionError(f"'{item.label}' failed: attach a photo as evidence")
             failed.append((item, stored, note))
         insp.results.append(InspectionResult(item_id=iid, value=stored, passed=passed, note=note,
-                                             photo_path=video or (paths[0] if paths else None), photo_paths=paths))
+                                             photo_path=(clips[0] if clips else None) or (paths[0] if paths else None), photo_paths=paths,
+                                             video_paths=clips or None))
     now = now_utc()
     was_late = now > insp.due_at
     insp.status, insp.completed_at, insp.completed_by, insp.fail_count = ("late" if was_late else "completed"), now, user.id, fails
@@ -137,7 +148,7 @@ def flag_missed(db: Session, grace_minutes: int = 30) -> int:
     now = now_utc()
     n = 0
     # only tasks that existed before their due time can be "missed"; a task created late (first start-up) is not an alert
-    q = select(Inspection).where(Inspection.status.in_(("pending", "in_progress")), Inspection.due_at < now - timedelta(minutes=grace_minutes),
+    q = select(Inspection).where(active_scope(), Inspection.status.in_(("pending", "in_progress")), Inspection.due_at < now - timedelta(minutes=grace_minutes),
                                  Inspection.missed_alerted.is_(False), Inspection.created_at <= Inspection.due_at).options(selectinload(Inspection.template), selectinload(Inspection.location))
     for i in db.scalars(q):
         i.missed_alerted = True
@@ -153,6 +164,6 @@ def flag_missed(db: Session, grace_minutes: int = 30) -> int:
 
 
 def todays(db: Session, d: date, location_ids: list[int]) -> list[Inspection]:
-    q = select(Inspection).where(Inspection.business_date == d, Inspection.location_id.in_(location_ids or [0])) \
+    q = select(Inspection).where(Inspection.business_date == d, Inspection.location_id.in_(location_ids or [0]), active_scope()) \
         .options(selectinload(Inspection.template), selectinload(Inspection.location)).order_by(Inspection.due_at)
     return list(db.scalars(q))

@@ -1,40 +1,51 @@
 {% extends "base.html" %}
 {% block title %}{{ tx.invoice_no or t('Transaction') }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ t('Transaction') }} {{ tx.invoice_no or '' }}</h1>
-  <p>{{ loc.name if loc else '' }} · {{ tx.tx_time|local('%d %b %Y') }} {{ tx.tx_time|clock }}{% if tx.terminal %} · {{ t('Terminal') }} {{ tx.terminal }}{% endif %}</p></div>
+<link rel="stylesheet" href="/static/transaction_detail.css?v={{ asset_v('transaction_detail.css') }}">
+<section class="receipt-page">
+<div class="page-head receipt-header"><div><div class="receipt-eyebrow">{{ t('Transaction details') }}</div><h1>{{ tx.invoice_no or t('Transaction') }}</h1><span class="badge {{ 'b-bad' if tx.cancelled else ('b-warn' if tx.tx_type == 'Return' else 'b-ok') }}">{{ t('Cancelled') if tx.cancelled else t(tx.tx_type) }}</span>
+</div>
   <div class="row"><button type="button" class="btn sec sm" onclick="history.back()">{{ t('Back') }}</button></div></div>
 
-<div class="split">
-<div class="card pad0">
-  <div class="card-head" style="padding:18px 18px 0"><h2>{{ t('Items sold') }}</h2><span class="badge {{ 'b-bad' if tx.cancelled else 'b-ok' }}">{{ t('Cancelled') if tx.cancelled else t(tx.tx_type) }}</span></div>
-  <div class="tw" style="border:0;box-shadow:none;border-radius:0"><table>
-    <tr><th>#</th><th>{{ t('Product') }}</th><th class="right">{{ t('Qty') }}</th><th class="right">{{ t('Unit price') }}</th>{% if has_disc %}<th class="right">{{ t('Discount') }}</th>{% endif %}<th class="right">{{ t('Total') }}</th></tr>
-    {% for l, pname, barcode in lines %}
-    <tr><td class="mute">{{ l.line_no }}</td>
-      <td><div style="font-weight:600">{% if l.product_id %}<a href="/sales/product/{{ l.product_id }}">{{ pname }}</a>{% else %}{{ pname or l.product_sh_id or l.item_type }}{% endif %}</div><div class="small mute">{{ barcode or '' }}</div></td>
-      <td class="right">{{ l.qty|num(0) if l.qty == l.qty|round(0) else l.qty|num(2) }}</td>
-      <td class="right">{{ l.unit_price|money if l.unit_price is not none else '—' }}</td>
-      {% if has_disc %}<td class="right">{{ l.discount|money if l.discount else '' }}</td>{% endif %}
-      <td class="right"><b>{{ l.total|money }}</b></td></tr>
-    {% else %}<tr><td colspan="6" class="empty">{{ t('No line items were synced for this transaction.') }}</td></tr>{% endfor %}
+<div class="receipt-meta">
+  <div><span>{{ t('Store') }}</span><strong>{{ loc.name if loc else '—' }}</strong></div>
+  <div><span>{{ t('Date') }}</span><strong>{{ tx.tx_time|local('%d %b %Y') }} <small>{{ tx.tx_time|clock }}</small></strong></div>
+  <div><span>{{ t('Employee') }}</span><strong>{{ emp.name if emp else (tx.employee_sh_id or '—') }}</strong></div>
+  {% if tx.terminal %}<div><span>{{ t('Terminal') }}</span><strong>{{ tx.terminal }}</strong></div>{% endif %}
+</div>
+<div class="receipt-layout">
+<div class="card pad0 receipt-items">
+  <div class="card-head receipt-items-head"><h2>{{ t('Items sold') }}</h2><span class="small mute">{{ lines|length }} {{ t('items') }}</span></div>
+  <div class="receipt-compact-wrap"><table class="receipt-compact-table">
+    <thead><tr><th>{{ t('Product') }}</th><th>{{ t('Qty') }}</th><th>{{ t('Unit price') }}</th>{% if has_disc %}<th>{{ t('Discount') }}</th>{% endif %}<th>{{ t('Total') }}</th></tr></thead>
+    <tbody>{% for l, pname, barcode in lines %}
+    <tr>
+      <td class="receipt-compact-product"><div>{% if l.product_id %}<a href="/sales/product/{{ l.product_id }}">{{ pname or l.product_sh_id or l.item_type }}</a>{% else %}{{ pname or l.product_sh_id or l.item_type }}{% endif %}</div>{% if barcode %}<small>{{ barcode }}</small>{% endif %}</td>
+      <td class="receipt-compact-qty" data-label="{{ t('Qty') }}">{{ l.qty|num(0) if l.qty == l.qty|round(0) else l.qty|num(2) }}</td>
+      <td class="receipt-compact-price" data-label="{{ t('Unit price') }}">{{ l.unit_price|money if l.unit_price is not none else '—' }}</td>
+      {% if has_disc %}<td class="receipt-compact-discount" data-label="{{ t('Discount') }}">{{ l.discount|money if l.discount else '—' }}</td>{% endif %}
+      <td class="receipt-compact-total"><b>{{ l.total|money }}</b></td>
+    </tr>
+    {% else %}<tr><td colspan="{{ 5 if has_disc else 4 }}" class="empty">{{ t('No line items were synced for this transaction.') }}</td></tr>{% endfor %}</tbody>
   </table></div>
 </div>
 
-<div>
-<div class="card">
-  <div class="card-head"><h2>{{ t('Payment') }}</h2></div>
-  {% for m, a in pays %}<div class="item"><span>{{ m }}</span><b>{{ a|money }}</b></div>{% else %}<p class="mute small">{{ t('No payment lines synced.') }}</p>{% endfor %}
-  <div class="sep"></div>
+<aside class="receipt-sidebar">
+<div class="card receipt-payment">
+  <div class="receipt-payment-title">{{ t('Payment summary') }}</div>
+  <div class="item receipt-total"><span><b>{{ t('Total') }}</b><small>PHP</small></span><b>{{ tx.total|money }}</b></div>
+<div class="receipt-breakdown">
   <div class="item"><span class="mute">{{ t('Subtotal') }}</span><span>{{ tx.subtotal|money }}</span></div>
   {% if tx.discount %}<div class="item"><span class="mute">{{ t('Discount') }}</span><span>−{{ tx.discount|money }}</span></div>{% endif %}
   {% if tx.tax %}<div class="item"><span class="mute">{{ t('Tax') }}</span><span>{{ tx.tax|money }}</span></div>{% endif %}
   {% if tx.service_charge %}<div class="item"><span class="mute">{{ t('Service charge') }}</span><span>{{ tx.service_charge|money }}</span></div>{% endif %}
   {% if tx.rounded %}<div class="item"><span class="mute">{{ t('Rounding') }}</span><span>{{ tx.rounded|money }}</span></div>{% endif %}
-  <div class="item"><span><b>{{ t('Total') }}</b></span><b style="font-size:18px">{{ tx.total|money }}</b></div>
+
+</div><div class="receipt-methods">  {% for m, a in pays %}<div class="item"><span>{{ m }}</span><b>{{ a|money }}</b></div>{% else %}<p class="mute small">{{ t('No payment lines synced.') }}</p>{% endfor %}
+</div>
 </div>
 
-<div class="card">
+<div class="card receipt-details">
   <div class="card-head"><h2>{{ t('Details') }}</h2></div>
   <div class="item"><span class="mute">{{ t('Employee') }}</span><b>{{ emp.name if emp else (tx.employee_sh_id or '—') }}</b></div>
   <div class="item"><span class="mute">{{ t('Store') }}</span><span>{{ loc.name if loc else '' }}</span></div>
@@ -44,6 +55,7 @@
   {% if tx.return_reason %}<div class="item"><span class="mute">{{ t('Reason') }}</span><span>{{ tx.return_reason }}</span></div>{% endif %}{% endif %}
   {% if tx.sale_invoice_no %}<div class="item"><span class="mute">{{ t('Original sale') }}</span><span>{{ tx.sale_invoice_no }}</span></div>{% endif %}
 </div>
+</aside>
 </div>
-</div>
+</section>
 {% endblock %}

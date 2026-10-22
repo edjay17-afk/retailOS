@@ -11,6 +11,12 @@
   </div>
 </div>
 
+<div class="assistant-workspace">
+  <aside class="assistant-conversations"><div class="row"><h2>Conversations</h2><button type="button" class="sec sm" data-chat-new>New chat</button></div>
+    {% for chat in conversations %}<button type="button" class="assistant-thread" data-chat-resume="{{ chat.id }}">{{ chat.title }}</button>{% else %}<p class="small mute">Your saved conversations will appear here.</p>{% endfor %}
+  </aside>
+  <div id="assistant-chat-mount"></div>
+</div>
 {% if not st.available %}
 <div class="card"><b>{{ t('The assistant is not connected yet.') }}</b>
   <p class="mute" style="margin:6px 0 0">{% if not st.enabled %}{{ t('It is switched off in Settings (') }}<code>ai.enabled</code>).{% else %}{{ t('Add') }} <code>GEMINI_API_KEY=...</code> {{ t('(or') }} <code>ANTHROPIC_API_KEY=...</code>{{ t(') to') }} <code>C:\RetailOS\.env</code> {{ t('and restart, or install Claude on this computer and sign in. Everything else in Retail OS works without it.') }}{% endif %}</p></div>
@@ -49,13 +55,6 @@
 <div class="card"><div class="card-head"><h2>{{ t('Proposed actions') }}</h2><span class="small mute">{{ t('Nothing runs until you press the button') }}</span></div>
 {% for a in pending %}{{ action_row(a, gate(a), csrf, '/assistant', tools) }}{% endfor %}</div>
 {% endif %}
-
-<div class="card">
-  <div class="card-head"><h2>{{ t('Ask a question') }}</h2></div>
-  <form novalidate method="post" action="/assistant/ask" class="ask" id="askform" data-busy><input type="hidden" name="csrf" value="{{ csrf }}">
-    <input name="question" placeholder="{{ t('Ask about stock, sales, orders, issues...') }}" maxlength="600" required autocomplete="off"><button class="ai"><span class="idle">{{ t('Ask') }}</span><span class="thinking">{{ t('Thinking...') }}</span></button></form>
-  <div class="chips" style="margin-top:12px">{% for q in questions %}<button type="button" class="chip" data-ask="{{ t(q) }}">{{ t(q) }}</button>{% endfor %}</div>
-</div>
 
 {% if mine %}
 <div class="card"><div class="card-head"><h2>{{ t('Your recent questions') }}</h2></div>

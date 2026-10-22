@@ -32,11 +32,39 @@ def inspections_page(on: str = "", loc: int = 0, c: Ctx = Depends(need("inspecti
     if d == today_local():
         inspections.generate_tasks(c.db, d)
         c.db.flush()
-    ids = [loc] if loc else c.location_ids
+    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse"]
+    ids = [l.id for l in locations if not loc or l.id == loc]
     if loc:
         c.check_loc(loc)
     rows = inspections.todays(c.db, d, ids)
-    return render(c, "inspections.html", rows=rows, day=d, loc=loc, locations=c.locations(), prev=d - timedelta(days=1), nxt=d + timedelta(days=1), today=today_local())
+    return render(c, "inspections.html", rows=rows, day=d, loc=loc, locations=locations, prev=d - timedelta(days=1), nxt=d + timedelta(days=1), today=today_local())
+
+
+@router.get("/inspections/lark-reports")
+def inspection_lark_reports(on: str = "", loc: int = 0, c: Ctx = Depends(need("inspection.do"))):
+    from ..services import lark_inspections
+    d = parse_date(on) or today_local()
+    if loc:
+        c.check_loc(loc)
+    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse" and (not loc or l.id == loc)]
+    try:
+        result = lark_inspections.reports_for_day(d)
+    except Exception:
+        return {"available":False,"message":"Could not check Lark. Please retry.","reports":{}}
+    grouped = {str(l.id):[r for r in result["reports"] if r["store"]==lark_inspections.store_key(l.name)] for l in locations}
+    return {**result,"reports":grouped,"day":d.isoformat()}
+
+
+@router.post("/inspections/lark-reports")
+def inspection_lark_sync(on: str = "", loc: int = 0, csrf: str = Form(""), c: Ctx = Depends(need("inspection.do"))):
+    c.check_csrf(csrf)
+    result = inspection_lark_reports(on, loc, c)
+    if result.get("available"):
+        from ..services import lark_inspections
+        d = parse_date(on) or today_local()
+        lark_inspections.mark_submitted(c.db, d, result["reports"], c.user.id)
+        result["submitted"] = [i.id for i in inspections.todays(c.db, d, [int(lid) for lid in result["reports"]]) if i.status == "submitted"]
+    return result
 
 
 @router.get("/inspections/{iid}")
@@ -68,6 +96,9 @@ def inspection_start(iid: int, csrf: str = Form(""), c: Ctx = Depends(need("insp
     return redirect(f"/inspections/{iid}")
 
 
+MAX_VIDEOS = 10  # per walkthrough
+
+
 @router.post("/inspections/{iid}/submit")
 async def inspection_submit(iid: int, request: Request, c: Ctx = Depends(need("inspection.do"))):
     form = await request.form()
@@ -92,12 +123,17 @@ async def inspection_submit(iid: int, request: Request, c: Ctx = Depends(need("i
                         saved_paths.append(path)
                         photos[item.id].append(path)
             if item.kind == "video":
-                up = form.get(f"f_{item.id}")
-                videos[item.id] = await save_upload(up, allow_video=True) if hasattr(up, "filename") and up.filename else None
-                if videos[item.id]:
-                    saved_paths.append(videos[item.id])
-                    if Path(videos[item.id]).suffix not in (".mp4", ".mov", ".webm"):
-                        raise HTTPException(400, "Choose an MP4, MOV or WebM video for the walkthrough.")
+                ups = [u for u in form.getlist(f"f_{item.id}") if hasattr(u, "filename") and u.filename]
+                if len(ups) > MAX_VIDEOS:
+                    raise HTTPException(400, f"Attach at most {MAX_VIDEOS} videos for the walkthrough.")
+                videos[item.id] = []
+                for up in ups:  # one or more videos, each checked and stored on its own
+                    path = await save_upload(up, allow_video=True)
+                    if path:
+                        saved_paths.append(path)
+                        if Path(path).suffix not in (".mp4", ".mov", ".webm"):
+                            raise HTTPException(400, "Choose an MP4, MOV or WebM video for the walkthrough.")
+                        videos[item.id].append(path)
         if insp.status in ("pending", "missed") and insp.started_at is None:
             inspections.start(c.db, insp, c.user)
         inspections.complete(c.db, insp, c.user, answers, photos, videos=videos)
@@ -233,12 +269,56 @@ async def counts_import(file: UploadFile = File(...), location_id: int = Form(0)
 
 
 @router.post("/counts/create")
-def counts_create(location_id: int = Form(...), size: int = Form(30), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
+def counts_create(location_id: int = Form(...), size: int = Form(30), mode: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
     c.check_csrf(csrf)
     c.check_loc(location_id)
     loc = c.db.get(Location, location_id)
-    cc = countsvc.create(c.db, c.user, loc, min(max(size, 5), 100))
+    cc = countsvc.create_targeted(c.db, c.user, loc, []) if mode == "scan" else countsvc.create(c.db, c.user, loc, min(max(size, 5), 100))
     return redirect(f"/counts/{cc.id}")
+
+
+def _scan_count(c, cid):
+    cc = c.db.get(CycleCount, cid)
+    if cc is None:
+        raise HTTPException(404)
+    c.check_loc(cc.location_id)
+    if cc.status != "open":
+        raise HTTPException(409, "This count is already submitted")
+    return cc
+
+
+@router.post("/counts/{cid}/scan")
+def count_scan(cid: int, code: str = Form(...), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
+    from ..services.transfer_sheets import find
+    from ..storehub.client import StoreHubError
+    c.check_csrf(csrf)
+    cc = _scan_count(c, cid)
+    product, _ = find(c.db, code)
+    if product is None or not product.in_api:
+        raise HTTPException(404, "Product not found. Scan its barcode or enter its SKU.")
+    try:
+        qty = countsvc.live_quantity(cc.location, product)
+    except (StoreHubError, countsvc.CountError, ValueError):
+        raise HTTPException(503, "Could not fetch current stock from StoreHub. Please retry.")
+    line = next((l for l in cc.lines if l.product_id == product.id), None)
+    return {"id":product.id,"name":product.name,"system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else ""}
+
+
+@router.post("/counts/{cid}/scan-save")
+def count_scan_save(cid: int, product_id: int = Form(...), counted: float = Form(...), note: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
+    from ..storehub.client import StoreHubError
+    c.check_csrf(csrf)
+    cc = _scan_count(c, cid)
+    product = c.db.get(Product, product_id)
+    if product is None or not product.in_api:
+        raise HTTPException(404, "Product not found")
+    try:
+        line = countsvc.save_scanned(c.db, cc, c.user, product, counted, note)
+    except countsvc.CountError as e:
+        raise HTTPException(400, str(e))
+    except (StoreHubError, ValueError):
+        raise HTTPException(503, "Could not fetch current stock from StoreHub. Your count was not saved; please retry.")
+    return {"name":product.name,"counted":line.counted_qty,"system":line.system_qty,"difference":line.variance}
 
 
 @router.get("/counts/{cid}")
@@ -413,23 +493,37 @@ def expiry_page(loc: int = 0, c: Ctx = Depends(need("expiry.view"))):
     return render(c, "expiry.html", rows=rows, locations=c.locations(), loc=loc)
 
 
+@router.get("/expiry/products")
+def expiry_products(q: str = "", c: Ctx = Depends(need("expiry.view"))):
+    from ..services.product_lookup import search
+    return search(c.db, q)
+
+
 @router.post("/expiry/add")
-def expiry_add(location_id: int = Form(...), search: str = Form(...), qty: str = Form(...), expiry: str = Form(...), batch_no: str = Form(""), csrf: str = Form(""),
+def expiry_add(product_id: int = Form(0), location_id: int = Form(...), search: str = Form(...), qty: str = Form(...), expiry: str = Form(...), batch_no: str = Form(""), csrf: str = Form(""),
                c: Ctx = Depends(need("expiry.view"))):
     c.check_csrf(csrf)
     c.check_loc(location_id)
+    from fastapi.responses import JSONResponse
+    ajax = c.request.headers.get("x-requested-with") == "fetch"
+    def result(message, error=False):
+        if ajax:
+            return JSONResponse({"ok":not error,"message":message}, status_code=400 if error else 200)
+        return redirect("/expiry", **{"err" if error else "ok":message})
     s = search.strip()
-    p = c.db.scalar(select(Product).where(Product.barcode == s)) or c.db.scalar(select(Product).where(Product.sku == s))
+    p = c.db.get(Product, product_id) if product_id else (c.db.scalar(select(Product).where(Product.barcode == s)) or c.db.scalar(select(Product).where(Product.sku == s)))
+    if product_id and (p is None or not p.in_api):
+        return result("Choose a product currently in StoreHub", True)
     if p is None:
         found = list(c.db.scalars(select(Product).where(Product.name.like(f"%{s}%"), Product.in_api.is_(True)).limit(6)))
         if len(found) != 1:
-            return redirect("/expiry", err=f"{len(found)} products match '{s}'. Scan the barcode or type more of the name." if found else f"No product matches '{s}'")
+            return result(f"{len(found)} products match '{s}'. Scan the barcode or type more of the name." if found else f"No product matches '{s}'", True)
         p = found[0]
     try:
         expirysvc.add_batch(c.db, c.user, location_id, p.id, parse_float(qty) or 0, parse_date(expiry), batch_no.strip() or None)
     except ValueError as e:
-        return redirect("/expiry", err=str(e))
-    return redirect("/expiry", ok=f"Added {p.name}")
+        return result(str(e), True)
+    return result(f"Added {p.name}")
 
 
 @router.get("/expiry/template.csv")

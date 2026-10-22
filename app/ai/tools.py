@@ -195,7 +195,17 @@ def t_manual_in_storehub(db: Session, user: User, a: dict) -> dict:
     return {"summary": "Approved. This system cannot do it in StoreHub, so a person must carry it out in the StoreHub back office: " + ", ".join(f"{k} {v}" for k, v in a.items())}
 
 
+from . import report_tools
+
 TOOLS: dict[str, Tool] = {t.name: t for t in [
+    Tool("get_filtered_sales", "read", "sales.view", "Daily sales and previous equal-period totals. args: location?, frm?, to?, days?", (), report_tools.sales_history),
+    Tool("get_filtered_product_sales", "read", "sales.view", "Exact filtered sales, including individual product daily sales. args: location? (0=all accessible), frm?, to? (ISO dates), days?, supplier? (ID), category?, query?, product_id?, sort? (sales|units|name|price). Totals cover all matches; at most 20 products shown.", (), report_tools.product_sales),
+    Tool("get_supplier_sales", "read", "sales.view", "Sales grouped by supplier. args: location?, frm?, to?, days?", (), report_tools.supplier_sales),
+    Tool("get_transfer_sheets", "read", "transfer.sheet", "Recent transfer sheets or one sheet's lines. args: location? (destination), sheet_id?", (), report_tools.transfers),
+    Tool("get_expiry_batches", "read", "expiry.view", "Active expired or expiring batches. args: location?, days? (ahead, default 30)", (), report_tools.expiry),
+    Tool("get_stock_counts", "read", "count.enter", "Recent counts or one count's product differences. args: location?, count_id?", (), report_tools.counts),
+    Tool("get_lark_inspections", "read", "inspection.do", "Read Lark daily inspection reports, not pass/fail outcomes. args: location?, date? (ISO, default today)", (), report_tools.lark_reports),
+    Tool("prepare_transfer_sheet", "high", "transfer.sheet", "Prepare a warehouse-to-store draft, only after approval. An existing draft for the destination may be reused and quantities added. args: location (destination ID), lines (list of {product_id, qty}, whole units). Never infer quantities without evidence or user instruction.", ("location", "lines"), report_tools.prepare_transfer),
     Tool("get_store_context", "read", "dashboard.view", "Summary of one location. args: location", ("location",), t_get_store_context),
     Tool("get_inventory", "read", "inventory.view", "Stock of a location. args: location, query?, status? (all|negative|zero), limit?", ("location",), t_get_inventory),
     Tool("get_sales_history", "read", "sales.view", "Daily sales of a location. args: location, days?", ("location",), t_get_sales_history),

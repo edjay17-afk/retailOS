@@ -194,3 +194,29 @@ def test_one_bad_record_does_not_block_the_rest_of_its_batch(fl, session):
     client.http = httpx.Client(base_url=lark.HOST, transport=httpx.MockTransport(f.handler))
     out = lark.mirror(client)
     assert out["created"] == 2  # the two good records went through, one by one, after the batch was refused
+
+
+def test_a_row_deleted_in_lark_is_written_again_instead_of_failing_every_run(fl, session):
+    f, client = fl
+    lark.setup(client)
+    session.add(Employee(storehub_id="e1", first_name="Ann", last_name="Lee"))
+    session.commit()
+    assert lark.mirror(client)["created"] == 1
+    tid = next(iter(f.records))
+    staff_tid = f.tables["员工名录 Staff Directory"]
+    f.records[staff_tid].clear()  # somebody deleted the row in Lark
+    emp = session.scalar(select(Employee))
+    emp.first_name = "Anne"
+    session.commit()
+    orig = f.handler
+
+    def handler(req):
+        if req.url.path.endswith("batch_update"):
+            body = json.loads(req.content)
+            if any(r["record_id"] not in f.records[staff_tid] for r in body["records"]):
+                return httpx.Response(200, json={"code": 1254043, "msg": "record not found"})
+        return orig(req)
+    f.handler = handler
+    client.http = httpx.Client(base_url=lark.HOST, transport=httpx.MockTransport(f.handler))
+    out = lark.mirror(client)
+    assert out["errors"] == 0 and len(f.records[staff_tid]) == 1 and "Anne" in json.dumps(list(f.records[staff_tid].values()))

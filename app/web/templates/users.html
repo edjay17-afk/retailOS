@@ -1,17 +1,21 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Users') }}{% endblock %}
 {% block content %}
-<h1>{{ t('Users') }}</h1>
+<link rel="stylesheet" href="/static/users.css?v={{ asset_v('users.css') }}">
+<div class="users-page">
+<div class="page-head"><div><div class="eyebrow">{{ t('Settings') }}</div><h1>{{ t('Users') }}</h1></div><button type="button" data-modal="user-create">{{ t('Add a user') }}</button></div>
 <div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users" class="on">{{ t('Users') }}</a></div>
 
-<div class="card"><h3>{{ t('Add a user') }}</h3>
+<dialog id="user-create" class="modal" aria-labelledby="user-create-title"><div class="user-modal-head"><h2 id="user-create-title">{{ t('Add a user') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
 <form novalidate method="post" action="/users/new"><input type="hidden" name="csrf" value="{{ csrf }}">
-<div class="row"><input name="username" placeholder="{{ t('username') }}" required><input name="full_name" placeholder="{{ t('Full name') }}">
-<input name="password" type="text" placeholder="{{ t('Password (min 4 characters)') }}" required minlength="4" autocomplete="off">
-<select name="role">{% for r in roles %}<option value="{{ r }}">{{ t(ROLE_LABELS[r]) }}</option>{% endfor %}</select>
-<select name="employee"><option value="">{{ t('Not linked to a StoreHub employee') }}</option>{% for e in employees %}<option value="{{ e.storehub_id }}">{{ e.name }}</option>{% endfor %}</select></div>
+<div class="user-create-grid">
+<div><label for="user-new-username">{{ t('username') }}</label><input id="user-new-username" name="username" required></div>
+<div><label for="user-new-name">{{ t('Full name') }}</label><input id="user-new-name" name="full_name"></div>
+<div><label for="user-new-password">{{ t('Password') }}</label><input id="user-new-password" name="password" type="text" placeholder="{{ t('Password (min 4 characters)') }}" required minlength="4" autocomplete="off"></div>
+<div><label for="user-new-role">{{ t('Role') }}</label><select id="user-new-role" name="role">{% for r in roles %}<option value="{{ r }}">{{ t(ROLE_LABELS[r]) }}</option>{% endfor %}</select></div>
+<div class="user-create-employee"><label for="user-new-employee">{{ t('StoreHub employee') }}</label><select id="user-new-employee" name="employee"><option value="">{{ t('Not linked to a StoreHub employee') }}</option>{% for e in employees %}<option value="{{ e.storehub_id }}">{{ e.name }}</option>{% endfor %}</select></div></div>
 <div class="ucard-locs" style="margin-top:10px"><span class="small mute">{{ t('Locations (none = all):') }}</span><div class="uchips">{% for l in locations %}<label class="uchip"><input type="checkbox" name="location_ids" value="{{ l.id }}"><span>{{ l.name }}</span></label>{% endfor %}</div></div>
-<p><button>{{ t('Create user') }}</button></p></form></div>
+<div class="user-create-actions"><button type="button" class="sec" data-modal-close>{{ t('Cancel') }}</button><button>{{ t('Create user') }}</button></div></form></dialog>
 
 <form method="get" action="/users" class="card ufilter" data-nobusy>
   <div><label>{{ t('Store / branch') }}</label><select name="loc" onchange="this.form.submit()"><option value="">{{ t('All users') }} ({{ total_users }})</option>
@@ -22,7 +26,7 @@
 </form>
 {% if loc or q %}<p class="small mute">{{ t('Showing {n} of {total} users.', n=users|length, total=total_users) }}</p>{% endif %}
 <div class="ucards">
-{% for u in users %}<form novalidate method="post" action="/users/{{ u.id }}" class="card ucard"><input type="hidden" name="csrf" value="{{ csrf }}">
+{% for u in users %}<details class="user-record"><summary class="user-summary"><span class="user-avatar" aria-hidden="true">{{ (u.full_name or u.username)[:1]|upper }}</span><span class="user-identity"><b>{{ u.full_name or u.username }}</b><span class="small mute">{{ u.username }}</span></span><span class="user-role">{{ t(ROLE_LABELS[u.role]) }}</span><span class="user-access small mute">{% if not u.location_ids %}{{ t('Access to all locations') }}{% else %}{% for l in locations if l.id in u.location_ids %}{{ l.name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</span><span class="badge {{ 'b-ok' if u.active else '' }}">{{ t('Active') if u.active else t('Inactive') }}</span><span class="user-edit">{{ t('Edit') }} <svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></span></summary><form novalidate method="post" action="/users/{{ u.id }}" class="card ucard"><input type="hidden" name="csrf" value="{{ csrf }}">
   <div class="ucard-head"><div><b>{{ u.username }}</b>{% if u.must_change_password %} <span class="small mute">&middot; {{ t('must change password') }}</span>{% endif %}</div>
     <label class="uactive"><input type="checkbox" name="active" value="1" {{ 'checked' if u.active }}> {{ t('Active') }}</label></div>
   <div class="ucard-grid">
@@ -36,7 +40,8 @@
     <div class="uchips">{% for l in locations %}<label class="uchip"><input type="checkbox" name="location_ids" value="{{ l.id }}" {{ 'checked' if u.location_ids and l.id in u.location_ids }}><span>{{ l.name }}</span></label>{% endfor %}</div></div>
   <div class="ucard-foot"><button class="sm">{{ t('Save') }}</button>
     <button type="submit" formaction="/users/{{ u.id }}/delete" formnovalidate class="sec sm" style="color:var(--bad)" data-confirm="{{ t('Delete user {name}? Their access will be removed and past records kept.', name=u.username) }}" {% if u.id == user.id or (u.role == 'admin' and u.active and active_admins <= 1) %}disabled title="{{ t('You cannot delete your own account or the last active admin.') }}"{% endif %}>{{ t('Delete user') }}</button></div>
-</form>{% else %}<div class="card empty">{{ t('No users match this filter.') }}</div>{% endfor %}
+</form></details>{% else %}<div class="card empty">{{ t('No users match this filter.') }}</div>{% endfor %}
 </div>
 <p class="small mute">{{ t('Passwords are visible here so you can tell staff their sign-in directly. Leave the new-password box empty to keep the current one.') }}</p>
+</div>
 {% endblock %}

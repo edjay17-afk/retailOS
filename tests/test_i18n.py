@@ -84,7 +84,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
         "/data-quality": ("发现的问题", "首次发现"),
         "/sync": ("最近成功", "备份", "任务"),
         "/settings": ("地点与规则", "规则与限制", "库存数据超过此分钟数后视为过期"),
-        "/suppliers": ("填写供应商真实名称", "交货期（天）"),
+        "/suppliers": ("填写供应商真实名称", "联系方式"),
         "/products": ("商品设置", "每箱数量"),
         "/users": ("添加用户", "门店经理", "新密码"),
         "/audit": ("操作包含", "审计日志"),

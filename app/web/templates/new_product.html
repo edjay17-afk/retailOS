@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ t('New product') }}{% endblock %}
+{% block content %}
+<style>#chat-fab{display:none}</style>
+<link rel="stylesheet" href="/static/new_product.css?v={{ asset_v('new_product.css') }}">
+<div class="np-page np-entry">
+<div class="page-head desk-only">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>{{ t('New product') }}</h1>
+    <p>{{ t('Scan each new product, add its name, supplier, category and quantity. Add as many as you need, then save to get the Excel file.') }}</p></div>
+  <div class="row noprint"><button type="button" class="sm sec" data-np-toggle aria-controls="np-saved-wrap">{{ t('Saved lists') }}</button><form novalidate method="post" action="/new-product/discard" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" id="np-discard" data-confirm="{{ t('Discard this list?') }}"{% if not data.lines %} hidden{% endif %}>{{ t('Discard') }}</button></form></div>
+</div>
+<div class="ts-head mob-only"><h1>{{ t('New product') }}</h1><div class="row noprint"><button type="button" class="sm sec" data-np-toggle aria-controls="np-saved-wrap">{{ t('Saved lists') }}</button><form novalidate method="post" action="/new-product/discard" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" id="np-discard" data-confirm="{{ t('Discard this list?') }}"{% if not data.lines %} hidden{% endif %}>{{ t('Discard') }}</button></form></div></div>
+
+<div class="np-workspace">
+<div id="np-app" class="ts-scanbox noprint" data-csrf="{{ csrf }}" data-barcode="{{ barcode }}" data-name="{{ prefill_name }}"
+     data-m-add="{{ t('Added') }}" data-m-known="{{ t('Already in StoreHub') }}" data-m-checking="{{ t('Checking…') }}"
+     data-m-need-name="{{ t('Enter the product name') }}" data-m-need-sup="{{ t('Choose the supplier from the list') }}"
+     data-m-need-cat="{{ t('Choose the category from the list') }}" data-m-need-qty="{{ t('Enter the quantity') }}" data-m-lookup="{{ t('Looking it up on the internet…') }}"
+     data-m-found="{{ t('Found on the internet — check the name against the pack.') }}" data-m-products="{{ t('products') }}" data-m-pcs="{{ t('pcs') }}" data-m-remove="{{ t('Remove') }}" data-m-onlist="{{ t('This barcode is already on the list') }}">
+  <h3 class="ts-h3 np-scan-title"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg>{{ t('Scan the barcode') }}</h3>
+  <form id="np-find" novalidate autocomplete="off" class="ts-scanrow">
+    <div class="ts-inputwrap"><input id="np-scan" data-scanner inputmode="numeric" aria-label="{{ t('Barcode') }}" placeholder="{{ t('Scan or type the barcode') }}" enterkeyhint="search"></div>
+    <button type="button" class="ts-scanbtn" data-scan="np-scan" aria-label="{{ t('Scan') }}" title="{{ t('Scan') }}"><svg class="i"><use href="#i-scan"/></svg></button>
+  </form>
+  <div id="np-msg" class="ts-msg" aria-live="polite"></div>
+
+  <form id="np-card" class="ts-card np-card" novalidate hidden>
+    <div class="ts-card-top"><div><div class="small mute">{{ t('Barcode') }}</div><div id="np-code" class="ts-name"></div></div><button type="button" class="ts-x" id="np-cancel" aria-label="{{ t('Cancel') }}">✕</button></div>
+    <div class="np-grid">
+      <div><label for="np-name">{{ t('Product name') }}</label><input id="np-name" maxlength="300" autocomplete="off"></div>
+      <div><label for="np-supplier">{{ t('Supplier') }}</label><div class="np-lk"><input id="np-supplier" autocomplete="off" placeholder="{{ t('Type to search') }}" role="combobox" aria-expanded="false" aria-autocomplete="list"><div class="ts-drop" role="listbox" hidden></div></div></div>
+      <div><label for="np-category">{{ t('Category') }}</label><div class="np-lk"><input id="np-category" autocomplete="off" placeholder="{{ t('Type to search') }}" role="combobox" aria-expanded="false" aria-autocomplete="list"><div class="ts-drop" role="listbox" hidden></div></div></div>
+      <div><label for="np-qty">{{ t('Quantity') }}</label><input id="np-qty" type="number" min="1" step="1" inputmode="numeric" enterkeyhint="done"></div>
+      <div><label for="np-price">{{ t('Selling price') }} <span class="mute">({{ t('optional') }})</span></label><input id="np-price" type="number" min="0" step="0.01" inputmode="decimal" enterkeyhint="done"></div>
+      <div><label for="np-cost">{{ t('Supplier cost') }} <span class="mute">({{ t('optional') }})</span></label><input id="np-cost" type="number" min="0" step="0.01" inputmode="decimal" enterkeyhint="done"></div>
+    </div>
+    <button type="submit" class="ok ts-big" id="np-add">{{ t('Add') }}</button>
+    <div class="small ts-warn" id="np-warn" style="flex:1 0 100%"></div>
+  </form>
+</div>
+
+<section class="np-review" aria-labelledby="np-review-title">
+<h2 id="np-review-title" class="ts-h2 np-list-title">{{ t('On the list') }} <span class="mute small" id="np-total2"></span></h2>
+<div class="ts-linebox">
+  <div class="np-colhead desk-only"><span>{{ t('Product') }}</span><span>{{ t('Supplier') }}</span><span>{{ t('Category') }}</span><span>{{ t('Quantity') }}</span><span></span></div>
+  <div id="np-lines" class="ts-lines"></div>
+  <div class="empty" id="np-empty" hidden><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg><strong>{{ t('Nothing scanned yet.') }}</strong><span>{{ t('Scan or type the barcode') }}</span></div>
+</div>
+
+
+</section>
+</div>
+
+<div id="np-saved-wrap"{% if not show_saved %} hidden{% endif %}>
+<h2 class="ts-h2">{{ t('Saved lists') }}</h2>
+<div class="np-saved">
+{% for s in saved %}
+<div class="np-srow">
+  <div><b>NP-{{ '%05d' % s.id }}</b><div class="small mute">{{ (s.saved_at or s.created_at)|local }} · {{ s.items|length }} {{ t('products') }} · {{ (s.items|sum(attribute='qty'))|num }} {{ t('pcs') }}</div></div>
+  <div class="np-slinks"><a href="/new-product/lists/{{ s.id }}">{{ t('Open') }}</a><a href="/new-product/lists/{{ s.id }}/excel">Excel</a>
+    <form novalidate method="post" action="/new-product/lists/{{ s.id }}/delete" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="np-remove" data-confirm="{{ t('Delete this list?') }}">{{ t('Delete') }}</button></form></div>
+</div>
+{% else %}<div class="empty">{{ t('No saved lists yet.') }}</div>{% endfor %}
+</div>
+</div>
+
+<h2 class="ts-h2">{{ t('Added to StoreHub') }}</h2>
+<div class="np-saved">
+{% for p in pushes %}
+<div class="np-srow">
+  <div><b>{{ p.name }}</b><div class="small mute">{{ p.barcode }}{% if p.price is not none %} · ₱{{ p.price|num }}{% endif %}</div></div>
+  <div class="np-push-meta">
+    {% if p.origin == 'list' %}{% if p.list_id in have_lists %}<a href="/new-product/lists/{{ p.list_id }}">NP-{{ '%05d' % p.list_id }}</a>{% else %}<span>NP-{{ '%05d' % (p.list_id or 0) }}</span>{% endif %}
+    {% elif p.origin == 'purchase_order' %}<span>{{ t('Purchase order') }}</span>
+    {% elif p.origin == 'transfer_sheet' %}<span>{{ t('Transfer sheet') }}</span>
+    {% else %}<span>{{ t('Quick add') }}</span>{% endif %}
+    <span class="small mute">{{ p.pushed_at|local }} · {{ p.pusher.username if p.pusher else '—' }}</span>
+  </div>
+</div>
+{% else %}<div class="empty">{{ t('Nothing pushed to StoreHub yet.') }}</div>{% endfor %}
+</div>
+</div>
+<div class="ts-bar np-bar np-entry-bar noprint">
+  <div class="ts-bar-info" id="np-total"></div>
+  <form novalidate method="post" action="/new-product/save"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok ts-save" id="np-save">{{ t('Save and make Excel') }}</button></form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/scanner.js"></script>
+<script src="/static/scan.js"></script>
+<script>
+(function(){
+  var app=document.getElementById('np-app'), csrf=app.dataset.csrf, data={{ data|tojson }};
+  var list=document.getElementById('np-lines'), empty=document.getElementById('np-empty'), total=document.getElementById('np-total');
+  var box=document.getElementById('np-scan'), card=document.getElementById('np-card'), msgEl=document.getElementById('np-msg'), warn=document.getElementById('np-warn');
+  var f={name:document.getElementById('np-name'),sup:document.getElementById('np-supplier'),cat:document.getElementById('np-category'),qty:document.getElementById('np-qty'),price:document.getElementById('np-price'),cost:document.getElementById('np-cost')};
+  var code='', seq=0, num=function(n){return String(Math.round(n*100)/100)};
+  function msg(t,bad){ msgEl.textContent=t||''; msgEl.className='ts-msg'+(bad?' bad':''); }
+  function post(path,fields){ var d=new FormData(); d.append('csrf',csrf); Object.keys(fields).forEach(function(k){d.append(k,fields[k])});
+    return fetch(path,{method:'POST',body:d,credentials:'same-origin'}).then(function(r){return r.json()}).catch(function(){return {ok:false,error:'Network error'}}); }
+  function render(d){
+    data=d; list.textContent='';
+    d.lines.forEach(function(l){
+      var row=document.createElement('div'); row.className='tsl np-row';
+      var main=document.createElement('div'); main.className='tsl-main';
+      var b=document.createElement('b'); b.textContent=l.name; main.appendChild(b);
+      var s=document.createElement('div'); s.className='small mute'; s.textContent=l.barcode+(l.price!=null?(' · ₱'+l.price):''); main.appendChild(s);
+      var m=document.createElement('div'); m.className='small mute mob-only'; m.textContent=[l.supplier,l.category].filter(Boolean).join(' · '); main.appendChild(m);
+      row.appendChild(main);
+      [l.supplier,l.category].forEach(function(v){ var c=document.createElement('div'); c.className='np-cell desk-only'; c.textContent=v; row.appendChild(c); });
+      var q=document.createElement('div'); q.className='tsl-q'; q.textContent=num(l.qty); q.setAttribute('aria-label',num(l.qty)+' '+app.dataset.mPcs); row.appendChild(q);
+      var x=document.createElement('button'); x.type='button'; x.className='np-remove'; x.textContent=app.dataset.mRemove;
+      x.setAttribute('aria-label',app.dataset.mRemove+' '+l.name);
+      x.addEventListener('click',function(){ post('/new-product/line/'+l.id+'/remove',{}).then(function(r){ if(r.ok)render(r); else msg(r.error,true) }) });
+      row.appendChild(x); list.appendChild(row);
+    });
+    empty.hidden=d.lines.length>0;
+    var sum=d.lines.length?(d.lines.length+' '+app.dataset.mProducts+' · '+num(d.lines.reduce(function(a,l){return a+l.qty},0))+' '+app.dataset.mPcs):'';
+    total.textContent=sum;
+    var t2=document.getElementById('np-total2'); if(t2) t2.textContent=sum?('· '+sum):'';
+    document.getElementById('np-save').disabled=!d.lines.length;
+    document.querySelectorAll('#np-discard').forEach(function(b){ b.hidden=!d.lines.length });
+  }
+  render(data);
+  // supplier / category: type and the existing ones that match drop down; only an existing one can be used
+  var SUPPLIERS={{ suppliers|tojson }}, CATEGORIES={{ categories|tojson }};
+  function snap(el,opts){ var v=el.value.trim().toLowerCase(), hit=opts.filter(function(o){return o.toLowerCase()===v})[0]; if(hit){ el.value=hit; return true } return false; }
+  function lookup(el,opts){
+    var drop=el.nextElementSibling, items=[], on=-1;
+    function hide(){ drop.hidden=true; drop.textContent=''; items=[]; on=-1; el.setAttribute('aria-expanded','false'); }
+    function mark(){ [].forEach.call(drop.children,function(c,i){ c.classList.toggle('on',i===on) }); var c=drop.children[on]; if(c&&c.scrollIntoView) c.scrollIntoView({block:'nearest'}); }
+    function pick(i){ if(items[i]!==undefined){ el.value=items[i]; hide(); } }
+    function show(){
+      var words=el.value.toLowerCase().split(/\s+/).filter(Boolean);
+      items=opts.filter(function(o){ var l=o.toLowerCase(); return words.every(function(w){return l.indexOf(w)>=0}) }).slice(0,50);
+      on=-1; drop.textContent='';
+      if(!items.length){ hide(); return }
+      items.forEach(function(o,i){ var c=document.createElement('div'); c.className='ts-opt'; c.setAttribute('role','option'); var n=document.createElement('div'); n.className='ts-opt-name'; n.textContent=o; c.appendChild(n);
+        c.addEventListener('mousedown',function(e){ e.preventDefault(); pick(i) }); drop.appendChild(c); });
+      drop.hidden=false; el.setAttribute('aria-expanded','true');
+    }
+    el.addEventListener('input',show); el.addEventListener('focus',show);
+    el.addEventListener('blur',function(){ setTimeout(function(){ hide(); snap(el,opts) },120) });
+    el.addEventListener('keydown',function(e){
+      if(drop.hidden) return;
+      if(e.key==='ArrowDown'){ e.preventDefault(); on=(on+1)%items.length; mark() }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); on=(on<=0?items.length:on)-1; mark() }
+      else if(e.key==='Enter'&&on>=0){ e.preventDefault(); e.stopPropagation(); pick(on) }
+      else if(e.key==='Escape'){ hide() }
+    },true);
+  }
+  lookup(f.sup,SUPPLIERS); lookup(f.cat,CATEGORIES);
+  document.querySelectorAll('[data-np-toggle]').forEach(function(b){ b.setAttribute('aria-expanded',String(!document.getElementById('np-saved-wrap').hidden)); b.addEventListener('click',function(){ var w=document.getElementById('np-saved-wrap'); w.hidden=!w.hidden; document.querySelectorAll('[data-np-toggle]').forEach(function(toggle){ toggle.setAttribute('aria-expanded',String(!w.hidden)); }); if(!w.hidden) w.scrollIntoView({behavior:'smooth',block:'start'}); }); });
+
+  function reset(){ code=''; seq++; card.hidden=true; warn.textContent=''; f.name.value=''; f.qty.value=''; f.sup.value=''; f.cat.value=''; f.price.value=''; f.cost.value=''; box.value=''; box.focus(); }
+  function look(raw){
+    raw=(raw||'').trim(); if(!raw) return;
+    var mine=++seq; card.hidden=true; msg(app.dataset.mChecking);
+    fetch('/new-product/check?barcode='+encodeURIComponent(raw),{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(r){
+      if(mine!==seq) return;
+      if(r.known){ msg(app.dataset.mKnown+': '+r.known,true); box.select(); return }
+      if(data.lines.some(function(l){return l.barcode===raw})){ msg(app.dataset.mOnlist,true); box.select(); return }
+      code=raw; msg(''); document.getElementById('np-code').textContent=raw; card.hidden=false; warn.textContent='';
+      if(!f.name.value){
+        msg(app.dataset.mLookup);
+        fetch('/new-product/guess?barcode='+encodeURIComponent(raw),{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(g){
+          if(mine!==seq) return;
+          if(g&&g.name&&!f.name.value){ f.name.value=g.name; msg(app.dataset.mFound) } else msg('');
+        }).catch(function(){ if(mine===seq) msg('') });
+      }
+      f.name.focus();
+    }).catch(function(){ msg('Network error',true) });
+  }
+  document.getElementById('np-find').addEventListener('submit',function(e){ e.preventDefault(); f.name.value=''; look(box.value); });
+  document.getElementById('np-cancel').addEventListener('click',function(){ msg(''); reset(); });
+  card.addEventListener('submit',function(e){
+    e.preventDefault(); if(!code) return;
+    var name=f.name.value.trim(), n=parseFloat(f.qty.value);
+    if(!name){ warn.textContent=app.dataset.mNeedName; f.name.focus(); return }
+    if(!snap(f.sup,SUPPLIERS)){ warn.textContent=app.dataset.mNeedSup; f.sup.focus(); return }
+    if(!snap(f.cat,CATEGORIES)){ warn.textContent=app.dataset.mNeedCat; f.cat.focus(); return }
+    if(!(n>0)){ warn.textContent=app.dataset.mNeedQty; f.qty.focus(); return }
+    post('/new-product/add',{barcode:code,name:name,supplier:f.sup.value,category:f.cat.value,qty:n,price:f.price.value,cost:f.cost.value}).then(function(r){
+      if(!r.ok){ warn.textContent=r.error; return }
+      render(r); msg('✓ '+app.dataset.mAdd+' · '+n+' × '+name); reset();
+    });
+  });
+  var pre=app.dataset.barcode; if(pre){ f.name.value=app.dataset.name||''; box.value=pre; look(pre); }
+})();
+</script>
+{% endblock %}

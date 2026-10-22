@@ -61,7 +61,7 @@ def test_edit_export_print_and_canonical_records_untouched(session,client,kind,p
     report=client.get(base+'/export?mode=report')
     assert saved['total'] in report.content.decode('utf-8-sig')
     printed=client.get(base+'/print');assert printed.status_code==200
-    assert docs.display(saved['total'],2) in printed.text and 'print-grand-total' in printed.text
+    assert (docs.six_decimals(saved['total']) if kind=='po' else docs.display(saved['total'],2)) in printed.text and 'print-grand-total' in printed.text  # PO print amounts use six decimal places
     assert 'Added item' in printed.text
     # Stale editors cannot overwrite the first save.
     assert client.post(base+'/edit',json=payload).status_code==409
@@ -118,8 +118,8 @@ def test_report_formula_cells_sanitized():
     assert rows[1][0]=="'=bad" and rows[1][2]=="'=SUM(1)"
 
 
-def test_pristine_document_mirrors_storehub_rounded_amounts(session):
-    """StoreHub rounds per line and computes its own Total; a pristine document must show those exact amounts."""
+def test_document_amounts_and_total_are_exact_not_rounded_to_two_decimals(session):
+    """StoreHub rounds each line and its Total to 2 decimals; the printout and report in the system keep the exact amounts."""
     raw = ('S.T ID,No.,Product Name,Ordered Qty,Cost (PHP),SubTotal (PHP),Total (PHP)\r\n'
            'ST0099,,,,,,1665.18\r\n'
            'ST0099,1,Item A,12,67.321428,807.86,\r\n'
@@ -140,8 +140,28 @@ def test_pristine_document_mirrors_storehub_rounded_amounts(session):
     session.add(source)
     session.commit()
     d = docs.document(session, source, 'transfer')
-    assert [line['amount'] for line in d['lines']] == ['807.86', '856.33', '1']
-    assert d['subtotal'] == '1665.19'
-    assert d['total'] == '1665.18'  # StoreHub's official total wins over both recomputation paths
+    assert [line['amount'] for line in d['lines']] == ['807.857136', '856.328568', '1.005']  # quantity x cost, not StoreHub's rounded 807.86 / 856.33 / 1.00
+    assert d['subtotal'] == '1665.190704'
+    assert d['total'] == '1665.190704'  # not StoreHub's rounded 1665.18
+    assert docs.display(d['total'], 2) == '1,665.190704'  # what the printout shows
     edited = docs.validate(dict(header=d['header'], lines=d['lines']), 'transfer')
-    assert edited['total'] == '1665.190704'  # edits always recompute from quantity and cost
+    assert edited['total'] == '1665.190704'  # an edit recomputes the same way
+
+
+def test_po_print_recalculates_six_decimal_amounts(session, client):
+    source, location, target, product = setup_document(session, 'po')
+    source.tax = 1.25
+    source.discount = .5
+    session.commit()
+    add_user(session, 'precise_po', 'warehouse')
+    login(client, 'precise_po')
+    response = client.get(f'/purchase-orders/{source.id}/print')
+    assert response.status_code == 200
+    assert '807.857136' in response.text  # 12 * 67.321428, not the rounded API line subtotal
+    assert '<td>1.25</td>' in response.text
+    assert '1.250000' not in response.text
+    assert '808.607136' in response.text  # add tax, subtract discount after summing
+    session.refresh(source)
+    assert source.total == 807.86 and source.lines[0].subtotal == 807.86
+    assert docs.six_decimals('1.2') == '1.200000'
+    assert docs.six_decimals('1.2345678') == '1.234568'

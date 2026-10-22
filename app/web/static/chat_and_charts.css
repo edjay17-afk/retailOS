@@ -9,7 +9,7 @@ svg.chart text{font-size:10.5px}
 .pt .guide{stroke:var(--line2);stroke-width:1.2}
 .pt:hover .dot,.pt:hover .guide{opacity:1}
 .bar:hover .b{opacity:1;filter:brightness(1.12)}
-.bar:hover .hit{fill:rgba(37,99,235,.07)}
+.bar:hover .hit{fill:rgba(15,118,110,.07)}
 .ring,.donut .slice{cursor:default}
 .donut .slice{transition:stroke-width .12s}.donut .slice:hover{stroke-width:22}
 .donutw{display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center}
@@ -22,11 +22,11 @@ svg.chart text{font-size:10.5px}
 .hb-v{font-size:12.5px;font-weight:650;white-space:nowrap}
 
 /* ---------- chat window ---------- */
-.chat-fab{position:fixed;right:22px;bottom:22px;z-index:90;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:13px 20px 13px 16px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#1d4ed8);box-shadow:0 10px 28px rgba(37,99,235,.38);transition:transform .15s}
+.chat-fab{position:fixed;right:22px;bottom:22px;z-index:90;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:13px 20px 13px 16px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#0f766e,#115e59);box-shadow:0 10px 28px rgba(15,118,110,.38);transition:transform .15s}
 .chat-fab:hover{transform:translateY(-2px)}.chat-fab .i{width:19px;height:19px;color:#fff}.chat-fab.on{display:none}
 .chat-panel{position:fixed;right:22px;bottom:22px;z-index:95;width:410px;max-width:calc(100vw - 24px);height:min(640px,calc(100vh - 44px));background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 64px rgba(15,23,42,.24);display:flex;flex-direction:column;overflow:hidden}
 .chat-panel[hidden]{display:none}
-.chat-panel header{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff}
+.chat-panel header{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;background:linear-gradient(135deg,#0f766e,#115e59);color:#fff}
 .chat-t{display:flex;gap:10px;align-items:center}.chat-t .small{opacity:.85;font-size:11.5px}
 .chat-t .spk{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.2)}
 .chat-panel header .iconbtn{background:rgba(255,255,255,.16);color:#fff;border:0;width:30px;height:30px;padding:0;display:grid;place-items:center;font-size:19px;line-height:1;margin-left:4px;cursor:pointer;border-radius:8px}

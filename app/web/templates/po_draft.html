@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}{{ t('New purchase order') }}{% endblock %}
+{% block content %}
+<style>#chat-fab{display:none}</style>
+<link rel="stylesheet" href="/static/po.css?v={{ asset_v('po.css') }}">
+{% set open = draft is not none %}
+<div class="po-page">
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>{{ t('New purchase order') }}</h1>
+    <p class="desk-only">{{ t('Choose the supplier, then add the products. Everything is delivered to the warehouse.') }}</p></div>
+  <div class="row noprint">
+    <a class="btn sm sec" href="/purchase-orders">{{ t('Purchase orders') }}</a>
+    <button type="button" class="sm sec" data-po-toggle aria-controls="po-saved-wrap">{{ t('Saved orders') }}</button>
+    {% if open %}<form novalidate method="post" action="/purchase-orders/new/discard" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Discard this order?') }}">{{ t('Discard') }}</button></form>{% endif %}
+  </div>
+</div>
+
+{% macro who(action, sup, label) %}
+<form novalidate method="post" action="{{ action }}" class="po-who" data-guard autocomplete="off"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="po-field"><label>{{ t('Supplier') }}</label>
+    <div class="np-lk"><input name="supplier" value="{{ sup }}" placeholder="{{ t('Type to search') }}" role="combobox" aria-expanded="false" aria-autocomplete="list" data-lookup="suppliers" required><div class="ts-drop" role="listbox" hidden></div></div></div>
+  <div class="po-deliver"><span class="po-k">{{ t('Deliver to') }}</span><b>{{ warehouse.name if warehouse else '' }}</b></div>
+  <div class="po-who-go"><button class="ok po-go">{{ label }}</button></div>
+</form>
+{% endmacro %}
+
+{% if not open %}
+<section class="po-step">
+  <div class="po-step-n">1</div>
+  <div class="po-step-body"><h2>{{ t('Supplier') }}</h2><p class="mute small">{{ t('Pick these first. The products come next.') }}</p>
+    {{ who('/purchase-orders/new/start', '', t('Start order')) }}</div>
+</section>
+<section class="po-step po-step-off" aria-hidden="true"><div class="po-step-n">2</div><div class="po-step-body"><h2>{{ t('Products') }}</h2><p class="mute small">{{ t('Name, quantity to order, supplier price and the total, worked out for you.') }}</p></div></section>
+{% else %}
+<section class="po-ticket" id="po-ticket">
+  <div class="po-ticket-main">
+    <div><span class="po-k">{{ t('Supplier') }}</span><b>{{ draft.supplier.name }}</b></div>
+    <div><span class="po-k">{{ t('Deliver to') }}</span><b>{{ draft.location.name }}</b></div>
+    <div><span class="po-k">{{ t('Order') }}</span><b>{{ ref(draft) }}</b></div>
+  </div>
+  <details class="po-change noprint"><summary>{{ t('Change') }}</summary>
+    {{ who('/purchase-orders/new/header', draft.supplier.name, t('Update')) }}
+    <p class="small mute">{{ t('Changing the supplier does not change the prices already on the order.') }}</p></details>
+</section>
+
+<section id="po-app" class="po-compose noprint" data-csrf="{{ csrf }}"
+         data-m-add="{{ t('Added') }}" data-m-pick="{{ t('Choose a product first') }}" data-m-qty="{{ t('Enter the quantity to order') }}" data-m-price="{{ t('Enter the supplier price') }}"
+         data-m-last="{{ t('Last paid') }}" data-m-cost="{{ t('Cost') }}" data-m-on="{{ t('Already on the order') }}" data-m-nf="{{ t('Not in StoreHub') }}" data-m-reg="{{ t('Register') }}" data-m-net="{{ t('No connection. Try again.') }}">
+  <h2 class="po-h">{{ t('Add a product') }}</h2>
+  <div class="po-find">
+    <div class="po-field po-find-box"><label for="po-scan">{{ t('Product name') }}</label>
+      <div class="ts-scanrow"><div class="ts-inputwrap"><input id="po-scan" data-scanner autofocus autocomplete="off" placeholder="{{ t('Scan or type name') }}" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="po-drop" aria-autocomplete="list"><div id="po-drop" class="ts-drop" role="listbox" hidden></div></div>
+        <button type="button" class="ts-scanbtn" data-scan="po-scan" aria-label="{{ t('Scan') }}" title="{{ t('Scan') }}"><svg class="i"><use href="#i-scan"/></svg></button></div></div>
+    <div class="po-field"><label for="po-qty">{{ t('Qty to Order') }}</label><input id="po-qty" inputmode="decimal" autocomplete="off" placeholder="0" disabled></div>
+    <div class="po-field"><label for="po-price">{{ t('Supplier Price (PHP)') }}</label><input id="po-price" inputmode="decimal" autocomplete="off" placeholder="0.00" title="{{ t('Up to 6 decimals, like StoreHub') }}" disabled></div>
+    <div class="po-field po-total-box"><label>{{ t('Total (PHP)') }}</label><output id="po-line-total" class="po-readout">—</output></div>
+    <div class="po-field po-add-box"><label class="desk-only">&nbsp;</label><button type="button" class="ok po-add" id="po-add" disabled>{{ t('Add') }}</button></div>
+  </div>
+  <div id="po-picked" class="po-picked" hidden><div><b id="po-pname"></b><div class="small mute" id="po-psub"></div></div><button type="button" class="ts-x" id="po-clear" aria-label="{{ t('Cancel') }}">✕</button></div>
+  <div id="po-msg" class="ts-msg" aria-live="polite"></div>
+  <dialog id="po-quick" class="modal quick-add" aria-label="{{ t('Not in StoreHub') }}">
+    <form novalidate>
+      <div class="ts-card-top"><div><div class="small mute">{{ t('Not in StoreHub') }}</div><div id="po-qcode" class="ts-name"></div></div><button type="button" class="ts-x" id="po-qcancel" aria-label="{{ t('Cancel') }}">✕</button></div>
+      <div class="np-grid">
+        <div><label for="po-qname">{{ t('Product name') }}</label><input id="po-qname" maxlength="300" autocomplete="off"></div>
+        <div><label for="po-qcat">{{ t('Category') }}</label><input id="po-qcat" list="po-cats" autocomplete="off"><datalist id="po-cats">{% for ct in categories %}<option value="{{ ct }}">{% endfor %}</datalist></div>
+        <div><label for="po-qprice">{{ t('Selling price') }}</label><input id="po-qprice" inputmode="decimal" autocomplete="off" placeholder="0.00"></div>
+        <div><label for="po-qcost">{{ t('Supplier cost') }} <span class="mute">({{ t('optional') }})</span></label><input id="po-qcost" inputmode="decimal" autocomplete="off" placeholder="0.00"></div>
+      </div>
+      <div class="po-qfoot"><span class="small mute">{{ t('Created in StoreHub, then added to this order.') }}</span><button type="submit" class="ok ts-big" id="po-qadd">{{ t('Add to StoreHub') }}</button></div>
+      <div class="small ts-warn" id="po-qwarn"></div>
+    </form>
+  </dialog>
+</section>
+
+<h2 class="po-h po-h2">{{ t('On the order') }} <span class="mute small" id="po-count"></span></h2>
+<div class="po-table" id="po-table">
+  <div class="po-row po-head desk-only"><span>{{ t('Product Name') }}</span><span class="r">{{ t('Qty to Order') }}</span><span class="r">{{ t('Supplier Price (PHP)') }}</span><span class="r">{{ t('Total (PHP)') }}</span><span class="r">{{ t('Action') }}</span></div>
+  <div id="po-lines"></div>
+  <div class="empty" id="po-empty" hidden>{{ t('No products yet. Scan or type a name above.') }}</div>
+  <div class="po-sums" id="po-foot" hidden>
+    <div class="po-sum"><span>{{ t('Subtotal (PHP)') }}</span><b id="po-sub"></b></div>
+    <div class="po-sum"><span>{{ t('Tax') }} <span id="po-rate"></span>%</span><b id="po-tax"></b></div>
+    <div class="po-sum po-sum-total"><span>{{ t('Total (PHP)') }}</span><b id="po-grand"></b></div>
+  </div>
+</div>
+{% endif %}
+</div>
+
+{% if open %}
+<div class="ts-bar np-bar noprint">
+  <div class="draft-bar-info"><div class="ts-bar-info" id="po-bar-info"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">Draft saved</span></div>
+  <form novalidate method="post" action="/purchase-orders/new/save"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok ts-save" id="po-save" disabled>{{ t('Save purchase order') }}</button></form>
+</div>
+{% endif %}
+
+<div id="po-saved-wrap" class="po-page"{% if not show_saved %} hidden{% endif %}>
+<h2 class="po-h po-h2">{{ t('Saved orders') }}</h2>
+<div class="np-saved">
+{% for s in saved_lists %}<div class="np-srow"><div><b>{{ ref(s) }}</b> · {{ s.supplier.name }} → {{ s.location.name }}<div class="small mute">{{ (s.saved_at or s.created_at)|local }} · {{ s.lines|length }} {{ t('products') }} · PHP {{ show(sums[s.id].total) }}</div></div>
+  <div class="np-slinks"><a href="/purchase-orders/new/lists/{{ s.id }}">{{ t('Open') }}</a><a href="/purchase-orders/new/lists/{{ s.id }}/download.csv">CSV</a><a href="/purchase-orders/new/lists/{{ s.id }}/print" target="_blank" rel="noopener">{{ t('Print') }}</a></div></div>
+{% else %}<div class="empty">{{ t('No saved orders yet.') }}</div>{% endfor %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/scanner.js"></script>
+<script src="/static/scan.js"></script>
+<script src="/static/draft_feedback.js?v={{ asset_v('draft_feedback.js') }}"></script>
+<script>
+(function(){
+  var SUPPLIERS={{ suppliers|tojson }}, PRODUCTS={{ t('products')|tojson }}, PRODUCT={{ t('product')|tojson }};
+  // ---- type-ahead for the supplier: the existing suppliers that match drop down; only an existing one can be used
+  function lookup(el,opts){
+    var drop=el.nextElementSibling, items=[], on=-1;
+    function hide(){ drop.hidden=true; drop.textContent=''; items=[]; on=-1; el.setAttribute('aria-expanded','false'); }
+    function mark(){ [].forEach.call(drop.children,function(c,i){ c.classList.toggle('on',i===on) }); var c=drop.children[on]; if(c&&c.scrollIntoView) c.scrollIntoView({block:'nearest'}); }
+    function pick(i){ if(items[i]!==undefined){ el.value=items[i]; hide(); } }
+    function show(){
+      var words=el.value.toLowerCase().split(/\s+/).filter(Boolean);
+      items=opts.filter(function(o){ var l=o.toLowerCase(); return words.every(function(w){return l.indexOf(w)>=0}) }).slice(0,50);
+      on=-1; drop.textContent='';
+      if(!items.length){ hide(); return }
+      items.forEach(function(o,i){ var c=document.createElement('div'); c.className='ts-opt'; c.setAttribute('role','option'); var n=document.createElement('div'); n.className='ts-opt-name'; n.textContent=o; c.appendChild(n);
+        c.addEventListener('mousedown',function(e){ e.preventDefault(); pick(i) }); drop.appendChild(c); });
+      drop.hidden=false; el.setAttribute('aria-expanded','true');
+    }
+    function snap(){ var v=el.value.trim().toLowerCase(), hit=opts.filter(function(o){return o.toLowerCase()===v})[0]; if(hit) el.value=hit; return !!hit; }
+    el.addEventListener('input',show); el.addEventListener('focus',show);
+    el.addEventListener('blur',function(){ setTimeout(function(){ hide(); snap() },120) });
+    el.addEventListener('keydown',function(e){
+      if(drop.hidden) return;
+      if(e.key==='ArrowDown'){ e.preventDefault(); on=(on+1)%items.length; mark() }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); on=(on<=0?items.length:on)-1; mark() }
+      else if(e.key==='Enter'&&on>=0){ e.preventDefault(); e.stopPropagation(); pick(on) }
+      else if(e.key==='Escape'){ hide() }
+    },true);
+    el.form.addEventListener('submit',function(e){ if(!snap()){ e.preventDefault(); el.setCustomValidity(''); el.focus(); el.classList.add('bad'); show() } });
+  }
+  document.querySelectorAll('[data-lookup="suppliers"]').forEach(function(el){ lookup(el,SUPPLIERS) });
+  document.querySelectorAll('[data-po-toggle]').forEach(function(b){ var w=document.getElementById('po-saved-wrap'); b.setAttribute('aria-expanded',String(!w.hidden)); b.addEventListener('click',function(){ w.hidden=!w.hidden; b.setAttribute('aria-expanded',String(!w.hidden)); if(!w.hidden) w.scrollIntoView({behavior:'smooth',block:'start'}); }); });
+
+  var app=document.getElementById('po-app'); if(!app) return;
+  // ---- exact decimal arithmetic: a price keeps every digit it was typed with, and quantity x price is worked out without floating point
+  var D={
+    parse:function(s){ s=String(s==null?'':s).trim().replace(/,/g,'').replace(/\s/g,''); if(!/^(\d+\.?\d*|\.\d+)$/.test(s)) return null; var p=s.split('.'), f=p[1]||''; return {n:BigInt((p[0]||'0')+f),s:f.length}; },
+    str:function(d){ var t=d.n.toString(); if(d.s>0){ t=t.padStart(d.s+1,'0'); t=t.slice(0,t.length-d.s)+'.'+t.slice(t.length-d.s); t=t.replace(/0+$/,'').replace(/\.$/,'') } return t; },
+    mul:function(a,b){ return {n:a.n*b.n,s:a.s+b.s}; },
+    add:function(a,b){ var s=Math.max(a.s,b.s); return {n:a.n*(BigInt(10)**BigInt(s-a.s))+b.n*(BigInt(10)**BigInt(s-b.s)),s:s}; },
+    zero:{n:BigInt(0),s:0}
+  };
+  function show(str){   // 1234567.5 -> 1,234,567.50 ; more than two decimals are all kept: 3053.5714285 -> 3,053.5714285
+    var p=String(str).split('.'), w=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','), f=(p[1]||'');
+    while(f.length<2) f+='0'; return w+'.'+f;
+  }
+  function cut6(el){ var v=el.value, w=v.replace(/(\.\d{6})\d+/,'$1'); if(w!==v){ var at=el.selectionStart; el.value=w; try{ el.setSelectionRange(Math.min(at,w.length),Math.min(at,w.length)) }catch(e){} } }   // a price keeps 6 decimals, as StoreHub does
+  function lineTotal(q,p){ var a=D.parse(q), b=D.parse(p); return (a&&b)?D.str(D.mul(a,b)):null; }
+
+  var csrf=app.dataset.csrf, data={{ data|tojson }};
+  var scan=document.getElementById('po-scan'), qty=document.getElementById('po-qty'), price=document.getElementById('po-price'), addBtn=document.getElementById('po-add'), out=document.getElementById('po-line-total');
+  var picked_=document.getElementById('po-picked'), msgEl=document.getElementById('po-msg'), list=document.getElementById('po-lines'), empty=document.getElementById('po-empty'), foot=document.getElementById('po-foot');
+  var picked=null, feedback=RetailDraft({lines:'#po-lines input',final:'form[action="/purchase-orders/new/save"]',controls:'form[action$="/cancel"] button,form[action$="/delete"] button,form[action$="/discard"] button,.po-who input,.po-who button,#po-app input,#po-app button,#po-lines input,#po-lines button,.ts-bar button,#po-quick input,#po-quick button',extra:function(){return !!(picked&&(qty.value||price.value))||(document.getElementById('po-quick').open&&Array.from(document.querySelectorAll('#po-quick input:not([type=hidden])')).some(function(el){return !!el.value;}));}});
+  function msg(t,bad){ msgEl.textContent=t||''; msgEl.className='ts-msg'+(bad?' bad':''); }
+  function post(path,fields){ var f=new FormData(); f.append('csrf',csrf); Object.keys(fields).forEach(function(k){f.append(k,fields[k])});
+    return feedback.post('/purchase-orders/new'+path,f); }
+
+  // ---- the order
+  function grand(lines){ var t=D.zero; lines.forEach(function(l){ var x=lineTotal(l.qty,l.price); if(x) t=D.add(t,D.parse(x)) }); return D.str(t); }
+  var RATE={{ data.rate|tojson }};   // tax percent, fixed for this order
+  function taxOf(sub){ var a=D.parse(sub), r=D.parse(RATE); if(!a||!r) return '0'; var m=D.mul(a,r); return D.str({n:m.n,s:m.s+2}); }   // subtotal x rate / 100, exact
+  function summary(lines){
+    var sub=grand(lines), tax=taxOf(sub), g=D.str(D.add(D.parse(sub),D.parse(tax))), info=document.getElementById('po-bar-info'), save=document.getElementById('po-save'), cnt=document.getElementById('po-count');
+    var s=lines.length?(lines.length+' '+(lines.length===1?PRODUCT:PRODUCTS)+' · PHP '+show(g)):'';
+    if(info) info.textContent=s; if(cnt) cnt.textContent=lines.length?('· '+lines.length):'';
+    if(save) save.disabled=!lines.length;
+    foot.hidden=!lines.length; document.getElementById('po-rate').textContent=RATE; document.getElementById('po-sub').textContent=lines.length?show(sub):''; document.getElementById('po-tax').textContent=lines.length?show(tax):''; document.getElementById('po-grand').textContent=lines.length?show(g):''; empty.hidden=lines.length>0;
+  }
+  function cell(cls,label){ var c=document.createElement('div'); c.className=cls; if(label){ var l=document.createElement('span'); l.className='po-lab mob-only'; l.textContent=label; c.appendChild(l) } return c; }
+  function render(d){
+    data=d; list.textContent='';
+    d.lines.forEach(function(l){
+      var row=document.createElement('div'); row.className='po-row po-line';
+      var nm=cell('po-name'); var b=document.createElement('b'); b.textContent=l.name; nm.appendChild(b); var s=document.createElement('div'); s.className='small mute po-code'; s.textContent=l.barcode||l.sku||''; nm.appendChild(s); row.appendChild(nm);
+      var q=cell('po-c r',{{ t('Qty to Order')|tojson }}), qi=document.createElement('input'); qi.value=l.qty; qi.setAttribute('inputmode','decimal'); qi.className='po-in'; q.appendChild(qi); row.appendChild(q);
+      var p=cell('po-c r',{{ t('Supplier Price (PHP)')|tojson }}), pi=document.createElement('input'); pi.value=l.price; pi.setAttribute('inputmode','decimal'); pi.className='po-in'; p.appendChild(pi); row.appendChild(p);
+      var t=cell('po-c r po-tot',{{ t('Total (PHP)')|tojson }}), tv=document.createElement('b'); tv.textContent=show(l.total); t.appendChild(tv); row.appendChild(t);
+      var a=cell('po-c r po-act'), x=document.createElement('button'); x.type='button'; x.className='np-remove'; x.textContent={{ t('Delete')|tojson }}; a.appendChild(x); row.appendChild(a);
+      function live(){   // the total follows what is typed, at once
+        cut6(pi);
+        var v=lineTotal(qi.value,pi.value); qi.classList.toggle('bad',!D.parse(qi.value)||D.parse(qi.value).n===BigInt(0)); pi.classList.toggle('bad',!D.parse(pi.value)); tv.textContent=v==null?'—':show(v);
+        var copy=d.lines.map(function(z){ return z.id===l.id?{id:z.id,qty:qi.value,price:pi.value}:z }); summary(copy);
+      }
+      function save(){ post('/line/'+l.id,{qty:qi.value,price:pi.value}).then(function(r){ if(r.ok){ render(r) } else { msg(r.error,true); feedback.refresh() } }); }
+      [qi,pi].forEach(function(i){ i.addEventListener('input',live); i.addEventListener('change',save); i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); i.blur() } }); });
+      x.addEventListener('click',function(){ post('/line/'+l.id,{remove:'1'}).then(function(r){ if(r.ok){ render(r); msg('') } else msg(r.error,true) }) });
+      list.appendChild(row);
+    });
+    summary(d.lines); feedback.capture();
+  }
+  render(data);
+
+  // ---- product search: the product list lives in the browser, so a scan is answered at once
+  var cat=null, byBar={}, bySku={};
+  var core=function(b){ b=String(b||'').trim(); return /^\d+$/.test(b)?(b.replace(/^0+/,'')||'0'):b; };
+  fetch('/purchase-orders/new/catalog.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(rows){
+    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],price:r[4],po:r[5],hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
+    cat.forEach(function(p){ p.barcodes.forEach(function(b){ byBar[core(b)]=p }); if(p.sku) bySku[p.sku]=p });
+  }).catch(function(){});
+  function lookLocal(code){
+    var p=byBar[core(code)]||bySku[code]; if(p) return {exact:p,matches:[]};
+    var words=code.toLowerCase().split(/\s+/).filter(Boolean).slice(0,5), res=[];
+    for(var i=0;i<cat.length&&res.length<8;i++){ var ok=true; for(var w=0;w<words.length;w++){ if(cat[i].hay.indexOf(words[w])<0){ok=false;break} } if(ok) res.push(cat[i]) }
+    return {exact:null,matches:res};
+  }
+  function onOrder(pid){ var n=null; data.lines.forEach(function(l){ if(l.product_id===pid) n=l.qty }); return n; }
+  function sub(p){ var bits=[(p.barcodes&&p.barcodes[0])||p.sku||'']; if(p.price) bits.push((p.po?app.dataset.mLast:app.dataset.mCost)+' '+show(p.price)+(p.po?' (PO #'+p.po+')':'')); return bits.filter(Boolean).join(' · '); }
+  function totalNow(){ var v=lineTotal(qty.value,price.value); out.textContent=v==null?'—':show(v); out.classList.toggle('on',v!=null); }
+  function pick(p){
+    picked=p; msg(''); scan.value=''; hideDrop(); picked_.hidden=false;
+    document.getElementById('po-pname').textContent=p.name;
+    var already=onOrder(p.id); document.getElementById('po-psub').textContent=sub(p)+(already?(' · '+app.dataset.mOn+': '+already):'');
+    qty.disabled=price.disabled=addBtn.disabled=false; qty.value=''; price.value=p.price||''; totalNow(); qty.focus();
+  }
+  function clear(){ picked=null; picked_.hidden=true; qty.value=price.value=''; qty.disabled=price.disabled=addBtn.disabled=true; totalNow(); hideDrop(); scan.value=''; scan.focus(); feedback.refresh(); }
+  var drop=document.getElementById('po-drop'), items=[], on=-1;
+  function hideDrop(){ drop.hidden=true; drop.textContent=''; items=[]; on=-1; scan.setAttribute('aria-expanded','false'); }
+  function mark(){ [].forEach.call(drop.children,function(el,i){ el.classList.toggle('on',i===on); el.setAttribute('aria-selected',i===on?'true':'false') }); var el=drop.children[on]; if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'}); }
+  function showDrop(){
+    var v=scan.value.trim(); if(!cat||v.length<2){ hideDrop(); return }
+    var r=lookLocal(v), found=r.exact?[r.exact]:r.matches; if(!found.length){ hideDrop(); return }
+    items=found; on=-1; drop.textContent='';
+    found.forEach(function(p,i){ var el=document.createElement('div'), n=document.createElement('div'), s=document.createElement('div'); el.className='ts-opt'; el.setAttribute('role','option'); n.className='ts-opt-name'; n.textContent=p.name; s.className='ts-opt-sub'; s.textContent=sub(p); el.append(n,s);
+      el.addEventListener('mousedown',function(e){ e.preventDefault(); pick(p) }); drop.appendChild(el) });
+    drop.hidden=false; scan.setAttribute('aria-expanded','true');
+  }
+  function submitScan(){
+    var code=scan.value.trim(); if(!code) return; if(!cat){ msg('…'); return }
+    var r=lookLocal(code); hideDrop();
+    if(r.exact){ pick(r.exact); return }
+    if(r.matches.length===1){ pick(r.matches[0]); return }
+    if(!r.matches.length){ openQuick(code); scan.select(); return }
+    showDrop();
+  }
+  // ---- not in StoreHub: create it there on the spot, then it is picked like any found product
+  var quick=document.getElementById('po-quick'), qform=quick.querySelector('form'), qcode=document.getElementById('po-qcode'), qname=document.getElementById('po-qname'),
+      qcat=document.getElementById('po-qcat'), qprice=document.getElementById('po-qprice'), qcost=document.getElementById('po-qcost'),
+      qwarn=document.getElementById('po-qwarn'), qbar='';
+  function openQuick(code){
+    qbar=/^\d{6,}$/.test(code)?code:'';
+    qcode.textContent=qbar||code;
+    if(!qname.value) qname.value=qbar?'':code;
+    if(!quick.open) quick.showModal(); qwarn.textContent=''; msg(''); qname.focus();
+  }
+  document.getElementById('po-qcancel').addEventListener('click',function(){ quick.close(); qbar=''; scan.select(); });
+  quick.addEventListener('click',function(e){ if(e.target===quick){ quick.close(); qbar=''; } });   // a tap on the blurred backdrop closes it
+  qform.addEventListener('submit',function(e){
+    e.preventDefault();
+    document.getElementById('po-qadd').disabled=true;
+    post('/quick-product',{barcode:qbar||scan.value.trim(),name:qname.value,category:qcat.value,price:qprice.value,cost:qcost.value}).then(function(r){
+      document.getElementById('po-qadd').disabled=false;
+      if(!r.ok){ qwarn.textContent=r.error; return }
+      var row=r.product, p={id:row[0],name:row[1],sku:row[2],barcodes:row[3],price:row[4],po:row[5],hay:(row[1]+' '+row[2]+' '+row[3].join(' ')).toLowerCase()};
+      cat.push(p); p.barcodes.forEach(function(bc){ byBar[core(bc)]=p }); if(p.sku) bySku[p.sku]=p;
+      quick.close(); qname.value=qcat.value=qprice.value=qcost.value=''; qbar='';
+      pick(p);   // created: it goes straight onto the order — only the quantity is left to type
+    });
+  });
+  scan.addEventListener('input',showDrop); scan.addEventListener('focus',showDrop); scan.addEventListener('blur',function(){ setTimeout(hideDrop,120) });
+  scan.addEventListener('keydown',function(e){
+    if(!drop.hidden){
+      if(e.key==='ArrowDown'){ e.preventDefault(); on=(on+1)%items.length; mark(); return }
+      if(e.key==='ArrowUp'){ e.preventDefault(); on=(on<=0?items.length:on)-1; mark(); return }
+      if(e.key==='Enter'&&on>=0){ e.preventDefault(); e.stopPropagation(); pick(items[on]); return }
+      if(e.key==='Escape'){ hideDrop(); return }
+    }
+    if(e.key==='Enter'){ e.preventDefault(); submitScan() }
+  },true);
+
+  // ---- add: quantity, then price, then Add (Enter moves on); the total shows as you type
+  qty.addEventListener('input',function(){ var v=qty.value; if(/^\d{8,}$/.test(v)){ qty.value=''; scan.value=v; submitScan(); return } totalNow(); });   // a scan landing in the quantity box is a barcode
+  price.addEventListener('input',function(){ cut6(price); totalNow() });
+  qty.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); price.focus(); price.select() } });
+  price.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); add() } });
+  function add(){
+    if(!picked){ msg(app.dataset.mPick,true); return }
+    var q=D.parse(qty.value), p=D.parse(price.value);
+    if(!q||q.n===BigInt(0)){ msg(app.dataset.mQty,true); qty.focus(); return }
+    if(!p){ msg(app.dataset.mPrice,true); price.focus(); return }
+    addBtn.disabled=true;
+    post('/add',{product_id:picked.id,qty:qty.value,price:price.value}).then(function(r){
+      if(!r.ok){ msg(r.error,true); addBtn.disabled=false; return }
+      var name=picked.name; render(r); msg('✓ '+app.dataset.mAdd+' · '+name); clear();
+    });
+  }
+  addBtn.addEventListener('click',add);
+  document.getElementById('po-clear').addEventListener('click',function(){ msg(''); clear(); });
+})();
+</script>
+{% endblock %}

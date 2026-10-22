@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ t('New product') }} NP-{{ '%05d' % lst.id }}{% endblock %}
+{% block content %}
+<style>#chat-fab{display:none}</style>
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>NP-{{ '%05d' % lst.id }}</h1>
+    <p>{{ (lst.saved_at or lst.created_at)|local }} · {{ lst.creator.full_name or lst.creator.username if lst.creator else '—' }} · {{ summary['items'] }} {{ t('Products') }} · {{ summary.qty|num }}</p></div>
+  <div class="row noprint">
+    <a class="btn sm sec" href="/new-product">{{ t('New product') }}</a>
+    <form novalidate method="post" action="/new-product/lists/{{ lst.id }}/delete" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Delete this list?') }}">{{ t('Delete') }}</button></form>
+  </div>
+</div>
+<div class="ts-files noprint">
+  <a class="btn ok ts-big" href="/new-product/lists/{{ lst.id }}/excel">{{ t('Download Excel') }}</a>
+  {% if can_push %}<form novalidate method="post" action="/new-product/lists/{{ lst.id }}/push" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm ok" data-confirm="{{ t('Create the priced products in StoreHub now?') }}">{{ t('Push to StoreHub') }}</button></form>{% endif %}
+</div>
+<div class="tw"><table class="wide rcards"><thead><tr><th>{{ t('Product') }}</th><th>{{ t('Supplier') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Quantity') }}</th><th class="right">{{ t('Price') }}</th><th>{{ t('StoreHub') }}</th></tr></thead><tbody>
+{% for i in lst.items %}<tr>
+<td class="rc-title"><b>{{ i.name }}</b><div class="small mute">{{ i.barcode }}</div></td>
+<td data-label="{{ t('Supplier') }}">{{ i.supplier_name }}</td>
+<td data-label="{{ t('Category') }}">{{ i.category }}</td>
+<td class="right" data-label="{{ t('Quantity') }}">{{ i.qty|num }}</td>
+<td class="right" data-label="{{ t('Price') }}">{% if i.price is not none %}₱{{ i.price|num }}{% else %}—{% endif %}</td>
+<td data-label="{{ t('StoreHub') }}">
+  {% if i.status == 'created' %}<span class="badge b-ok">{{ t('Created') }}</span>
+  {% elif i.status == 'failed' %}<details class="np-fail"><summary style="cursor:pointer;list-style:none"><span class="badge b-bad" title="{{ i.push_error }}">{{ t('Failed') }} ▾</span></summary><div class="small" style="word-break:break-word;max-width:420px;margin-top:4px">{{ i.push_error }}</div></details>
+  {% elif i.price is none %}<span class="badge">{{ t('Excel only') }}</span>
+  {% else %}<span class="badge b-warn">{{ t('Pending') }}</span>{% endif %}
+</td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

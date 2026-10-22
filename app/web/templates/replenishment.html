@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Replenishment') }}{% endblock %}
 {% block content %}
-<div class="calm-page">
+<link rel="stylesheet" href="/static/replenishment_mobile.css?v={{ asset_v('replenishment_mobile.css') }}">
+<div class="calm-page replenishment-page">
 {% set fqs = 'loc=' ~ loc ~ '&supplier=' ~ supplier %}
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} {{ t('/ Ordering') }}</div><h1>{{ t('Replenishment') }}</h1>
-    <p>{{ t('Stores are topped up by transfer from the warehouse; the warehouse orders from suppliers on combined demand. Every figure is calculated by code from StoreHub data — nothing is ordered until a manager approves it.') }}</p></div>
+    <details class="rep-guide" open><summary>{{ t('How it works') }}</summary><p>{{ t('Stores are topped up by transfer from the warehouse; the warehouse orders from suppliers on combined demand. Every figure is calculated by code from StoreHub data — nothing is ordered until a manager approves it.') }}</p></details></div>
   <div class="row noprint">
     {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
     {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
@@ -15,7 +16,7 @@
 
 <div class="rep-flow">
 <div class="rep-meta">
-{% if sales_only %}<div class="card noprint" style="margin:0 0 12px;padding:12px 16px"><b>{{ t('Based on sales only for now.') }}</b> <span class="small mute">{{ t('Stock on hand is not used while inventory is not accurate. Each suggestion covers {days} days of sales, minus what is already on order, and anything approved in the last {days} days is not suggested again.', days=cover_days) }}</span></div>{% endif %}
+{% if sales_only %}<details class="card noprint rep-policy" open style="margin:0 0 12px;padding:12px 16px"><summary><b>{{ t('Based on sales only for now.') }}</b></summary> <span class="small mute">{{ t('Stock on hand is not used while inventory is not accurate. Each suggestion covers {days} days of sales, minus what is already on order, and anything approved in the last {days} days is not suggested again.', days=cover_days) }}</span></details>{% endif %}
 <div class="statgrid">
   <a class="statcard {{ 'on' if status == 'pending' }}" href="?status=pending&{{ fqs }}"><span><span class="v">{{ counts.get('pending', 0) }}</span><div class="l">{{ t('Ready to review') }}</div></span></a>
   <a class="statcard {{ 'on' if status == 'needs_review' }}" href="?status=needs_review&{{ fqs }}"><span><span class="v">{{ counts.get('needs_review', 0) }}</span><div class="l">{{ t('Need review (data issue)') }}</div></span></a>
@@ -36,15 +37,19 @@
 </form>
 </div>
 <div class="rep-work">
-<form novalidate method="post" action="/replenishment/bulk" id="bulk">
+<form novalidate method="post" action="{{ '/replenishment/transfer-sheets' if can('transfer.sheet') else '/replenishment/bulk' }}" id="bulk">
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/replenishment?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page }}">
-{% if can('repl.decide') and status == 'pending' %}<div class="row noprint" style="margin-bottom:8px"><label style="margin:0"><input type="checkbox" onclick="document.querySelectorAll('.rc').forEach(x=>x.checked=this.checked)"> {{ t('Select all') }}</label><button class="sm ok">{{ t('Approve selected as suggested') }}</button></div>{% endif %}
+{% if can('repl.decide') %}<div class="row noprint" style="margin-bottom:8px"><label style="margin:0"><input type="checkbox" id="repl-select-all"> {{ t('Select all') }}</label></div>
+<div class="repl-selection chkbar noprint" id="repl-selection" hidden>
+  <span><b id="repl-selected-count">0</b> {{ t('selected') }} <span id="repl-save-hint" hidden>{{ t('Save edited quantities before proceeding.') }}</span></span>
+  <button type="submit" id="repl-proceed">{{ t('Proceed to transfer sheets') if can('transfer.sheet') else t('Approve selected') }}</button>
+</div>{% endif %}
 </form>
 <div class="tw stick1"><table class="wide rt repl">
-<thead><tr><th></th><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Where / from') }}</th><th scope="col" class="right" data-sort>{{ t('On hand') }}</th><th scope="col" class="right" data-sort>{{ t('Suggested') }}</th><th scope="col">{{ t('Decision') }}</th></tr></thead><tbody>
+<thead><tr><th></th><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Where / from') }}</th><th scope="col" class="right" data-sort>{{ t('On hand') }}</th><th scope="col" class="right" data-sort>{{ t('Suggested') }}</th><th scope="col">{{ t('Action') }}</th></tr></thead><tbody>
 {% for r in recs %}
 <tr>
-<td class="rt-sel">{% if r.status == 'pending' and can('repl.decide') %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" aria-label="{{ t('Select') }} {{ r.product.name }}">{% endif %}</td>
+<td class="rt-sel">{% if can('repl.decide') and not r.batch_id and not r.transfer_sheet_id and ((can('transfer.sheet') and r.source_kind == 'transfer' and r.status in ('pending','approved','modified')) or (not can('transfer.sheet') and r.status == 'pending')) %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" aria-label="{{ t('Select') }} {{ r.product.name }}">{% endif %}</td>
 <td class="rt-main"><b>{{ r.product.name }}</b><div class="small mute">{{ r.product.barcode or '' }}</div>
   <button type="button" class="drawer-link" data-drawer="why-{{ r.id }}" data-drawer-title="{{ r.product.name }} {{ t('— why this number') }}">{{ t('Why this number') }}</button>
   {% if r.needs_review_reasons %}<div class="small" style="color:var(--bad)"><b>{{ t('Needs review:') }}</b>
@@ -71,18 +76,15 @@
     {% if e.confidence_penalties %}<div class="small mute">{{ t('Confidence lowered by:') }} {% for p in e.confidence_penalties %}{{ t(p.reason) }} (-{{ (p.penalty*100)|int }}%){% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
   </div></template></td>
 <td class="small rt-loc" data-label="{{ t('Where / from') }}">{{ r.location.name }}<div class="mute">{{ r.supplier.name if r.supplier else (t('warehouse') if r.source_kind == 'transfer' else t('no supplier')) }}</div></td>
-<td class="right" data-label="{{ t('On hand') }}">{{ r.on_hand|num }}{% if r.incoming %}<div class="small mute">+{{ r.incoming|num }} {{ t('incoming') }}</div>{% endif %}<div class="small mute">{{ r.ads|num }}/{{ t('day') }}</div></td><td class="right" data-label="{{ t('Suggested') }}"><b>{{ r.final_qty|num }}</b>{% if r.cases %}<div class="small mute">{{ r.cases|num }} {{ t('cases') }}</div>{% endif %}</td>
-<td class="rt-act">
-  {% if r.status in ('pending','needs_review') and can('repl.decide') %}
-    <form novalidate method="post" action="/replenishment/{{ r.id }}/decide" class="decide">
-      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/replenishment?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page }}">
-      {% if r.status == 'needs_review' %}<input name="note" class="d-note" placeholder="{{ t('Note (what you checked)') }}" aria-label="{{ t('Note (what you checked)') }}">{% endif %}
-      <input type="number" step="any" min="0" name="qty" value="{{ r.final_qty|num }}" inputmode="decimal" class="d-qty" aria-label="{{ t('Quantity to order') }}" title="{{ t('Quantity to order') }}">
-      <input name="reason" class="d-reason" maxlength="200" autocomplete="off" placeholder="{{ t('Reason (to reject)') }}" aria-label="{{ t('Reason (to reject)') }}">
-      <button name="action" value="approve" class="sm ok">{{ t('Approve') }}</button><button name="action" value="reject" class="sm bad">{{ t('Reject') }}</button>
-    </form>
-  {% else %}<span class="badge {{ 'b-ok' if r.status in ('approved','modified','ordered') else '' }}">{{ t(r.status) }}</span>{% if r.approved_qty is not none %} <span class="small">{{ r.approved_qty|num }}</span>{% endif %}{% endif %}
-</td></tr>
+<td class="right rep-stock" data-label="{{ t('On hand') }}">{{ r.on_hand|num }}{% if r.incoming %}<div class="small mute">+{{ r.incoming|num }} {{ t('incoming') }}</div>{% endif %}<div class="small mute">{{ r.ads|num }}/{{ t('day') }}</div></td><td class="right rep-qty" data-label="{{ t('Suggested') }}">{% if r.status == 'pending' and can('repl.decide') and not r.batch_id and not r.transfer_sheet_id %}
+<form id="repl-quantity-{{ r.id }}" method="post" action="/replenishment/{{ r.id }}/decide" class="repl-quantity" data-nobusy data-rec-id="{{ r.id }}" data-saved="{{ r.saved_qty if r.saved_qty is not none else r.final_qty }}">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save">
+<input type="hidden" name="back" value="/replenishment?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page }}">
+<div class="repl-quantity-controls"><input type="number" name="qty" min="1" max="100000" step="1" required value="{{ (r.saved_qty if r.saved_qty is not none else r.final_qty)|int }}" aria-label="{{ t('Quantity') }}: {{ r.product.name }}"></div>
+<span class="small mute">{{ t('Suggested') }}: {{ r.final_qty|num }}</span>
+<span class="repl-save-status small" role="status" aria-live="polite"></span>
+</form>{% else %}<b>{{ r.approved_qty|num if r.approved_qty is not none else r.final_qty|num }}</b>{% endif %}</td>
+<td class="rt-act" data-label="{{ t('Action') }}">{% if r.status == 'pending' and can('repl.decide') and not r.batch_id and not r.transfer_sheet_id %}<button class="sm ok repl-save-button" type="submit" name="saveButton" form="repl-quantity-{{ r.id }}">{{ t('Save') }}</button>{% elif r.transfer_sheet_id %}{% if can('transfer.sheet') %}<a href="/transfer-sheets/{{ r.transfer_sheet_id }}">TS-{{ '%05d'|format(r.transfer_sheet_id) }}</a>{% else %}<span>TS-{{ '%05d'|format(r.transfer_sheet_id) }}</span>{% endif %}{% elif r.status != 'pending' %}<span class="badge {{ 'b-ok' if r.status in ('approved','modified','ordered') else '' }}">{{ t(r.status) }}</span>{% if r.approved_qty is not none %} <span class="small">{{ r.approved_qty|num }}</span>{% endif %}{% endif %}</td></tr>
 {% else %}<tr class="rt-empty"><td colspan="6"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>{% endfor %}
 </tbody></table></div>
 <div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
@@ -98,3 +100,5 @@
 </dialog>
 </div>
 {% endblock %}
+
+{% block scripts %}<script src="/static/replenishment.js?v={{ asset_v('replenishment.js') }}" data-saving="{{ t('Saving?') }}" data-failed="{{ t('Could not save. Please try again.') }}" data-unsaved="{{ t('Unsaved changes') }}"></script>{% endblock %}

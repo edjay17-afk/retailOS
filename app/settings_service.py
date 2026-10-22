@@ -29,6 +29,7 @@ DEFAULTS: dict[str, tuple[Any, str]] = {
     "repl.max_cover_days": (30, "Never recommend more than this many days of cover (maximum-stock protection)"),
     "repl.default_pack": (12, "Order in whole packs of this many units (12, 24, 36...) when the product has no case pack of its own. Use 1 to allow single units"),
     "repl.min_weekly_units": (6, "Only suggest products that sell at least this many units a week (a store, or all stores for the warehouse). Slower sellers are left out"),
+    "product.web_lookup": (True, "On the new-product page, look the scanned barcode up on Open Food Facts to pre-fill name, brand and category. Only the barcode is sent"),
     "counts.repeat_variance_count": (3, "Raise a root-cause issue when this many cycle counts in 90 days found a difference for the same product and place"),
     "counts.reconcile_grace_days": (3, "Days to wait for StoreHub to show a count adjustment before flagging it for review"),
     "repl.require_case_pack": (False, "Block recommendations for products with no case pack"),
@@ -58,6 +59,7 @@ DEFAULTS: dict[str, tuple[Any, str]] = {
     "ai.auto_min_samples": (20, "Decided actions of a type needed before that type may run automatically"),
     "ai.auto_min_acceptance": (0.8, "Acceptance rate a decision class must hold before it may run automatically"),
     "ai.min_confidence": (0.6, "Actions proposed with lower confidence always need a person"),
+    "product.vat_rate": (12, "Sales tax percent. StoreHub gives the price without tax; the retail price shown in Product settings adds this tax"),
     "app.company": ("The Daily Centro", "Name shown in the app"),
 }
 

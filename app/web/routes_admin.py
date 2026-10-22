@@ -8,7 +8,7 @@ import math
 import re
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
 
@@ -106,6 +106,9 @@ def suppliers_page(export: str = "", c: Ctx = Depends(need("settings.manage"))):
     n_prod = dict(db.execute(select(Product.supplier_id, func.count()).where(Product.supplier_id.is_not(None)).group_by(Product.supplier_id)).all())
     sups = list(db.scalars(select(Supplier).order_by(Supplier.name)))
     clues = _supplier_clues(db)
+    items: dict[int, list[str]] = {}  # every product assigned to each supplier (set in Product set-up)
+    for sid_, pname in db.execute(select(Product.supplier_id, Product.name).where(Product.supplier_id.is_not(None), Product.in_api.is_(True)).order_by(func.lower(Product.name))):
+        items.setdefault(sid_, []).append(pname)
     if export == "csv":
         out = io.StringIO()
         w = csv.writer(out)
@@ -115,7 +118,7 @@ def suppliers_page(export: str = "", c: Ctx = Depends(need("settings.manage"))):
             w.writerow([_supplier_code(s_), s_.name, k.get("pos", 0), k["last"].strftime("%Y-%m-%d") if k.get("last") else "", "; ".join(k.get("items", [])),
                         s_.name if s_.name_source == "manual" else ""])
         return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="supplier-names.csv"'})
-    return render(c, "suppliers.html", sups=sups, n_prod=n_prod, clues=clues, unnamed=sum(1 for s_ in sups if s_.name_source == "auto"))
+    return render(c, "suppliers.html", sups=sups, n_prod=n_prod, clues=clues, items=items, unnamed=sum(1 for s_ in sups if s_.name_source == "auto"))
 
 
 @router.post("/suppliers/new")
@@ -193,16 +196,24 @@ async def suppliers_import(file: UploadFile = File(...), csrf: str = Form(""), c
 
 
 @router.post("/suppliers/{sid}")
-def supplier_update(sid: int, name: str = Form(...), lead: str = Form(""), review: str = Form(""), min_value: str = Form(""), order_days: str = Form(""),
-                    contact: str = Form(""), active: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
+def supplier_update(sid: int, name: str = Form(...), lead: str | None = Form(None), review: str | None = Form(None), min_value: str | None = Form(None),
+                    order_days: str | None = Form(None), contact: str = Form(""), active: str = Form(""), csrf: str = Form(""),
+                    c: Ctx = Depends(need("settings.manage"))):
     c.check_csrf(csrf)
     s = c.db.get(Supplier, sid)
     if s is None:
         raise HTTPException(404)
     before = {"name": s.name, "lead": s.lead_time_days, "review": s.review_period_days, "min": s.min_order_value}
     s.name, s.name_source = name.strip() or s.name, "manual"
-    s.lead_time_days, s.review_period_days, s.min_order_value = parse_float(lead), parse_float(review), parse_float(min_value)
-    s.order_days, s.contact, s.active = order_days.strip() or None, contact.strip() or None, bool(active)
+    if lead is not None:  # only a form that sends these fields changes them (this page no longer does)
+        s.lead_time_days = parse_float(lead)
+    if review is not None:
+        s.review_period_days = parse_float(review)
+    if min_value is not None:
+        s.min_order_value = parse_float(min_value)
+    if order_days is not None:
+        s.order_days = order_days.strip() or None
+    s.contact, s.active = contact.strip() or None, bool(active)
     audit.log(c.db, actor_type="human", actor_id=c.user.id, action="supplier.update", entity_type="supplier", entity_id=sid, before=before,
               after={"name": s.name, "lead": s.lead_time_days, "review": s.review_period_days, "min": s.min_order_value})
     return redirect("/suppliers", ok=f"Saved {s.name}")
@@ -224,22 +235,24 @@ def products_page(q: str = "", filt: str = "", page: int = 1, export: str = "", 
     if export == "csv":
         out = io.StringIO()
         w = csv.writer(out)
-        w.writerow(["StoreHub ID", "Name", "Barcode", "Supplier", "Case pack", "Order multiple", "MOQ", "Perishable", "Safety days", "Min stock", "Max stock", "Replenish"])
+        vat = 1 + float(cfg.get(db, "product.vat_rate") or 0) / 100
+        # the same columns as the table on the page; "StoreHub ID" stays first because the upload uses it to find each product
+        w.writerow(["StoreHub ID", "Name", "Barcode", "Cost", "Retail price", "Supplier", "Case pack", "Perishable", "Replenish"])
         for p in db.scalars(stmt):
-            w.writerow([p.storehub_id, p.name, p.barcode or "", p.supplier.name if p.supplier else "", p.case_pack or "", p.order_multiple or "", p.moq or "",
-                        "yes" if p.perishable else "", p.safety_days if p.safety_days is not None else "", p.min_stock or "", p.max_stock or "", "yes" if p.replenish_enabled else "no"])
+            w.writerow([p.storehub_id, p.name, p.barcode or "", f"{p.cost:.2f}" if p.cost is not None else "", f"{p.unit_price * vat:.2f}" if p.unit_price is not None else "",
+                        p.supplier.name if p.supplier else "", f"{p.case_pack:g}" if p.case_pack else "", "yes" if p.perishable else "", "yes" if p.replenish_enabled else "no"])
         return Response(out.getvalue(), media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="product-setup.csv"'})
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     page = max(page, 1)
     prods = list(db.scalars(stmt.limit(PAGE).offset((page - 1) * PAGE)))
     sups = list(db.scalars(select(Supplier).where(Supplier.active.is_(True)).order_by(Supplier.name)))
-    return render(c, "products.html", prods=prods, sups=sups, q=q, filt=filt, page=page, total=total)
+    return render(c, "products.html", vat=1 + float(cfg.get(db, "product.vat_rate") or 0) / 100, prods=prods, sups=sups, q=q, filt=filt, page=page, total=total)
 
 
-@router.post("/products/{pid}")
-def product_update(pid: int, supplier: int = Form(0), case_pack: str = Form(""), order_multiple: str = Form(""), moq: str = Form(""), perishable: str = Form(""),
-                   safety_days: str = Form(""), max_stock: str = Form(""), replenish: str = Form(""), back: str = Form("/products"), csrf: str = Form(""),
-                   c: Ctx = Depends(need("settings.manage"))):
+@router.post("/products/{pid:int}")
+def product_update(pid: int, supplier: int = Form(0), case_pack: str = Form(""), order_multiple: str | None = Form(None), moq: str | None = Form(None), perishable: str = Form(""),
+                   safety_days: str | None = Form(None), max_stock: str | None = Form(None), replenish: str = Form(""), back: str = Form("/products"), csrf: str = Form(""),
+                   request: Request = None, c: Ctx = Depends(need("settings.manage"))):
     c.check_csrf(csrf)
     p = c.db.get(Product, pid)
     if p is None:
@@ -247,11 +260,20 @@ def product_update(pid: int, supplier: int = Form(0), case_pack: str = Form(""),
     before = {"supplier": p.supplier_id, "case_pack": p.case_pack, "order_multiple": p.order_multiple, "moq": p.moq, "max_stock": p.max_stock}
     if (supplier or None) != p.supplier_id:
         p.supplier_id, p.supplier_source = supplier or None, ("manual" if supplier else None)
-    p.case_pack, p.order_multiple, p.moq = parse_float(case_pack), parse_float(order_multiple), parse_float(moq)
-    p.safety_days, p.max_stock = parse_float(safety_days), parse_float(max_stock)
+    p.case_pack = parse_float(case_pack)
+    if order_multiple is not None:  # only a form that sends these fields changes them (the Product settings page no longer shows them)
+        p.order_multiple = parse_float(order_multiple)
+    if moq is not None:
+        p.moq = parse_float(moq)
+    if safety_days is not None:
+        p.safety_days = parse_float(safety_days)
+    if max_stock is not None:
+        p.max_stock = parse_float(max_stock)
     p.perishable, p.replenish_enabled = bool(perishable), bool(replenish)
     audit.log(c.db, actor_type="human", actor_id=c.user.id, action="product.setup", entity_type="product", entity_id=pid, before=before,
               after={"supplier": p.supplier_id, "case_pack": p.case_pack, "order_multiple": p.order_multiple, "moq": p.moq, "max_stock": p.max_stock})
+    if request is not None and request.headers.get("x-requested-with") == "fetch":  # saved from the page without reloading it
+        return JSONResponse({"ok": True, "name": p.name})
     return redirect(back, ok=f"Saved {p.name}")
 
 

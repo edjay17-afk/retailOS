@@ -14,7 +14,7 @@ from .. import audit, jobs
 from ..config import get_config
 from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Recommendation, SalesDay, SyncRun, User)
 from ..security import can_open, create_session, hash_password, load_session, password_problem, verify_password
-from ..services import backup, brief, dq, freshness, notifications
+from ..services import inspections, backup, brief, dq, freshness, notifications, replenishment
 from ..timeutil import now_utc, today_local
 from .deps import COOKIE, Ctx, ctx_dep, get_db, need, redirect, render, render_public
 
@@ -58,7 +58,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     db.commit()
     dest = next if next.startswith("/") and not next.startswith("//") else "/"
     resp = RedirectResponse("/password" if user.must_change_password else dest, status_code=303)
-    resp.set_cookie(COOKIE, s.id, httponly=True, samesite="lax", max_age=12 * 3600, secure=request.url.scheme == "https")
+    resp.set_cookie(COOKIE, s.id, httponly=True, samesite="lax", max_age=12 * 3600, secure=get_config().require_https or request.url.scheme == "https")
     return resp
 
 
@@ -151,6 +151,9 @@ def _ops_data(db, ids, today, t):
         buckets[i] = (buckets[i][0], buckets[i][1] + 1)
     out["cover"] = [(t(label), n) for label, n in buckets]
     out["cover_total"] = sum(n for _, n in buckets)
+    from .. import settings_service
+    out["sales_only"] = settings_service.get(db, "repl.mode") != "stock_and_sales"
+    out["open_suggestions"] = sum(n for status, n in rows if status in ("pending", "needs_review", "approved", "modified"))
     # stock health in each store and the warehouse
     health = []
     for loc in db.scalars(select(Location).where(Location.id.in_(ids0), Location.monitored.is_(True)).order_by(Location.type.desc(), Location.name)):
@@ -187,10 +190,27 @@ def _ops_data(db, ids, today, t):
     return out
 
 
+@router.get("/dashboard/store-sales")
+def dashboard_store_sales(c: Ctx = Depends(need("sales.view"))):
+    """Read the latest local sales snapshot without starting a sync or replenishment run."""
+    today = today_local()
+    yesterday = today - timedelta(days=1)
+    locations = [l for l in c.locations() if l.type == "store"]
+    rows = c.db.scalars(select(SalesDay).where(SalesDay.location_id.in_([l.id for l in locations] or [0]),
+                                              SalesDay.business_date.in_([today, yesterday])))
+    amounts = {(r.location_id, r.business_date): r.net_sales for r in rows}
+    stores = [{"id": l.id, "today": amounts.get((l.id, today), 0), "yesterday": amounts.get((l.id, yesterday), 0)} for l in locations]
+    return JSONResponse({"day": today.isoformat(), "stores": stores,
+                         "today": sum(s["today"] for s in stores), "yesterday": sum(s["yesterday"] for s in stores)},
+                        headers={"Cache-Control": "no-store"})
+
+
 @router.get("/")
 def dashboard(c: Ctx = Depends(need("dashboard.view"))):
     db = c.db
     ids = c.location_ids
+    if c.can("repl.view"):
+        replenishment.ensure_current(db)
     b = brief.build(db, ids)
     # attention items must open a page this user may actually visit (store staff never meet a dead end)
     b["items"] = [i for i in b["items"] if can_open(c.user, i.get("link"))]
@@ -199,9 +219,9 @@ def dashboard(c: Ctx = Depends(need("dashboard.view"))):
     open_issues = db.execute(select(Issue.severity, func.count()).where(Issue.status.in_(("open", "acknowledged", "in_progress", "resolved")),
                                                                         (Issue.location_id.in_(ids or [0])) | Issue.location_id.is_(None))
                              .group_by(Issue.severity)).all()
-    insp = db.execute(select(Inspection.status, func.count()).where(Inspection.business_date == today, Inspection.location_id.in_(ids or [0]))
+    insp = db.execute(select(Inspection.status, func.count()).where(Inspection.business_date == today, inspections.active_scope(), Inspection.location_id.in_(ids or [0]))
                       .group_by(Inspection.status)).all()
-    my_tasks = list(db.scalars(select(Inspection).where(Inspection.business_date == today, Inspection.location_id.in_(ids or [0]),
+    my_tasks = list(db.scalars(select(Inspection).where(Inspection.business_date == today, inspections.active_scope(), Inspection.location_id.in_(ids or [0]),
                                                         Inspection.status.in_(("pending", "in_progress", "missed"))).order_by(Inspection.due_at)))
     # sales trend per store and in total (last 14 complete days)
     stores = []
@@ -218,7 +238,7 @@ def dashboard(c: Ctx = Depends(need("dashboard.view"))):
                 total_series[d] = total_series.get(d, 0.0) + v
             avg = sum(series[:-1]) / 13 if any(series[:-1]) else 0
             today_sales[loc.id] = rows.get(today, 0.0)
-            stores.append({"name": loc.name, "today": rows.get(today, 0.0), "series": series, "labels": [d.strftime("%a %d %b") for d in days], "yesterday": series[-1], "avg": avg, "delta": ((series[-1] - avg) / avg * 100) if avg else None})
+            stores.append({"id": loc.id, "name": loc.name, "today": rows.get(today, 0.0), "series": series, "labels": [d.strftime("%a %d %b") for d in days], "yesterday": series[-1], "avg": avg, "delta": ((series[-1] - avg) / avg * 100) if avg else None})
     tot = [total_series[d] for d in sorted(total_series)]
     tot_avg = sum(tot[:-1]) / 13 if tot and any(tot[:-1]) else 0
     labels = [d.strftime("%a %d %b") for d in sorted(total_series)]

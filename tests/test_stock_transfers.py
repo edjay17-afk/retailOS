@@ -128,10 +128,10 @@ def test_web_preview_confirmation_permissions_and_chinese(sync,fake,session,clie
     client.cookies.set('lang','zh')
     chinese_list=client.get('/stock-transfers').text
     assert '库存调拨' in chinese_list and '已创建' in chinese_list and '应用筛选' in chinese_list
-    assert '导出总额' in client.get('/stock-transfers/1').text
+    assert '门店已确认' in client.get('/stock-transfers/1').text  # progress strip on the reworked sheet
     login(client,'staff_transfers')
-    assert client.get('/stock-transfers').status_code==403  # only the warehouse team and admins see stock transfers
-    assert client.get('/stock-transfers/1').status_code==403
+    assert client.get('/stock-transfers').status_code==200  # V2.1: store staff see transfers for their own store
+    assert client.get('/stock-transfers/1').status_code==200  # ST0050 targets their store
     assert client.post('/stock-transfers/import/preview',data={'csrf':csrf},files={'file':('x.csv',raw)}).status_code==403
 
 
@@ -156,8 +156,9 @@ def test_web_scope_tokens_csrf_and_search(sync,fake,session,client):
     assert 'ST0050' in client.get('/stock-transfers?q=Cola').text
     assert 'ST0050' not in client.get('/stock-transfers?status=Shipped').text
     login(client,'store_beta_t')
-    assert client.get('/stock-transfers').status_code==403
-    assert client.get('/stock-transfers/1').status_code==403
+    assert client.get('/stock-transfers').status_code==200  # list is scoped to their own store
+    assert 'ST0050' not in client.get('/stock-transfers').text  # ST0050 involves Alpha, not Beta
+    assert client.get('/stock-transfers/1').status_code==404  # not visible outside their locations
     assert client.get('/stock-transfers?loc=2').status_code==403
 
 
@@ -176,11 +177,15 @@ def test_store_rename_in_storehub_updates_mirror_instead_of_blocking(sync,fake,s
     assert transfer.source_name=='Zenwok Warehouse'
 
 
-def test_only_admin_and_warehouse_hold_stock_transfer_permissions():
-    from app.security import PERMS, ROLES
-    for perm in ("transfer.view", "transfer.import", "transfer.dispatch", "transfer.receive"):
+def test_stock_transfer_permissions_split_warehouse_from_store():
+    from app.security import PERMS
+    # warehouse-only: import, dispatch and the StoreHub-side receive
+    for perm in ("transfer.import", "transfer.dispatch", "transfer.receive"):
         assert PERMS[perm] == {"warehouse", "admin"}, perm
-    assert {r for r in ROLES if r not in PERMS["transfer.view"]} == {"staff", "store_manager", "management"}
+    # stores see their own transfers so they can count what arrived (V2.1 store receipt confirmation)
+    assert PERMS["transfer.view"] == {"staff", "store_manager", "warehouse", "management", "admin"}
+    # the store confirms receipt; the warehouse never closes its own loop
+    assert PERMS["transfer.confirm"] == {"staff", "store_manager", "management", "admin"}
 
 
 def test_inbox_folder_imports_exports_automatically_and_survives_bad_files(sync, fake, session, cfg):
@@ -241,7 +246,7 @@ def test_robot_exports_and_imports_and_warns_when_it_fails(sync, fake, session, 
     assert transfer_inbox.run_robot(session, export=broken_export) == {"ran": False}
 
 
-def test_robot_runs_about_hourly_and_catches_up_after_the_pc_was_off(sync, fake, session, cfg):
+def test_robot_runs_every_twenty_minutes_and_catches_up_after_sleep(sync, fake, session, cfg):
     from app.services import transfer_inbox
     seeded(sync, fake, session)
     add_user(session, "robot_admin2", "admin")
@@ -251,11 +256,164 @@ def test_robot_runs_about_hourly_and_catches_up_after_the_pc_was_off(sync, fake,
     transfer_inbox.process_inbox(session)
     assert transfer_inbox.robot_due(session) is False  # imported just now: wait
     src = session.scalar(select(StockTransferImport).where(StockTransferImport.imported_at.is_not(None)))
-    src.imported_at = now_utc() - timedelta(minutes=61)
+    src.imported_at = now_utc() - timedelta(minutes=19)
     session.commit()
-    assert transfer_inbox.robot_due(session) is True  # an hour has passed (or the PC was asleep): run
+    assert transfer_inbox.robot_due(session) is False
+    src.imported_at = now_utc() - timedelta(minutes=21)
+    session.commit()
+    assert transfer_inbox.robot_due(session) is True  # twenty minutes passed (or the PC was asleep)
     transfer_inbox.mark_robot_attempt(session)
     assert transfer_inbox.robot_due(session) is False  # it tried a moment ago: no hammering if StoreHub is down
     src.imported_at = now_utc() - timedelta(hours=14)  # the PC was off overnight
     session.commit()
-    assert transfer_inbox.robot_due(session) is False  # still inside the 30-minute retry gap from the attempt above
+    assert transfer_inbox.robot_due(session) is False  # still inside the 20-minute retry gap
+    from app.models import Setting
+    session.get(Setting, "robot.last_attempt").value = (now_utc() - timedelta(minutes=21)).isoformat()
+    session.commit()
+    assert transfer_inbox.robot_due(session) is True
+
+
+def _import_transfer(client, session, raw, admin):
+    login(client, admin)
+    csrf = csrf_of(client, '/stock-transfers')
+    assert client.post('/stock-transfers/import/preview', data={'csrf': csrf}, files={'file': ('x.csv', raw, 'text/csv')}).status_code == 200
+    src = session.scalar(select(StockTransferImport).order_by(StockTransferImport.id.desc()))
+    r = client.post(f'/stock-transfers/import/{src.token}', data={'csrf': csrf})
+    assert r.status_code == 303 and 'err=' not in r.headers['location']
+    session.expire_all()
+    return session.scalar(select(StockTransfer).order_by(StockTransfer.id.desc()))
+
+
+def test_store_receipt_confirmation_exact_and_variance(sync, fake, session, client):
+    """V2.1 Gate 3: the store's own count closes the transfer loop; a difference opens an issue for the warehouse."""
+    from app.models import InventoryEvent, Issue, Notification, StockTransferReceipt
+    seeded(sync, fake, session)
+    add_user(session, 'adm_rc', 'admin')
+    add_user(session, 'alpha_staff_rc', 'staff', locs=[2])
+    add_user(session, 'wh_rc', 'warehouse')
+    tr = _import_transfer(client, session, export(reference='ST0060', status='Shipped', qty='10'), 'adm_rc')
+    line = tr.lines[0]
+    # the receiving store counts exactly what was sent: receipt stored, trace event, no issue
+    login(client, 'alpha_staff_rc')
+    detail = client.get(f'/stock-transfers/{tr.id}')
+    assert detail.status_code == 200 and 'Store receipt confirmation' in detail.text
+    csrf = csrf_of(client, f'/stock-transfers/{tr.id}')
+    r = client.post(f'/stock-transfers/{tr.id}/confirm', data={'csrf': csrf, f'q_{line.id}': '10', 'note': 'all complete'})
+    assert r.status_code == 303 and 'err=' not in r.headers['location']
+    session.expire_all()
+    receipt = session.scalar(select(StockTransferReceipt).where(StockTransferReceipt.transfer_id == tr.id))
+    assert receipt is not None and receipt.differences == 0 and receipt.location_id == 2
+    kinds = dict(session.execute(select(InventoryEvent.event_type, func.count()).group_by(InventoryEvent.event_type)).all())
+    assert kinds.get('store_receiving') == 1 and 'transfer_variance' not in kinds
+    assert session.scalar(select(func.count()).select_from(Issue)) == 0
+    detail = client.get(f'/stock-transfers/{tr.id}').text
+    assert 'Store confirmed' in detail and 'Confirm receipt' not in detail
+    r = client.post(f'/stock-transfers/{tr.id}/confirm', data={'csrf': csrf, f'q_{line.id}': '10'})
+    assert 'err=' in r.headers['location']  # one confirmation per transfer
+    # a short count: one issue for the warehouse, a variance event, a warehouse notification
+    tr2 = _import_transfer(client, session, export(reference='ST0061', status='Shipped', qty='8'), 'adm_rc')
+    line2 = tr2.lines[0]
+    login(client, 'alpha_staff_rc')
+    csrf = csrf_of(client, f'/stock-transfers/{tr2.id}')  # fresh session after re-login
+    r = client.post(f'/stock-transfers/{tr2.id}/confirm', data={'csrf': csrf, f'q_{line2.id}': '5'})
+    assert 'err=' not in r.headers['location']
+    session.expire_all()
+    receipt2 = session.scalar(select(StockTransferReceipt).where(StockTransferReceipt.transfer_id == tr2.id))
+    assert receipt2.differences == 1
+    issue = session.scalar(select(Issue).where(Issue.dedupe_key == f'st:{tr2.id}'))
+    assert issue is not None and issue.severity == 'P2' and issue.location_id == 1  # owned by the warehouse side
+    assert session.scalar(select(func.count()).select_from(InventoryEvent).where(InventoryEvent.event_type == 'transfer_variance')) == 1
+    assert session.scalar(select(func.count()).select_from(Notification).where(Notification.role == 'warehouse')) == 1
+    assert 'Differences' in client.get('/stock-transfers').text
+
+
+def test_store_receipt_scope_and_guards(sync, fake, session, client):
+    from app.models import StockTransferReceipt
+    seeded(sync, fake, session)
+    add_user(session, 'adm_rg', 'admin')
+    add_user(session, 'beta_staff_rg', 'staff', locs=[3])  # Beta — not the transfer target
+    add_user(session, 'wh_rg', 'warehouse')
+    tr = _import_transfer(client, session, export(reference='ST0062', status='Shipped', qty='6'), 'adm_rg')
+    line = tr.lines[0]
+    # the warehouse never closes its own loop
+    login(client, 'wh_rg')
+    assert client.get(f'/stock-transfers/{tr.id}').status_code == 200
+    assert client.post(f'/stock-transfers/{tr.id}/confirm', data={'csrf': csrf_of(client, f'/stock-transfers/{tr.id}'), f'q_{line.id}': '6'}).status_code == 403
+    # a store that is not the target cannot see or confirm it
+    login(client, 'beta_staff_rg')
+    assert client.get(f'/stock-transfers/{tr.id}').status_code == 404
+    assert client.post(f'/stock-transfers/{tr.id}/confirm', data={'csrf': csrf_of(client), f'q_{line.id}': '6'}).status_code == 404
+    # missing counts are rejected; nothing is recorded
+    login(client, 'adm_rg')
+    r = client.post(f'/stock-transfers/{tr.id}/confirm', data={'csrf': csrf_of(client, f'/stock-transfers/{tr.id}')})
+    assert 'err=' in r.headers['location']
+    session.expire_all()
+    assert session.scalar(select(func.count()).select_from(StockTransferReceipt)) == 0
+
+
+def test_filtered_csv_export_all_pages_and_scope(sync, fake, session, client):
+    seeded(sync, fake, session)
+    admin = add_user(session, 'csv_admin', 'admin')
+    add_user(session, 'csv_beta', 'staff', locs=[3])
+    ids = list(session.scalars(select(InventoryCurrent.location_id).distinct()))
+    for i in range(52):
+        src = import_source(session, admin, export(reference=f'STCSV{i:04}',
+                            target='The Daily Centro - Alpha' if i < 51 else 'The Daily Centro - Beta',
+                            status='Created' if i < 51 else 'Completed'))
+        svc.apply(session, src, admin, ids)
+    session.commit()
+    login(client, 'csv_admin')
+    def download(params):
+        response = client.get('/stock-transfers', params={**params, 'export': 'csv'})
+        assert response.status_code == 200
+        assert 'attachment' in response.headers['content-disposition']
+        assert response.content.startswith(b'\xef\xbb\xbf')
+        return list(csv.DictReader(io.StringIO(response.content.decode('utf-8-sig'))))
+    rows = download({'q': 'Cola', 'status': 'Created', 'loc': 2, 'page': 2})
+    assert len(rows) == 51
+    assert all(r['To'] == 'The Daily Centro - Alpha' and r['Export total (PHP)'] == '120.00' for r in rows)
+    assert rows[0]['Created (Philippine time)'] == '2026-09-28 09:57'
+    assert len(download({'q': 'STCSV0051', 'status': 'Completed', 'loc': 3})) == 1
+    assert download({'q': 'not-found'}) == []
+    assert client.get('/stock-transfers?export=csv&status=bad').status_code == 400
+    login(client, 'csv_beta')
+    rows = download({})
+    assert len(rows) == 1 and rows[0]['Transfer ID'] == 'STCSV0051'
+    assert client.get('/stock-transfers?export=csv&loc=2').status_code == 403
+
+
+def test_import_modal_responsive(sync, fake, session, client):
+    from urllib.parse import urlsplit
+    from playwright.sync_api import sync_playwright
+    seeded(sync, fake, session)
+    add_user(session, 'modal_admin', 'admin')
+    login(client, 'modal_admin')
+    def serve(route):
+        request = route.request
+        url = urlsplit(request.url)
+        response = client.get(url.path + ('?' + url.query if url.query else ''))
+        route.fulfill(status=response.status_code, body=response.content,
+                      headers={k: v for k, v in response.headers.items() if k.lower() not in
+                               ('content-length', 'content-encoding', 'transfer-encoding')})
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel='msedge', headless=True)
+        page = browser.new_page()
+        page.route('http://qa.test/**', serve)
+        page.route('https://**', lambda r: r.abort())
+        for width in (1440, 390):
+            page.set_viewport_size({'width': width, 'height': 900})
+            page.goto('http://qa.test/stock-transfers')
+            assert not page.locator('#transfer-import').is_visible()
+            page.locator('[data-modal="transfer-import"]').click()
+            assert page.locator('#transfer-import').is_visible()
+            box = page.locator('#transfer-import').bounding_box()
+            assert box['x'] >= 0 and box['x'] + box['width'] <= width
+            assert page.locator('#transfer-file').is_visible()
+            styles = page.locator('#transfer-import').evaluate("el => ({padding:parseFloat(getComputedStyle(el).paddingLeft),animation:getComputedStyle(el).animationName,backdrop:getComputedStyle(el,'::backdrop').animationName})")
+            assert styles['padding'] >= 18
+            assert styles['animation'] == 'transfer-import-open' and styles['backdrop'] == 'none'
+
+            assert page.evaluate("() => document.querySelector('[name=export]').form.id") == 'stock-transfer-filters'
+            page.locator('#transfer-import [data-modal-close]').click()
+            assert not page.locator('#transfer-import').is_visible()
+        browser.close()

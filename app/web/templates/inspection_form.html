@@ -4,17 +4,20 @@
 {% set po = insp.template.photo_only %}
 <h1>{{ t(insp.template.name) }}</h1>
 <p class="mute">{{ insp.location.name }} &middot; {{ insp.business_date|day }} {{ t('· due') }} {{ insp.due_at|clock }}
- <span class="badge {{ 'b-ok' if insp.status == 'completed' else 'b-warn' if insp.status == 'late' else 'b-bad' if insp.status == 'missed' else 'b-warn' if insp.status == 'in_progress' else '' }}">{{ t(insp.status|replace('_',' ')) }}</span></p>
+ <span class="badge {{ 'b-ok' if insp.status in ('completed', 'submitted') else 'b-warn' if insp.status == 'late' else 'b-bad' if insp.status == 'missed' else 'b-warn' if insp.status == 'in_progress' else '' }}">{{ t(insp.status|replace('_',' ')) }}</span></p>
 
 {% if soon %}<div class="card" style="border-color:#e9b949"><b>{{ t('Expiring within 3 days at this location') }}</b>
 <ul class="plain small">{% for b in soon %}<li>{{ b.product.name }}: {{ b.qty|num }} {{ t('units, expiry') }} {{ b.expiry_date }}</li>{% endfor %}</ul>
 <div class="small mute">{{ t('Check these on the shelf and mark them in') }} <a href="/expiry">{{ t('Expiry') }}</a>{{ t('. Write-offs must be entered in StoreHub.') }}</div></div>{% endif %}
 
+{% if insp.status == 'submitted' %}
+<div class="card"><b>{{ t('Submitted via Lark') }}</b><p>{{ t('A report was found for this store and date. You can also upload photos and videos below. Your submission will be sent through the regular Lark sync.') }}</p><a class="btn sec" href="/inspections?on={{ insp.business_date }}&loc={{ insp.location_id }}">{{ t('View Lark report') }}</a></div>
+{% endif %}
 {% if insp.status in ('completed', 'late') %}
   <div class="card">{{ t('Completed by') }} {{ names.get(insp.completed_by, '') }} {{ t('at') }} {{ insp.completed_at|local }}{% if insp.status == 'late' %} <span class="badge b-warn">{{ t('late: due') }} {{ insp.due_at|clock }}</span>{% endif %}.</div>
   <div class="card">{% for it in insp.template.items %}{% set r = results.get(it.id) %}
     <div class="chk-item"><b>{{ t(it.label) }}</b>
-      {% if r and it.kind == 'video' %}{% if r.photo_path %}<div><video controls preload="metadata" style="max-width:100%;max-height:320px;border-radius:8px;margin-top:6px" src="/uploads/{{ r.photo_path }}"></video></div>{% else %}<span class="badge b-bad">{{ t('no video') }}</span>{% endif %}
+      {% if r and it.kind == 'video' %}{% if r.videos %}<div class="video-list">{% for vp in r.videos %}<video controls preload="metadata" style="max-width:100%;max-height:320px;border-radius:8px;margin:6px 8px 0 0" src="/uploads/{{ vp }}" aria-label="{{ t('Video {number}', number=loop.index) }}"></video>{% endfor %}</div>{% else %}<span class="badge b-bad">{{ t('no video') }}</span>{% endif %}
       {% elif r and po %}{% if it.kind == 'number' %}<span class="small">{{ t('reading') }} {{ r.value }} {{ it.unit or '' }}</span>{% endif %}
       {% elif r %}<span class="badge {{ 'b-ok' if r.passed else 'b-bad' if r.passed is false else '' }}">{{ (t('pass') if r.passed else t('fail')) if r.passed is not none else t('noted') }}</span>
       {% if it.kind == 'number' %} <span class="small">{{ t('reading') }} {{ r.value }} {{ it.unit or '' }}{% if it.min_value is not none or it.max_value is not none %} {{ t('(allowed') }} {{ it.min_value|num }} {{ t('to') }} {{ it.max_value|num }}){% endif %}</span>{% endif %}
@@ -30,13 +33,16 @@
     <div class="chk-item">
       <div><b>{{ t(it.label) }}</b> {% if not po %}<span class="badge sev-{{ it.fail_severity }}">{{ it.fail_severity }} {{ t('if it fails') }}</span>{% endif %}</div>
       {% if it.kind == 'video' %}
-        <div class="upl">
+        <div class="upl" data-multi data-noun="videos">
           <div class="upl-drop">
-            <input type="file" name="f_{{ it.id }}" accept="video/*" capture="environment" required aria-label="{{ t('Walkthrough video') }}">
+            <input type="file" name="f_{{ it.id }}" accept="video/*" multiple required aria-label="{{ t('Walkthrough videos') }}">
             <div class="upl-face"><span class="upl-ic"><svg class="i"><use href="#i-video"/></svg></span>
-              <span><b>{{ t('Record the walkthrough video') }}</b><small>{{ t('Tap to record or choose · MP4, MOV or WebM, up to 300 MB · include chillers and refs') }}</small></span></div>
+              <span><b>{{ t('Add the walkthrough videos') }}</b><small>{{ t('One or more videos · MP4, MOV or WebM, up to 300 MB each · include chillers and refs') }}</small></span></div>
           </div>
+          <input type="file" accept="video/*" capture="environment" data-camera-input hidden aria-label="{{ t('Record a video') }}">
+          <button type="button" class="sec sm" data-take-photo hidden style="margin-top:8px"><svg class="i"><use href="#i-video"/></svg> {{ t('Record a video') }}</button>
           <div class="upl-prev" hidden></div>
+          <div class="photo-count small mute" aria-live="polite"></div>
         </div>
       {% elif it.kind == 'number' %}
         <div class="row" style="margin-top:6px"><input type="number" step="any" name="v_{{ it.id }}" required placeholder="{{ t('reading') }}" inputmode="decimal"> <span>{{ it.unit or '' }}</span>

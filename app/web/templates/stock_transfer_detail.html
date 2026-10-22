@@ -3,8 +3,42 @@
 {% block content %}
 
 <div class="page-head"><div><h1>{{ t('Stock transfer') }} {{ rec.reference }}</h1><p>{{ rec.source_name }} &rarr; {{ rec.target_name }}</p></div><a class="btn sec" href="/stock-transfers">{{ t('Back to stock transfers') }}</a></div>
-<div class="card"><div class="row"><b>{{ t('StoreHub status') }}:</b> <span class="badge">{{ (t('Transfer created') if lang == 'zh' and rec.status == 'Created' else t(rec.status)) }}</span>{% if not rec.source_location_id or not rec.target_location_id %}<span class="badge b-warn">{{ t('Location mapping needed') }}</span>{% endif %}</div><p class="small mute">{{ t('StoreHub export status is a system record. It does not replace a physical receiving count or change inventory.') }}</p>
-<div class="grid g2"><div><p>{{ t('Created') }}: {{ rec.created_sh|local }}</p><p>{{ t('Shipped') }}: {{ rec.shipped_at|local or '—' }}{% if rec.sent_by %} &middot; {{ rec.sent_by }}{% endif %}</p><p>{{ t('Received in StoreHub') }}: {{ rec.received_at|local or '—' }}{% if rec.received_by %} &middot; {{ rec.received_by }}{% endif %}</p>{% if rec.cancelled_at or rec.cancelled_by %}<p>{{ t('Cancelled') }}: {{ rec.cancelled_at|local or '—' }} {{ rec.cancelled_by }}</p>{% endif %}</div><div><p>{{ t('Export total') }}: <b>PHP {{ rec.total|money }}</b></p><p>{{ t('Source file') }}: {{ rec.last_import.filename }}</p><p>{{ t('Imported') }}: {{ rec.last_import.imported_at|local }}</p><p class="small mute">{{ t('Amounts are shown in PHP.') }}</p></div></div></div>
+<div class="card">
+  <div class="row" style="justify-content:space-between;align-items:center">
+    <div><span class="badge {{ 'b-ok' if rec.status == 'Completed' else 'b-bad' if rec.status == 'Cancelled' else '' }}">{{ (t('Transfer created') if lang == 'zh' and rec.status == 'Created' else t(rec.status)) }}</span>{% if not rec.source_location_id or not rec.target_location_id %}<span class="badge b-warn">{{ t('Location mapping needed') }}</span>{% endif %}</div>
+    <div style="text-align:right"><b style="font-size:18px">PHP {{ rec.total|money }}</b><div class="small mute">{{ rec.lines|length }} {{ t('Items') }}</div></div>
+  </div>
+  <div class="tsteps">
+    <div class="tstep done"><b>{{ t('Created') }}</b>{{ rec.created_sh|local }}</div>
+    <div class="tstep {{ 'done' if rec.shipped_at }}"><b>{{ t('Shipped') }}</b>{{ rec.shipped_at|local or '—' }}</div>
+    <div class="tstep {{ 'done' if receipt }}"><b>{{ t('Store confirmed') }}</b>{{ receipt.counted_at|local if receipt else t('Waiting') }}</div>
+  </div>
+  <details class="small mute"><summary>{{ t('Details') }}</summary>
+    <p style="margin:8px 0 0">{{ t('Sent by') }}: {{ rec.sent_by or '—' }} · {{ t('Received in StoreHub') }}: {{ rec.received_at|local or '—' }}{% if rec.received_by %} ({{ rec.received_by }}){% endif %}</p>
+    {% if rec.cancelled_at or rec.cancelled_by %}<p>{{ t('Cancelled') }}: {{ rec.cancelled_at|local or '—' }} {{ rec.cancelled_by }}</p>{% endif %}
+    <p>{{ t('Source file') }}: {{ rec.last_import.filename }} · {{ t('Imported') }}: {{ rec.last_import.imported_at|local }}</p>
+    <p>{{ t('StoreHub export status is a system record. It does not replace a physical receiving count or change inventory.') }} {{ t('Amounts are shown in PHP.') }}</p>
+  </details>
+</div>
+
+<div class="card"><h2>{{ t('Store receipt confirmation') }}</h2>
+{% if receipt %}
+  <p><span class="badge {{ 'b-ok' if receipt.differences == 0 else 'b-warn' }}">{{ t('Store confirmed — matches what was sent') if receipt.differences == 0 else t('Store confirmed with {n} difference(s)', n=receipt.differences) }}</span></p>
+  <p class="small mute">{{ t('Counted by') }} <b>{{ receipt.counter.full_name or receipt.counter.username if receipt.counter else '—' }}</b> · {{ receipt.counted_at|local }}{% if receipt.note %} · {{ receipt.note }}{% endif %}</p>
+  <div class="tw" style="box-shadow:none"><table class="wide"><thead><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Sent') }}</th><th class="right">{{ t('Counted') }}</th><th class="right">{{ t('Difference') }}</th></tr></thead><tbody>
+  {% for rl in receipt.lines %}<tr><td>{{ rl.transfer_line.product_name }}</td><td class="right">{{ rl.expected_qty|num }}</td><td class="right"><b>{{ rl.counted_qty|num }}</b></td><td class="right">{% set d = rl.counted_qty - rl.expected_qty %}{% if d != 0 %}<b style="color:var(--bad)">{{ ('+' if d > 0) ~ (d|num) }}</b>{% else %}<span class="mute">—</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+{% elif can_confirm %}
+  <p class="small mute">{{ t('Count what physically arrived, line by line. Sent quantities are pre-filled — change only what differs. Any difference opens an issue for the warehouse automatically.') }}</p>
+  <form novalidate method="post" action="/stock-transfers/{{ rec.id }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="tw" style="box-shadow:none"><table class="wide"><thead><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Sent') }}</th><th class="right">{{ t('Counted') }}</th></tr></thead><tbody>
+  {% for l in rec.lines %}<tr><td>{{ l.product_name }}<div class="small mute">{{ l.sku }}</div></td><td class="right">{{ l.quantity|num }}</td><td class="right"><input type="number" step="any" min="0" inputmode="decimal" name="q_{{ l.id }}" value="{{ l.quantity|num }}" style="width:90px;text-align:right" aria-label="{{ t('Counted') }} — {{ l.product_name }}"></td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="row" style="margin-top:10px"><input name="note" maxlength="300" placeholder="{{ t('Note (optional)') }}" style="flex:1;min-width:200px"><button class="ok">{{ t('Confirm receipt') }}</button></div></form>
+{% else %}
+  <p class="small mute">{{ t('Not confirmed by the store yet.') }}{% if not can('transfer.confirm') %} {{ t('Only the receiving store can confirm this transfer.') }}{% endif %}</p>
+{% endif %}
+</div>
 {% include '_order_document_actions.html' %}
 {% if document.saved %}<h2>{{ t('Original StoreHub items') }}</h2>{% endif %}
 <div class="tw"><table class="wide"><thead><tr><th>{{ t('No.') }}</th><th>{{ t('Product') }}</th><th>{{ t('SKU') }}</th><th>{{ t('Serial No.') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Ordered Qty') }}</th><th>{{ t('Unit') }}</th><th class="right">{{ t('Export unit cost') }} (PHP)</th><th class="right">{{ t('Export subtotal') }} (PHP)</th></tr></thead><tbody>{% for l in rec.lines %}<tr><td>{{ l.line_no }}</td><td>{{ l.product_name }}{% if not l.product_id %}<div class="small mute">{{ t('Product mapping needed') }}</div>{% endif %}</td><td>{{ l.sku }}</td><td>{{ l.serial_no }}</td><td>{{ l.category }}</td><td class="right"><b>{{ exact(original_document.lines[loop.index0].quantity) }}</b></td><td>{{ l.unit }}</td><td class="right">{{ exact(original_document.lines[loop.index0].cost) }}</td><td class="right">{{ exact(original_document.lines[loop.index0].amount, 2) }}</td></tr>{% else %}<tr><td colspan="9" class="mute">{{ t('This empty or cancelled transfer has no item details in the export.') }}</td></tr>{% endfor %}</tbody><tfoot><tr><th colspan="8">{{ t('Total amount') }} (PHP)</th><th class="right">{{ exact(original_document.total, 2) }}</th></tr></tfoot></table></div>

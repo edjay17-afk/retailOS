@@ -11,7 +11,7 @@
   "Stock events": "Stock changes",
   "Expiry": "Expiry dates",
   "Stock and ordering": "Stock and orders",
-  "Replenishment": "Order suggestions",
+  "Replenishment": "Auto replenishment",
   "Inventory": "Stock",
   "Intelligence": "Reports and help",
   "Data quality": "Data checks",
@@ -62,7 +62,7 @@
   "Approved qty": "Approved quantity",
   "Unit cost": "Cost per unit",
   "Order batches": "Order lists",
-  "Back to suggestions": "Back to order suggestions",
+  "Back to suggestions": "Back to auto replenishment",
   "Create batches from approved": "Create lists from approved orders",
   "Mark dispatched": "Mark as sent",
   "Dispatch": "Send",
@@ -194,5 +194,8 @@
   "Started: {job}. Refresh in a few seconds.": "Started {job}. Refresh the page in a few seconds.",
   "{count} min ago": "{count} minutes ago",
   "{count} h ago": "{count} hours ago",
-  "{count} d ago": "{count} days ago"
+  "{count} d ago": "{count} days ago",
+  "Order suggestions": "Auto replenishment",
+  "Order suggestions today": "Auto replenishment today",
+  "Order suggestions, stock, purchase orders and transfers": "Auto replenishment, stock, purchase orders and transfers"
 }

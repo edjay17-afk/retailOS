@@ -15,7 +15,7 @@ from ..security import allowed_location_ids, has_perm
 from ..services import freshness
 from .tools import TOOLS, Tool, check_args
 
-STOCK_TOOLS = {"approve_replenishment", "create_count_list", "write_off_stock", "submit_supplier_order"}
+STOCK_TOOLS = {"prepare_transfer_sheet", "approve_replenishment", "create_count_list", "write_off_stock", "submit_supplier_order"}
 
 
 @dataclass

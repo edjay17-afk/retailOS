@@ -487,7 +487,7 @@ def test_store_daily_inspection_content_and_due_time(sync, session):
     inspections.generate_tasks(session, today_local()); session.commit()
     insp = _task(session)
     assert insp.template.name == "Store Daily Inspection" and insp.template.due_time == "12:00"
-    assert [i.label for i in insp.template.items] == ["Store Entrance", "Counter Area", "Restroom", "Floor & Table Cleanliness", "Aircon Temp", "All Machines (All)",
+    assert [i.label for i in insp.template.items] == ["Store Entrance", "Counter Area", "Restroom", "Floor & Table Cleanliness", "All Machines (All)",
                                                       "Shelf Stocks (All including chillers and refs)", "Video Walkthrough"]
     assert _task(session, "store_opening") is None and _task(session, "warehouse_daily").template.name == "Warehouse Inspection"
 

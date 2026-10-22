@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Today') }}{% endblock %}
 {% block content %}
-{% set completed = insp.get('completed', 0) + insp.get('late', 0) %}
+{% set completed = insp.get('completed', 0) + insp.get('late', 0) + insp.get('submitted', 0) %}
 {% set total = insp.values()|sum %}
 {% set pct = ((completed / total * 100)|round(0)|int) if total else 0 %}
 {% set lh = (now.hour + 8) % 24 %}
@@ -9,7 +9,7 @@
 <section class="sd-hero">
   <div class="sd-hero-text">
     <div class="sd-eyebrow">{{ places|join(' · ') or company }} &middot; {{ brief.date|day }}</div>
-    <h1>{{ t('Good morning') if lh < 12 else t('Good afternoon') if lh < 18 else t('Good evening') }}, {{ (user.full_name or user.username).split(' ')[0] }}.</h1>
+    
     <p>{% if not total %}{{ t('No checklists scheduled today.') }}{% elif completed >= total %}{{ t('All checklists are done. Great work today.') }}{% else %}{{ total - completed }} {{ t('checklist(s) still to do today.') }}{% endif %}</p>
     {% if nxt %}<a class="sd-cta" href="/inspections/{{ nxt.id }}">{{ t('Start') }} {{ t(nxt.template.name|replace(' checklist', '')) }} <svg class="i"><use href="#i-arrow"/></svg></a>
     {% elif total %}<span class="sd-done"><svg class="i"><use href="#i-check"/></svg>{{ t('All done') }}</span>{% endif %}
@@ -55,10 +55,10 @@
     <div class="sd-card-head"><h2>{{ t("Today's checklists") }}</h2><a href="/inspections">{{ t('View all') }} &rarr;</a></div>
     {% if total %}
     <div class="sd-stack" role="img" aria-label="{{ completed }} {{ t('completed') }} {{ t('of') }} {{ total }}">
-      {% for key, cls in (('completed','sb-ok'),('late','sb-late'),('in_progress','sb-prog'),('pending','sb-pend'),('missed','sb-miss')) if insp.get(key) %}<span class="{{ cls }}" style="width:{{ (insp[key] / total * 100)|round(1) }}%" title="{{ t(key|replace('_',' ')) }}: {{ insp[key] }}"></span>{% endfor %}
+      {% for key, cls in (('submitted','sb-ok'),('completed','sb-ok'),('late','sb-late'),('in_progress','sb-prog'),('pending','sb-pend'),('missed','sb-miss')) if insp.get(key) %}<span class="{{ cls }}" style="width:{{ (insp[key] / total * 100)|round(1) }}%" title="{{ t(key|replace('_',' ')) }}: {{ insp[key] }}"></span>{% endfor %}
     </div>
     <ul class="sd-legend sd-legend-row">
-      {% for key, cls in (('completed','sw-ok'),('late','sw-low'),('in_progress','sw-prog'),('pending','sw-pend'),('missed','sw-out')) if insp.get(key) %}<li><span class="sw {{ cls }}"></span>{{ t(key|replace('_',' ')|capitalize) }}<b>{{ insp[key] }}</b></li>{% endfor %}
+      {% for key, cls in (('submitted','sw-ok'),('completed','sw-ok'),('late','sw-low'),('in_progress','sw-prog'),('pending','sw-pend'),('missed','sw-out')) if insp.get(key) %}<li><span class="sw {{ cls }}"></span>{{ t(key|replace('_',' ')|capitalize) }}<b>{{ insp[key] }}</b></li>{% endfor %}
     </ul>
     {% for task in my_tasks %}<a class="sd-task" href="/inspections/{{ task.id }}"><span class="sd-task-icon"><svg class="i"><use href="#i-clipboard"/></svg></span><span class="tt"><b>{{ t(task.template.name|replace(' checklist', '')) }}</b><small>{{ task.location.name|replace('The Daily Centro - ', '') }} &middot; {{ t('due') }} {{ task.due_at|clock }}</small></span><span class="badge {{ 'b-bad' if task.status == 'missed' else 'b-warn' }}">{{ t(task.status|replace('_',' ')) }}</span></a>{% endfor %}
     {% if not my_tasks %}<p class="sd-empty">{{ t('All scheduled checklists are complete.') }}</p>{% endif %}

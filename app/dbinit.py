@@ -10,7 +10,7 @@ from .db import Base, SessionLocal, get_engine
 from .models import InspectionTemplate, SchemaVersion, TemplateItem
 from .timeutil import now_utc
 
-CURRENT_VERSION = 16
+CURRENT_VERSION = 38
 
 # (version, [sql, ...]) applied in order to databases created by an earlier version.
 MIGRATIONS: list[tuple[int, list[str]]] = [
@@ -43,6 +43,47 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
           "CREATE INDEX ix_compliance_item_due_date ON compliance_item (due_date)"]),
     (15, []),  # StoreHub wastage records mirror: new tables only (created automatically)
     (16, []),  # V2.1 inventory_event trace table: new table only (created automatically)
+    (17, []),  # V2.1 store receipt confirmation on StoreHub transfers: new tables only (created automatically)
+    (18, []),  # new-product registration (Lark New Product table + RPA Excel): new table only (created automatically)
+    (19, ["ALTER TABLE new_product ADD COLUMN expiry_date DATE"]),  # the Lark table tracks Expiration Date
+    (20, ["ALTER TABLE new_product ADD COLUMN entry_type VARCHAR(10) DEFAULT 'new'",  # product entry flow: new / existing, units and pack maths
+          "ALTER TABLE new_product ADD COLUMN brand VARCHAR(120)",
+          "ALTER TABLE new_product ADD COLUMN flavor VARCHAR(120)",
+          "ALTER TABLE new_product ADD COLUMN unit VARCHAR(12)",
+          "ALTER TABLE new_product ADD COLUMN units_per_pack FLOAT",
+          "ALTER TABLE new_product ADD COLUMN pack_price FLOAT",
+          "ALTER TABLE new_product ADD COLUMN packs FLOAT",
+          "ALTER TABLE new_product ADD COLUMN product_id INTEGER REFERENCES product(id)"]),
+    (21, []),  # warehouse transfer sheets (scan + quantity): new tables only (created automatically)
+    (22, ["ALTER TABLE transfer_sheet_line RENAME TO transfer_sheet_line_old",  # a line may be a product that is not in StoreHub yet: product_id becomes optional
+          "CREATE TABLE transfer_sheet_line (id INTEGER NOT NULL PRIMARY KEY, sheet_id INTEGER NOT NULL REFERENCES transfer_sheet (id) ON DELETE CASCADE, "
+          "product_id INTEGER REFERENCES product (id), manual_name VARCHAR(300), manual_barcode VARCHAR(80), qty FLOAT NOT NULL, unit_cost FLOAT, "
+          "CONSTRAINT uq_transfer_sheet_line UNIQUE (sheet_id, product_id))",
+          "INSERT INTO transfer_sheet_line (id, sheet_id, product_id, qty, unit_cost) SELECT id, sheet_id, product_id, qty, unit_cost FROM transfer_sheet_line_old",
+          "DROP TABLE transfer_sheet_line_old",
+          "CREATE INDEX IF NOT EXISTS ix_transfer_sheet_line_sheet_id ON transfer_sheet_line (sheet_id)"]),
+    (23, ["UPDATE template_item SET unit = NULL WHERE label = 'Aircon Temp' AND template_id IN (SELECT id FROM inspection_template WHERE code = 'store_daily')"]),  # the store inspection no longer shows a Celsius unit
+    (24, ["DELETE FROM template_item WHERE label = 'Aircon Temp' AND template_id IN (SELECT id FROM inspection_template WHERE code = 'store_daily') AND id NOT IN (SELECT item_id FROM inspection_result)"]),  # the store inspection is pictures and a video only: no typed temperature reading
+    (25, ["ALTER TABLE inspection_result ADD COLUMN video_paths JSON"]),  # a store walkthrough can have one or more videos
+    (26, []),  # new-product lists (scan + name, supplier, category, quantity -> PDF): new tables only (created automatically)
+    (27, ["ALTER TABLE new_product_list RENAME COLUMN pdf_path TO excel_path"]),  # a saved new-product list is an Excel file for the RPA, not a PDF
+    (28, ["UPDATE po_line SET supplier_price = subtotal / ordered_qty WHERE supplier_price IS NOT NULL AND ordered_qty > 0 AND subtotal IS NOT NULL AND ROUND(subtotal / ordered_qty, 2) = ROUND(supplier_price, 2) AND ABS(subtotal / ordered_qty - supplier_price) > 0.000000001"]),  # StoreHub sends the supplier price rounded; the exact price is in the line subtotal
+    (29, ["UPDATE po_line SET supplier_price = ROUND(ROUND(supplier_price, 2) * 1.12, 2) / 1.12 WHERE supplier_price IS NOT NULL AND ordered_qty > 0 AND subtotal IS NOT NULL AND ROUND(ROUND(ROUND(supplier_price, 2) * 1.12, 2) / 1.12, 2) = ROUND(supplier_price, 2) AND ABS(ROUND(ROUND(supplier_price, 2) * 1.12, 2) / 1.12 * ordered_qty - subtotal) <= 0.0051"]),  # exact PO supplier price: whole-cents price with 12% tax divided back out, as StoreHub has it (254.464285 = 285 / 1.12)
+    (30, []),  # purchase-order drafts (supplier, deliver to, products with exact quantity and price): new tables only (created automatically)
+    (31, ["DELETE FROM transfer_sheet_line WHERE sheet_id IN (SELECT id FROM transfer_sheet WHERE status = 'cancelled')",
+          "DELETE FROM transfer_sheet WHERE status = 'cancelled'"]),  # a discarded sheet is deleted, not hidden: the numbers restart from the sheets that really exist
+    (32, ["ALTER TABLE po_draft ADD COLUMN tax_rate VARCHAR(20)"]),  # purchase-order drafts carry their tax percent (12)
+    (33, ["ALTER TABLE sales_day ADD COLUMN gross_profit FLOAT"]),  # StoreHub's Gross Profit per store per day (its API has no item costs; its report does)
+    (34, ["ALTER TABLE po_line ADD COLUMN price_exact VARCHAR(40)"]),  # the exact supplier price StoreHub holds (its API sends it rounded to 2 decimals)
+    (35, ["ALTER TABLE new_product_item ADD COLUMN price FLOAT",  # new-product lists can be pushed straight to StoreHub (POST /products needs a price)
+          "ALTER TABLE new_product_item ADD COLUMN cost FLOAT",
+          "ALTER TABLE new_product_item ADD COLUMN status VARCHAR(12) DEFAULT 'pending'",
+          "ALTER TABLE new_product_item ADD COLUMN storehub_product_id VARCHAR(40)",
+          "ALTER TABLE new_product_item ADD COLUMN push_error VARCHAR(300)"]),
+    (36, []),  # StoreHub push registry (what went in, when, by whom): new table only (created automatically)
+    (37, ["ALTER TABLE po_draft ADD COLUMN new_product_ids JSON"]),  # products quick-created from the order: split between the stores on save
+    (38, ["ALTER TABLE recommendation ADD COLUMN saved_qty FLOAT",
+          "ALTER TABLE recommendation ADD COLUMN transfer_sheet_id INTEGER REFERENCES transfer_sheet(id) ON DELETE SET NULL"]),
 ]
 
 TRIGGERS = [
@@ -54,6 +95,9 @@ TRIGGERS = [
 
 
 def _already_applied(stmt: str) -> bool:
+    r = re.match(r"ALTER TABLE (\w+) RENAME COLUMN (\w+) TO (\w+)", stmt, re.I)
+    if r:  # a rename is done when the old name is gone
+        return r.group(2) not in {c["name"] for c in inspect(get_engine()).get_columns(r.group(1))}
     m = re.match(r"ALTER TABLE (\w+) ADD COLUMN (\w+)", stmt, re.I)
     if not m:
         return False
@@ -115,7 +159,6 @@ TEMPLATES = [
         C("Counter Area", "P3"),
         C("Restroom", "P2"),
         C("Floor & Table Cleanliness", "P3"),
-        ("Aircon Temp", "number", None, None, "C", "P3", False),  # a reading to record; no allowed range was given
         C("All Machines (All)", "P2"),
         C("Shelf Stocks (All including chillers and refs)", "P2"),
         V("Video Walkthrough"),

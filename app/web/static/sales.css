@@ -1,0 +1,47 @@
+/* A quiet surface treatment for the sales overview; retain its existing grids. */
+.content .sales-page .sales-filters{margin:0 0 22px;padding:14px 0 18px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;gap:16px;box-shadow:none}
+.sales-page > .page-head{margin-bottom:18px}
+.sales-filters > div:first-child{flex:0 1 280px}
+.sales-filters > div:first-child select{width:100%}
+.sales-filters .dl-pair{margin-left:auto}
+.sales-filters .dl-btn{width:38px;height:38px}
+@media(max-width:640px){.sales-filters .dl-pair{margin-left:0}.content .sales-filters > .dl-pair{flex:0 0 auto}}
+.sales-page{--chart:var(--primary);--sales-secondary:#cbd5e1;--sales-border:var(--line);--sales-soft:var(--surface2)}
+.sales-page .card,.sales-page .tw{background:var(--surface);border:1px solid var(--sales-border);border-radius:10px;box-shadow:none}
+.sales-page .grid>.card.stat{border:1px solid var(--sales-border)}
+.sales-page .stat{align-items:flex-start;flex-wrap:wrap}
+.sales-page .stat .label{font-size:12px;font-weight:500;letter-spacing:0;color:var(--mute);line-height:1.5}
+.sales-page .stat .value{margin:7px 0;font-weight:650;letter-spacing:-.035em;line-height:1.2;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sales-page .stat .sub{font-size:12px;line-height:1.5;color:var(--mute)}
+.sales-page .stat .sub b{font-weight:500;color:var(--ink)}
+.sales-page .spark{opacity:.75;max-width:100%;flex-shrink:0}
+.sales-page .card-head{padding-bottom:12px;border-bottom:1px solid var(--sales-border);margin-bottom:16px}
+.sales-page h2{font-size:15px;font-weight:600;letter-spacing:-.015em}
+.sales-page .card-head h2{font-size:15px}
+.sales-page .card-head .chips{padding:3px;border:1px solid var(--sales-border);border-radius:8px;background:var(--sales-soft);gap:2px!important}
+.sales-page button.chip{border:1px solid transparent;border-radius:5px;background:transparent;color:var(--mute);box-shadow:none;font-weight:500}
+.sales-page button.chip.on{border-color:var(--sales-border);background:var(--surface);color:var(--ink)}
+.sales-page button.chip:hover{color:var(--ink);background:var(--surface);border-color:var(--sales-border)}
+.sales-page .btn.sec,.sales-page button.sec{background:var(--surface);border:1px solid var(--sales-border);color:var(--ink);box-shadow:none;border-radius:7px;font-weight:500}
+.sales-page .btn.sec:hover,.sales-page button.sec:hover{background:var(--sales-soft);border-color:var(--line2)}
+.sales-page .filters select,.sales-page .filters input{border-radius:7px;border-color:var(--sales-border);background-color:var(--surface);box-shadow:none}
+.sales-page .filters select:focus,.sales-page .filters input:focus{border-color:var(--primary);outline:2px solid var(--primary-soft);outline-offset:1px}
+.sales-page .tw th{background:var(--sales-soft);color:var(--mute);border-bottom:1px solid var(--sales-border);font-size:11px;font-weight:600;letter-spacing:.025em}
+.sales-page .tw td{border-bottom-color:var(--sales-border);font-variant-numeric:tabular-nums}
+.sales-page .tw tr:hover td{background:var(--sales-soft)}
+.sales-page td .bar{height:4px;background:var(--sales-soft)}
+.sales-page td .bar i{background:var(--chart)}
+.sales-page .hb{border-radius:5px}
+.sales-page .hb:hover{background:var(--sales-soft)}
+.sales-page .hb-t{height:5px;background:var(--sales-soft)}
+.sales-page .hb-t i{border-radius:3px}
+.sales-page .hb-v{font-weight:500;font-variant-numeric:tabular-nums}
+.sales-page .dlegend .dl b{font-weight:600;font-variant-numeric:tabular-nums}
+html[data-theme="dark"] .sales-page{--sales-secondary:#4b5563;--sales-border:var(--line);--sales-soft:var(--surface2)}
+@media(max-width:640px){
+  .sales-page .card,.sales-page .tw{border-radius:9px}
+  .sales-page .stat .value{font-size:22px;overflow-wrap:anywhere}
+  .sales-page .stat>div{min-width:0;max-width:100%}
+  .sales-page .stat .sub{white-space:normal!important}
+  .sales-page .card-head{flex-wrap:wrap;gap:10px}
+}

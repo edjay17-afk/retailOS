@@ -19,6 +19,7 @@ class Config(BaseSettings):
 
     host: str = "127.0.0.1"
     port: int = 8000
+    require_https: bool = False  # enable only after the trusted HTTPS front door is configured
     behind_proxy: bool = False  # true when a reverse proxy (Caddy) fronts the app: it then trusts X-Forwarded-Proto so cookies are marked secure
     base_url: str = ""  # how people reach this server, e.g. http://192.168.1.10:8000 — used for deep links in Lark alerts
     secret_key: str = "change-me"
@@ -42,7 +43,7 @@ class Config(BaseSettings):
     storehub_bo_email: str = ""  # the back-office login the robot signs in with (type it in .env yourself)
     storehub_bo_password: str = ""
     robot_enabled: bool = True  # a kill switch: the robot only runs when the back-office login is also set
-    robot_every_minutes: int = 60  # the robot runs when the last import is at least this old; checked every 10 minutes, so it also catches up after the PC sleeps
+    robot_every_minutes: int = 20  # fetch when the last import is this old; checked every minute for catch-up after sleep
     robot_headless: bool = True
 
     lark_app_id: str = ""

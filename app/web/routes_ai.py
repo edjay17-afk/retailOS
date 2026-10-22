@@ -8,10 +8,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from ..ai import policy, service, tools
+from ..ai import policy, service, tools, conversations, page_context, validate
 from ..models import AiAction, AiOutput, Recommendation
 from ..security import has_perm
 from .deps import Ctx, need, redirect, render, templates
+from . import chat_support
 
 router = APIRouter()
 
@@ -46,7 +47,7 @@ def assistant(c: Ctx = Depends(need("ai.use"))):
     pending = [a for a in pending if policy.check(db, c.user, a.tool, a.args).decision != "deny"][:12]
     questions = [q for q in SUGGESTED_QUESTIONS if "purchase orders" not in q or has_perm(c.user, "po.view")]
     return render(c, "assistant.html", st=st, brief=brief, brief_notice=brief_notice, brief_facts=_facts_of(brief) if brief else {}, mine=mine, pending=pending, questions=questions, tools=tools.TOOLS,
-                  gate=lambda a: policy.check(db, c.user, a.tool, a.args))
+                  gate=lambda a: policy.check(db, c.user, a.tool, a.args), conversations=conversations.recent(db, c.user))
 
 
 @router.post("/assistant/brief")
@@ -63,8 +64,11 @@ def brief_generate(csrf: str = Form(""), c: Ctx = Depends(need("ai.use"))):
 
 
 @router.post("/assistant/ask")
-def ask(question: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("ai.use"))):
+def ask(question: str = Form(""), csrf: str = Form(""), parent_id: int = Form(0), c: Ctx = Depends(need("ai.use"))):
     c.check_csrf(csrf)
+    if parent_id:
+        result = chat_support.respond(c, question, parent_id=parent_id)
+        return redirect(f"/assistant/output/{result['id']}") if result.get("id") else redirect("/assistant", err=result.get("error", "Could not answer"))
     try:
         row = service.ask(c.db, c.user, question)
     except service.AiUnavailable as e:
@@ -73,25 +77,93 @@ def ask(question: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("a
     return redirect(f"/assistant/output/{row.id}")
 
 
+@router.get("/assistant/context")
+def chat_context(url: str = "", c: Ctx = Depends(need("ai.use"))):
+    try:
+        return {"ok": True, "page": page_context.resolve(c.db, c.user, url)}
+    except (tools.ToolError, ValueError, TypeError):
+        return JSONResponse({"ok": False, "error": "This page context is unavailable."}, status_code=400)
+
+
+@router.get("/assistant/conversations")
+def chat_conversations(c: Ctx = Depends(need("ai.use"))):
+    return {"conversations": conversations.recent(c.db, c.user)}
+
+
+@router.get("/assistant/conversations/{oid}")
+def chat_conversation(oid: int, c: Ctx = Depends(need("ai.use"))):
+    try:
+        rows = conversations.chain(c.db, c.user, oid)
+    except PermissionError:
+        raise HTTPException(404, "Conversation not found")
+    return {"id": oid, "page": (rows[-1].context_json or {}).get("meta", {}).get("page", {}) if rows else {}, "messages": [{"question": row.question, "id": row.id,
+            "html": chat_support.answer_html(c, row) if row.status == "ok" else "",
+            "error": row.status != "ok"} for row in rows]}
+
+
 @router.post("/assistant/chat")
-def chat(question: str = Form(""), history: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("ai.use"))):
-    """JSON endpoint behind the chat window that floats on every page. Same engine, checks and audit as the Assistant page."""
+def chat(question: str = Form(""), history: str = Form(""), csrf: str = Form(""), page_url: str = Form(""),
+         parent_id: int = Form(0), c: Ctx = Depends(need("ai.use"))):
     c.check_csrf(csrf)
     try:
-        turns = [t for t in (json.loads(history) if history else []) if isinstance(t, dict)][-6:]
+        raw = json.loads(history[:30000]) if history else []
+        turns = [t for t in raw if isinstance(t, dict)][-24:] if isinstance(raw, list) else []
     except ValueError:
         turns = []
-    try:
-        row = service.ask(c.db, c.user, question, turns)
-    except service.AiUnavailable as e:
-        return JSONResponse({"ok": False, "error": c.t(str(e))})
-    c.db.commit()
-    if row.status != "ok":
-        return JSONResponse({"ok": False, "error": f"The AI could not answer: {row.error}", "id": row.id})
-    sts = _statements(row)
-    html = templates.get_template("_chat_reply.html").render(t=c.t, lang=c.lang, statements=sts, out=row, n_actions=len(row.actions), facts=_facts_of(row),
-                                                            follow_ups=((row.output_json or {}).get("follow_ups") or [])[:3])
-    return JSONResponse({"ok": True, "html": html, "id": row.id, "text": " ".join(str(s_.get("text", "")) for s_ in sts)[:600]})
+    return JSONResponse(chat_support.respond(c, question, turns, page_url, parent_id))
+
+
+@router.post("/assistant/chat-stream")
+def chat_stream(question: str = Form(""), csrf: str = Form(""), page_url: str = Form(""),
+                parent_id: int = Form(0), c: Ctx = Depends(need("ai.use"))):
+    from queue import Queue, Empty
+    from threading import Thread, Event
+    from types import SimpleNamespace
+    from sqlalchemy.orm import sessionmaker
+    from fastapi.responses import StreamingResponse
+    from ..models import User
+    c.check_csrf(csrf)
+    if parent_id:
+        try:
+            conversations.chain(c.db, c.user, parent_id)
+        except PermissionError:
+            raise HTTPException(404, "Conversation not found")
+    factory = sessionmaker(bind=c.db.get_bind())
+    user_id, translate, lang = c.user.id, c.t, c.lang
+    events, stopped = Queue(), Event()
+
+    def progress(message):
+        if stopped.is_set():
+            raise service.AiUnavailable("Stopped.")
+        events.put({"type": "progress", "message": message})
+
+    def work():
+        try:
+            with factory() as db:
+                user = db.get(User, user_id)
+                context = SimpleNamespace(db=db, user=user, t=translate, lang=lang)
+                result = chat_support.respond(context, question, None, page_url, parent_id, progress)
+                events.put({"type": "result", **result})
+        except Exception:
+            events.put({"type": "result", "ok": False, "error": "The assistant could not finish. Please retry."})
+        finally:
+            events.put(None)
+
+    def stream():
+        Thread(target=work, daemon=True).start()
+        try:
+            while True:
+                try:
+                    item = events.get(timeout=10)
+                except Empty:
+                    yield ": keepalive\n\n"
+                    continue
+                if item is None:
+                    break
+                yield "data: " + json.dumps(item) + "\n\n"
+        finally:
+            stopped.set()
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
 @router.post("/replenishment/{rec_id}/explain")
@@ -112,8 +184,7 @@ def explain(rec_id: int, request: Request, csrf: str = Form(""), c: Ctx = Depend
         # the drawer stays open: the explanation renders in place instead of navigating away
         if row.status != "ok":
             return JSONResponse({"ok": False, "error": f"The AI could not explain: {row.error}"})
-        html = templates.get_template("_chat_reply.html").render(t=c.t, lang=c.lang, statements=_statements(row), out=row, n_actions=len(row.actions), facts=_facts_of(row),
-                                                                 follow_ups=((row.output_json or {}).get("follow_ups") or [])[:3])
+        html = chat_support.answer_html(c, row)
         return JSONResponse({"ok": True, "html": html})
     return redirect(f"/assistant/output/{row.id}")
 
@@ -125,7 +196,7 @@ def output(oid: int, c: Ctx = Depends(need("ai.use"))):
         raise HTTPException(404)
     facts = {f["id"]: f for f in (out.context_json or {}).get("facts", [])}
     cited = []
-    for st in _statements(out):
+    for st in validate.collect_statements(out.output_json or {}):
         for r in st.get("refs") or []:
             if r in facts and r not in cited:
                 cited.append(r)

@@ -102,3 +102,27 @@ def test_new_settings_controls_and_responses_are_translated(session, client):
     assert "删除用户" in users_html and "将移除其访问权限，并保留历史记录" in users_html
     response = client.post(f"/users/{staff.id}/delete", data={"csrf": tok}, follow_redirects=True)
     assert "已删除用户 translated_staff" in response.text
+
+
+def test_supplier_page_lists_products_in_bullets_and_keeps_hidden_settings(cfg, session, sync, fake, client):
+    import re
+    from sqlalchemy import select
+    from app.models import Product, Supplier
+    from tests.test_web import add_user, csrf_of, login
+    sync.sync_stores(); sync.sync_products(); session.expire_all()
+    add_user(session, "sup_admin", "admin"); login(client, "sup_admin")
+    s = Supplier(name="Acme Foods", name_source="manual", lead_time_days=4.0, review_period_days=2.0, min_order_value=1500.0, order_days="Mon, Thu", active=True)
+    session.add(s); session.flush()
+    for sid in ("P1", "P2"):
+        session.scalar(select(Product).where(Product.storehub_id == sid)).supplier_id = s.id
+    session.commit()
+    page = client.get("/suppliers").text
+    for gone in ("Lead time (days)", "Review period (days)", "Minimum order value", "Order days", 'name="lead"', 'name="review"', 'name="min_value"', 'name="order_days"'):
+        assert gone not in page, gone  # removed from the table and from the add form
+    cell = re.search(r'<td class="sup-products">(.*?)</td>', page, re.S).group(1)
+    assert re.findall(r"<li>(.*?)</li>", cell) == ["Chips", "Cola 500ml"] and "2 products" in cell  # every product of the supplier, one bullet each, by name
+    r = client.post(f"/suppliers/{s.id}", data={"csrf": csrf_of(client, "/suppliers"), "name": "Acme Foods Inc", "contact": "09171234567", "active": "1"})
+    assert r.status_code == 303 and "err=" not in r.headers["location"]
+    session.expire_all()
+    s = session.get(Supplier, s.id)  # saving from this page leaves the settings it no longer shows exactly as they were
+    assert (s.name, s.contact, s.lead_time_days, s.review_period_days, s.min_order_value, s.order_days) == ("Acme Foods Inc", "09171234567", 4.0, 2.0, 1500.0, "Mon, Thu")

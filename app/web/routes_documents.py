@@ -64,7 +64,7 @@ def register(kind, prefix, view_permission, edit_permission):
     def print_document(doc_id: int, c: Ctx = Depends(need(view_permission))):
         source = load(c, kind, doc_id)
         return render(c, "order_document_print.html", doc=docs.document(c.db, source, kind), kind=kind,
-                      base=f"{prefix}/{doc_id}", exact=docs.display, print_date=docs.print_date)
+                      base=f"{prefix}/{doc_id}", exact=docs.display, cents=docs.cents, six=docs.six_decimals, print_date=docs.print_date)
 
     def export_document(doc_id: int, mode: str = "storehub", c: Ctx = Depends(need(view_permission))):
         if mode not in ("storehub", "report"):

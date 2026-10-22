@@ -1,0 +1,115 @@
+.receipt-page{max-width:1320px;margin:0 auto}
+.receipt-header h1{display:inline;overflow-wrap:anywhere;margin-right:12px}
+.receipt-eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-bottom:9px}
+.receipt-header p{margin-top:10px}
+.receipt-layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:22px;align-items:start}
+.receipt-layout .card{margin-bottom:0;box-shadow:none;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.receipt-items{overflow:hidden}
+.receipt-items-head{padding:20px 22px!important;margin:0!important;border-bottom:1px solid var(--line)}
+.receipt-table{width:100%;font-variant-numeric:tabular-nums}
+.receipt-table th{font-size:11px;white-space:nowrap;background:var(--surface2)}
+.receipt-table td{padding-top:18px;padding-bottom:18px}
+.receipt-product{overflow-wrap:anywhere}
+.receipt-product a{color:var(--ink);text-decoration:none}
+.receipt-product a:hover{color:var(--primary);text-decoration:underline}
+.receipt-product .small{margin-top:4px}
+.receipt-sidebar{display:grid;gap:16px;min-width:0}
+.receipt-payment,.receipt-details{padding:22px}
+.receipt-sidebar .card-head{margin-bottom:18px}
+.receipt-sidebar .item{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border:0;font-variant-numeric:tabular-nums}
+.receipt-sidebar .item>span:last-child,.receipt-sidebar .item>b{min-width:0;overflow-wrap:anywhere;text-align:right}
+.receipt-sidebar .receipt-total{align-items:center;margin-top:14px;padding:20px 0;border-top:1px solid var(--line)}
+.receipt-total small{display:block;color:var(--mute);font-size:11px;margin-top:4px}
+.receipt-total>b{font-size:30px;letter-spacing:-.04em}
+.receipt-methods{border-top:1px dashed var(--line);padding-top:12px;font-size:13px}
+.receipt-details .item{font-size:12px;align-items:baseline}
+.receipt-details .item>span:first-child{flex-shrink:0}
+@media(max-width:1100px){.receipt-layout{grid-template-columns:minmax(0,1fr) 300px;gap:16px}.receipt-table th,.receipt-table td{padding-left:10px;padding-right:10px}}
+@media(max-width:900px){
+ .receipt-layout{grid-template-columns:minmax(0,1fr)}
+ .receipt-header{gap:14px}.receipt-header h1{font-size:24px}
+ .receipt-items-head{padding:16px!important}
+ .receipt-table,.receipt-table tbody{display:block}
+ .receipt-table tr:has(th){display:none}
+ .receipt-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:16px;border-bottom:1px solid var(--line)}
+ .receipt-table tr:last-child{border-bottom:0}
+ .receipt-table td{display:block;padding:0;border:0;min-width:0;font-size:13px}
+ .receipt-table .receipt-line{display:none}
+ .receipt-product{grid-column:1;grid-row:1}
+ .receipt-amount{grid-column:2;grid-row:1;font-size:15px!important}
+ .receipt-table .receipt-qty,.receipt-table .receipt-price,.receipt-table .receipt-discount{grid-column:1/-1;text-align:left;color:var(--mute);font-size:12px}
+ .receipt-table td[data-label]:before{content:attr(data-label) ': ';margin-right:4px}
+ .receipt-payment,.receipt-details{padding:18px}
+ .receipt-items .tw{overflow:visible}
+ .receipt-table .empty{grid-column:1/-1}
+}
+
+/* Receipt presentation: metadata strip, product list, and total-first summary. */
+.receipt-page{max-width:none}
+.receipt-header{margin-bottom:22px}
+.receipt-meta{display:flex;flex-wrap:wrap;gap:24px 40px;padding:18px 0 22px;margin-bottom:24px;border-bottom:1px solid var(--line)}
+.receipt-meta>div{min-width:0;max-width:100%}
+.receipt-meta span{display:block;font-size:11px;color:var(--mute);margin-bottom:6px}
+.receipt-meta strong{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.receipt-meta small{font-size:12px;color:var(--mute);margin-left:8px;font-weight:400}
+.receipt-layout{grid-template-columns:minmax(0,1fr) 340px;gap:28px}
+.receipt-products{padding:0 22px}
+.receipt-product-row{display:flex;align-items:flex-start;gap:16px;padding:22px 0;border-bottom:1px solid var(--line)}
+.receipt-product-row:last-child{border-bottom:0}
+.receipt-index{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:8px;background:var(--surface2);color:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}
+.receipt-product-info{flex:1;min-width:0}
+.receipt-product-name{font-size:15px;font-weight:650;overflow-wrap:anywhere}
+.receipt-product-name a{color:var(--ink);text-decoration:none}
+.receipt-product-name a:hover{color:var(--primary);text-decoration:underline}
+.receipt-barcode{font-size:11px;color:var(--mute);margin-top:4px;overflow-wrap:anywhere}
+.receipt-unit-detail{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--mute);margin-top:12px;font-variant-numeric:tabular-nums}
+.receipt-unit-detail b{color:var(--ink)}
+.receipt-line-discount{padding:2px 6px;background:var(--primary-soft);color:var(--primary);border-radius:4px;margin-left:4px;font-size:11px}
+.receipt-line-total{font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.receipt-layout .receipt-payment{border-top:3px solid var(--btn);padding:24px}
+.receipt-payment-title{font-size:12px;font-weight:600;color:var(--mute)}
+.receipt-sidebar .receipt-total{display:flex;flex-direction:column;align-items:flex-start;gap:8px;border:0;margin:0;padding:16px 0 22px}
+.receipt-total>span{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mute);font-weight:400}
+.receipt-total small{margin:0}
+.receipt-total>b{font-size:38px;font-weight:700;line-height:1.15}
+.receipt-breakdown{border-top:1px solid var(--line);padding:14px 0}
+.receipt-methods .item{background:var(--surface2);border-radius:8px;padding:10px 12px}
+@media(max-width:900px){
+ .receipt-layout{grid-template-columns:minmax(0,1fr);gap:16px}
+ .receipt-meta{gap:16px;display:grid;grid-template-columns:1fr 1fr;margin-bottom:18px;padding-top:0}
+ .receipt-meta>div:first-child{grid-column:1/-1}
+ .receipt-products{padding:0 16px}
+ .receipt-product-row{gap:10px;padding:18px 0}
+ .receipt-index{display:none}
+ .receipt-product-name{font-size:14px}
+ .receipt-line-total{font-size:15px}
+ .receipt-unit-detail{margin-top:8px}
+ .receipt-layout .receipt-payment{padding:20px}
+}
+
+/* Dense item rows: all amounts share one line on desktop. */
+.receipt-compact-table{width:100%;table-layout:auto;font-variant-numeric:tabular-nums}
+.receipt-compact-table th{padding:9px 14px;font-size:11px;background:var(--surface2);white-space:nowrap;text-align:right}
+.receipt-compact-table th:first-child{text-align:left}
+.receipt-compact-table td{padding:9px 14px;font-size:13px;text-align:right;white-space:nowrap}
+.receipt-compact-table .receipt-compact-product{white-space:normal;text-align:left;width:100%;overflow-wrap:anywhere}
+.receipt-compact-product div{font-weight:600;line-height:1.35}
+.receipt-compact-product a{color:var(--ink);text-decoration:none}
+.receipt-compact-product a:hover{color:var(--primary);text-decoration:underline}
+.receipt-compact-product small{display:block;font-size:10px;line-height:1.3;margin-top:2px;color:var(--mute)}
+.receipt-compact-table tr:last-child td{border-bottom:0}
+.receipt-items-head{padding:14px 18px!important}
+@media(max-width:900px){
+ .receipt-compact-table,.receipt-compact-table tbody{display:block}
+ .receipt-compact-table thead{display:none}
+ .receipt-compact-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:9px 14px;border-bottom:1px solid var(--line)}
+ .receipt-compact-table tr:last-child{border-bottom:0}
+ .receipt-compact-table td{display:block;padding:0;border:0;font-size:12px;min-width:0}
+ .receipt-compact-table .receipt-compact-product{grid-column:1;grid-row:1;align-self:start}
+ .receipt-compact-table .receipt-compact-total{grid-column:2;grid-row:1;font-size:13px}
+ .receipt-compact-table .receipt-compact-qty,.receipt-compact-table .receipt-compact-price,.receipt-compact-table .receipt-compact-discount{grid-column:1;display:inline;text-align:left;font-size:10px;color:var(--mute)}
+ .receipt-compact-table .receipt-compact-qty{grid-row:2}
+ .receipt-compact-table .receipt-compact-price{grid-column:2;grid-row:2;text-align:right}
+ .receipt-compact-table td[data-label]:before{content:attr(data-label) ': '}
+ .receipt-compact-table .empty{grid-column:1/-1;white-space:normal}
+}

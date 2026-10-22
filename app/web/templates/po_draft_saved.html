@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Purchase order') }} {{ ref }}{% endblock %}
+{% block content %}
+<style>#chat-fab{display:none}</style>
+<link rel="stylesheet" href="/static/po.css?v={{ asset_v('po.css') }}">
+<div class="po-page">
+<div class="page-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>{{ ref }}</h1>
+    <p>{{ draft.supplier.name }} → <b>{{ draft.location.name }}</b> · <span class="badge b-ok">{{ t('Saved') }}</span> · {{ (draft.saved_at or draft.created_at)|local }}</p></div>
+  <div class="row noprint">
+    <a class="btn sm sec" href="/purchase-orders/new?saved=1">{{ t('All orders') }}</a>
+    <a class="btn sm sec" href="/purchase-orders/new">{{ t('New purchase order') }}</a>
+    <form novalidate method="post" action="/purchase-orders/new/lists/{{ draft.id }}/delete" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Delete this order?') }}">{{ t('Delete') }}</button></form>
+  </div>
+</div>
+<div class="ts-files noprint">
+  <a class="btn ok ts-big" href="/purchase-orders/new/lists/{{ draft.id }}/download.csv">{{ t('CSV for StoreHub') }}</a>
+  {% if draft.excel_path %}<a class="btn sec ts-big" href="/purchase-orders/new/lists/{{ draft.id }}/download.xlsx">{{ t('Download Excel') }}</a>{% endif %}
+  <a class="btn sec ts-big" href="/purchase-orders/new/lists/{{ draft.id }}/print" target="_blank" rel="noopener">{{ t('Print / Save PDF') }}</a>
+</div>
+<div class="po-table">
+  <div class="po-row po-ro po-head desk-only"><span>{{ t("Product Name") }}</span><span class="r">{{ t("Qty to Order") }}</span><span class="r">{{ t("Supplier Price (PHP)") }}</span><span class="r">{{ t("Total (PHP)") }}</span></div>
+  {% for l in data.lines|reverse %}<div class="po-row po-line po-ro">
+    <div class="po-name"><b>{{ l.name }}</b><div class="small mute po-code">{{ l.barcode or l.sku }}</div></div>
+    <div class="po-c r"><span class="po-lab mob-only">{{ t('Qty to Order') }}</span>{{ l.qty }}</div>
+    <div class="po-c r"><span class="po-lab mob-only">{{ t('Supplier Price (PHP)') }}</span>{{ show(l.price) }}</div>
+    <div class="po-c r po-tot"><span class="po-lab mob-only">{{ t('Total (PHP)') }}</span><b>{{ show(l.total) }}</b></div></div>{% endfor %}
+  <div class="po-sums">
+    <div class="po-sum"><span>{{ t('Subtotal (PHP)') }}</span><b>{{ show(data.subtotal) }}</b></div>
+    <div class="po-sum"><span>{{ t('Tax') }} {{ data.rate }}%</span><b>{{ show(data.tax) }}</b></div>
+    <div class="po-sum po-sum-total"><span>{{ t('Total (PHP)') }}</span><b>{{ show(data.total) }}</b></div>
+  </div>
+</div>
+<details class="ts-how noprint"><summary>{{ t('How to import') }}</summary>
+  <ol><li>StoreHub → {{ t('Purchase Orders') }} → {{ t('New') }}</li><li>{{ draft.supplier.name }} → <b>{{ draft.location.name }}</b></li><li>{{ t('Import Items by CSV') }} → CSV</li></ol></details>
+<div class="small mute ts-by">{{ draft.creator.full_name or draft.creator.username if draft.creator else '—' }}</div>
+</div>
+{% endblock %}

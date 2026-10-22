@@ -141,7 +141,7 @@ def test_manager_decides_and_batches_via_the_ui(client, session, sync, fake):
     assert "ok=" in client.post("/replenishment/batches/create", data={"csrf": tok}).headers["location"]
     # warehouse-to-store transfer batches are only for the warehouse team and admins
     assert "Batch #" not in client.get("/replenishment/batches").text and client.get("/replenishment/batches/1.csv").status_code == 404
-    assert client.get("/stock-transfers").status_code == 403
+    assert client.get("/stock-transfers").status_code == 200  # management can view transfers (store receipt loop)
     add_user(session, "whse_b", "warehouse")
     login(client, "whse_b")
     assert "Batch #" in client.get("/replenishment/batches").text
@@ -334,7 +334,7 @@ def test_replenishment_row_details_open_in_the_drawer(client, session, sync, fak
     # detail and decision content live in inert <template> blocks, opened in the slide-over drawer
     assert 'id="drawer"' in html and 'id="drawer-body"' in html
     assert 'data-drawer="why-' in html and '<template id="why-' in html
-    assert 'class="decide"' in html and 'data-drawer="decide-' not in html  # the decision is inline in the row, not in the drawer
+    assert 'class="decide"' not in html and 'data-drawer="decide-' not in html  # no per-row approve/reject: rows are ticked and approved together above the table
     # no inline dropdowns inflating rows
     assert "<details><summary" not in html
 
@@ -416,8 +416,12 @@ def test_sales_days_filter_has_today(client, session):
     add_user(session, "boss_s", "admin")
     login(client, "boss_s")
     today_page = client.get("/sales?days=1").text
-    assert re.search(r'<option selected value="1">Today</option>', today_page) and "Net sales (Today)" in today_page
-    assert re.search(r'<option\s+value="1">Today</option>', client.get("/sales?days=7").text)
+    one = re.search(r'class="drp" data-from="([\d-]+)" data-to="([\d-]+)" data-today="([\d-]+)"', today_page)
+    assert one and one.group(1) == one.group(2) == one.group(3) and "Net sales (Today)" in today_page  # the period picker shows just today
+    week = re.search(r'class="drp" data-from="([\d-]+)" data-to="([\d-]+)"', client.get("/sales?days=7").text)
+    assert week and week.group(1) != week.group(2)
+    custom = re.search(r'class="drp" data-from="([\d-]+)" data-to="([\d-]+)"', client.get("/sales?days=custom&frm=2026-01-05&to=2026-03-20").text)
+    assert custom and custom.groups() == ("2026-01-05", "2026-03-20")  # a long range (the picker's "This year") is accepted
 
 
 def test_assistant_answers_greetings_directly_without_the_model(client, session):
@@ -569,7 +573,7 @@ def test_operations_charts_are_for_admin_and_warehouse_only(client, session):
     for name in ("ops_admin", "ops_whse"):
         login(client, name)
         html = client.get("/").text
-        assert "Operations at a glance" in html and "Order suggestions today" in html and "Expiry exposure" in html, name
+        assert "Operations at a glance" in html and "Auto replenishment today" in html and "Expiry exposure" in html, name
     for name in ("ops_boss", "ops_mgr"):
         login(client, name)
         assert "Operations at a glance" not in client.get("/").text, name

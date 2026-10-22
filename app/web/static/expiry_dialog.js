@@ -1,0 +1,9 @@
+(function(){
+'use strict';var form=document.getElementById('expiry-record-form');if(!form)return;var dialog=document.getElementById('expiry-record'),message=document.getElementById('expiry-record-message'),busy=false;
+form.querySelectorAll('label').forEach(function(label,index){var field=label.parentElement.querySelector('input,select');if(field){if(!field.id)field.id='expiry-field-'+index;label.htmlFor=field.id;}});
+dialog.addEventListener('cancel',function(e){if(busy)e.preventDefault();});
+form.addEventListener('submit',async function(e){e.preventDefault();if(busy||!form.reportValidity())return;busy=true;var data=new FormData(form),location=form.elements.location_id.value;dialog.querySelectorAll('button').forEach(function(b){b.disabled=true;});message.textContent='Saving...';
+try{var response=await fetch(form.action,{method:'POST',body:data,credentials:'same-origin',headers:{'X-Requested-With':'fetch'}});var result=await response.json();if(!response.ok||!result.ok)throw new Error(result.message||'Could not save. Please retry.');form.reset();form.elements.location_id.value=location;message.textContent=result.message+'. Ready for the next batch.';
+try{var refreshed=await fetch(window.location.href,{credentials:'same-origin'});if(!refreshed.ok)throw new Error();var doc=new DOMParser().parseFromString(await refreshed.text(),'text/html');['expiry-summary','expiry-records'].forEach(function(id){var current=document.getElementById(id),updated=doc.getElementById(id);if(current&&updated)current.replaceWith(updated);});}catch(ignore){message.textContent+=' Refresh the page later to update the list.';}
+}catch(error){message.textContent=error.message;}finally{busy=false;dialog.querySelectorAll('button').forEach(function(b){b.disabled=false;});if(dialog.open)form.elements.search.focus({preventScroll:true});}});
+})();

@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Transfer sheet') }} TS-{{ '%05d' % sheet.id }}{% endblock %}
+{% block content %}
+<style>#chat-fab{display:none}
+/* quick-add: a centred modal over the blurred page (the dialog is the card; the backdrop is in style.css) */
+#ts-quick form{padding:18px 20px 20px}
+#ts-quick .ts-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+#ts-quick .tsq-k{font-weight:650;text-transform:uppercase;letter-spacing:.05em;font-size:11px;color:var(--primary)}
+#ts-quick .ts-name{display:inline-block;margin-top:4px;font-family:var(--font);font-size:15px;font-weight:650;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:3px 10px;overflow-wrap:anywhere}
+#ts-quick .ts-x{background:var(--surface);border:1px solid var(--line2);border-radius:8px;width:30px;height:30px;color:var(--mute)}
+#ts-quick .tsq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+#ts-quick .tsq-grid>div:nth-child(-n+2){grid-column:1/-1}
+#ts-quick .tsq-grid label{display:block;font-size:12px;font-weight:650;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin:0 0 5px}
+#ts-quick .tsq-grid input{width:100%;height:46px;padding:0 13px;font-size:15.5px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink)}
+#ts-quick .tsq-grid input:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+#ts-quick .tsq-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#ts-quick .tsq-foot .mute{flex:1;min-width:200px}
+#ts-quick .ts-big{height:46px;padding:0 24px;font-size:15px;font-weight:650;border-radius:10px;width:auto}
+#ts-quick .ts-warn{color:var(--bad);font-weight:600;margin-top:8px}
+#ts-quick .ts-warn:empty{display:none}
+@media (max-width:900px){
+  #ts-quick form{padding:16px}
+  #ts-quick .tsq-grid{grid-template-columns:1fr;gap:12px}
+  #ts-quick .tsq-grid input{height:50px;font-size:16px}
+  #ts-quick .ts-big{width:100%;height:50px}
+}</style>
+{% set draft = sheet.status == 'draft' %}
+{% set short = sheet.target.name|replace('The Daily Centro - ', '') %}
+<link rel="stylesheet" href="/static/ts_design.css?v={{ asset_v('ts_design.css') }}">
+<link rel="stylesheet" media="screen and (min-width: 761px)" href="/static/ts_desktop.css?v={{ asset_v('ts_desktop.css') }}">
+<div class="np-page tsx ts-detail">
+<div class="page-head desk-only">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div>
+    <h1>{{ t('Transfer sheet') }} TS-{{ '%05d' % sheet.id }}</h1>
+    <p>{{ sheet.source.name }} → <b>{{ sheet.target.name }}</b>
+      · <span class="badge {{ 'b-warn' if draft else 'b-ok' }}">{{ t({'draft': 'Draft', 'submitted': 'Saved', 'in_storehub': 'In StoreHub', 'cancelled': 'Discarded'}[sheet.status]) }}</span>
+      {% if sheet.sh_reference %}<span class="badge">{{ sheet.sh_reference }}</span>{% endif %}</p></div>
+  <div class="row noprint">
+    <a class="btn sm sec" href="/transfer-sheets">{{ t('All sheets') }}</a>
+    {% if draft %}<form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/cancel" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Discard this sheet?') }}">{{ t('Discard') }}</button></form>{% endif %}
+    <form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/delete" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Delete this sheet?') }}">{{ t('Delete') }}</button></form>
+  </div>
+</div>
+<div class="ts-head mob-only">
+  <div>
+    <h1>TS-{{ '%05d' % sheet.id }} <span class="ts-to">→ {{ short }}</span></h1>
+    <span class="badge {{ 'b-warn' if draft else 'b-ok' }}">{{ t({'draft': 'Draft', 'submitted': 'Saved', 'in_storehub': 'In StoreHub', 'cancelled': 'Discarded'}[sheet.status]) }}</span>
+    {% if sheet.sh_reference %}<span class="badge">{{ sheet.sh_reference }}</span>{% endif %}
+  </div>
+  {% if draft %}<form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/cancel" class="noprint"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Discard this sheet?') }}">{{ t('Discard') }}</button></form>
+  {% else %}<form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/delete" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Delete this sheet?') }}">{{ t('Delete') }}</button></form>{% endif %}
+</div>
+
+{% if draft %}
+<div id="ts-app" class="ts-scanbox noprint" data-id="{{ sheet.id }}" data-csrf="{{ csrf }}"
+     data-m-add="{{ t('Added') }}" data-m-low="{{ t('More than stock') }}" data-m-pick="{{ t('Choose') }}" data-m-qty="{{ t('Enter qty') }}"
+     data-m-products="{{ t('products') }}" data-m-pcs="{{ t('pcs') }}" data-m-remove="{{ t('Remove') }}" data-m-nf="{{ t('Not in StoreHub') }}" data-m-reg="{{ t('Register') }}">
+  <h3 class="ts-h3">{{ t('Scan the product') }}</h3>
+  <form id="ts-find" novalidate autocomplete="off" class="ts-scanrow">
+    <div class="ts-inputwrap">
+      <input id="ts-scan" data-scanner inputmode="text" autofocus placeholder="{{ t('Scan or type name') }}" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="ts-drop" aria-autocomplete="list">
+      <div id="ts-drop" class="ts-drop" role="listbox" hidden></div>
+    </div>
+    <button type="button" class="ts-scanbtn" data-scan="ts-scan" aria-label="{{ t('Scan') }}" title="{{ t('Scan') }}"><svg class="i"><use href="#i-scan"/></svg></button>
+  </form>
+  <div id="ts-msg" class="ts-msg" aria-live="polite"></div>
+  <div id="ts-choices"></div>
+
+  <div id="ts-card" class="ts-card" hidden>
+    <div class="ts-card-top"><div><div id="ts-name" class="ts-name"></div><div id="ts-sub" class="small mute"></div></div><button type="button" class="ts-x" id="ts-cancel" aria-label="{{ t('Cancel') }}">✕</button></div>
+    <label class="ts-qty-label" for="ts-qty">{{ t('Quantity') }}</label>
+    <div class="ts-qtyrow">
+      <button type="button" class="ts-step" id="ts-minus" aria-label="−">−</button>
+      <input id="ts-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="{{ t('Qty') }}" enterkeyhint="done">
+      <button type="button" class="ts-step" id="ts-plus" aria-label="+">+</button>
+    </div>
+    <button type="button" class="ok ts-big" id="ts-add">{{ t('Add') }}</button>
+    <div class="small ts-warn" id="ts-warn"></div>
+  </div>
+
+  <dialog id="ts-quick" class="modal quick-add" aria-label="{{ t('Not in StoreHub') }}">
+    <form novalidate>
+      <div class="ts-card-top"><div><div class="tsq-k">{{ t('Not in StoreHub') }}</div><div id="ts-qcode" class="ts-name"></div></div><button type="button" class="ts-x" id="ts-qcancel" aria-label="{{ t('Cancel') }}">✕</button></div>
+      <div class="tsq-grid">
+        <div><label for="ts-qname">{{ t('Product name') }}</label><input id="ts-qname" maxlength="300" autocomplete="off"></div>
+        <div><label for="ts-qcat">{{ t('Category') }}</label><input id="ts-qcat" list="ts-cats" autocomplete="off"><datalist id="ts-cats">{% for ct in categories %}<option value="{{ ct }}">{% endfor %}</datalist></div>
+        <div><label for="ts-qprice">{{ t('Selling price') }}</label><input id="ts-qprice" inputmode="decimal" autocomplete="off" placeholder="0.00"></div>
+        <div><label for="ts-qcost">{{ t('Supplier cost') }} <span class="mute">({{ t('optional') }})</span></label><input id="ts-qcost" inputmode="decimal" autocomplete="off" placeholder="0.00"></div>
+      </div>
+      <div class="tsq-foot"><span class="small mute">{{ t('Created in StoreHub, then added to this sheet.') }}</span><button type="submit" class="ok ts-big" id="ts-qadd">{{ t('Add to StoreHub') }}</button></div>
+      <div class="small ts-warn" id="ts-qwarn"></div>
+    </form>
+  </dialog>
+</div>
+{% endif %}
+
+<h2 class="desk-only ts-h2">{{ t('On the sheet') }} <span class="mute small" id="ts-total2"></span></h2>
+<div class="ts-linebox">
+  <div class="ts-colhead desk-only"><span>{{ t('Product') }}</span><span>{{ t('Warehouse stock') }}</span><span>{{ t('Quantity') }}</span><span></span></div>
+  <div id="ts-lines" class="ts-lines"></div>
+  <div class="empty" id="ts-empty" hidden>{{ t('Nothing scanned yet.') }}</div>
+</div>
+</div>
+
+{% if draft %}
+<div class="ts-bar np-bar tsx-bar noprint">
+  <div class="draft-bar-info"><div class="ts-bar-info" id="ts-total"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">Draft saved</span></div>
+  <form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/submit"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok ts-save">{{ t('Save') }}</button></form>
+</div>
+{% else %}
+<div class="ts-files tsx noprint">
+  <a class="btn ok ts-big" href="/transfer-sheets/{{ sheet.id }}/download.csv">{{ t('CSV for StoreHub') }}</a>
+  {% if sheet.excel_path %}<a class="btn sec ts-big" href="/transfer-sheets/{{ sheet.id }}/download.xlsx">Excel</a>{% endif %}
+</div>
+<details class="ts-how noprint">
+  <summary>{{ t('How to import') }}</summary>
+  <ol>
+    <li>StoreHub → {{ t('Stock Transfer') }} → {{ t('New') }}</li>
+    <li>{{ sheet.source.name }} → <b>{{ sheet.target.name }}</b> → {{ t('Create') }}</li>
+    <li>{{ t('Import Items by CSV') }} → CSV</li>
+  </ol>
+</details>
+{% if sheet.status != 'in_storehub' %}
+<form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/storehub" class="ts-ref noprint"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <input name="reference" placeholder="{{ t('StoreHub no.') }} ST0071" maxlength="80"><button class="sec">{{ t('Done') }}</button></form>
+{% endif %}
+<div class="small mute ts-by">{{ sheet.creator.full_name or sheet.creator.username if sheet.creator else '—' }} · {{ (sheet.submitted_at or sheet.created_at)|local }}</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/scanner.js"></script>
+<script src="/static/scan.js"></script>
+<script src="/static/draft_feedback.js?v={{ asset_v('draft_feedback.js') }}"></script>
+<script>
+(function(){
+  var W={stock:{{ t('Stock')|tojson }},products:{{ t('products')|tojson }},pcs:{{ t('pcs')|tojson }},remove:{{ t('Remove')|tojson }}}, DRAFT={{ 'true' if sheet.status == 'draft' else 'false' }}, data={{ data|tojson }}, app=document.getElementById('ts-app');
+  var list=document.getElementById('ts-lines'), empty=document.getElementById('ts-empty'), total=document.getElementById('ts-total');
+  var num=function(n){return String(Math.round(n*100)/100)};
+  var feedback=null, post=function(){}, msg=function(){};
+  function render(d){
+    data=d; list.textContent='';
+    d.lines.forEach(function(l){
+      var row=document.createElement('div'); row.className='tsl';
+      var main=document.createElement('div'); main.className='tsl-main';
+      var b=document.createElement('b'); b.textContent=l.name; main.appendChild(b);
+      var s=document.createElement('div'); s.className='small mute';
+      s.textContent=l.barcode||l.sku||'';
+      if(l.on_hand!=null){ var inl=document.createElement('span'); inl.className='ts-inl-stock'; inl.textContent=(s.textContent?' · ':'')+W.stock+' '+num(l.on_hand); s.appendChild(inl); }
+      main.appendChild(s); row.appendChild(main);
+      var stk=document.createElement('div'); stk.className='tsl-stock desk-only'; stk.textContent=l.on_hand==null?'—':num(l.on_hand); row.appendChild(stk);
+      if(DRAFT){
+        var i=document.createElement('input'); i.type='number'; i.min=1; i.step=1; i.value=l.qty; i.className='tsl-qty'; i.setAttribute('inputmode','numeric'); i.setAttribute('aria-label',{{ t('Quantity')|tojson }}+' '+l.name);
+        i.addEventListener('change',function(){ post('/line/'+l.id,{qty:i.value}).then(function(r){ if(r.ok){render(r)} else {msg(r.error,true)} }) });
+        row.appendChild(i);
+        var x=document.createElement('button'); x.type='button'; x.className='np-remove'; x.textContent=W.remove; x.setAttribute('aria-label',W.remove+' '+l.name); x.title=W.remove;
+        x.addEventListener('click',function(){ post('/line/'+l.id,{remove:'1'}).then(function(r){ if(r.ok)render(r); else msg(r.error,true)}) });
+        row.appendChild(x);
+      } else { var q=document.createElement('div'); q.className='tsl-q'; q.textContent=num(l.qty); row.appendChild(q); row.appendChild(document.createElement('div')); }
+      list.appendChild(row);
+    });
+    if(feedback) feedback.capture();
+    empty.hidden=d.lines.length>0;
+    var sum=d.lines.length?(d.lines.length+' '+W.products+' · '+num(d.lines.reduce(function(a,l){return a+l.qty},0))+' '+W.pcs):'';
+    if(total) total.textContent=sum;
+    var t2=document.getElementById('ts-total2'); if(t2) t2.textContent=sum?('· '+sum):'';
+  }
+  render(data);
+  if(!DRAFT||!app) return;
+  var id=app.dataset.id, csrf=app.dataset.csrf, box=document.getElementById('ts-scan'), qty=document.getElementById('ts-qty'), card=document.getElementById('ts-card');
+  var msgEl=document.getElementById('ts-msg'), choices=document.getElementById('ts-choices'), warn=document.getElementById('ts-warn'), picked=null;
+  msg=function(t,bad){ msgEl.textContent=t||''; msgEl.className='ts-msg'+(bad?' bad':''); };
+  feedback=RetailDraft({lines:'#ts-lines input',final:'form[action$="/submit"]',controls:'form[action$="/cancel"] button,form[action$="/delete"] button,form[action$="/discard"] button,.po-who input,.po-who button,#ts-app input,#ts-app button,#ts-lines input,#ts-lines button,.ts-bar button,#ts-quick input,#ts-quick button',extra:function(){return !!(picked&&qty.value)||(document.getElementById('ts-quick').open&&Array.from(document.querySelectorAll('#ts-quick input:not([type=hidden])')).some(function(el){return !!el.value;}));}});
+  feedback.capture();
+  post=function(path,fields){ var f=new FormData(); f.append('csrf',csrf); Object.keys(fields).forEach(function(k){f.append(k,fields[k])});
+    return feedback.post('/transfer-sheets/'+id+path,f); };
+
+  // the product list lives in the browser: a scan is answered at once, with no round trip to the server
+  var cat=null, byBar={}, bySku={};
+  var core=function(b){ b=String(b||'').trim(); return /^\d+$/.test(b)?(b.replace(/^0+/,'')||'0'):b; };
+  fetch('/transfer-sheets/catalog.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(rows){
+    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],on_hand:r[4],hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
+    cat.forEach(function(p){ p.barcodes.forEach(function(b){ byBar[core(b)]=p }); if(p.sku) bySku[p.sku]=p });
+  }).catch(function(){});
+  function onSheet(pid){ var q=0; data.lines.forEach(function(l){ if(l.product_id===pid) q+=l.qty }); return q; }
+  function lookLocal(code){
+    var p=byBar[core(code)]||bySku[code]; if(p) return {exact:p,matches:[]};
+    var words=code.toLowerCase().split(/\s+/).filter(Boolean).slice(0,5), out=[];
+    for(var i=0;i<cat.length&&out.length<8;i++){ var ok=true; for(var w=0;w<words.length;w++){ if(cat[i].hay.indexOf(words[w])<0){ok=false;break} } if(ok) out.push(cat[i]) }
+    return {exact:null,matches:out};
+  }
+  function card2(p){ return {id:p.id,name:p.name,barcode:(p.barcodes&&p.barcodes[0])||p.barcode||'',sku:p.sku||'',on_hand:p.on_hand,on_sheet:p.on_sheet!=null?p.on_sheet:onSheet(p.id)}; }
+  function show(p){
+    p=card2(p); picked=p; choices.textContent=''; card.hidden=false; msg('');
+    document.getElementById('ts-name').textContent=p.name;
+    document.getElementById('ts-sub').textContent=[p.barcode||p.sku, p.on_hand==null?'':(W.stock+' '+num(p.on_hand)), p.on_sheet?('+'+num(p.on_sheet)):''].filter(Boolean).join(' · ');
+    warn.textContent=''; qty.value=''; qty.focus();
+  }
+  // ---- suggestions: as you type a name or part of a barcode, the matching products drop down to pick from
+  var drop=document.getElementById('ts-drop'), dropItems=[], dropOn=-1;
+  function hideDrop(){ drop.hidden=true; drop.textContent=''; dropItems=[]; dropOn=-1; box.setAttribute('aria-expanded','false'); }
+  function markDrop(){ [].forEach.call(drop.children,function(el,i){ el.classList.toggle('on',i===dropOn); el.setAttribute('aria-selected',i===dropOn?'true':'false'); }); var el=drop.children[dropOn]; if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'}); }
+  function pickDrop(i){ var p=dropItems[i]; if(!p) return; hideDrop(); box.value=''; show(p); }
+  function showDrop(){
+    var v=box.value.trim();
+    if(!cat||v.length<2||picked){ hideDrop(); return }
+    var r=lookLocal(v), list=r.exact?[r.exact]:r.matches;
+    if(!list.length){ hideDrop(); return }
+    dropItems=list; dropOn=-1; drop.textContent='';
+    list.forEach(function(p,i){
+      var c=card2(p), el=document.createElement('div'), n=document.createElement('div'), s=document.createElement('div');
+      el.className='ts-opt'; el.setAttribute('role','option'); n.className='ts-opt-name'; n.textContent=c.name; s.className='ts-opt-sub';
+      s.textContent=[c.barcode||c.sku, c.on_hand==null?'':(W.stock+' '+num(c.on_hand))].filter(Boolean).join(' · ');
+      el.append(n,s);
+      el.addEventListener('mousedown',function(e){ e.preventDefault(); pickDrop(i); });   // mousedown: before the box loses focus
+      drop.appendChild(el);
+    });
+    drop.hidden=false; box.setAttribute('aria-expanded','true');
+  }
+  box.addEventListener('input',showDrop);
+  box.addEventListener('keydown',function(e){
+    if(drop.hidden) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); dropOn=(dropOn+1)%dropItems.length; markDrop(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); dropOn=(dropOn<=0?dropItems.length:dropOn)-1; markDrop(); }
+    else if(e.key==='Enter'&&dropOn>=0){ e.preventDefault(); e.stopPropagation(); pickDrop(dropOn); }
+    else if(e.key==='Escape'){ hideDrop(); }
+  },true);
+  box.addEventListener('blur',function(){ setTimeout(hideDrop,120); });
+  box.addEventListener('focus',showDrop);
+  function reset(){ picked=null; card.hidden=true; choices.textContent=''; hideDrop(); box.value=''; box.focus(); if(feedback) feedback.refresh(); }
+  // ---- not in StoreHub: create it there on the spot, then it is picked like any found product
+  var quick=document.getElementById('ts-quick'), qform=quick.querySelector('form'), qcode=document.getElementById('ts-qcode'), qname=document.getElementById('ts-qname'),
+      qcat=document.getElementById('ts-qcat'), qprice=document.getElementById('ts-qprice'), qcost=document.getElementById('ts-qcost'),
+      qwarn=document.getElementById('ts-qwarn'), qbar='';
+  function openQuick(code){
+    card.hidden=true; picked=null; choices.textContent='';
+    qbar=/^\d{6,}$/.test(code)?code:'';
+    qcode.textContent=qbar||code;
+    if(!qname.value) qname.value=qbar?'':code;
+    if(!quick.open) quick.showModal(); qwarn.textContent=''; msg('');
+    qname.focus();
+  }
+  document.getElementById('ts-qcancel').addEventListener('click',function(){ quick.close(); qbar=''; box.select(); });
+  quick.addEventListener('click',function(e){ if(e.target===quick){ quick.close(); qbar=''; } });   // a tap on the blurred backdrop closes it
+  qform.addEventListener('submit',function(e){
+    e.preventDefault();
+    document.getElementById('ts-qadd').disabled=true;
+    post('/quick-product',{barcode:qbar||box.value.trim(),name:qname.value,category:qcat.value,price:qprice.value,cost:qcost.value}).then(function(r){
+      document.getElementById('ts-qadd').disabled=false;
+      if(!r.ok){ qwarn.textContent=r.error; return }
+      var row=r.product, p={id:row[0],name:row[1],sku:row[2],barcodes:row[3],on_hand:row[4],hay:(row[1]+' '+row[2]+' '+row[3].join(' ')).toLowerCase()};
+      if(cat){ cat.push(p); p.barcodes.forEach(function(bc){ byBar[core(bc)]=p }); if(p.sku) bySku[p.sku]=p; }
+      quick.close(); qname.value=qcat.value=qprice.value=qcost.value=''; qbar=''; box.value='';
+      show(p);   // created: it goes straight onto the sheet — only the quantity is left to type
+    });
+  });
+  function notFound(code){ openQuick(code); }   // StoreHub does not have it: offer to register it right here
+  function showResult(r,code){
+    if(r.exact){ show(r.exact); return }
+    card.hidden=true; picked=null; choices.textContent='';
+    if(!r.matches.length){ notFound(code); return }
+    msg(app.dataset.mPick);
+    r.matches.forEach(function(p){ var b=document.createElement('button'); b.type='button'; b.className='ts-choice';
+      var c2=card2(p); b.textContent=c2.name+(c2.barcode?(' · '+c2.barcode):''); b.addEventListener('click',function(){show(p)}); choices.appendChild(b); });
+  }
+  function look(code){
+    code=(code||'').trim(); if(!code) return;
+    if(cat){ showResult(lookLocal(code),code); return }
+    msg('…');
+    fetch('/transfer-sheets/'+id+'/find?code='+encodeURIComponent(code),{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(r){ showResult(r,code) }).catch(function(){ msg('Network error',true) });
+  }
+  document.getElementById('ts-find').addEventListener('submit',function(e){ e.preventDefault(); hideDrop(); look(box.value); });
+
+  // Keep the selected product until the server confirms the draft line.
+  function add(){
+    if(!picked) return; var n=parseFloat(qty.value);
+    if(!(n>0)){ warn.textContent=app.dataset.mQty; qty.focus(); return }
+    var p=picked;
+    post('/add',{product_id:p.id,qty:n}).then(function(r){
+      if(!r.ok){msg(r.error,true);return;}
+      render(r); msg(app.dataset.mAdd+' - '+n+' x '+p.name); reset(); feedback.refresh();
+    });
+  }
+  document.getElementById('ts-add').addEventListener('click',add);
+  document.getElementById('ts-cancel').addEventListener('click',function(){ msg(''); reset(); });
+  document.getElementById('ts-minus').addEventListener('click',function(){ qty.value=Math.max(1,(parseInt(qty.value,10)||1)-1); qty.dispatchEvent(new Event('input')); });
+  document.getElementById('ts-plus').addEventListener('click',function(){ qty.value=(parseInt(qty.value,10)||0)+1; qty.dispatchEvent(new Event('input')); });
+  qty.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); add(); } });
+  qty.addEventListener('input',function(){   // the next product was scanned while the quantity box had focus: it is a barcode, not a quantity
+    var v=qty.value;
+    if(/^\d{8,}$/.test(v)){ qty.value=''; look(v); return }
+    if(picked&&picked.on_hand!=null&&parseFloat(v)>picked.on_hand) warn.textContent=app.dataset.mLow; else warn.textContent='';
+  });
+})();
+</script>
+{% endblock %}

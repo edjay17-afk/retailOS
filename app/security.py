@@ -28,6 +28,7 @@ PERMS: dict[str, set[str]] = {
     "repl.decide": {"staff", "store_manager", "warehouse", "management", "admin"},
     "repl.run": {"staff", "warehouse", "management", "admin"},
     "po.view": {"warehouse", "admin"},
+    "po.create": {"warehouse", "admin"},  # write a purchase order (supplier, deliver to, products, price) and export it for StoreHub
     "receiving.count": {"warehouse", "store_manager", "management", "admin"},
     "receiving.confirm": {"store_manager", "warehouse", "management", "admin"},
     "inspection.do": {"staff", "store_manager", "warehouse", "management", "admin"},
@@ -42,10 +43,15 @@ PERMS: dict[str, set[str]] = {
     "sync.view": {"store_manager", "warehouse", "management", "admin"},
     "sync.run": {"warehouse", "management", "admin"},
     "audit.view": {"management", "admin"},
-    "transfer.dispatch": {"warehouse", "admin"},  # stock transfers are seen and handled only by the warehouse team and admins
+    "transfer.dispatch": {"warehouse", "admin"},  # dispatch/import stay with the warehouse team and admins
     "transfer.receive": {"warehouse", "admin"},
-    "transfer.view": {"warehouse", "admin"},
+    # stores see transfers from/to their own location (routes scope rows) so they can count what arrived
+    "transfer.view": {"staff", "store_manager", "warehouse", "management", "admin"},
+    "transfer.confirm": {"staff", "store_manager", "management", "admin"},  # V2.1: the store — never the warehouse — confirms receipt
     "transfer.import": {"warehouse", "admin"},
+    "transfer.sheet": {"warehouse", "admin"},  # scan-and-quantity transfer sheets: the warehouse team (and admins) list what leaves for a store
+    "product.add": {"staff", "store_manager", "warehouse", "management", "admin"},  # anyone on the floor can register a new product
+    "product.push": {"warehouse", "management", "admin"},  # writing straight into StoreHub stays with HQ roles; staff lists wait for a push
     "wastage.record": {"staff", "store_manager", "warehouse", "management", "admin"},
     "planogram.view": {"warehouse", "admin"},
     "sales.detail": {"warehouse", "admin"},  # transactions and sales by employee
@@ -71,7 +77,9 @@ def has_perm(user: User, perm: str) -> bool:
 
 # notification links -> the permission that page needs (first match wins; None = everyone)
 LINK_PERMS = (
+    ("/transfer-sheets", "transfer.sheet"),
     ("/stock-transfers", "transfer.view"),
+    ("/purchase-orders/new", "po.create"),
     ("/purchase-orders", "po.view"),
     ("/replenishment", "repl.view"),
     ("/data-quality", "dq.view"),

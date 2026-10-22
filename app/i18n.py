@@ -116,7 +116,7 @@ JS_MESSAGES = (
     "Enter a valid number using the required increment.", "Check this value and try again.",
     "Collapse navigation", "Expand navigation", "Close navigation", "Open navigation",
     "{done} of {total} answered", "{done} of {total} items photographed", "Tap to replace", "Remove file", "Remove",
-    "Add more photos", "{count} photos added", "Photo {number}", "Tap to view full size",
+    "Add more photos", "{count} photos added", "{count} videos added", "1 video added", "Add another video", "Photo {number}", "Tap to view full size",
     "The AI could not explain this.", "Could not reach the server.",
     "Hi, I can answer questions about stock, sales, purchase orders and issues, using only what is in the system. What would you like to know?",
     "Reading your data, this takes 20 to 40 seconds...",

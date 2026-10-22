@@ -225,3 +225,83 @@ def test_inspection_location_filter_is_hidden_for_staff(sync, fake, session, cli
     login(client, "manager_inspections")
     html = client.get("/inspections").text
     assert 'name="loc"' in html and "All locations" in html
+
+
+def test_product_setup_saves_in_the_background_without_a_page_reload(cfg, session, sync, fake, client):
+    from sqlalchemy import select
+    from app.models import Product
+    from tests.test_web import add_user, csrf_of, login
+    sync.sync_stores(); sync.sync_products(); session.expire_all()
+    add_user(session, "prod_admin", "admin"); login(client, "prod_admin")
+    p = session.scalar(select(Product).where(Product.storehub_id == "P1"))
+    page = client.get("/products").text
+    assert "X-Requested-With" in page and f'action="/products/{p.id}"' in page  # the page saves rows with a background request
+    assert "data-nobusy" in page  # the shared "sending…" spinner is for forms that reload the page; these rows show their own spinner only while saving
+    csrf = csrf_of(client, "/products")
+    r = client.post(f"/products/{p.id}", data={"csrf": csrf, "supplier": "0", "case_pack": "24", "order_multiple": "12", "moq": "", "safety_days": "", "max_stock": "", "back": "/products"},
+                    headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 200 and r.json() == {"ok": True, "name": p.name}  # JSON, not a redirect to a reloaded page
+    session.expire_all()
+    assert session.get(Product, p.id).case_pack == 24 and session.get(Product, p.id).order_multiple == 12
+    plain = client.post(f"/products/{p.id}", data={"csrf": csrf, "supplier": "0", "case_pack": "6", "back": "/products"}, follow_redirects=False)
+    assert plain.status_code == 303  # without JavaScript the old form still works
+    assert client.post(f"/products/{p.id}", data={"csrf": "wrong", "case_pack": "1"}, headers={"X-Requested-With": "fetch"}).status_code in (400, 403)
+
+
+def test_tab_bars_switch_in_place_script_is_loaded(cfg, session, client):
+    from tests.test_web import add_user, login
+    add_user(session, "tab_admin", "admin"); login(client, "tab_admin")
+    for url in ("/settings", "/suppliers", "/products", "/users", "/issues", "/purchase-orders"):
+        page = client.get(url).text
+        assert 'class="tabs' in page and "/static/tabs.js" in page and "/static/app.js" in page, url  # every tab bar gets the in-place switching
+    js = client.get("/static/tabs.js")
+    assert js.status_code == 200 and "tab-pill" in js.text and "RetailOSEnhance" in js.text
+    assert "RetailOSEnhance" in client.get("/static/app.js").text  # swapped-in content gets the same behaviours as a freshly loaded page
+
+
+def test_product_settings_shows_cost_and_retail_price_and_keeps_removed_settings(cfg, session, sync, fake, client):
+    import re
+    from sqlalchemy import select
+    from app.models import Product
+    from tests.test_web import add_user, csrf_of, login
+    sync.sync_stores(); sync.sync_products(); session.expire_all()
+    add_user(session, "prod_cols", "admin"); login(client, "prod_cols")
+    p = session.scalar(select(Product).where(Product.storehub_id == "P1"))  # StoreHub: cost 12.0, price 20.0 (without tax)
+    p.order_multiple, p.moq, p.safety_days, p.max_stock = 6.0, 24.0, 3.0, 90.0
+    session.commit()
+    page = client.get("/products").text
+    for gone in ("Multiple", ">MOQ<", "Safety days", "Max stock", 'name="order_multiple"', 'name="moq"', 'name="safety_days"', 'name="max_stock"'):
+        assert gone not in page, gone
+    assert ">Cost<" in page and ">Retail price<" in page
+    row = re.search(r"<tr><td style=\"display:none\">.*?Cola 500ml.*?</tr>", page, re.S).group(0)
+    assert ">12.00<" in row and ">22.40<" in row  # cost as given; retail price = the tax-free price 20.00 plus 12% tax
+    r = client.post(f"/products/{p.id}", data={"csrf": csrf_of(client, "/products"), "supplier": "0", "case_pack": "24", "back": "/products"}, headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 200
+    session.expire_all()
+    q = session.get(Product, p.id)  # saving from this page leaves the settings it no longer shows exactly as they were
+    assert (q.case_pack, q.order_multiple, q.moq, q.safety_days, q.max_stock) == (24.0, 6.0, 24.0, 3.0, 90.0)
+
+
+def test_product_setup_export_matches_the_table_and_still_uploads(cfg, session, sync, fake, client):
+    import csv, io
+    from sqlalchemy import select
+    from app.models import Product
+    from tests.test_web import add_user, csrf_of, login
+    sync.sync_stores(); sync.sync_products(); session.expire_all()
+    add_user(session, "prod_csv", "admin"); login(client, "prod_csv")
+    p = session.scalar(select(Product).where(Product.storehub_id == "P1"))
+    p.case_pack, p.order_multiple, p.moq = 24.0, 6.0, 48.0
+    session.commit()
+    r = client.get("/products?export=csv")
+    rows = list(csv.reader(io.StringIO(r.text.lstrip("﻿"))))
+    assert rows[0] == ["StoreHub ID", "Name", "Barcode", "Cost", "Retail price", "Supplier", "Case pack", "Perishable", "Replenish"]
+    cola = next(x for x in rows if x[1] == "Cola 500ml")
+    assert cola[0] == "P1" and cola[2] == "111" and cola[3] == "12.00" and cola[4] == "22.40" and cola[6] == "24"  # cost, retail price (20.00 + 12% tax), case pack
+    # the file can be edited and uploaded back: the case pack changes, the settings that are not in the file stay as they were
+    edited = [rows[0]] + [[*x[:6], "36", *x[7:]] if x[0] == "P1" else x for x in rows[1:]]
+    out = io.StringIO(); csv.writer(out).writerows(edited)
+    up = client.post("/products/import", data={"csrf": csrf_of(client, "/products")}, files={"file": ("p.csv", out.getvalue(), "text/csv")})
+    assert up.status_code == 303 and "err=" not in up.headers["location"]
+    session.expire_all()
+    q = session.get(Product, p.id)
+    assert (q.case_pack, q.order_multiple, q.moq) == (36.0, 6.0, 48.0)

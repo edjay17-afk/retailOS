@@ -77,4 +77,7 @@ def collect_statements(output: dict) -> list[dict]:
     ans = output.get("answer")
     if isinstance(ans, list):
         out.extend(s for s in ans if isinstance(s, dict))
+    table = output.get("table")
+    if isinstance(table, dict):
+        out.extend(row for row in table.get("rows", []) if isinstance(row, dict))
     return out

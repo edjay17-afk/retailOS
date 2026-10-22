@@ -130,6 +130,10 @@ def build(db: Session, user: User | None, location_ids: list[int]) -> Context:
         ctx.add("inventory", f"{locs[lid].name}: {n} items have negative stock on hand (usually unrecorded deliveries or transfers)", "/inventory?status=negative")
 
     # ---- replenishment context
+    sales_only = cfg.get(db, "repl.mode") != "stock_and_sales"
+    ctx.meta["replenishment_policy"] = {"mode": cfg.get(db, "repl.mode"), "cover_days": cfg.get(db, "repl.sales_only_cover_days")}
+    ctx.add("policy", (f"Active replenishment is sales-only: max(0, average daily sales x {cfg.get(db, 'repl.sales_only_cover_days')} cover days - incoming), then pack rounding, MOQ and caps. Stock on hand, safety stock and lead-time cover do not determine suggestions. Days of stock cover is unavailable, not zero. Recently ordered products are suppressed during the cover period."
+                       if sales_only else "Active replenishment uses sales and stock: target = average daily sales x (lead time + review period) + safety stock; order = max(0, target - on hand - incoming), then pack rounding, MOQ and caps."), "/replenishment")
     recs = list(db.scalars(select(Recommendation).where(Recommendation.business_date == today, Recommendation.location_id.in_(location_ids or [0]),
                                                         Recommendation.status.in_(("pending", "needs_review")))))
     pend = [r for r in recs if r.status == "pending"]
@@ -146,9 +150,9 @@ def build(db: Session, user: User | None, location_ids: list[int]) -> Context:
         for r in sorted(pend, key=lambda r: -r.value)[:8]:
             ctx.add("replenishment", f"Suggestion #{r.id}: {r.product.name} at {r.location.name} ({'transfer from warehouse' if r.source_kind == 'transfer' else 'supplier order'}): "
                                      f"on hand {r.on_hand:g}, incoming {r.incoming:g}, average daily sales {r.ads:g}, target stock {r.target_stock:g}, "
-                                     f"suggested quantity {r.final_qty:g} worth {_money(r.value)}, {r.days_cover if r.days_cover is not None else 0:.1f} days of cover, "
+                                     f"suggested quantity {r.final_qty:g} worth {_money(r.value)}, {('stock cover unavailable' if sales_only or r.days_cover is None else str(r.days_cover) + ' days of stock cover')}, "
                                      f"confidence {replenishment.confidence_label(r.confidence)}", "/replenishment")
-        low = sorted([r for r in recs if r.days_cover is not None and r.days_cover < max(r.lead_time, 1) and r.final_qty > 0], key=lambda r: r.days_cover)[:6]
+        low = [] if sales_only else sorted([r for r in recs if r.days_cover is not None and r.days_cover < max(r.lead_time, 1) and r.final_qty > 0], key=lambda r: r.days_cover)[:6]
         for r in low:
             ctx.add("stockout_risk", f"Stockout risk: {r.product.name} at {r.location.name} has {r.days_cover:.1f} days of cover but lead time is {r.lead_time:g} days "
                                      f"(suggestion #{r.id}, status {r.status})", "/replenishment")

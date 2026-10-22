@@ -11,7 +11,7 @@ from tests.test_web import add_user, client, csrf_of, login, seeded
 def test_warehouse_has_admin_permissions_except_settings_and_audit(session):
     warehouse = add_user(session, "warehouse_permissions", "warehouse")
     admin = add_user(session, "admin_permissions", "admin")
-    denied = {"settings.manage", "users.manage", "audit.view"}
+    denied = {"settings.manage", "users.manage", "audit.view", "transfer.confirm"}  # the warehouse never confirms its own deliveries
     assert {p for p in PERMS if has_perm(admin, p) and not has_perm(warehouse, p)} == denied
     assert all(not has_perm(warehouse, p) for p in denied)
     assert all(not can_open(warehouse, path) for path in ("/settings", "/users", "/suppliers", "/products", "/audit"))

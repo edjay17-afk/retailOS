@@ -458,6 +458,7 @@ class SyncService:
                         expected_at=parse_iso(po.get("expectedArrivalDate")), subtotal=_f(po.get("subTotal")), tax=_f(po.get("tax")),
                         discount=_f(po.get("discount")), total=_f(po.get("total")), notes=po.get("notes") or None,
                         completed_by=po.get("completedBy"), missing_from_api=False, raw_hash=h, last_seen=now)
+            kept: list = []
             if row is None:
                 row = PurchaseOrder(sh_po_id=pid, first_seen=now, **vals)
                 db.add(row)
@@ -465,13 +466,20 @@ class SyncService:
             else:
                 for k, v in vals.items():
                     setattr(row, k, v)
+                kept = [((l.product_sh_id, None if l.supplier_price is None else round(l.supplier_price, 2)), l.price_exact) for l in row.lines if l.price_exact]
                 row.lines.clear()
                 upd += 1
             for it in po.get("orderedItems") or []:
                 present = "receivedQuantity" in it and it["receivedQuantity"] is not None
+                api_price = it.get("supplierPrice")
+                exact = None  # the exact price (read from StoreHub's PO page) survives a re-sync while the rounded price StoreHub sends is the same
+                for k, (kp, kv) in enumerate(kept):
+                    if kp == (it.get("productId"), None if api_price is None else round(float(api_price), 2)):
+                        exact = kept.pop(k)[1]
+                        break
                 row.lines.append(PoLine(product_id=prods.get(it.get("productId")), product_sh_id=it.get("productId") or "",
                                         ordered_qty=_f(it.get("orderedQuantity")), received_qty=_f(it.get("receivedQuantity")),
-                                        received_present=present, supplier_price=it.get("supplierPrice"), subtotal=_f(it.get("subTotal"))))
+                                        received_present=present, supplier_price=float(exact) if exact else api_price, price_exact=exact, subtotal=_f(it.get("subTotal"))))
         # POs we have seen before that the API no longer returns were deleted in StoreHub
         gone = 0
         for pid, row in existing.items():

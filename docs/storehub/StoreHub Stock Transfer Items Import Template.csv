@@ -1,0 +1,3 @@
+﻿Product Name,SKU,Product Id,Ordered Qty,Unit,Serial Numbers
+#Optional,Required if no Product Id,Required if no SKU (found in Manage Products > Export to CSV),Required for simple or composite products,Optional; the transfer unit (e.g. ctn) for products tracked in multiple units. Leave blank to transfer in the base unit.,Required for serialized products only; Must be unique if specified; Use semicolon(;) to separate multiple serial numbers. Serial numbers containing semicolons cannot be included in the CSV. Please enter them individually in the Stock Transfer page.
+Sample product,AAA,7d8b88e99fa098,10,ctn,0001;0002;0003

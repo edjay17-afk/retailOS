@@ -7,7 +7,7 @@ import io
 import json
 import re
 from datetime import date
-from decimal import Decimal, localcontext
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, localcontext
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
@@ -53,6 +53,18 @@ def display(value, minimum=0):
     return whole + ("." + fraction if fraction else "")
 
 
+def cents(value):
+    """What a PO printout shows for an amount: rounded to cents like StoreHub's own PO (3,053.57), however many decimals the exact figure has."""
+    return display(Decimal(str(value or 0)).quantize(Decimal("0.01"), ROUND_HALF_UP), 2)
+
+
+def six_decimals(value):
+    """Round only the displayed amount; calculations retain their Decimal precision."""
+    with localcontext() as ctx:
+        ctx.prec = 1024
+        return display(Decimal(str(value or 0)).quantize(Decimal("0.000001"), ROUND_HALF_UP), 6)
+
+
 def source_hash(source, kind):
     value = source.raw_hash if kind == "po" else source.payload_hash
     return value or hashlib.sha256(str(source.modified_sh if kind == "po" else source.last_import_id).encode()).hexdigest()
@@ -76,7 +88,7 @@ def initial(db, source, kind):
                  to_address=source.location.city or "" if source.location else "", notes=source.notes or "")
         for item in source.lines:
             p = item.product
-            cost = item.supplier_price
+            cost = item.price_exact or item.supplier_price  # StoreHub's own price text when it has been read
             if cost is None and item.ordered_qty:
                 # Only a fallback for old API records without supplier price.
                 with localcontext() as ctx:
@@ -85,6 +97,8 @@ def initial(db, source, kind):
             lines.append(dict(name=p.name if p else item.product_sh_id or "", sku=p.sku or "" if p else "",
                               product_id=item.product_sh_id or (p.storehub_id if p else ""), serial="", unit="",
                               quantity=str(item.ordered_qty), cost=str(cost or 0)))
+        for line in lines:  # StoreHub prints a PO unit price cut off after 6 decimals, not the float's noise
+            line["cost"] = plain(Decimal(line["cost"]).quantize(Decimal("0.000001"), ROUND_DOWN) if Decimal(line["cost"]).as_tuple().exponent < -6 else Decimal(line["cost"]))
     else:
         h.update(from_name=source.source_name, to_name=source.target_name)
         for key, lid in (("from_address", source.source_location_id), ("to_address", source.target_location_id)):
@@ -92,46 +106,27 @@ def initial(db, source, kind):
             h[key] = loc.city or "" if loc else ""
         # Preserve decimal spelling from the retained original export, instead of its float mirror.
         raw_rows = {}
-        raw_total = ""
         if source.last_import and source.last_import.raw_csv:
             try:
                 for row in csv.DictReader(io.StringIO(source.last_import.raw_csv.decode("utf-8-sig"))):
                     if row.get("S.T ID") == source.reference:
                         raw_rows[int(row.get("No.") or 0)] = row
-                        if not raw_total:
-                            raw_total = next((v.strip() for k, v in row.items()
-                                              if k and v and re.fullmatch(r"Total(?: \([^)]+\))?", k)), "")
             except (UnicodeError, ValueError, csv.Error):
-                raw_rows, raw_total = {}, ""
+                raw_rows = {}
         products = {p.id: p for p in db.scalars(select(Product).where(Product.id.in_([i.product_id for i in source.lines if i.product_id] or [0])))}
         for item in source.lines:
             p = products.get(item.product_id)
             raw = raw_rows.get(item.line_no, {})
             raw_cost = next((v for k, v in raw.items() if k and re.fullmatch(r"Cost(?: \([^)]+\))?", k)), None)
-            raw_sub = next((v for k, v in raw.items() if k and re.fullmatch(r"SubTotal(?: \([^)]+\))?", k)), None)
             line = dict(name=item.product_name, sku=item.sku or (p.sku or "" if p else ""),
                         product_id=p.storehub_id if p else "", serial=item.serial_no or "", unit=item.unit or "",
                         quantity=(raw.get("Ordered Qty") or str(item.quantity)).replace(",", ""),
                         cost=(raw_cost or str(item.unit_cost or 0)).replace(",", ""))
-            if raw_sub:
-                # StoreHub's own rounded line amount; keeps pristine documents identical to the export.
-                line["amount_raw"] = raw_sub.replace(",", "").strip()
             lines.append(line)
     for line in lines:
         line["quantity"] = plain(Decimal(line["quantity"]))
         line["cost"] = plain(Decimal(line["cost"]))
-        if "amount_raw" in line:
-            try:
-                line["amount_raw"] = plain(Decimal(line["amount_raw"]))
-            except ArithmeticError:
-                del line["amount_raw"]
-    d = dict(header=h, lines=lines, revision=0, saved=False, changed=False)
-    if raw_total:
-        try:
-            d["total_raw"] = plain(Decimal(raw_total.replace(",", "")))
-        except ArithmeticError:
-            pass
-    return d
+    return dict(header=h, lines=lines, revision=0, saved=False, changed=False)
 
 
 def document(db, source, kind):
@@ -147,12 +142,11 @@ def calculate(d):
         ctx.prec = 1024
         subtotal = Decimal(0)
         for line in d["lines"]:
-            # amount_raw/total_raw carry StoreHub's own rounded amounts on pristine documents;
-            # edited documents never include them, so edits always recompute.
-            line["amount"] = line.get("amount_raw") or plain(Decimal(line["quantity"]) * Decimal(line["cost"]))
+            # Amounts and the total are exact (quantity x cost, summed): never rounded to 2 decimals the way StoreHub's own export is.
+            line["amount"] = plain(Decimal(line["quantity"]) * Decimal(line["cost"]))
             subtotal += Decimal(line["amount"])
         d["subtotal"] = plain(subtotal)
-        d["total"] = d.get("total_raw") or plain(subtotal + Decimal(d["header"].get("tax") or "0") - Decimal(d["header"].get("discount") or "0"))
+        d["total"] = plain(subtotal + Decimal(d["header"].get("tax") or "0") - Decimal(d["header"].get("discount") or "0"))
     return d
 
 

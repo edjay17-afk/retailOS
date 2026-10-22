@@ -49,7 +49,7 @@
     var opener = e.target.closest && e.target.closest('[data-modal]');
     if (opener) {
       var dlg = document.getElementById(opener.getAttribute('data-modal'));
-      if (dlg && typeof dlg.showModal === 'function') { dlg.showModal(); var f = dlg.querySelector('input:not([type=hidden])'); if (f) f.focus(); }
+      if (dlg && typeof dlg.showModal === 'function') { dlg.showModal(); var f = dlg.querySelector('input:not([type=hidden])'); if (f) f.focus({preventScroll:true}); }
       return;
     }
     var closer = e.target.closest && e.target.closest('[data-modal-close]');
@@ -58,9 +58,9 @@
   });
   // Phone layout for lists: every table row becomes a card, so nothing needs sideways scrolling. Each cell is tagged with its column heading
   // (shown above the value on small screens), the most important cell becomes the card title and the buttons sit at the bottom.
-  (function () {
+  function labelTables(scope) {
     if (/^\/(settings|audit|sync|assistant)/.test(window.location.pathname)) return;
-    document.querySelectorAll('.tw > table').forEach(function (tb) {
+    scope.querySelectorAll('.tw > table').forEach(function (tb) {
       if (tb.classList.contains('rt') || tb.classList.contains('document-edit-table')) return;
       var rows = [].slice.call(tb.querySelectorAll('tr'));
       var head = rows.filter(function (r) { return r.querySelector('th') && !r.querySelector('td'); })[0];
@@ -85,7 +85,8 @@
       });
       if (done) tb.classList.add('rcards');
     });
-  })();
+  }
+  labelTables(document);
   // ---- Laws of UX helpers ----
   // Doherty threshold: a press is acknowledged at once (spinner on the button, a thin loading bar at the top) and a form cannot be sent twice.
   function wantsBusy(f) {
@@ -126,15 +127,16 @@
     if (box) { e.preventDefault(); box.focus(); box.select(); }
   });
   // Zeigarnik effect / error prevention: a half-filled checklist or count is not lost by a stray click on another page.
-  (function () {
-    var dirty = false;
-    document.querySelectorAll('form[data-guard]').forEach(function (f) {
-      f.addEventListener('input', function () { dirty = true; });
-      f.addEventListener('change', function () { dirty = true; });
-      f.addEventListener('submit', function () { dirty = false; });
+  var guardDirty = false;
+  function bindGuard(scope) {
+    scope.querySelectorAll('form[data-guard]').forEach(function (f) {
+      f.addEventListener('input', function () { guardDirty = true; });
+      f.addEventListener('change', function () { guardDirty = true; });
+      f.addEventListener('submit', function () { guardDirty = false; });
     });
-    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
-  })();
+  }
+  bindGuard(document);
+  window.addEventListener('beforeunload', function (e) { if (guardDirty) { e.preventDefault(); e.returnValue = ''; } });
   // Shared workspace navigation. Layout preference never stores business data.
   var railToggle = document.getElementById('rail-toggle');
   function setRail(expanded) {
@@ -202,7 +204,8 @@
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
   });
-  document.querySelectorAll('[data-print]').forEach(function (button) { button.addEventListener('click', function () { window.print(); }); });
+  function bindPrint(scope) { scope.querySelectorAll('[data-print]').forEach(function (button) { button.addEventListener('click', function () { window.print(); }); }); }
+  bindPrint(document);
   // Shared form feedback. The server remains authoritative; client constraints
   // are presented inline and associated with the field rather than in OS bubbles.
   var errorId = 0;
@@ -310,7 +313,7 @@
         label.htmlFor = field.id;
       } else if (!field.hasAttribute('aria-label') && field.placeholder) field.setAttribute('aria-label', field.placeholder);
     });
-    scope.querySelectorAll('textarea').forEach(function (field) {
+    scope.querySelectorAll('textarea:not(#chat-input)').forEach(function (field) {
       function grow() { field.style.height = 'auto'; field.style.height = Math.min(Math.max(field.scrollHeight, 104), 360) + 'px'; }
       field.addEventListener('input', grow); grow();
     });
@@ -346,15 +349,19 @@
       point.animate([{ opacity: .14 }, { opacity: .3 }, { opacity: .14 }], { duration: 1400, iterations: 2 });
     });
   }
-  document.querySelectorAll('svg.chart [data-tip],svg.spark [data-tip],.donut .slice').forEach(function (point) {
-    point.setAttribute('tabindex', '0'); point.setAttribute('aria-label', point.getAttribute('data-tip'));
-  });
+  var chartObserver = null;
   if ('IntersectionObserver' in window) {
-    var chartObserver = new IntersectionObserver(function (entries) {
+    chartObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) { if (entry.isIntersecting) { animateChart(entry.target); chartObserver.unobserve(entry.target); } });
     }, { threshold: .15 });
-    document.querySelectorAll('.block-chart,svg.chart,svg.spark,.hbars').forEach(function (chart) { chartObserver.observe(chart); });
   }
+  function enhanceCharts(scope) {
+    scope.querySelectorAll('svg.chart [data-tip],svg.spark [data-tip],.donut .slice').forEach(function (point) {
+      point.setAttribute('tabindex', '0'); point.setAttribute('aria-label', point.getAttribute('data-tip'));
+    });
+    if (chartObserver) scope.querySelectorAll('.block-chart,svg.chart,svg.spark,.hbars').forEach(function (chart) { chartObserver.observe(chart); });
+  }
+  enhanceCharts(document);
   reducedMotion.addEventListener('change', function (event) { if (event.matches) document.getAnimations().forEach(function (animation) { animation.cancel(); }); });
   // ---- tooltip: any element with data-tip shows its text next to the pointer (mouse) or on tap (touch)
   var tip = document.getElementById('tip'), cur = null;
@@ -394,7 +401,7 @@
     var n = parseFloat(s.replace(/[₱,%]/g, '').replace(/,/g, ''));
     return isNaN(n) ? null : n;
   }
-  document.querySelectorAll('th[data-sort]').forEach(function (th) {
+  function bindSort(scope) { scope.querySelectorAll('th[data-sort]').forEach(function (th) {
     th.setAttribute('tabindex', '0'); th.setAttribute('aria-sort', 'none');
     th.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); th.click(); } });
     th.addEventListener('click', function () {
@@ -420,7 +427,10 @@
       });
       rows.forEach(function (r) { body.appendChild(r); });
     });
-  });
+  }); }
+  bindSort(document);
+  // a page area that was swapped in place (tabs.js) gets the same enhancements a freshly loaded page gets
+  window.RetailOSEnhance = function (scope) { labelTables(scope); bindGuard(scope); bindPrint(scope); enhanceFields(scope); enhanceCharts(scope); bindSort(scope); };
 
   // ---- clickable rows: tr[data-href] navigates unless the click was on an interactive element
   document.addEventListener('click', function (e) {
@@ -464,7 +474,7 @@
       var input = upl.querySelector('input[type=file]'), prev = upl.querySelector('.upl-prev'), face = upl.querySelector('.upl-face b');
       if (!input || !prev) return;
       var label = face ? face.textContent : '';
-      var selected = [], urls = [], multi = upl.hasAttribute('data-photos');
+      var selected = [], urls = [], multi = upl.hasAttribute('data-photos'), many = multi || upl.hasAttribute('data-multi');
       var camera = upl.querySelector('[data-camera-input]'), cameraButton = upl.querySelector('[data-take-photo]');
       function syncFiles() {
         var transfer = new DataTransfer();
@@ -475,10 +485,11 @@
         urls.forEach(function (url) { URL.revokeObjectURL(url); }); urls = [];
         prev.replaceChildren();
         upl.classList.toggle('has-file', selected.length > 0);
-        if (face && !multi) face.textContent = selected.length ? t('Tap to replace') : label;
+        if (face && !many) face.textContent = selected.length ? t('Tap to replace') : label;
+        else if (face && !multi) face.textContent = selected.length ? t('Add another video') : label;
         prev.hidden = selected.length === 0;
         var counter = upl.querySelector('.photo-count');
-        if (counter) counter.textContent = selected.length ? t('{count} photos added', { count: selected.length }) : '';
+        if (counter) counter.textContent = selected.length ? t(upl.getAttribute('data-noun') === 'videos' ? (selected.length === 1 ? '1 video added' : '{count} videos added') : '{count} photos added', { count: selected.length }) : '';
         selected.forEach(function (file, index) {
           var row = document.createElement('div'); row.className = multi ? 'photo-preview photo-tile' : 'photo-preview';
           if (file.type.indexOf('image/') === 0) {
@@ -506,7 +517,7 @@
         countAnswered();
       }
       function addFiles(files) {
-        if (!multi) selected = [];
+        if (!many) selected = [];
         Array.prototype.forEach.call(files, function (file) {
           if (!selected.some(function (old) { return old.name === file.name && old.size === file.size && old.lastModified === file.lastModified && old.type === file.type; })) selected.push(file);
         });
@@ -516,7 +527,7 @@
         if (input.files && input.files.length) addFiles(input.files);
         else { syncFiles(); renderFiles(); }
       });
-      if (multi && camera && cameraButton) {
+      if (many && camera && cameraButton) {
         cameraButton.hidden = false;
         cameraButton.addEventListener('click', function () { camera.click(); });
         camera.addEventListener('change', function () { if (camera.files && camera.files.length) addFiles(camera.files); camera.value = ''; });
@@ -601,89 +612,5 @@
       .finally(function () { f.classList.remove('is-busy'); if (btn) btn.disabled = false; });
   });
 
-  // ---- chat window
-  var fab = document.getElementById('chat-fab');
-  if (!fab) return;
-  var panel = document.getElementById('chat-panel'), log = document.getElementById('chat-log'),
-      form = document.getElementById('chat-form'), input = document.getElementById('chat-input'),
-      send = document.getElementById('chat-send'), sugg = document.getElementById('chat-sugg');
-  var KEY = 'retailos-chat-' + document.documentElement.lang, turns = [], busy = false;
-
-  function store() {
-    try { sessionStorage.setItem(KEY, JSON.stringify({ turns: turns, html: log.innerHTML, open: !panel.hidden })); } catch (e) { }
-  }
-  function add(who, content, isHtml) {
-    var d = document.createElement('div');
-    d.className = 'msg ' + who;
-    if (isHtml) d.innerHTML = content; else d.textContent = content;
-    log.appendChild(d); log.scrollTop = log.scrollHeight;
-    return d;
-  }
-  function hello() {
-    add('bot', t('Hi, I can answer questions about stock, sales, purchase orders and issues, using only what is in the system. What would you like to know?'));
-  }
-  function openPanel(skipStore) {
-    panel.hidden = false; fab.classList.add('on');
-    if (!skipStore) store();
-    setTimeout(function () { input.focus(); log.scrollTop = log.scrollHeight; }, 30);
-  }
-  function closePanel() { panel.hidden = true; fab.classList.remove('on'); store(); }
-  function load() {
-    try {
-      var d = JSON.parse(sessionStorage.getItem(KEY) || 'null');
-      if (d) { turns = d.turns || []; log.innerHTML = d.html || ''; if (turns.length) sugg.hidden = true; if (d.open) openPanel(true); }
-    } catch (e) { }
-    if (!log.children.length) hello();
-  }
-
-  fab.addEventListener('click', function () { if (panel.hidden) openPanel(); else closePanel(); });
-  document.getElementById('chat-close').addEventListener('click', closePanel);
-  document.getElementById('chat-clear').addEventListener('click', function () {
-    turns = []; log.innerHTML = ''; sugg.hidden = false; hello(); store();
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) closePanel(); });
-
-  function ask(q) {
-    q = (q || '').trim();
-    if (!q || busy) return;
-    busy = true; send.disabled = true; sugg.hidden = true;
-    add('me', q);
-    input.value = '';  // clear on send; otherwise the question sits in the field until the answer arrives
-    var th = add('bot', '<span class="dots"><i></i><i></i><i></i></span>', true);
-    th.appendChild(document.createTextNode(' ' + t('Reading your data, this takes 20 to 40 seconds...')));
-    th.classList.add('thinking');
-    var fd = new FormData();
-    fd.append('question', q);
-    fd.append('csrf', document.getElementById('chat-csrf').value);
-    fd.append('history', JSON.stringify(turns.slice(-6)));
-    var ctl = new AbortController(), to = setTimeout(function () { ctl.abort(); }, 180000);
-    fetch('/assistant/chat', { method: 'POST', body: fd, credentials: 'same-origin', signal: ctl.signal })
-      .then(function (r) {
-        if (r.redirected || r.status === 401) throw new Error(t('Your session ended. Reload the page and sign in again.'));
-        if (r.status === 403) throw new Error(t('Not allowed, or the page is out of date. Reload and try again.'));
-        return r.json();
-      })
-      .then(function (d) {
-        th.remove();
-        if (d.ok) {
-          add('bot', d.html, true);
-          turns.push({ role: 'user', text: q }); turns.push({ role: 'assistant', text: d.text || '' });
-        } else {
-          add('bot', d.error || t('Something went wrong.')).classList.add('err');
-        }
-      })
-      .catch(function (e) {
-        th.remove();
-        add('bot', e.name === 'AbortError' ? t('That took too long. Try a shorter question.') : (e.message || t('Could not reach the server.'))).classList.add('err');
-      })
-      .finally(function () { clearTimeout(to); busy = false; send.disabled = false; input.focus(); store(); });
-  }
-  form.addEventListener('submit', function (e) { e.preventDefault(); ask(input.value); });
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('[data-chat-ask]');
-    if (a) { e.preventDefault(); if (panel.hidden) openPanel(); ask(a.getAttribute('data-chat-ask')); return; }
-    var c = e.target.closest && e.target.closest('#chat-log .cite');
-    if (c) e.preventDefault();
-  });
-  load();
+  // Chat is implemented in assistant_chat.js.
 })();

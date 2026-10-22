@@ -1,32 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Sales by product') }}{% endblock %}
 {% block content %}
-{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort %}
+<link rel="stylesheet" href="/static/sales_product_filters.css?v={{ asset_v('sales_product_filters.css') }}">
+<link rel="stylesheet" href="/static/daterange.css?v={{ asset_v('daterange.css') }}">
+{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&supplier=' ~ supplier %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by product') }}</h1>
   <p>{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
-  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/products?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="submit" form="product-sales-filters" name="export" value="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="submit" form="product-sales-filters" name="export" value="detailed">Detailed CSV</button></div></div>
 
-<form novalidate class="filters" method="get" style="margin-bottom:14px">
+<form id="product-sales-filters" novalidate class="filters product-sales-filters" method="get" action="/sales/products">
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
-  <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, t in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
-  <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">
-    <div><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></div>
-    <div><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></div>
-    <div><label>&nbsp;</label><button class="sec">{{ t('Apply') }}</button></div>
-  </div>
+  <div class="product-sales-period"><label>{{ t('Period') }}</label>
+    <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
+    <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}"
+         data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div></div>
+  <div><label for="sales-product-supplier">{{ t('Supplier') }}</label><select id="sales-product-supplier" name="supplier" onchange="this.form.submit()"><option value="0">{{ t('All suppliers') }}</option>{% for item in suppliers %}<option value="{{ item.id }}" {{ 'selected' if item.id == supplier }}>{{ item.name }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Category') }}</label><select name="category" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for k in cats %}<option {{ 'selected' if k == category }} value="{{ k }}">{{ k }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Sort by') }}</label><select name="sort" onchange="this.form.submit()">{% for k, t in (('sales', 'Net sales'), ('units', 'Units sold'), ('price', 'Average price'), ('name', 'Name')) %}<option value="{{ k }}" {{ 'selected' if k == sort }}>{{ t }}</option>{% endfor %}</select></div>
-  <div style="flex:1;min-width:180px"><label>{{ t('Search') }}</label><input name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"></div>
-  <div><label>&nbsp;</label><button class="sec">{{ t('Search') }}</button></div>
+  <div class="product-sales-search"><label for="product-sales-search">{{ t('Search') }}</label><div class="product-sales-search-row"><input id="product-sales-search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"><button type="submit">{{ t('Search') }}</button></div></div>
 </form>
 
-<div class="grid g4" style="margin-bottom:14px">
-  <div class="card stat"><div><div class="label">{{ t('Products sold') }}</div><div class="value">{{ total|num(0) }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Units sold') }}</div><div class="value">{{ total_units|num(0) }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ total_net|money }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Average per unit') }}</div><div class="value">{{ (total_net / total_units)|money if total_units else '-' }}</div></div></div>
-</div>
+<dl class="product-sales-summary" aria-label="{{ t('Sales summary') }}">
+  <div class="product-sales-metric product-sales-revenue">
+    <dt>{{ t('Net sales') }}</dt><dd><span class="metric-currency">PHP</span>{{ total_net|money }}</dd>
+  </div>
+  <div class="product-sales-metric"><dt>{{ t('Products sold') }}</dt><dd>{{ total|num(0) }}</dd></div>
+  <div class="product-sales-metric"><dt>{{ t('Units sold') }}</dt><dd>{{ total_units|num(0) }}</dd></div>
+  <div class="product-sales-metric"><dt>{{ t('Average per unit') }}</dt><dd>{% if total_units %}<span class="metric-currency">PHP</span>{{ (total_net / total_units)|money }}{% else %}&mdash;{% endif %}</dd></div>
+</dl>
 
 {% if rows %}
 {% set mx = rows|map(attribute=2)|max %}
@@ -34,7 +36,7 @@
   <tr><th>#</th><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Avg price') }}</th>{% if labels %}<th>{{ t('Trend') }}</th>{% endif %}</tr>
   {% for p, units, net, ds in rows %}
   <tr><td class="mute">{{ offset + loop.index }}</td>
-    <td><div style="font-weight:600"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days if days >= 7 else 30 }}{% endif %}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}</div></td>
+    <td><div style="font-weight:600"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days }}{% endif %}&loc={{ loc }}&list_query={{ (qs ~ '&page=' ~ page)|urlencode }}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}</div></td>
     <td class="small">{{ p.category or '' }}</td>
     <td class="right">{{ units|num(0) if units == units|round(0) else units|num(2) }}</td>
     <td class="right"><b>{{ net|money }}</b></td>
@@ -50,4 +52,7 @@
 {% else %}
 <div class="card empty">{{ t('No sales found for this selection. Warehouses record no sales, so choose a store or all locations.') }}</div>
 {% endif %}
+{% if unlisted %}<p class="small mute" style="margin-top:10px">{{ t('Not in the list above') }}: <b>{{ unlisted|money }}</b> {{ t('sold from products StoreHub no longer lists (deleted or not synced yet). Together with the list this is the full net sales of the period.') }}</p>{% endif %}
 {% endblock %}
+
+{% block scripts %}<script src="/static/daterange.js?v={{ asset_v('daterange.js') }}"></script>{% endblock %}

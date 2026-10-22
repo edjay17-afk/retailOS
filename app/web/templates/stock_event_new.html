@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<div class="stock-event-editor">
 <h1>{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}</h1>
 <p class="small mute">{{ t('This records what physically happened. The same change must also be keyed into the StoreHub back office — only then does stock update.') }}</p>
-<div class="card" style="max-width:640px">
+<div class="card stock-event-form">
 <form novalidate method="post" action="/stock-events/new" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
-<div class="row">
-<div><label>{{ t('Location') }}</label><select name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
-<div><label>{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div>{{ product.name }}</div>
-{% else %}<input name="search" placeholder="{{ t('Scan barcode or type product name') }}" required style="width:260px">{% endif %}</div>
-<div><label>{{ t('Qty') }}</label><input name="qty" inputmode="decimal" required style="width:100px"></div>
-<div><label>{{ t('Reason') }}</label><select name="reason">{% for r in reasons %}<option value="{{ r }}">{{ t(r) }}</option>{% endfor %}</select></div>
-{% if kind == 'unplanned_receipt' %}<div><label>{{ t('Supplier') }}</label><select name="supplier_id"><option value="0">{{ t('Unknown') }}</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
+<div class="stock-event-fields">
+<div class="event-field event-location_id"><label for="event-location_id">{{ t('Location') }}</label><select id="event-location_id" name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
+<div class="event-field event-search"><label for="event-search">{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div id="event-search" class="event-selected-product">{{ product.name }}</div>
+{% else %}<input id="event-search" name="search" placeholder="{{ t('Scan barcode or type product name') }}" required>{% endif %}</div>
+<div class="event-field event-qty"><label for="event-qty">{{ t('Qty') }}</label><input id="event-qty" name="qty" inputmode="decimal" required></div>
+<div class="event-field event-reason"><label for="event-reason">{{ t('Reason') }}</label><select id="event-reason" name="reason">{% for r in reasons %}<option value="{{ r }}">{{ t(r) }}</option>{% endfor %}</select></div>
+{% if kind == 'unplanned_receipt' %}<div class="event-field event-supplier_id"><label for="event-supplier_id">{{ t('Supplier') }}</label><select id="event-supplier_id" name="supplier_id"><option value="0">{{ t('Unknown') }}</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
 </div>
-<label>{{ t('Note') }}</label><input name="note" style="width:100%" maxlength="300">
-<label>{{ t('Photo (optional evidence)') }}</label><input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
-<p><button>{{ t('Record') }}</button> <a class="btn sec sm" href="/stock-events">{{ t('Cancel') }}</a></p></form></div>
+<div class="event-field"><label for="event-note">{{ t('Note') }}</label><input id="event-note" name="note" style="width:100%" maxlength="300"></div>
+<div class="event-field"><label for="event-photo">{{ t('Photo (optional evidence)') }}</label><input id="event-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp"></div>
+<div class="stock-event-form-actions"><button>{{ t('Record') }}</button> <a class="btn sec sm" href="/stock-events">{{ t('Cancel') }}</a></div></form></div>
+</div>
 {% endblock %}

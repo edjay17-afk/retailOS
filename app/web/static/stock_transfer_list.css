@@ -1,0 +1,10 @@
+.transfer-list-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}dialog#transfer-import{width:min(560px,calc(100vw - 32px));padding:22px;box-sizing:border-box}.transfer-import-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.transfer-import-head h2{margin:0}.transfer-import-head .iconbtn{flex-shrink:0}.transfer-import-form{display:flex;flex-direction:column;gap:16px;margin:20px 0}.transfer-import-form input[type=file]{width:100%;box-sizing:border-box;min-width:0}.transfer-import-form>button{align-self:flex-end}@media(max-width:600px){.transfer-list-actions{justify-content:flex-start;gap:6px}.transfer-list-actions .btn,.transfer-list-actions button{font-size:12px;padding:9px 11px}dialog#transfer-import{padding:18px}}
+
+/* One card animation; keep the dim layer still to avoid a second visual pulse. */
+dialog#transfer-import{border:1px solid var(--line);max-height:calc(100dvh - 32px)}
+dialog#transfer-import .small{line-height:1.6}
+dialog#transfer-import .transfer-import-head h2{font-size:18px;line-height:1.4}
+dialog#transfer-import[open]{animation:transfer-import-open .16s ease-out;animation-delay:0s}
+dialog#transfer-import[open]::backdrop{animation:none;backdrop-filter:none}
+@keyframes transfer-import-open{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){dialog#transfer-import[open]{animation:none}}

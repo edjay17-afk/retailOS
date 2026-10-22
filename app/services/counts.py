@@ -104,7 +104,8 @@ def enter(db: Session, cc: CycleCount, user: User, rows: list[dict]) -> None:
             continue
         if r["counted"] < 0:
             raise CountError("A count cannot be negative")
-        l.system_qty = cur.get(l.product_id, l.system_qty)  # compare against the freshest stock figure
+        if l.reason != "scanned":
+            l.system_qty = cur.get(l.product_id, l.system_qty)  # scanned lines retain their direct StoreHub snapshot
         l.counted_qty = r["counted"]
         l.variance = round(r["counted"] - l.system_qty, 3)
         l.note = (r.get("note") or None)
@@ -289,3 +290,41 @@ def reconcile_events(db: Session) -> dict:
                                 dedupe_key=f"cntpend:{e.id}")
             review += 1
     return {"matched": matched, "needs_review": review}
+
+
+def live_quantity(loc: Location, product: Product) -> float:
+    """Read a specific store's current quantity; never substitute stale stock on failure."""
+    import math
+    from ..storehub.client import StoreHubClient
+    client = StoreHubClient()
+    try:
+        rows = client.inventory(loc.storehub_id)
+        row = next((r for r in rows if r.get("productId") == product.storehub_id), None)
+        if row is None or row.get("quantityOnHand") is None:
+            raise CountError("No StoreHub stock figure is available for this product at this location.")
+        qty = float(row["quantityOnHand"])
+        if not math.isfinite(qty):
+            raise CountError("StoreHub returned an invalid quantity.")
+        return qty
+    finally:
+        client.close()
+
+
+def save_scanned(db: Session, cc: CycleCount, user: User, product: Product, counted: float, note: str) -> CycleCountLine:
+    import math
+    if cc.status != "open":
+        raise CountError("This count is already submitted")
+    if not math.isfinite(counted) or counted < 0 or counted > 100000000:
+        raise CountError("Enter a valid counted quantity, zero or greater.")
+    system = live_quantity(cc.location, product)
+    line = next((l for l in cc.lines if l.product_id == product.id), None)
+    if line is None:
+        line = CycleCountLine(product_id=product.id, reason="scanned", system_qty=system)
+        cc.lines.append(line)
+    line.reason = "scanned"
+    line.system_qty, line.counted_qty = system, counted
+    line.variance, line.note = round(counted - system, 3), note.strip()[:1000] or None
+    db.flush()
+    audit.log(db, actor_type="human", actor_id=user.id, action="count.scan_save", entity_type="cycle_count", entity_id=cc.id,
+              after={"product_id":product.id,"system":system,"counted":counted,"note":line.note})
+    return line

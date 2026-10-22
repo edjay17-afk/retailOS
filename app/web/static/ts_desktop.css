@@ -1,0 +1,70 @@
+/* Loaded only on desktop: the mobile transfer workflow retains its own styles. */
+.tsx .page-head{align-items:center;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.tsx .page-head h1{font-size:26px;letter-spacing:-.035em;margin:5px 0 8px}
+.tsx .page-head .eyebrow{font-size:10px;letter-spacing:.08em}
+.tsx .page-head p{margin:0;font-size:13px;line-height:1.7}
+.tsx .page-head>.row{gap:8px;flex-shrink:0}
+.np-page.tsx .ts-scanbox,.np-page.tsx .ts-linebox{max-width:none}
+.np-page.tsx .ts-scanbox{padding:20px;border-radius:14px;border-top:3px solid var(--btn);margin-bottom:24px}
+.np-page.tsx .ts-h3{font-size:16px;letter-spacing:-.02em;margin-bottom:14px}
+.np-page.tsx .ts-scanrow{gap:8px;width:100%;max-width:none}
+.np-page.tsx .ts-inputwrap{max-width:none;min-width:0;flex:1}
+.np-page.tsx .ts-scanrow input{width:100%;height:44px;font-size:14px;padding:0 12px;background:var(--bg)}
+.np-page.tsx .ts-scanbtn{width:44px;height:44px;flex:0 0 44px}
+.np-page.tsx .ts-card{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-top:18px;padding:16px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent}
+.np-page.tsx .ts-card-top{flex:0 0 auto;order:0;display:flex;gap:10px;justify-content:space-between;width:100%}
+.np-page.tsx .ts-card-top>div{min-width:0;flex:1}
+.np-page.tsx .ts-name{font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+.np-page.tsx #ts-sub{line-height:1.6;font-size:12px;margin-top:3px}
+.np-page.tsx .ts-x{width:28px;height:28px;flex:none;border:1px solid var(--line);background:var(--surface);color:var(--mute)}
+.np-page.tsx .ts-qty-label{order:1;display:block;font-size:12px;color:var(--mute);margin:0 0 -6px}
+.np-page.tsx .ts-qtyrow{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:8px;width:100%}
+.np-page.tsx .ts-qtyrow input{height:40px;width:100%;font-size:20px;text-align:center}
+.np-page.tsx .ts-step{height:40px;width:38px;font-size:20px}
+.np-page.tsx #ts-add{width:100%;height:40px;font-size:14px;justify-content:center}
+.np-page.tsx .ts-h2{display:flex;align-items:baseline;justify-content:space-between;gap:12px;max-width:none;margin:0 0 12px;font-size:16px;text-transform:none;letter-spacing:-.02em;color:var(--ink)}
+.tsx #ts-total2{font-size:12px;font-weight:500;letter-spacing:0}
+.np-page.tsx .ts-linebox{border-radius:12px;margin-bottom:0;min-width:0}
+.np-page.tsx .ts-colhead,.np-page.tsx .tsl{grid-template-columns:minmax(0,1fr) 110px 88px 30px;gap:16px;padding:14px 18px}
+.np-page.tsx .ts-colhead{font-size:10px;letter-spacing:.045em;text-transform:uppercase}
+.np-page.tsx .ts-colhead span:nth-child(3){text-align:center}
+.np-page.tsx .tsl-main{min-width:0;overflow-wrap:anywhere}
+.np-page.tsx .tsl-main b{font-size:14px;line-height:1.5}
+.np-page.tsx .tsl-main .small{font-size:11px;line-height:1.6}
+.np-page.tsx .tsl-stock{font-size:13px;color:var(--mute)}
+.np-page.tsx .tsl-qty{width:88px;height:36px;min-height:36px;text-align:center;font-size:15px}
+.np-page.tsx .tsl-q{text-align:center;font-size:17px}
+.np-page.tsx #ts-empty:not([hidden]){padding:48px 24px;min-height:0;color:var(--mute);font-size:13px}
+.ts-bar.np-bar.tsx-bar{min-height:68px;box-shadow:0 -4px 18px rgba(0,0,0,.035)}
+.tsx-bar .ts-bar-info{font-size:14px;font-variant-numeric:tabular-nums}
+.np-bar.tsx-bar .ts-save{min-width:128px;height:40px;font-size:14px}
+/* Transfer index: origin on the left, a compact destination form on the right. */
+.np-page.ts-index .ts-newcard{display:flex;align-items:center;justify-content:space-between;gap:32px;max-width:none;padding:22px 24px;margin-bottom:28px;border-radius:14px;border-left:3px solid var(--btn)}
+.ts-index .ts-new-heading{margin:0;flex:1;min-width:180px}
+.ts-index .ts-new-heading h3{font-size:18px;margin-bottom:6px}
+.np-page.ts-index .ts-new{flex:0 1 530px;margin:0;max-width:none;width:auto}
+.np-page.ts-index .ts-new select,.np-page.ts-index .ts-new button{height:40px}
+.ts-index>h2{font-size:16px;margin:0 0 12px}
+.ts-index .tw table td{padding:16px 18px;vertical-align:middle}
+.ts-index .tw table th{padding:12px 18px;font-size:11px}
+.ts-index .tw td:first-child b{font-size:14px}
+.ts-index .tw td:first-child .small{font-size:11px;margin-top:5px}
+.ts-index .tw td:nth-child(2){font-weight:550}
+.ts-index .tw tbody tr:hover{background:var(--surface2)}
+@media(min-width:1200px){
+ .np-page.ts-detail:has(#ts-app){display:grid;grid-template-columns:310px minmax(0,1fr);grid-template-rows:auto 32px auto;gap:0 24px;align-items:start}
+ .ts-detail:has(#ts-app)>.page-head{grid-column:1/-1}
+ .np-page.ts-detail #ts-app{grid-column:1;grid-row:2/4;position:sticky;top:92px;margin:0}
+ .np-page.ts-detail:has(#ts-app)>.ts-h2{grid-column:2;grid-row:2;margin:0}
+ .np-page.ts-detail:has(#ts-app)>.ts-linebox{grid-column:2;grid-row:3}
+}
+@media(min-width:761px) and (max-width:1199px){
+ .np-page.ts-detail .ts-card{display:grid;grid-template-columns:minmax(0,1fr) 180px 100px;align-items:center}
+ .np-page.ts-detail .ts-card-top{grid-column:1;grid-row:1/3}
+ .np-page.ts-detail .ts-qty-label{grid-column:2;margin:0}
+ .np-page.ts-detail .ts-qtyrow{grid-column:2}
+ .np-page.ts-detail #ts-add{grid-column:3;grid-row:2}
+ .np-page.ts-detail .ts-warn{grid-column:1/-1}
+ .np-page.ts-index .ts-newcard{gap:20px;padding:20px}
+ .tsx .page-head{flex-wrap:wrap;gap:14px}
+}

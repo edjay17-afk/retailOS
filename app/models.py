@@ -249,6 +249,7 @@ class SalesDay(Base):
     tax: Mapped[float] = mapped_column(Float, default=0)
     cash_sales: Mapped[float] = mapped_column(Float, default=0)
     other_sales: Mapped[float] = mapped_column(Float, default=0)
+    gross_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # StoreHub's own Gross Profit for the day, read from its Sales over time report
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
 
 
@@ -298,6 +299,7 @@ class PoLine(Base):
     received_qty: Mapped[float] = mapped_column(Float, default=0)  # StoreHub omits the field when nothing received
     received_present: Mapped[bool] = mapped_column(Boolean, default=False)
     supplier_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price_exact: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)  # the supplier price exactly as StoreHub holds it (up to 6 decimals), read from its PO page
     subtotal: Mapped[float] = mapped_column(Float, default=0)
     product: Mapped[Optional[Product]] = relationship()
 
@@ -424,6 +426,8 @@ class Recommendation(Base):
     needs_review_reasons: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     explanation: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     approved_qty: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    saved_qty: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # editable draft; not an approval
+    transfer_sheet_id: Mapped[Optional[int]] = mapped_column(ForeignKey("transfer_sheet.id", ondelete="SET NULL"), nullable=True)
     decided_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
     decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     reason_code: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # the manager's own words
@@ -514,6 +518,179 @@ class StockTransferLine(Base):
     unit_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     subtotal: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     __table_args__ = (UniqueConstraint("transfer_id", "line_no", name="uq_stock_transfer_line"),)
+
+
+class StockTransferReceipt(Base):
+    """V2.1: the destination store's own physical count of what arrived on a StoreHub transfer.
+    StoreHub's Received status is closed by the warehouse account; this record is the store's independent confirmation."""
+    __tablename__ = "stock_transfer_receipt"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    transfer_id: Mapped[int] = mapped_column(ForeignKey("stock_transfer.id"), unique=True, index=True)  # one confirmation per transfer
+    location_id: Mapped[Optional[int]] = mapped_column(ForeignKey("location.id"), nullable=True)  # the store that counted
+    counted_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    counted_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    differences: Mapped[int] = mapped_column(Integer, default=0)
+    transfer: Mapped[StockTransfer] = relationship()
+    counter: Mapped[Optional[User]] = relationship()
+    lines: Mapped[list["StockTransferReceiptLine"]] = relationship(cascade="all, delete-orphan")
+
+
+class StockTransferReceiptLine(Base):
+    __tablename__ = "stock_transfer_receipt_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    receipt_id: Mapped[int] = mapped_column(ForeignKey("stock_transfer_receipt.id", ondelete="CASCADE"), index=True)
+    transfer_line_id: Mapped[int] = mapped_column(ForeignKey("stock_transfer_line.id"))
+    expected_qty: Mapped[float] = mapped_column(Float)
+    counted_qty: Mapped[float] = mapped_column(Float)
+    transfer_line: Mapped[StockTransferLine] = relationship()
+    __table_args__ = (UniqueConstraint("receipt_id", "transfer_line_id", name="uq_st_receipt_line"),)
+
+
+class NewProduct(Base):
+    """A product registered by staff before it exists in StoreHub. Mirrored to the Lark "New Product" table and
+    exported as an Excel file that the ShadowBot RPA keys into StoreHub. StoreHub stays the source of truth."""
+    __tablename__ = "new_product"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    barcode: Mapped[str] = mapped_column(String(80), index=True)
+    name: Mapped[str] = mapped_column(String(300))
+    category: Mapped[str] = mapped_column(String(120), default="")
+    supplier_name: Mapped[str] = mapped_column(String(160), default="")
+    cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    qty: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # initial quantity on hand, if the goods already arrived
+    expiry_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # mirrors the Lark table's Expiration Date column
+    note: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    # product entry process: new = barcode not known yet, existing = barcode already a StoreHub product (re-entry of stock/cost)
+    entry_type: Mapped[str] = mapped_column(String(10), default="new")
+    brand: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    flavor: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)  # one record per flavor
+    unit: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)  # piece | pack | case
+    units_per_pack: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    pack_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # supplier price of one pack/case; cost = pack_price / units_per_pack
+    packs: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # packs counted; qty = packs * units_per_pack (base units)
+    product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("product.id"), nullable=True)  # existing products only
+    status: Mapped[str] = mapped_column(String(12), default="recorded")  # recorded | lark_sent | lark_failed
+    lark_record_id: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    lark_error: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    excel_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)  # relative to data_dir
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    creator: Mapped[Optional[User]] = relationship()
+
+
+class NewProductList(Base):
+    """A batch of new products staff scanned (barcode, name, supplier, category, quantity). Saving it makes a PDF of the product information."""
+    __tablename__ = "new_product_list"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    status: Mapped[str] = mapped_column(String(12), default="draft", index=True)  # draft | saved
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    excel_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)  # relative to data_dir: the Excel file the RPA picks up
+    creator: Mapped[Optional[User]] = relationship()
+    items: Mapped[list["NewProductItem"]] = relationship(cascade="all, delete-orphan", order_by="NewProductItem.id")
+
+
+class NewProductItem(Base):
+    __tablename__ = "new_product_item"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("new_product_list.id", ondelete="CASCADE"), index=True)
+    barcode: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(300))
+    supplier_name: Mapped[str] = mapped_column(String(160), default="")
+    category: Mapped[str] = mapped_column(String(120), default="")
+    qty: Mapped[float] = mapped_column(Float)
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # selling price; StoreHub needs one to create the product
+    cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # supplier cost per piece (optional, StoreHub takes it on create)
+    # StoreHub push: pending (Excel/RPA path or awaiting a push) | created (in StoreHub, linked) | failed (StoreHub said no)
+    status: Mapped[str] = mapped_column(String(12), default="pending", index=True)
+    storehub_product_id: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    push_error: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    __table_args__ = (UniqueConstraint("list_id", "barcode", name="uq_new_product_item"),)
+
+
+class StoreHubPush(Base):
+    """A product RetailOS created in StoreHub — from a saved new-product list, or quick-created from a purchase order or a
+    transfer sheet. Kept even if the list is later deleted, so there is always a record of what went in, when and by whom."""
+    __tablename__ = "storehub_push"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    storehub_product_id: Mapped[str] = mapped_column(String(40), index=True)
+    barcode: Mapped[str] = mapped_column(String(80), default="")
+    name: Mapped[str] = mapped_column(String(300))
+    category: Mapped[str] = mapped_column(String(120), default="")
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    origin: Mapped[str] = mapped_column(String(20), default="list")  # list | purchase_order | transfer_sheet | quick
+    list_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # the NP list it came from (plain id: the list may be deleted)
+    pushed_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    pushed_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc, index=True)
+    pusher: Mapped[Optional[User]] = relationship()
+
+
+class TransferSheet(Base):
+    """A warehouse-to-store transfer list built by scanning products (replaces the notebook). draft -> submitted -> in_storehub."""
+    __tablename__ = "transfer_sheet"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_location_id: Mapped[int] = mapped_column(ForeignKey("location.id"))
+    target_location_id: Mapped[int] = mapped_column(ForeignKey("location.id"), index=True)
+    status: Mapped[str] = mapped_column(String(12), default="draft", index=True)  # draft | submitted | in_storehub | cancelled
+    note: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    submitted_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    excel_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)  # relative to data_dir, the file the RPA picks up
+    sh_reference: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)  # the StoreHub transfer number, e.g. ST0071
+    source: Mapped[Location] = relationship(foreign_keys=[source_location_id])
+    target: Mapped[Location] = relationship(foreign_keys=[target_location_id])
+    creator: Mapped[Optional[User]] = relationship(foreign_keys=[created_by])
+    lines: Mapped[list["TransferSheetLine"]] = relationship(cascade="all, delete-orphan", order_by="TransferSheetLine.id")
+
+
+class TransferSheetLine(Base):
+    __tablename__ = "transfer_sheet_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sheet_id: Mapped[int] = mapped_column(ForeignKey("transfer_sheet.id", ondelete="CASCADE"), index=True)
+    product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("product.id"), nullable=True)  # empty while StoreHub does not know the product yet
+    manual_name: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)  # what staff typed for a product that is not in StoreHub
+    manual_barcode: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    qty: Mapped[float] = mapped_column(Float)
+    unit_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # cost when scanned, so later cost changes do not rewrite the sheet
+    product: Mapped[Optional[Product]] = relationship()
+    __table_args__ = (UniqueConstraint("sheet_id", "product_id", name="uq_transfer_sheet_line"),)
+
+
+class PoDraft(Base):
+    """A purchase order being written in Retail OS: the supplier and where it is delivered, then the products with quantity and supplier price.
+    Quantities and prices are kept as exact decimal text (never a float), so no digit of a price such as 254.4642857 is lost. draft -> saved."""
+    __tablename__ = "po_draft"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("supplier.id"))
+    location_id: Mapped[int] = mapped_column(ForeignKey("location.id"))
+    status: Mapped[str] = mapped_column(String(12), default="draft", index=True)  # draft | saved
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    excel_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)  # relative to data_dir
+    tax_rate: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # percent, exact text, fixed when the order starts (12 = 12%)
+    # products quick-created in StoreHub from this order: when the order is saved, their quantity is split between the stores
+    new_product_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    supplier: Mapped[Supplier] = relationship()
+    location: Mapped[Location] = relationship()
+    creator: Mapped[Optional[User]] = relationship()
+    lines: Mapped[list["PoDraftLine"]] = relationship(cascade="all, delete-orphan", order_by="PoDraftLine.id")
+
+
+class PoDraftLine(Base):
+    __tablename__ = "po_draft_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    draft_id: Mapped[int] = mapped_column(ForeignKey("po_draft.id", ondelete="CASCADE"), index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"))
+    qty: Mapped[str] = mapped_column(String(60))  # exact decimal text
+    price: Mapped[str] = mapped_column(String(60))  # supplier price in PHP, exact decimal text
+    product: Mapped[Product] = relationship()
+    __table_args__ = (UniqueConstraint("draft_id", "product_id", name="uq_po_draft_line"),)
 
 
 class WastageEntry(Base):
@@ -699,7 +876,7 @@ class Inspection(Base):
     location_id: Mapped[int] = mapped_column(ForeignKey("location.id"))
     business_date: Mapped[date] = mapped_column(Date)
     due_at: Mapped[datetime] = mapped_column(DateTime)
-    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending | in_progress | completed | late (submitted after the due time) | missed
+    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending | in_progress | completed | late | missed | submitted (external Lark report)
     assigned_to: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -724,7 +901,13 @@ class InspectionResult(Base):
     note: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     photo_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
     photo_paths: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    video_paths: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)  # a walkthrough can have several videos; photo_path keeps the first
     item: Mapped[TemplateItem] = relationship()
+
+    @property
+    def videos(self) -> list[str]:
+        """Every video of a walkthrough item (older inspections only have the one in photo_path)."""
+        return self.video_paths or ([self.photo_path] if self.photo_path and self.item.kind == "video" else [])
 
     @property
     def photos(self) -> list[str]:

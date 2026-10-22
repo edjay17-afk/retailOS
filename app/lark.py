@@ -1,6 +1,6 @@
 """Optional one-way mirror of operational records into a Lark Base (Lark is used as storage and for people to browse).
 
-Nothing is read back from Lark: the local database stays the single source of truth for this system, and StoreHub stays the
+This mirror does not import data. A separate lark_inspections service reads external report links for review. The local database stays the source of truth for inspection results, and StoreHub stays the
 source of truth for sales and stock. The mirror is idempotent: each record is linked to its Lark record id, and only records whose
 content changed are sent again. It is disabled until LARK_APP_ID, LARK_APP_SECRET and LARK_BASE_TOKEN are set and `lark-setup` has run.
 """
@@ -344,7 +344,7 @@ def rows_dashboard(db):
     return out
 
 
-_INSPECTION_COLUMNS = (("entrance", "Store Entrance"), ("counter", "Counter Area"), ("restroom", "Restroom"), ("floor", "Floors & Tables"), ("aircon", "Aircon Temp"),
+_INSPECTION_COLUMNS = (("entrance", "Store Entrance"), ("counter", "Counter Area"), ("restroom", "Restroom"), ("floor", "Floors & Tables"),
                        ("machine", "Machines"), ("shelf", "Shelfs"), ("video", "Video Walkthrough"))
 
 
@@ -359,7 +359,7 @@ def rows_daily_inspection(db):
         for r in db.scalars(select(InspectionResult).where(InspectionResult.inspection_id == i.id).options(selectinload(InspectionResult.item))):
             label = r.item.label.lower()
             col = next((c for key, c in _INSPECTION_COLUMNS if key in label), None)
-            files = [r.photo_path] if (r.item.kind == "video" and r.photo_path) else list(r.photos)
+            files = list(r.videos) if r.item.kind == "video" else list(r.photos)
             if col and files:
                 fields[col] = Files(files)
         out.append((str(i.id), fields))
@@ -523,6 +523,13 @@ def mirror(client: LarkClient | None = None, batch_size: int = 100) -> dict:
                             client.batch_update(tid, [(item[0].lark_record_id, payload(item[1]))])
                             done.append(item)
                         except LarkError as e:
+                            if "1254043" in str(e):  # RecordIdNotFound: the row was deleted in Lark; write it again instead of failing every 5 minutes
+                                try:
+                                    item[0].lark_record_id = client.batch_create(tid, [payload(item[1])])[0]
+                                    done.append(item)
+                                    continue
+                                except LarkError as e2:
+                                    e = e2
                             log.error("lark mirror %s: record %s skipped: %s", sp.entity, item[0].entity_id, e)
                     return done
 

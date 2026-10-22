@@ -3,14 +3,14 @@
 {% block content %}
 <div class="page-head"><div><h1>{{ t('Permits') }}</h1><p>{{ t('Your permits with the date each was processed and when it expires. You are alerted 30, 14 and 7 days before expiry, and when it has expired.') }}</p></div></div>
 {% if can('compliance.manage') %}
-<div class="card"><div class="card-head"><h2>{{ t('Add a permit') }}</h2></div>
+<div class="card permit-add-card"><div class="card-head"><h2>{{ t('Add a permit') }}</h2></div>
 <form novalidate method="post" action="/compliance/add"><input type="hidden" name="csrf" value="{{ csrf }}">
-<div class="row" style="align-items:flex-end">
-<div><label>{{ t('Permit') }}</label><input name="name" placeholder="{{ t('Permit name, e.g. Mayor\'s permit') }}" required style="width:260px"></div>
-<div><label>{{ t('Processed on') }}</label><input type="date" name="processed"></div>
-<div><label>{{ t('Expires on') }}</label><input type="date" name="expiry"></div>
-<div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
-<div><label>{{ t('Reference no.') }}</label><input name="reference" style="width:150px"></div>
+<div class="permit-add-fields">
+<div><label for="permit-add-name">{{ t('Permit') }}</label><input id="permit-add-name" name="name" placeholder="{{ t('Permit name, e.g. Mayor\'s permit') }}" required></div>
+<div><label for="permit-add-processed">{{ t('Processed on') }}</label><input type="date" id="permit-add-processed" name="processed"></div>
+<div><label for="permit-add-expiry">{{ t('Expires on') }}</label><input type="date" id="permit-add-expiry" name="expiry"></div>
+<div><label for="permit-add-location_id">{{ t('Location') }}</label><select id="permit-add-location_id" name="location_id"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+<div><label for="permit-add-reference">{{ t('Reference no.') }}</label><input id="permit-add-reference" name="reference"></div>
 <div><button>{{ t('Add') }}</button></div></div></form></div>
 {% endif %}
 <div class="tw"><table class="wide"><tr><th scope="col">{{ t('Permit') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Processed on') }}</th><th scope="col">{{ t('Expires on') }}</th><th scope="col">{{ t('Status') }}</th><th></th></tr>

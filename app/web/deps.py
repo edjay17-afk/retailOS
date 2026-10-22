@@ -6,7 +6,7 @@ import secrets
 from datetime import date, datetime
 from pathlib import Path
 from typing import Callable
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from fastapi import Depends, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -121,6 +121,18 @@ def money(v) -> str:
     return "" if v is None else f"{v:,.2f}"
 
 
+def price6(v) -> str:
+    """A supplier price as StoreHub shows it: cut off (not rounded) after 6 decimals, never fewer than 2 (254.4642857142857 -> 254.464285, 12 -> 12.00)."""
+    if v is None:
+        return ""
+    from decimal import ROUND_DOWN, Decimal
+    d = Decimal(v) if isinstance(v, str) else Decimal(repr(float(v)))
+    if -d.as_tuple().exponent > 6:
+        d = d.quantize(Decimal("0.000001"), ROUND_DOWN)
+    whole, _, frac = format(d, "f").partition(".")
+    return f"{int(whole):,}.{frac.rstrip('0').ljust(2, '0')}"
+
+
 def num(v, digits: int = 2) -> str:
     if v is None:
         return ""
@@ -145,7 +157,7 @@ def ago(dt: datetime | None) -> str:
     return f"{int(s // 86400)} d ago"
 
 
-templates.env.filters.update(money=money, num=num, pct=pct, local=fmt_local, clock=fmt_clock)
+templates.env.filters.update(money=money, num=num, price6=price6, pct=pct, local=fmt_local, clock=fmt_clock)
 
 
 @pass_context
@@ -204,8 +216,8 @@ NAV_GROUPS = [
                     ("/wastage", "Wastage", "trash", "wastage.record", ""),
                     ("/expiry", "Expiry", "clock", "expiry.view", ""), ("/compliance", "Permits", "shield", "compliance.view", ""), ("/planogram", "Planogram", "grid", "planogram.view", "")]),
     ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/replenishment/repairs", "Repair queue", "wrench", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
-                            ("/stock-transfers", "Stock transfers", "sync", "transfer.view", ""),
-                            ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "tag", "sales.view", ""),
+                            ("/transfer-sheets", "Transfer sheet", "scan", "transfer.sheet", ""), ("/stock-transfers", "Stock transfers", "sync", "transfer.view", ""), ("/new-product", "New product", "plus", "product.add", ""),
+                            ("/purchase-orders/new", "New purchase order", "plus", "po.create", ""), ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "tag", "sales.view", ""),
                             ("/sales/transactions", "Transactions", "list", "sales.detail", ""), ("/sales/employees", "Sales by employee", "user", "sales.detail", "")]),
     ("Intelligence", [("/assistant", "Assistant", "sparkles", "ai.use", "AI"), ("/performance", "Performance", "gauge", "performance.view", ""), ("/data-quality", "Data quality", "shield", "dq.view", ""),
                       ("/traceability", "Traceability", "link", "traceability.view", ""),
@@ -214,19 +226,79 @@ NAV_GROUPS = [
 ]
 
 
+# a middle step whose own URL is not a page: the list page it belongs to
+CRUMB_PARENT = {"/sales/tx": ("Transactions", "/sales/transactions"), "/sales/product": ("Sales by product", "/sales/products"),
+                "/purchase-orders/new/lists": ("Saved orders", "/purchase-orders/new?saved=1")}
+
+
+def _is_page(c: Ctx, path: str) -> bool:
+    """True when some GET page answers this URL, so a breadcrumb never links to a 404."""
+    return any(getattr(r, "path_regex", None) is not None and r.path_regex.match(path) and "GET" in (getattr(r, "methods", None) or {"GET"})
+               for r in c.request.app.router.routes)
+
+
+def _crumbs(c: Ctx, path: str, last: str | None) -> list[tuple[str, str | None]]:
+    """Breadcrumb trail for the page, shown in the top bar: Dashboard > section > (detail). The section is the sidebar entry that owns this URL (the longest match), so the
+    trail always follows the menu people already know; a detail page adds its own last step. Each step but the last is a link back up."""
+    if path == "/":
+        return []
+    best = None
+    for _title, links in NAV_GROUPS:
+        for url, label, *_ in links:
+            if url != "/" and (path == url or path.startswith(url + "/")) and (best is None or len(url) > len(best[0])):
+                best = (url, label)
+    trail: list[tuple[str, str | None]] = [(c.t("Dashboard"), "/")]
+    rest = path
+    if best:
+        trail.append((c.t(best[1]), best[0] if path != best[0] else None))
+        rest = path[len(best[0]):]
+    raw = [s for s in rest.split("/") if s]
+    cum = best[0] if best else ""
+    for i, seg in enumerate(raw):
+        cum += "/" + seg
+        name = unquote(seg)
+        if i == len(raw) - 1 and last:
+            text = last
+        elif name.isdigit():
+            text = f"#{name}"
+        else:
+            text = c.t(name.replace("-", " ").replace("_", " ").strip().capitalize())
+        url = cum
+        if i < len(raw) - 1:
+            if cum in CRUMB_PARENT:
+                text, url = c.t(CRUMB_PARENT[cum][0]), CRUMB_PARENT[cum][1]
+            elif not _is_page(c, cum):
+                url = None
+        trail.append((text, url))
+    trail[-1] = (trail[-1][0], None)
+    return trail
+
+
+def asset_v(name: str) -> str:
+    """Cache-busting version for /static files: the file's modified time, so an edited stylesheet or script is never served stale."""
+    try:
+        return str(int((Path(__file__).parent / "static" / name).stat().st_mtime))
+    except OSError:
+        return "0"
+
+
 def render(c: Ctx, name: str, **kw):
     req = c.request
     lang = i18n.norm(req.cookies.get(i18n.COOKIE_NAME))
     fr = freshness.freshness(c.db)
     stale = [f for f in fr if f["status"] != "fresh" and f["critical"]]
     pills = _nav_pills(c)
-    base = dict(request=req, user=c.user, csrf=c.csrf, can=c.can, company=cfg.get(c.db, "app.company"),
+    base = dict(asset_v=asset_v, request=req, user=c.user, csrf=c.csrf, can=c.can, company=cfg.get(c.db, "app.company"),
                 nav_groups=[(t, [(u, l, i, str(pills[u]) if pills.get(u) else tag) for u, l, i, p, tag in links if c.can(p)]) for t, links in NAV_GROUPS if any(c.can(p) for _, _, _, p, _ in links)],
                 path=req.url.path, stale=stale, lang=lang, t=c.t,
                 ui_messages={key: c.t(key) for key in i18n.JS_MESSAGES},
                 unit_fmt=lambda value: c.t("{count} units", count=f"{value:g}"),
                 unread=notifications.unread_count(c.db, c.user), ok=req.query_params.get("ok"), err=req.query_params.get("err"))
     base.update(kw)
+    base.setdefault("crumbs", _crumbs(c, req.url.path, kw.get("crumb")))
+    if name == "sales_product.html" and kw.get("sales_products_url"):
+        back_url = kw["sales_products_url"]
+        base["crumbs"] = [(label, back_url if url == "/sales/products" else url) for label, url in base["crumbs"]]
     return templates.TemplateResponse(req, name, base)
 
 
@@ -247,7 +319,7 @@ def render_public(request: Request, name: str, status_code: int = 200, **kw):
     kw.setdefault("ok", request.query_params.get("ok"))
     kw.setdefault("err", request.query_params.get("err"))
     lang = i18n.norm(request.cookies.get(i18n.COOKIE_NAME))
-    return templates.TemplateResponse(request, name, dict(request=request, company="The Daily Centro", lang=lang,
+    return templates.TemplateResponse(request, name, dict(request=request, company="The Daily Centro", lang=lang, asset_v=asset_v,
                                                           ui_messages={key: i18n.translate(lang, key) for key in i18n.JS_MESSAGES},
                                                           t=lambda s, **values: i18n.translate(lang, s, **values), **kw), status_code=status_code)
 

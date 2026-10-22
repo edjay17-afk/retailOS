@@ -45,11 +45,12 @@ def build(db: Session, location_ids: list[int]) -> dict:
     if recs:
         pend = [r for r in recs if r.status == "pending"]
         nr = [r for r in recs if r.status == "needs_review"]
-        at_risk = [r for r in recs if r.days_cover is not None and r.days_cover < max(r.lead_time, 1)]
+        sales_only = cfg.get(db, "repl.mode") != "stock_and_sales"
+        at_risk = [] if sales_only else [r for r in recs if r.days_cover is not None and r.days_cover < max(r.lead_time, 1)]
         items.append({"priority": "high" if at_risk else "medium", "title": f"{len(pend)} order suggestion(s) ready, {len(nr)} need review", "location": None,
                       "facts": [f"Suggested value of ready items: {sum(r.value for r in pend):,.2f}",
-                                f"{len(at_risk)} of these are for items with less stock than their lead time needs (including items whose stock count is negative)"],
-                      "calculations": ["Suggestions use average daily sales x (lead time + review period) + safety stock, less stock on hand and incoming"],
+                                "Sales-only replenishment: stock on hand and days of stock cover are not used." if sales_only else f"{len(at_risk)} of these are for items with less stock than their lead time needs (including items whose stock count is negative)"],
+                      "calculations": [f"Suggestions use max(0, average daily sales x {cfg.get(db, 'repl.sales_only_cover_days')} cover days - incoming), followed by pack, minimum and maximum order rules." if sales_only else "Suggestions use average daily sales x (lead time + review period) + safety stock, less stock on hand and incoming"],
                       "recommendation": "Review the suggestions; approve, modify or reject each with a reason.", "link": "/replenishment"})
 
     # 4. purchase orders far past their date

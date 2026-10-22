@@ -59,7 +59,7 @@ def shared_limiter(rps: float) -> RateLimiter:
 
 
 class StoreHubClient:
-    """Only GET requests are ever made. StoreHub's write endpoints are deliberately not exposed here."""
+    """Reads are the everyday use; the single write is create_product (new-product entry pushes straight to StoreHub)."""
 
     MAX_ATTEMPTS = 5
 
@@ -143,3 +143,42 @@ class StoreHubClient:
         if store_id:
             p["storeId"] = store_id
         return self.get("/timesheets", p)
+
+    # ---- the one write: create a product (partner API: POST /products returns the created product)
+    def create_product(self, payload: dict) -> dict:
+        """POST /products with the same throttling and back-off as reads. 401/403 stop at once, 429/5xx/timeouts retry;
+        any other 4xx (a duplicate barcode or SKU, a bad field) raises ApiError carrying StoreHub's own message."""
+        last_exc: Exception | None = None
+        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+            self.limiter.wait()
+            started = time.monotonic()
+            self.calls += 1
+            try:
+                resp = self.http.post("/products", json=payload)
+            except (httpx.TimeoutException, httpx.TransportError) as e:
+                ms = int((time.monotonic() - started) * 1000)
+                self._record_error("/products", payload, None, type(e).__name__, attempt, ms, str(e))
+                last_exc = e
+                self.retries += 1
+                self.sleep(min(2 ** attempt, 30))
+                continue
+            ms = int((time.monotonic() - started) * 1000)
+            sc = resp.status_code
+            if sc in (200, 201):
+                try:
+                    return resp.json()
+                except ValueError as e:
+                    self._record_error("/products", payload, sc, "BadJson", attempt, ms, resp.text[:500])
+                    raise ApiError("POST /products: response was not valid JSON") from e
+            if sc in (401, 403):
+                self._record_error("/products", payload, sc, "AuthError", attempt, ms, resp.text)
+                raise AuthError(f"POST /products: HTTP {sc} (check the StoreHub username and token)")
+            if sc == 429 or sc >= 500:
+                self._record_error("/products", payload, sc, "Retryable", attempt, ms, resp.text)
+                last_exc = ApiError(f"POST /products: HTTP {sc}")
+                self.retries += 1
+                self.sleep(min(5 * attempt if sc == 429 else 2 ** attempt, 60))
+                continue
+            self._record_error("/products", payload, sc, "ClientError", attempt, ms, resp.text)
+            raise ApiError(f"POST /products: HTTP {sc}: {resp.text[:300]}")
+        raise ApiError(f"POST /products: failed after {self.MAX_ATTEMPTS} attempts ({last_exc})")

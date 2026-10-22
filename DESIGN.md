@@ -2,16 +2,16 @@
 version: alpha
 name: RetailOS
 colors:
-  background: "#f6f7f9"
+  background: "#f7f8f5"
   surface: "#ffffff"
-  secondary: "#f2f4f7"
-  divider: "#e5e7eb"
-  input-border: "#cbd1db"
-  ink: "#101828"
-  muted: "#667085"
-  primary: "#2e6bff"
-  primary-hover: "#1e56e0"
-  primary-soft: "#e9efff"
+  secondary: "#f0f3ef"
+  divider: "#dde3de"
+  input-border: "#cdd6cf"
+  ink: "#182522"
+  muted: "#64736d"
+  primary: "#0f766e"
+  primary-hover: "#115e59"
+  primary-soft: "#e6f4f1"
 typography:
   body:
     fontFamily: "Inter, Segoe UI Variable Text, Segoe UI, system-ui, sans-serif"
@@ -37,11 +37,11 @@ The October 2026 user instruction supersedes the earlier Dribbble redesign reque
 
 ## Colors
 
-Runtime CSS is canonical (ownership model B). `app/web/static/workspace.css` owns tokens over `style.css` and `chat_and_charts.css`; frontmatter mirrors accepted runtime values. Background maps to `--bg`, secondary to `--surface2`, divider to `--line`, input-border to `--line2`, ink to `--ink`, muted to `--mute`, and primary colours to `--primary`, `--primary-h`, `--primary-soft`. Status colours retain their distinct semantic meanings with text. Brand lime remains on the R mark; AI actions use solid purple.
+Runtime CSS is canonical (ownership model B). `app/web/static/workspace.css` owns tokens over `style.css` and `chat_and_charts.css`; frontmatter mirrors accepted runtime values. Background maps to `--bg`, secondary to `--surface2`, divider to `--line`, input-border to `--line2`, ink to `--ink`, muted to `--mute`, and primary colours to `--primary`, `--primary-h`, `--primary-soft`. Status colours retain their distinct semantic meanings with text. Brand lime remains on the R mark; AI actions use deep teal.
 
 ## Typography
 
-Inter retains system fallbacks and Chinese system glyph support. Tables and metrics use tabular numbers. Sentence-case labels reduce visual noise. Georgia is limited to the R brand mark. Important amounts must remain readable at narrow widths.
+Inter retains system fallbacks and Chinese system glyph support. Tables and metrics use tabular numbers. Sentence-case labels reduce visual noise. The R brand mark retains its lime background. Important amounts must remain readable at narrow widths.
 
 ## Layout
 
@@ -66,3 +66,5 @@ Charts display actual values with precise tooltips and keyboard focus. Bars reve
 ## Do's and Don'ts
 
 Use shared controls and tokens across pages. Preserve CSRF protection, permissions and source-of-truth rules. Provide visible focus, honest empty states and persistent failures. Do not invent trends, targets or live-sync claims. Use app-owned confirmation for destructive actions. Do not apply the abandoned reference redesign.
+
+The approved palette uses deep teal actions, warm neutral surfaces, charcoal text and lime branding. Dark mode uses a pure-black page background with neutral near-black surfaces and lighter teal links; filled buttons retain deep teal with white text. Status colours and distinct chart series retain their semantic roles. Layouts and workflows are unchanged by the palette update.

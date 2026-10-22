@@ -81,9 +81,9 @@ def process_inbox(db: Session) -> dict:
     return out
 
 
-def robot_due(db: Session, every_minutes: int | None = None, retry_minutes: int = 30) -> bool:
-    """True when the robot should run: the last import is old enough, and the robot has not already tried in the last half hour.
-    Called every 10 minutes, so after a sleep, a shutdown or a restart the robot catches up within minutes instead of waiting for the next fixed hour."""
+def robot_due(db: Session, every_minutes: int | None = None, retry_minutes: int = 20) -> bool:
+    """Run when the import is old enough and the retry cooldown has elapsed.
+    Checked every minute so a completed export does not push the next fetch into a later ten-minute slot."""
     every = timedelta(minutes=every_minutes or get_config().robot_every_minutes)
     now = now_utc()
     last = last_import_at(db)

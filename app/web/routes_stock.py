@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import csv
 import io
+from urllib.parse import parse_qsl, urlencode
 from collections import defaultdict
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import selectinload
 
@@ -15,7 +16,7 @@ from .. import audit
 from .. import settings_service as cfg
 from ..models import (Employee, InventoryCurrent, Location, OrderBatch, Payment, Product, PurchaseOrder, Recommendation, ReplRun, SalesDay, SalesDayProduct,
                       SalesLine, SalesTx, Supplier)
-from ..services import dq, freshness, purchasing, receiving, replenishment, transfers
+from ..services import dq, freshness, purchasing, receiving, replenishment, replenishment_sheets, transfer_sheets, transfers
 from ..timeutil import fmt_local, now_utc, today_local
 from .deps import Ctx, need, redirect, render, parse_float
 
@@ -101,7 +102,7 @@ def inventory(loc: int = 0, q: str = "", status: str = "", category: str = "", i
 # ======================================================================================= sales
 @router.get("/sales/products")
 def sales_by_product(loc: int = 0, days: str = "14", q: str = "", category: str = "", sort: str = "sales", page: int = 1, export: str = "",
-                     frm: str = "", to: str = "", c: Ctx = Depends(need("sales.view"))):
+                     frm: str = "", to: str = "", supplier: int = 0, c: Ctx = Depends(need("sales.view"))):
     """Every product sold in the period, from the line items of StoreHub transactions. loc=0 combines all locations the user may see.
     Period is a preset (days=N) or a custom range (days=custom&frm=YYYY-MM-DD&to=YYYY-MM-DD)."""
     db = c.db
@@ -110,12 +111,11 @@ def sales_by_product(loc: int = 0, days: str = "14", q: str = "", category: str 
     if custom:
         try:
             f_, t_ = date.fromisoformat(frm), date.fromisoformat(to)
-            if f_ > t_ or (t_ - f_).days > 365 or t_ > end:
+            if f_ > t_ or (t_ - f_).days > 400 or t_ > end:
                 raise ValueError
-            start, n_days = f_, (t_ - f_).days + 1
+            start, n_days, end = f_, (t_ - f_).days + 1, t_
         except ValueError:
-            custom, n_days, frm, to = False, 14, "", ""
-            start = end - timedelta(days=n_days - 1)
+            raise HTTPException(400, "Invalid date range. Enter valid dates, with From on or before To, no future dates, and no more than 401 days.")
     else:
         n_days = min(max(int(days) if days.isdigit() else 14, 1), 365)
         start = end - timedelta(days=n_days - 1)
@@ -134,22 +134,65 @@ def sales_by_product(loc: int = 0, days: str = "14", q: str = "", category: str 
         stmt = stmt.where(Product.name.ilike(like) | Product.barcode.ilike(like) | Product.sku.ilike(like))
     if category:
         stmt = stmt.where(Product.category == category)
+    if supplier:
+        stmt = stmt.where(Product.supplier_id == supplier)
     order = {"units": sold.c.units.desc(), "name": Product.name.asc(), "price": (sold.c.net / sold.c.units).desc()}.get(sort, sold.c.net.desc())
     rows = list(db.execute(stmt.order_by(order, Product.name)))
     total_net = sum(r[2] or 0 for r in rows) or 0.0
     total_units = sum(r[1] or 0 for r in rows) or 0.0
-    if export == "csv":
+    if export in ("csv", "detailed"):
         out = io.StringIO()
         w = csv.writer(out)
-        w.writerow(["Product", "Barcode", "Category", "Units sold", "Net sales", "Share of sales %", "Average price", "Days with sales"])
-        for prod, units, net, ds in rows:
-            w.writerow([prod.name, prod.barcode or "", prod.category or "", f"{units:g}", f"{net:.2f}", f"{(net / total_net * 100) if total_net else 0:.2f}",
-                        f"{(net / units) if units else 0:.2f}", ds])
+        if export == "detailed":
+            supplier_names = dict(db.execute(select(Supplier.id, Supplier.name)).all())
+            location_name = next((l.name for l in c.locations() if l.id == loc), "All selected locations")
+            filtered_ids = stmt.with_only_columns(Product.id).order_by(None)
+            daily = {(pid, day): (units or 0, net or 0) for pid, day, units, net in db.execute(
+                select(SalesDayProduct.product_id, SalesDayProduct.business_date, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).where(
+                    SalesDayProduct.product_id.in_(filtered_ids), SalesDayProduct.location_id.in_(ids or [0]),
+                    SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end
+                ).group_by(SalesDayProduct.product_id, SalesDayProduct.business_date))}
+            dates = [start + timedelta(days=offset) for offset in range(n_days)]
+            headers = ["Product", "Barcode", "SKU", "Category", "Supplier", "Location",
+                       "Total units sold", "Total net sales (PHP)", "Average price (PHP)"]
+            for day in dates:
+                headers.extend([f"{day.isoformat()} | Units", f"{day.isoformat()} | Net sales (PHP)"])
+            w.writerow(headers)
+            daily_totals = {day: [0.0, 0.0] for day in dates}
+            for prod, product_units, product_net, _ in rows:
+                product_units, product_net = product_units or 0, product_net or 0
+                values = [prod.name, prod.barcode or "", prod.sku or "", prod.category or "",
+                          supplier_names.get(prod.supplier_id, ""), location_name, f"{product_units:g}", f"{product_net:.2f}",
+                          f"{product_net / product_units:.2f}" if product_units else "0.00"]
+                for day in dates:
+                    units, net = daily.get((prod.id, day), (0, 0))
+                    values.extend([f"{units:g}", f"{net:.2f}"])
+                    daily_totals[day][0] += units
+                    daily_totals[day][1] += net
+                w.writerow(values)
+            if rows:
+                totals = ["GRAND TOTAL", "", "", "", "", location_name, f"{total_units:g}", f"{total_net:.2f}",
+                          f"{total_net / total_units:.2f}" if total_units else "0.00"]
+                for day in dates:
+                    units, net = daily_totals[day]
+                    totals.extend([f"{units:g}", f"{net:.2f}"])
+                w.writerow(totals)
+        else:
+            w.writerow(["Product", "Barcode", "Category", "Units sold", "Net sales", "Share of sales %", "Average price", "Days with sales"])
+            for prod, units, net, ds in rows:
+                w.writerow([prod.name, prod.barcode or "", prod.category or "", f"{units:g}", f"{net:.2f}", f"{(net / total_net * 100) if total_net else 0:.2f}",
+                            f"{(net / units) if units else 0:.2f}", ds])
         audit.log(db, actor_type="user", actor_id=c.user.id, action="export_sales_by_product", entity_type="report", entity_id="sales_by_product",
-                  after={"rows": len(rows), "days": n_days, "custom": f"{frm}..{to}" if custom else "", "location": loc})
+                  after={"rows": len(rows), "days": n_days, "custom": f"{frm}..{to}" if custom else "", "location": loc, "supplier": supplier, "category": category, "search": q, "format": export})
         db.commit()
         fname = f"sales-by-product-{frm}-to-{to}.csv" if custom else f"sales-by-product-{n_days}d.csv"
+        if export == "detailed":
+            fname = f"sales-by-product-daily-{start}-to-{end}.csv"
         return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+    unlisted = 0.0  # sold items whose product StoreHub no longer lists are not in a product row; say so, so the period still adds up to the day totals
+    if not q.strip() and not category and not supplier:
+        day_net = db.scalar(select(func.sum(SalesDay.net_sales)).where(SalesDay.location_id.in_(ids or [0]), SalesDay.business_date >= start, SalesDay.business_date <= end)) or 0.0
+        unlisted = round(day_net - total_net, 2) if day_net - total_net > 0.5 else 0.0
     page = max(page, 1)
     shown = rows[(page - 1) * PAGE: page * PAGE]
     day_list = [start + timedelta(days=i) for i in range(n_days)] if n_days <= 60 else []
@@ -166,11 +209,12 @@ def sales_by_product(loc: int = 0, days: str = "14", q: str = "", category: str 
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
     return render(c, "sales_products.html", rows=shown, series=series, labels=[d.strftime("%a %d %b") for d in day_list], total=len(rows), total_net=total_net,
                   total_units=total_units, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, q=q, category=category,
-                  sort=sort, cats=cats, fr=fr, custom=custom, frm=frm, to=to)
+                  supplier=supplier, suppliers=list(db.scalars(select(Supplier).order_by(Supplier.name))), range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today_local().isoformat(),
+                  sort=sort, cats=cats, fr=fr, custom=custom, frm=frm, to=to, unlisted=unlisted)
 
 
 @router.get("/sales/product/{pid}")
-def sales_of_product(pid: int, days: str = "30", frm: str = "", to: str = "", c: Ctx = Depends(need("sales.view"))):
+def sales_of_product(pid: int, days: str = "30", frm: str = "", to: str = "", list_query: str = "", loc: int = 0, c: Ctx = Depends(need("sales.view"))):
     """One product: its sales per day and per store, with the stock position next to it.
     Period is a preset (days=N) or a custom range (days=custom&frm=YYYY-MM-DD&to=YYYY-MM-DD)."""
     db = c.db
@@ -183,16 +227,18 @@ def sales_of_product(pid: int, days: str = "30", frm: str = "", to: str = "", c:
     if custom:
         try:
             f_, t_ = date.fromisoformat(frm), date.fromisoformat(to)
-            if f_ > t_ or (t_ - f_).days > 365 or t_ > today:
+            if f_ > t_ or (t_ - f_).days > 400 or t_ > today:
                 raise ValueError
             start, end, days = f_, t_, (t_ - f_).days + 1
         except ValueError:
-            custom, days, frm, to = False, 30, "", ""
-            start = today - timedelta(days=days - 1)
+            raise HTTPException(400, "Invalid date range. Enter valid dates, with From on or before To, no future dates, and no more than 401 days.")
     else:
-        days = min(max(int(days) if days.isdigit() else 30, 7), 180)
+        days = min(max(int(days) if days.isdigit() else 30, 1), 365)
         start = end - timedelta(days=days - 1)
     locs = c.locations()
+    if loc:
+        c.check_loc(loc)
+        locs = [l for l in locs if l.id == loc]
     ids = [l.id for l in locs]
     rows = list(db.execute(select(SalesDayProduct.business_date, SalesDayProduct.location_id, SalesDayProduct.units, SalesDayProduct.net_sales).where(
         SalesDayProduct.product_id == pid, SalesDayProduct.location_id.in_(ids or [0]), SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end)))
@@ -220,8 +266,30 @@ def sales_of_product(pid: int, days: str = "30", frm: str = "", to: str = "", c:
                        "cover": (max(oh, 0) / ads) if (oh is not None and ads > 0) else None})
     stores.sort(key=lambda s: -s["net"])
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
-    return render(c, "sales_product.html", p=p, days=days, total_units=total_units, total_net=total_net, best=best, stores=stores, fr=fr,
+    # Keep list navigation local and carry only supported filters (never export actions).
+    list_filters = [(key, value) for key, value in parse_qsl(list_query)
+                    if key in {"loc", "days", "frm", "to", "supplier", "category", "q", "sort", "page"}]
+    list_query = urlencode(list_filters)
+    fallback = {"loc": loc, "days": "custom", "frm": frm, "to": to} if custom else {"loc": loc, "days": days}
+    sales_products_url = "/sales/products?" + (list_query or urlencode(fallback))
+    return render(c, "sales_product.html", loc=loc, selected_location=locs[0].name if loc and locs else "All my locations", list_query=list_query, sales_products_url=sales_products_url, p=p, days=days, total_units=total_units, total_net=total_net, best=best, stores=stores, fr=fr,
                   series_units=series_units, daily=sorted(per_day.items(), reverse=True), custom=custom, frm=frm, to=to)
+
+
+@router.get("/sales/report.xlsx")
+def sales_report(loc: int = 0, c: Ctx = Depends(need("sales.view"))):
+    """The whole sales history of one store as an Excel file in the layout of StoreHub's sales report (a sheet per month, Monthly Summary, All Sales)."""
+    from ..services import sales_report
+    location = _pick_loc(c, loc, prefer="store")
+    if location is None:
+        raise HTTPException(404)
+    if not c.db.scalar(select(func.count()).select_from(SalesDay).where(SalesDay.location_id == location.id)):
+        return redirect(f"/sales?loc={location.id}", err=c.t("There are no sales for this store yet."))
+    raw = sales_report.workbook(c.db, location)
+    audit.log(c.db, actor_type="user", actor_id=c.user.id, action="export_sales_report", entity_type="report", entity_id="sales_report", after={"location": location.id})
+    c.db.commit()
+    return Response(raw, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f'attachment; filename="{sales_report.file_name(location)}"'})
 
 
 @router.get("/sales")
@@ -234,12 +302,11 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
     if custom:
         try:
             f_, t_ = date.fromisoformat(frm), date.fromisoformat(to)
-            if f_ > t_ or (t_ - f_).days > 180 or t_ > today:
+            if f_ > t_ or (t_ - f_).days > 400 or t_ > today:
                 raise ValueError
             start, n_days, end = f_, (t_ - f_).days + 1, t_
         except ValueError:
-            custom, frm, to, n_days = False, "", "", 14
-            start = today - timedelta(days=n_days - 1)
+            raise HTTPException(400, "Invalid date range. Enter valid dates, with From on or before To, no future dates, and no more than 401 days.")
     else:
         n_days = min(max(int(days) if days.isdigit() else 14, 1), 120)
         start = today - timedelta(days=n_days - 1)
@@ -272,22 +339,22 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
             SalesDay.location_id == location.id, SalesDay.business_date >= start - timedelta(days=n_days), SalesDay.business_date < start))}
         compare = [prev.get(r.business_date - timedelta(days=n_days), 0.0) for r in reversed(rows)] if prev else []
     return render(c, "sales.html", chart=chart, compare=compare, rows=rows, top=top, location=location, locations=c.locations(), days=n_days, mx=mx, totals=totals, fr=fr,
-                  custom=custom, frm=frm, to=to)
+                  custom=custom, frm=frm, to=to, range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today.isoformat())
 
 
 # ======================================================================================= transactions
 def _period(days: str, frm: str, to: str, default: int = 14, cap: int = 180):
     """Period shared by the transaction pages: a preset (days=N) or a custom range (days=custom&frm&to).
-    Returns (start, end, n_days, custom, frm, to); an invalid custom range falls back to the preset."""
+    Returns (start, end, n_days, custom, frm, to); an invalid custom range returns an explicit error."""
     today = today_local()
     if days == "custom":
         try:
             f_, t_ = date.fromisoformat(frm), date.fromisoformat(to)
-            if f_ > t_ or (t_ - f_).days > 365 or t_ > today:
+            if f_ > t_ or (t_ - f_).days > 400 or t_ > today:
                 raise ValueError
             return f_, t_, (t_ - f_).days + 1, True, frm, to
         except ValueError:
-            pass
+            raise HTTPException(400, "Invalid date range. Enter valid dates, with From on or before To, no future dates, and no more than 401 days.")
     n = min(max(int(days) if days.isdigit() else default, 1), cap)
     return today - timedelta(days=n - 1), today, n, False, "", ""
 
@@ -352,7 +419,8 @@ def sales_transactions(loc: int = 0, days: str = "14", frm: str = "", to: str = 
     employees = sorted(_emp_names(db, emp_ids).items(), key=lambda kv: kv[1])
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
     return render(c, "sales_tx.html", txs=txs, names=names, pays=pays, units=units, loc_names=loc_names, employees=employees, emp=emp, q=q,
-                  total=total, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, custom=custom, frm=frm, to=to, fr=fr)
+                  total=total, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, custom=custom, frm=frm, to=to, fr=fr,
+                  range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today_local().isoformat())
 
 
 @router.get("/sales/tx/{txid}")
@@ -422,6 +490,7 @@ def sales_by_employee(loc: int = 0, days: str = "14", frm: str = "", to: str = "
 @router.get("/replenishment")
 def replenishment_page(loc: int = 0, status: str = "pending", supplier: int = 0, page: int = 1, search: str = "", c: Ctx = Depends(need("repl.view"))):
     db = c.db
+    replenishment.ensure_current(db)
     ids = c.location_ids
     q = (select(Recommendation).join(Location, Location.id == Recommendation.location_id)
          .where(Recommendation.location_id.in_(ids or [0]), Recommendation.business_date == today_local(), Location.type == "store")
@@ -475,11 +544,38 @@ def replenishment_decide(rec_id: int, action: str = Form(...), qty: str = Form("
         raise HTTPException(404)
     c.check_loc(rec.location_id)
     try:
-        replenishment.decide(c.db, rec, c.user, action, parse_float(qty), reason or None, note or None)
+        if action == "save":
+            replenishment_sheets.save_quantity(c.db, rec, c.user, qty)
+        else:
+            replenishment.decide(c.db, rec, c.user, action, parse_float(qty), reason or None, note or None)
     except replenishment.DecisionError as e:
         c.db.rollback()
+        if action == "save" and c.request.headers.get("X-Requested-With") == "fetch":
+            return JSONResponse({"error": c.t(str(e))}, status_code=400)
         return redirect(back, err=str(e))
+    if action == "save":
+        c.db.commit()
+        if c.request.headers.get("X-Requested-With") == "fetch":
+            return JSONResponse({"quantity": rec.saved_qty, "message": c.t("Saved")})
+        return redirect(back, ok=c.t("Saved"))
     return redirect(back, ok=f"{rec.product.name}: {rec.status}")
+
+
+@router.post("/replenishment/transfer-sheets")
+def replenishment_transfer_sheets(ids: list[int] = Form(default=[]), csrf: str = Form(""),
+                                 c: Ctx = Depends(need("repl.decide"))):
+    c.check_csrf(csrf)
+    if not c.can("transfer.sheet"):
+        raise HTTPException(403, "Your role does not allow transfer sheet creation")
+    try:
+        sheets = replenishment_sheets.create_sheets(c.db, c.user, ids, c.location_ids)
+        c.db.commit()
+    except (replenishment.DecisionError, transfer_sheets.SheetError) as e:
+        c.db.rollback()
+        return redirect("/replenishment", err=c.t(str(e)))
+    names = ", ".join(f"TS-{s.id:05d}" for s in sheets)
+    target = f"/transfer-sheets/{sheets[0].id}" if len(sheets) == 1 else "/transfer-sheets"
+    return redirect(target, ok=c.t("Transfer sheets created") + ": " + names)
 
 
 @router.post("/replenishment/bulk")
@@ -492,7 +588,7 @@ def replenishment_bulk(ids: list[int] = Form(default=[]), csrf: str = Form(""), 
             continue
         try:
             with c.db.begin_nested():
-                replenishment.decide(c.db, rec, c.user, "approve")
+                replenishment.decide(c.db, rec, c.user, "approve", rec.saved_qty)
             n += 1
         except replenishment.DecisionError:
             fail += 1
@@ -510,7 +606,7 @@ def batches_create(csrf: str = Form(""), c: Ctx = Depends(need("repl.decide"))):
 def batches(c: Ctx = Depends(need("repl.view"))):
     db = c.db
     q = select(OrderBatch).where(OrderBatch.location_id.in_(c.location_ids or [0]))
-    if not c.can("transfer.view"):  # warehouse-to-store transfer batches are for the warehouse team and admins only
+    if not c.can("transfer.receive"):  # warehouse-to-store transfer batches are for the warehouse team and admins only
         q = q.where(OrderBatch.source_kind != "transfer")
     q = (q.order_by(OrderBatch.id.desc()).limit(60)
          .options(selectinload(OrderBatch.supplier), selectinload(OrderBatch.location), selectinload(OrderBatch.lines).selectinload(Recommendation.product)))
@@ -521,7 +617,7 @@ def batches(c: Ctx = Depends(need("repl.view"))):
 def batch_csv(bid: int, c: Ctx = Depends(need("repl.view"))):
     b = c.db.scalar(select(OrderBatch).where(OrderBatch.id == bid).options(selectinload(OrderBatch.lines).selectinload(Recommendation.product),
                                                                          selectinload(OrderBatch.supplier), selectinload(OrderBatch.location)))
-    if b is None or (b.source_kind == "transfer" and not c.can("transfer.view")):
+    if b is None or (b.source_kind == "transfer" and not c.can("transfer.receive")):
         raise HTTPException(404)
     c.check_loc(b.location_id)
     out = io.StringIO()
@@ -585,7 +681,8 @@ def po_detail(po_id: int, c: Ctx = Depends(need("po.view"))):
     kind = purchasing.classify_po(po, int(cfg.get(c.db, "po.stale_days")))
     from ..services import order_documents
     return render(c, "po_detail.html", po=po, kind=kind, document=order_documents.document(c.db, po, "po"),
-                  document_base=f"/purchase-orders/{po.id}", exact=order_documents.display)
+                  document_base=f"/purchase-orders/{po.id}", exact=order_documents.display, six=order_documents.six_decimals,
+                  calculated_po=order_documents.calculate(order_documents.initial(c.db, po, "po")))
 
 
 from ..models import PoLine  # noqa: E402  (used in po_detail)

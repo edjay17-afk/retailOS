@@ -12,6 +12,8 @@ demand of all stores. A run is blocked when sales, inventory or purchase-order d
 from __future__ import annotations
 
 import math
+from threading import RLock
+from functools import wraps
 from collections import defaultdict
 from datetime import timedelta, datetime
 
@@ -161,7 +163,36 @@ def replay_all(db: Session) -> dict:
     return {"total": total, "ok": ok, "skipped": skipped, "failed": len(failures), "failures": failures[:20]}
 
 
+_run_lock = RLock()
+
+
+def serialized(fn):
+    @wraps(fn)
+    def guarded(*args, **kwargs):
+        with _run_lock:
+            return fn(*args, **kwargs)
+    return guarded
+
+
+def ensure_current(db: Session) -> ReplRun:
+    """Refresh local suggestions on first visit and at most every five minutes.
+
+    No external sync, approval, transfer creation, or StoreHub write is performed.
+    The freshness guard in run() still applies. Share the manual/scheduled run lock.
+    """
+    with _run_lock:
+        latest = db.scalar(select(ReplRun).order_by(ReplRun.id.desc()).limit(1))
+        if (latest and latest.business_date == today_local()
+                and latest.run_at >= now_utc() - timedelta(minutes=5)
+                and all(cfg.get(db, key) == value for key, value in (latest.params or {}).items())):
+            return latest
+        result = run(db)
+        db.commit()
+        return result
+
+
 # ======================================================================================= engine run
+@serialized
 def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplRun:
     """Generate recommendations for today. Idempotent per (location, product, day, calculation version)."""
     today = today_local()

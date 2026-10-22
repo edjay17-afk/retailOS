@@ -1,42 +1,52 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Expiry') }}{% endblock %}
 {% block content %}
-<div class="page-head"><h1>{{ t('Expiry tracker') }}</h1>
-  <form novalidate class="filters" method="get" style="margin:0"><div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div></form></div>
-
+<link rel="stylesheet" href="/static/wastage_lookup.css?v={{ asset_v('wastage_lookup.css') }}">
+<link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<link rel="stylesheet" href="/static/expiry_workspace.css?v={{ asset_v('expiry_workspace.css') }}">
+<div class="expiry-workspace">
+<div class="page-head expiry-head"><div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Expiry tracker') }}</h1></div>
+  <div class="row expiry-actions"><button type="button" data-modal="expiry-record">{{ t('Record a batch') }}</button><button type="button" class="sec" data-modal="counts-upload">{{ t('Upload') }} CSV</button></div>
+</div>
+<div class="expiry-toolbar">
+<form class="expiry-location" method="get"><label for="expiry-location">{{ t('Location') }}</label><select id="expiry-location" name="loc" onchange="this.form.submit()"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></form>
 {% set n_exp = rows|selectattr('1', 'lt', 0)|list|length %}
 {% set n_week = rows|selectattr('1', 'ge', 0)|selectattr('1', 'le', 7)|list|length %}
 {% set n_month = rows|selectattr('1', 'gt', 7)|selectattr('1', 'le', 30)|list|length %}
-<div class="expiry-chips">
+<div class="expiry-chips" id="expiry-summary">
   <span>{{ t('Expired') }} <b style="color:var(--bad)">{{ n_exp }}</b></span>
   <span>{{ t('Within 7 days') }} <b style="color:#b45309">{{ n_week }}</b></span>
   <span>{{ t('8 to 30 days') }} <b>{{ n_month }}</b></span>
   <span>{{ t('Batches tracked') }} <b>{{ rows|length }}</b></span>
 </div>
 
-<div class="tw"><table class="wide rt"><thead><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Expiry') }}</th><th scope="col">{{ t('Days left') }}</th><th scope="col">{{ t('Batch') }}</th><th></th></tr></thead><tbody>
+</div>
+<div class="tw" id="expiry-records"><table class="wide rt"><thead><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Expiry') }}</th><th scope="col">{{ t('Days left') }}</th><th scope="col">{{ t('Batch') }}</th><th></th></tr></thead><tbody>
 {% for b, left, stage in rows %}<tr><td data-label="{{ t('Product') }}" class="rt-main">{{ b.product.name }}</td><td data-label="{{ t('Location') }}" class="small">{{ b.location.name }}</td><td data-label="{{ t('Qty') }}" class="right">{{ b.qty|num }}</td><td data-label="{{ t('Expiry') }}" class="nowrap">{{ b.expiry_date }}</td>
 <td data-label="{{ t('Days left') }}"><span class="badge {{ 'b-bad' if left <= 3 else 'b-warn' if left <= 14 else 'b-ok' }}">{{ t('expired') if left < 0 else left }}</span></td><td data-label="{{ t('Batch') }}" class="small">{{ b.batch_no or '—' }}</td>
 <td class="rt-act"><details><summary class="small">{{ t('Clear') }}</summary><div class="expl"><form novalidate method="post" action="/expiry/{{ b.id }}/clear"><input type="hidden" name="csrf" value="{{ csrf }}"><input name="note" placeholder="{{ t('Note') }}" style="width:100%">
 <div class="row" style="margin-top:6px"><button name="status" value="cleared" class="sm sec">{{ t('Sold / returned') }}</button><button name="status" value="written_off" class="sm bad">{{ t('Written off') }}</button></div></form></div></details></td></tr>
 {% else %}<tr class="rt-empty"><td colspan="7"><div class="empty">{{ t('No batches recorded yet.') }}</div></td></tr>{% endfor %}</tbody></table></div>
 
-<details class="exp-tool"><summary>{{ t('Record a batch') }}</summary><div class="body">
-  <form novalidate method="post" action="/expiry/add" class="ffi ffi-record"><input type="hidden" name="csrf" value="{{ csrf }}">
+<dialog id="expiry-record" class="modal counts-upload" aria-labelledby="expiry-record-title"><div class="counts-upload-head"><h2 id="expiry-record-title">{{ t('Record a batch') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div><p id="expiry-record-message" class="small" role="status" aria-live="polite"></p>
+  <form method="post" action="/expiry/add" id="expiry-record-form" data-nobusy class="ffi ffi-record"><input type="hidden" name="csrf" value="{{ csrf }}">
     <div><label>{{ t('Location') }}</label><select name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>
-    <div><label>{{ t('Product') }}</label><input name="search" placeholder="{{ t('Scan barcode or type product name') }}" required></div>
+    <div><label>{{ t('Product') }}</label><div class="expiry-scan-row waste-product-control"><div class="waste-lookup"><input id="expiry-product-code" name="search" data-scan-fill-only data-product-lookup="/expiry/products" placeholder="{{ t('Scan barcode or type product name') }}" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="waste-products"><input type="hidden" id="waste-product-id" name="product_id" value="0"><div id="waste-products" role="listbox" hidden></div></div><button type="button" class="sec" data-scan="expiry-product-code" aria-label="{{ t('Scan') }}" title="{{ t('Scan') }}"><svg class="i"><use href="#i-scan"/></svg></button></div><div id="waste-lookup-status" class="small mute" role="status" aria-live="polite"></div></div>
     <div><label>{{ t('Qty') }}</label><input type="number" step="any" min="0.01" name="qty" required inputmode="decimal"></div>
     <div><label>{{ t('Expiry') }}</label><input type="date" name="expiry" required></div>
     <div><label>{{ t('Batch (optional)') }}</label><input name="batch_no"></div>
     <div><button>{{ t('Add') }}</button></div>
-  </form></div></details>
-<details class="exp-tool"><summary>{{ t('Upload a CSV or Excel file') }}</summary><div class="body">
+  </form></dialog>
+<dialog id="counts-upload" class="modal counts-upload" aria-labelledby="expiry-upload-title"><div class="counts-upload-head"><h2 id="expiry-upload-title">{{ t('Upload a CSV or Excel file') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>
   <form novalidate method="post" action="/expiry/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
     <div><label>{{ t('Location') }}</label><select name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
     <div><label>{{ t('File') }}</label><input type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
     <div><button>{{ t('Upload') }}</button></div>
   </form>
   <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Expiry date, Batch (optional), Location (optional if one is chosen above). Uploading the same file twice does not duplicate batches.') }} <a href="/expiry/template.csv">{{ t('Download template') }}</a></div>
-  </div></details>
-<p class="small mute" style="max-width:760px;margin-top:12px">{{ t('StoreHub has no expiry dates, so they are captured here: when receiving a PO, or during the expiry sweep. Warnings come at 30, 14, 7 and 3 days. Only items recorded here are tracked.') }}</p>
+  </dialog>
+<p class="small mute expiry-help">{{ t('StoreHub has no expiry dates, so they are captured here: when receiving a PO, or during the expiry sweep. Warnings come at 30, 14, 7 and 3 days. Only items recorded here are tracked.') }}</p>
+</div>
 {% endblock %}
+
+{% block scripts %}<script src="/static/wastage_lookup.js?v={{ asset_v('wastage_lookup.js') }}"></script><script src="/static/scan.js?v={{ asset_v('scan.js') }}"></script><script src="/static/expiry_dialog.js?v={{ asset_v('expiry_dialog.js') }}"></script>{% endblock %}
