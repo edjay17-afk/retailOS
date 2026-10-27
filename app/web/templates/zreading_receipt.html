@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t('Z-Reading Receipt') }} | Retail OS</title>
+<style>
+@page { size: {{ 'A4 portrait' if bulk else '80mm 255mm' }}; margin: {{ '10mm' if bulk else '0' }}; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0 0 36px; background: #f1f5f9; color: #000; font-family: 'Courier New', Courier, monospace; -webkit-font-smoothing: antialiased; }
+.print-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 900px; margin: 0 auto; padding: 16px 18px; font-family: Inter, Arial, sans-serif; }
+.print-toolbar a, .print-toolbar button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 9px 15px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #0f172a; font: 600 13px Inter, Arial, sans-serif; text-decoration: none; cursor: pointer; }
+.print-toolbar button { background: #2563eb; border-color: #2563eb; color: #fff; }
+.print-toolbar a:hover, .print-toolbar button:hover { text-decoration: none; filter: brightness(1.08); }
+.receipts-wrap { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 24px; max-width: 1440px; margin: 0 auto; padding: 8px 18px 30px; }
+.receipt-sheet { display: contents; }
+.receipt { width: 80mm; flex: 0 0 80mm; background: #fff; padding: 2.5mm; border-radius: 3px; box-shadow: 0 3px 10px rgba(20,25,40,.14), 0 1px 2px rgba(20,25,40,.10); font-size: 8.5px; font-weight: bold; line-height: 1.25; break-inside: avoid; }
+.center { text-align: center; }
+.bold { font-weight: bold; }
+.title { margin: 2px 0; font-size: 9px; letter-spacing: .5px; }
+.divider { border-top: 1px dashed #000; margin: 1.5px 0; }
+.section-title { text-align: center; margin: 1.5px 0; font-size: 8.5px; font-weight: bold; white-space: nowrap; }
+table.rows, table.coll { width: 100%; border-collapse: collapse; }
+table.rows td { padding: .6px 0; vertical-align: top; }
+table.rows td.label { text-align: left; }
+table.rows td.val { text-align: right; white-space: nowrap; }
+table.coll th { text-align: left; font-weight: bold; border-bottom: 1px dashed #000; padding: 1px 0; }
+table.coll td { padding: .6px 0; }
+table.coll th.ctr, table.coll td.ctr { text-align: center; }
+table.coll th.amt, table.coll td.amt { text-align: right; }
+.empty { max-width: 600px; margin: 40px auto; padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; text-align: center; font: 14px/1.5 Inter, Arial, sans-serif; }
+@media (max-width: 480px) {
+  .print-toolbar { padding: 12px; }
+  .print-toolbar a, .print-toolbar button { flex: 1; padding: 9px 10px; }
+  .receipts-wrap { padding: 4px 8px 24px; }
+  .receipt { width: 80mm; max-width: calc(100vw - 16px); flex-basis: 80mm; }
+}
+@media print {
+  *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { width: {{ '190mm' if bulk else '80mm' }} !important; min-width: {{ '190mm' if bulk else '80mm' }} !important; max-width: {{ '190mm' if bulk else '80mm' }} !important; margin: 0 auto !important; padding: 0 !important; background: #fff !important; overflow: visible !important; }
+  .print-toolbar, .empty { display: none !important; }
+  .receipts-wrap { display: block !important; width: {{ '190mm' if bulk else '80mm' }} !important; min-width: {{ '190mm' if bulk else '80mm' }} !important; max-width: {{ '190mm' if bulk else '80mm' }} !important; margin: 0 auto !important; padding: 0 !important; gap: 0 !important; }
+  .receipt { display: block !important; width: 80mm !important; min-width: 80mm !important; max-width: 80mm !important; height: auto !important; margin: 0 !important; padding: 0 2.5mm .8mm !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+  .receipt-sheet:last-of-type { page-break-after: auto !important; break-after: auto !important; }
+{% if bulk %}
+  .receipt-sheet { display: flex !important; justify-content: center !important; align-items: flex-start !important; gap: 10mm !important; width: 190mm !important; margin: 0 !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
+  .receipt { flex: 0 0 80mm !important; }
+{% else %}
+  .receipt-sheet { display: block !important; width: 80mm !important; margin: 0 auto !important; page-break-after: always !important; break-after: page !important; }
+  .receipt { margin: 0 auto !important; }
+{% endif %}
+}
+</style>
+</head>
+<body>
+<nav class="print-toolbar" aria-label="{{ t('Receipt actions') }}">
+  <a href="{{ back }}">{{ t('Back to Z-Reading Reports') }}</a>
+  <button type="button" onclick="window.print()">{{ t('Print / Save PDF') }}</button>
+</nav>
+{% macro rows(pairs, bold_last=0) %}
+<table class="rows">
+  {% for label, value in pairs %}
+  <tr class="{{ 'bold' if bold_last and loop.index > pairs|length - bold_last else '' }}"><td class="label">{{ label }}{{ '' if label.endswith(':') else ':' }}</td><td class="val">{{ value }}</td></tr>
+  {% endfor %}
+</table>
+{% endmacro %}
+{% if receipts %}
+<div class="receipts-wrap">
+  {% for d in receipts %}
+  {% if loop.index0 % 2 == 0 %}<section class="receipt-sheet">{% endif %}
+  <article class="receipt">
+    <div class="center bold">{{ d.store }}</div>
+    <div class="center">Operated by: {{ d.operatedBy }}</div>
+    <div class="center">Accred #: {{ d.accred }}</div>
+    <div class="center">MIN: {{ d.min }}</div>
+    <div class="center">PTU: {{ d.ptu }}</div>
+    <div class="center">S/N: {{ d.sn }}</div>
+    <div class="center bold title">Z-READING REPORT</div>
+    <div class="divider"></div>
+    <table class="rows">
+      <tr><td class="label">Report Date:</td><td class="val">{{ d.reportDate }}</td></tr>
+      <tr><td class="label">Report Time:</td><td class="val">{{ d.reportTime }}</td></tr>
+      <tr><td class="label">Start Date &amp; Time:</td><td class="val">{{ d.startDateTime }}</td></tr>
+      <tr><td class="label">End Date &amp; Time:</td><td class="val">{{ d.endDateTime }}</td></tr>
+    </table>
+    {{ rows(d.counters) }}
+    <div class="divider"></div>
+    {{ rows(d.sales) }}
+    <div class="divider"></div>
+    <div class="section-title">- - - - - BREAKDOWN OF SALES - - - - -</div>
+    {{ rows(d.breakdown, 1) }}
+    <div class="divider"></div>
+    <div class="section-title">- - - - - DISCOUNT SUMMARY - - - - -</div>
+    {{ rows(d.discount, 1) }}
+    <div class="divider"></div>
+    <div class="section-title">- - - - - SALES ADJUSTMENT - - - - -</div>
+    {{ rows(d.salesAdjustment, 1) }}
+    <div class="divider"></div>
+    <div class="section-title">- - - - - VAT ADJUSTMENT - - - - -</div>
+    {{ rows(d.vatAdjustment, 1) }}
+    <div class="divider"></div>
+    <div class="section-title">- - - - - COLLECTIONS SUMMARY - - - - -</div>
+    <table class="coll">
+      <tr><th>Payment Method</th><th class="ctr">Trans</th><th class="amt">Amount</th></tr>
+      {% for c in d.collections %}<tr><td>{{ c.method }}</td><td class="ctr">{{ c.count }}</td><td class="amt">{{ c.amount }}</td></tr>{% endfor %}
+      <tr class="bold"><td>Total Collection</td><td class="ctr">{{ d.collectionTotal.count }}</td><td class="amt">{{ d.collectionTotal.amount }}</td></tr>
+    </table>
+    <div class="divider"></div>
+    <div class="section-title">- - - - - TRANSACTION SUMMARY - - - - -</div>
+    {{ rows(d.transaction, 2) }}
+  </article>
+  {% if loop.index0 % 2 == 1 or loop.last %}</section>{% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">{{ t('No fully read Z-reading reports match this selection yet.') }}</p>
+{% endif %}
+</body>
+</html>

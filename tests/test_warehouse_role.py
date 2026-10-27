@@ -23,8 +23,8 @@ def test_warehouse_pages_navigation_and_administration_guards(sync, fake, sessio
     session.commit()
     add_user(session, "warehouse_pages", "warehouse")
     login(client, "warehouse_pages")
-    for path in ("/", "/sales", "/sales/products", "/performance", "/replenishment",
-                 "/replenishment/batches", "/inventory", "/purchase-orders",
+    for path in ("/", "/sales", "/sales/products", "/performance", "/replenishment?view=list", "/replenishment/sheet",
+                 "/replenishment/batches", "/inventory?view=list", "/inventory/compare", "/purchase-orders",
                  "/stock-transfers", "/counts", "/stock-events", "/inspections", "/issues",
                  "/expiry", "/compliance", "/data-quality", "/sync", "/assistant", "/assistant/metrics"):
         assert client.get(path).status_code == 200, path
@@ -49,13 +49,13 @@ def test_warehouse_can_refresh_and_decide_replenishment(sync, fake, session, cli
     seeded(sync, fake, session)
     add_user(session, "warehouse_orders", "warehouse")
     login(client, "warehouse_orders")
-    token = csrf_of(client, "/replenishment")
+    token = csrf_of(client, "/replenishment?view=list")
     response = client.post("/replenishment/run", data={"csrf": token})
     assert response.status_code == 303 and "err=" not in response.headers["location"]
     session.expire_all()
     rec = session.scalar(select(Recommendation).where(Recommendation.status == "pending"))
     assert rec is not None
-    html = client.get("/replenishment").text
+    html = client.get("/replenishment?view=list").text
     assert f'action="/replenishment/{rec.id}/decide"' in html
     response = client.post(f"/replenishment/{rec.id}/decide", data={"action": "approve", "csrf": token})
     assert response.status_code == 303 and "err=" not in response.headers["location"]
@@ -71,7 +71,7 @@ def test_warehouse_location_scope_is_preserved(sync, fake, session, client):
     warehouse = add_user(session, "warehouse_scoped", "warehouse", locs=[other.id])
     assert allowed_location_ids(session, warehouse) == [other.id]
     login(client, "warehouse_scoped")
-    token = csrf_of(client, "/replenishment")
+    token = csrf_of(client, "/replenishment?view=list")
     assert client.post(f"/replenishment/{rec.id}/decide", data={"action": "approve", "csrf": token}).status_code == 403
 
 

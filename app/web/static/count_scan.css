@@ -139,3 +139,5 @@ dialog#counts-upload[open]::backdrop{animation:none}
 #expiry-record .ffi>div{min-width:0}
 #expiry-record .ffi button{width:100%;min-height:44px}
 #expiry-record-message:empty{display:none}
+
+.count-lookup{position:relative;flex:1;min-width:0}#count-products{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:55;max-height:260px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh2)}#count-products [role=option]{padding:10px 12px;font-size:13px;cursor:pointer;overflow-wrap:anywhere}#count-products [aria-selected=true],#count-products [role=option]:hover{background:var(--primary-soft)}#count-products small{display:block;color:var(--mute);margin-top:3px}

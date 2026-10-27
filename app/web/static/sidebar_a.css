@@ -1,0 +1,160 @@
+/* Sidebar "A": white, section headings, a coloured tile on each page, job counts, a gradient pill on the page you are on, who you are at the bottom. */
+#sidebar{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px 16px;color:var(--ink)}
+#sidebar .rail-toggle{display:none!important}
+#sidebar .sidebar-brand-row{border-bottom:0;padding:0 8px 14px;margin-bottom:6px}
+#sidebar .sidebar-search{background:var(--surface2);border:1px solid transparent;border-radius:12px;height:40px;margin-bottom:6px}
+
+#sidebar #sidebar-nav .ns-h{font:600 11.5px/1 var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--mute2);margin:16px 12px 6px}
+#sidebar #sidebar-nav .nav-group{margin:0}
+#sidebar #sidebar-nav .nav-home{margin-bottom:0}
+#sidebar #sidebar-nav .nav-home .ng-links,#sidebar #sidebar-nav .ng-links{margin:0;padding:0;border:0}
+
+/* one row: tile, label, count */
+#sidebar #sidebar-nav .ng,#sidebar #sidebar-nav .nav-home .nl{display:flex!important;align-items:center;gap:11px;width:100%;min-height:40px!important;margin:1px 0;padding:7px 12px!important;border:0;border-radius:12px;background:none;box-shadow:none;color:#1e293b;font-size:14.5px;font-weight:600;text-align:left;text-transform:none;letter-spacing:0;line-height:1.3}
+#sidebar #sidebar-nav .ng:hover,#sidebar #sidebar-nav .nav-home .nl:hover{background:var(--surface2);color:var(--ink)}
+#sidebar #sidebar-nav .group-label,#sidebar #sidebar-nav .nav-label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sidebar #sidebar-nav .ng-chev{display:block;width:12px;height:12px;color:var(--mute2);flex:none;transition:transform .2s}
+#sidebar #sidebar-nav .nav-group:not(.collapsed)>.ng .ng-chev{transform:rotate(180deg)}
+
+/* coloured tile on every page and section */
+#sidebar #sidebar-nav .ic-tile{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;flex:none;background:rgba(37,99,235,.12);color:#2563eb}
+#sidebar #sidebar-nav .ic-tile .i{display:block!important;width:15px;height:15px;stroke-width:1.9;color:inherit}
+#sidebar #sidebar-nav .ic-tile[data-c=red]{background:rgba(220,38,38,.12);color:#c62828}
+#sidebar #sidebar-nav .ic-tile[data-c=amber]{background:rgba(217,119,6,.14);color:#b45309}
+#sidebar #sidebar-nav .ic-tile[data-c=blue]{background:rgba(37,99,235,.12);color:#1d4ed8}
+#sidebar #sidebar-nav .ic-tile[data-c=purple]{background:rgba(147,51,234,.12);color:#7e22ce}
+#sidebar #sidebar-nav .ic-tile[data-c=pink]{background:rgba(219,39,119,.12);color:#be185d}
+#sidebar #sidebar-nav .ic-tile[data-c=grey]{background:rgba(100,116,139,.14);color:#334155}
+
+/* job counts */
+#sidebar #sidebar-nav .tag{margin-left:auto;background:#f6c445;color:#3b2e00;border-radius:99px;font-size:11px;font-weight:700;padding:1px 8px;line-height:1.5}
+
+/* pages inside an open section */
+#sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links{margin:2px 0 8px 24px;padding-left:12px;border-left:1px solid var(--line)}
+#sidebar #sidebar-nav .nav-group:not(.nav-home) .nl{display:flex!important;align-items:center;gap:8px;min-height:34px!important;margin:1px 0;padding:6px 10px!important;border-radius:10px;color:#334155;font-size:13.5px;font-weight:500;line-height:1.3}
+#sidebar #sidebar-nav .nav-group:not(.nav-home) .nl:hover{background:var(--surface2);color:var(--ink)}
+#sidebar #sidebar-nav .nav-group:not(.nav-home) .nl:before{display:none}
+#sidebar #sidebar-nav .nav-group.collapsed .ng-links{display:none}
+
+/* the section you are in */
+#sidebar #sidebar-nav .current-group>.ng{background:#e8efff;color:#1d4ed8;font-weight:700;box-shadow:none;border:0}
+#sidebar #sidebar-nav .current-group>.ng .group-icon{color:inherit}
+html[data-theme=dark] #sidebar #sidebar-nav .current-group>.ng{background:rgba(255,255,255,.08);color:#e0eaff}
+
+/* the page you are on: a gradient pill */
+#sidebar #sidebar-nav a.nl.on,#sidebar #sidebar-nav .nav-home a.nl.on,#sidebar #sidebar-nav .nav-group:not(.nav-home) a.nl.on{background-color:#2563eb;background-image:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff!important;font-weight:650;box-shadow:0 6px 16px rgba(37,99,235,.28)}
+#sidebar #sidebar-nav a.nl.on .ic-tile{background:rgba(255,255,255,.2);color:#fff}
+#sidebar #sidebar-nav a.nl.on .tag{background:rgba(255,255,255,.25);color:#fff}
+#sidebar #sidebar-nav a.nl.on:before{display:none}
+
+/* bottom: who you are, language, sign out */
+#sidebar .sidebar-footer{display:block;margin-top:14px;padding:12px 4px 0;border-top:1px solid var(--line);gap:0}
+#sidebar .sf-me{display:flex;align-items:center;gap:10px}
+#sidebar .sf-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+#sidebar .sf-t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.3}
+#sidebar .sf-t b{font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sidebar .sf-t small{font-size:12.5px;color:var(--mute);white-space:nowrap}
+#sidebar .sidebar-language,#sidebar .sidebar-language[data-target]{display:inline;background:none!important;border:0!important;padding:0!important;min-height:0;box-shadow:none}
+#sidebar .sidebar-language:before{display:none!important}
+#sidebar .sidebar-language a,#sidebar .sidebar-language a:hover,#sidebar .sidebar-language a.on{display:inline;min-height:0;padding:0 2px;border-radius:4px;background:none!important;box-shadow:none;color:var(--mute);font-size:12.5px;font-weight:500}
+#sidebar .sidebar-language a:hover{color:var(--ink)}
+#sidebar .sidebar-language a.on{color:var(--primary);font-weight:700}
+#sidebar .sidebar-language .i{display:none}
+#sidebar .sidebar-signout-form{margin:0;flex:none}
+#sidebar .sidebar-footer .sidebar-signout{display:grid;place-items:center;width:36px;height:36px;min-height:36px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--mute)}
+#sidebar .sidebar-footer .sidebar-signout:hover{background:var(--surface2);color:var(--bad);border-color:var(--line2)}
+#sidebar .sidebar-signout span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#sidebar .sidebar-signout .i{width:16px;height:16px}
+#sidebar #sidebar-nav .ng-chev{display:none!important}
+#sidebar #sidebar-nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:6px}
+
+/* ===== quiet: grey tiles, grey counts, one dark pill ===== */
+#sidebar #sidebar-nav .ic-tile,#sidebar #sidebar-nav .ic-tile[data-c]{background:#e8efff;color:#2563eb}
+html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #sidebar #sidebar-nav .ic-tile[data-c]{background:rgba(255,255,255,.08);color:#b8bfc8}
+#sidebar #sidebar-nav .tag{background:#dbe7ff;color:#1e293b}
+#sidebar #sidebar-nav .current-group>.ng{background:#e8efff;color:var(--ink)}
+#sidebar #sidebar-nav a.nl.on,#sidebar #sidebar-nav .nav-home a.nl.on,#sidebar #sidebar-nav .nav-group:not(.nav-home) a.nl.on{background-color:#2563eb;background-image:none;box-shadow:none}
+#sidebar .sf-av{background:#2563eb}
+
+/* ===== normal blue ===== */
+#sidebar #sidebar-nav .ic-tile,#sidebar #sidebar-nav .ic-tile[data-c]{background:#e8efff;color:#2563eb}
+#sidebar #sidebar-nav .tag{background:#dbe7ff;color:#1d4ed8}
+#sidebar #sidebar-nav .current-group>.ng{background:#e8efff;color:#1e3a8a}
+#sidebar #sidebar-nav .ns-h{color:#6b82ad}
+#sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links{border-left-color:#dbe7ff}
+
+/* ===== black icons ===== */
+#sidebar #sidebar-nav .ic-tile,#sidebar #sidebar-nav .ic-tile[data-c]{background:transparent;color:#111827}
+#sidebar #sidebar-nav .current-group>.ng .group-icon{color:#111827}
+#sidebar #sidebar-nav a.nl.on .ic-tile,#sidebar #sidebar-nav a.nl.on .ic-tile[data-c]{background:rgba(255,255,255,.2);color:#fff}
+html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #sidebar #sidebar-nav .ic-tile[data-c]{background:transparent;color:#e5e7eb}
+
+/* ===== Daily Centro / Commissary switch: two plain tabs on a line, the chosen one underlined in blue ===== */
+.pos-source-toolbar{margin:0 0 18px!important;padding:0!important;border-bottom:1px solid #dbe7ff!important}
+.pos-source-picker{gap:0 28px}
+.pos-source-switch,.pos-source-switch[data-x]{display:inline-flex;gap:26px;padding:0!important;border:0!important;border-radius:0!important;background:none!important}
+.pos-source-switch button{min-height:0!important;padding:8px 2px 12px!important;margin-bottom:-1px;border:0;border-bottom:3px solid transparent;border-radius:0!important;background:none!important;color:#475f8a!important;font-size:15px!important;font-weight:600;box-shadow:none!important;transition:color .15s,border-color .15s}
+.pos-source-switch button:hover{color:#111827!important;background:none!important}
+.pos-source-switch button.is-active{color:#1d4ed8!important;border-bottom-color:#2563eb;background:none!important;box-shadow:none!important}
+[data-theme=dark] .pos-source-switch{background:none!important}
+[data-theme=dark] .pos-source-switch button{color:#9db4e0!important}
+[data-theme=dark] .pos-source-switch button.is-active{color:#8fb3ff!important;border-bottom-color:#8fb3ff}
+
+/* date (or other note) on the right of the source tabs */
+.pos-source-toolbar{display:flex!important;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.pos-source-aside{color:var(--mute);font-size:14px;font-weight:500;padding-bottom:12px;white-space:nowrap}
+.pos-source-aside:empty{display:none}
+
+/* the date: looks like a button, does nothing */
+.pos-source-aside{padding-bottom:8px}
+.date-chip{display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 15px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font-size:14.5px;font-weight:600;cursor:default;user-select:none;pointer-events:none}
+.date-chip .i{width:16px;height:16px;color:#2563eb}
+
+/* ===== sections with several pages open a small menu beside their button (computers); phones keep the drop-down ===== */
+.fo-title{display:none}
+@media(min-width:1001px){
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links,
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home).collapsed .ng-links{display:none;position:fixed;top:0;left:276px;width:236px;max-height:calc(100vh - 24px);margin:0;padding:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 18px 44px rgba(15,23,42,.18);overflow-y:auto;z-index:70}
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home).fly-open .ng-links{display:block;animation:fo-in .14s ease-out}
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl{min-height:40px!important;padding:8px 14px!important;margin:1px 0;font-size:15px;font-weight:600;color:#1e293b;border-radius:10px}
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl:hover{background:#e8efff;color:#111827}
+  #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on{color:#fff}
+  /* the open section is marked while its menu is open */
+  #sidebar #sidebar-nav .nav-group.fly-open>.ng{background:#e8efff;color:#1e3a8a}
+}
+@keyframes fo-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.nav-group .ng-links{animation:none!important}}
+
+/* ===== Commissary accounts: bigger names ===== */
+.pos-account-switch{gap:4px 30px}
+.pos-account-switch button{font-size:16px!important;font-weight:600!important;padding:10px 2px!important;min-height:42px!important}
+.pos-account-switch button.is-active{color:#1d4ed8!important;font-weight:700!important}
+.pos-account-switch button::after{height:3px}
+.pos-account-switch button.is-active::after{background:#2563eb!important}
+
+/* ===== bigger logo and name, and the menu a little lower ===== */
+#sidebar .sidebar-brand-row{padding:8px 8px 22px;margin-bottom:12px}
+#sidebar .brand{gap:13px}
+#sidebar .brand .mark,#sidebar .brand .mark img{width:52px!important;height:52px!important;border-radius:15px}
+#sidebar .brand-name{font-size:21px!important;font-weight:700!important;letter-spacing:-.02em;line-height:1.15}
+#sidebar .brand small{font-size:13px!important;max-width:none!important;margin-top:3px;font-weight:500}
+#sidebar #sidebar-nav{padding-top:10px}
+
+/* the numbers in the sidebar: yellow, not italic */
+html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[data-theme=dark] #sidebar #sidebar-nav .tag,html[data-theme=dark] #sidebar #sidebar-nav a.nl.on .tag{background:#facc15;color:#3b2e00;font-style:normal;font-weight:700}
+
+/* the language switch in the top bar: big enough to see at a glance */
+.top-lang{display:inline-flex;align-items:center;gap:4px;padding:4px;border:2px solid #2563eb;border-radius:12px;background:#fff;flex:none}
+.top-lang a{display:flex;align-items:center;justify-content:center;min-height:34px;padding:0 16px;border-radius:8px;font-size:15px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap}
+.top-lang a:hover{background:#e8efff}
+.top-lang a.on{background:#2563eb;color:#fff}
+[data-theme=dark] .top-lang{background:#111a33;border-color:#3b82f6}
+[data-theme=dark] .top-lang a{color:#bcd2ff}[data-theme=dark] .top-lang a:hover{background:#17265a}
+[data-theme=dark] .top-lang a.on{background:#3b82f6;color:#fff}
+@media(max-width:700px){.top-lang{display:none}}
+/* calmer: still easy to read, no heavy outline */
+.top-lang{padding:3px;gap:2px;border:1px solid #dbe7ff;border-radius:10px;background:#f5f8ff}
+.top-lang a{min-height:30px;padding:0 12px;border-radius:7px;font-size:13.5px;font-weight:600;color:#475f8a}
+.top-lang a.on{background:#fff;color:#1d4ed8;box-shadow:0 1px 3px rgba(37,99,235,.18)}
+[data-theme=dark] .top-lang{background:#111a33;border-color:#27355f}
+[data-theme=dark] .top-lang a{color:#9fb3da}[data-theme=dark] .top-lang a.on{background:#1f3a7a;color:#fff;box-shadow:none}

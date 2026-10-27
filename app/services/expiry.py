@@ -52,12 +52,14 @@ def check(db: Session) -> int:
         issues.create_issue(db, type="expiry", severity=SEVERITY[stage], location_id=b.location_id, product_id=b.product_id, source="system",
                             source_ref=f"expiry:{b.id}", title=f"{b.product.name} at {b.location.name} {label} ({b.qty:g} units)",
                             description=f"Batch {b.batch_no or '-'} expiry {b.expiry_date}. Markdown, pull from shelf or return to warehouse; "
-                                        f"write-offs must be entered in StoreHub.", dedupe_key=f"expiry:{b.id}:{stage}")
+                                        f"write-offs must be entered in the original POS.", dedupe_key=f"expiry:{b.id}:{stage}")
         n += 1
     return n
 
 
 def add_batch(db: Session, user: User, location_id: int, product_id: int, qty: float, expiry: date, batch_no: str | None = None, note: str | None = None) -> ExpiryBatch:
+    from .sources import require_match
+    require_match(db, location_id, product_id)
     if qty <= 0:
         raise ValueError("Quantity must be above zero")
     b = ExpiryBatch(location_id=location_id, product_id=product_id, qty=qty, expiry_date=expiry, batch_no=batch_no, received_date=today_local(),

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Z-Reading Details') }} #{{ r.z_count }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t('Z-Reading Details') }} #{{ r.z_count }}</h1>
+  <p>{{ store }} · {{ t('Register') }} {{ r.register }} · {{ r.close_at.strftime('%m/%d/%Y %H:%M') }}</p></div>
+  <div class="row">{% if r.detail_ok %}<a class="btn sm" href="/sales/zreadings/{{ r.sh_id }}/receipt">{{ t('80mm receipt') }}</a>{% endif %}<a class="btn sec sm" href="/sales/zreadings">{{ t('Back to Z-Reading Reports') }}</a></div></div>
+<p class="small mute">{{ t('StoreHub report ID') }}: {{ r.sh_id }} · {{ t('Copied read-only from StoreHub; official labels and values are unchanged.') }}</p>
+{% if r.detail_ok and r.detail_json %}
+  {% for section in r.detail_json %}
+  <section>
+    <h2>{{ section.title }}</h2>
+    <div class="grid g2">
+      {% for table in section.tables %}
+      <div class="card" style="margin-bottom:0"><div class="tw"><table>
+        <tbody>
+        {% for row in table.rows %}
+          <tr>{% for cell in row %}<td class="{{ 'right' if loop.index > 1 else '' }}">{{ cell }}</td>{% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table></div></div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% else %}
+  <div class="card empty">{{ t('The official detail report has not been read yet. It will appear after the next read-only sync.') }}</div>
+{% endif %}
+{% endblock %}

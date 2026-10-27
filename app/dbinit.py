@@ -10,7 +10,7 @@ from .db import Base, SessionLocal, get_engine
 from .models import InspectionTemplate, SchemaVersion, TemplateItem
 from .timeutil import now_utc
 
-CURRENT_VERSION = 38
+CURRENT_VERSION = 42
 
 # (version, [sql, ...]) applied in order to databases created by an earlier version.
 MIGRATIONS: list[tuple[int, list[str]]] = [
@@ -84,6 +84,10 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
     (37, ["ALTER TABLE po_draft ADD COLUMN new_product_ids JSON"]),  # products quick-created from the order: split between the stores on save
     (38, ["ALTER TABLE recommendation ADD COLUMN saved_qty FLOAT",
           "ALTER TABLE recommendation ADD COLUMN transfer_sheet_id INTEGER REFERENCES transfer_sheet(id) ON DELETE SET NULL"]),
+    (39, []),  # Loyverse isolated read-only catalog and sales tables
+    (40, ["ALTER TABLE employee ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'storehub'", "ALTER TABLE employee ADD COLUMN source_account VARCHAR(80) NOT NULL DEFAULT ''", 'ALTER TABLE employee ADD COLUMN external_id VARCHAR(120)', "ALTER TABLE location ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'storehub'", "ALTER TABLE location ADD COLUMN source_account VARCHAR(80) NOT NULL DEFAULT ''", 'ALTER TABLE location ADD COLUMN external_id VARCHAR(120)', "ALTER TABLE supplier ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'storehub'", "ALTER TABLE supplier ADD COLUMN source_account VARCHAR(80) NOT NULL DEFAULT ''", 'ALTER TABLE supplier ADD COLUMN external_id VARCHAR(120)', "ALTER TABLE product ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'storehub'", "ALTER TABLE product ADD COLUMN source_account VARCHAR(80) NOT NULL DEFAULT ''", 'ALTER TABLE product ADD COLUMN external_id VARCHAR(120)', 'ALTER TABLE product ADD COLUMN image_url TEXT', 'ALTER TABLE loyverse_account ADD COLUMN reporting_catalog_at DATETIME', 'ALTER TABLE loyverse_account ADD COLUMN currency VARCHAR(3)', 'ALTER TABLE loyverse_account ADD COLUMN reporting_history_from DATE', 'ALTER TABLE loyverse_account ADD COLUMN reporting_error VARCHAR(200)', 'ALTER TABLE loyverse_account ADD COLUMN reporting_success_at DATETIME']),
+    (41, []),  # StoreHub shifts (cashier, register, payments, opening fund, withdrawals) read from its Shift Reports: new table only (created automatically)
+    (42, []),  # Official StoreHub Z-reading list/detail snapshots: new table only (created automatically)
 ]
 
 TRIGGERS = [

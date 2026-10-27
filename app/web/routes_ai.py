@@ -129,6 +129,8 @@ def chat_stream(question: str = Form(""), csrf: str = Form(""), page_url: str = 
         except PermissionError:
             raise HTTPException(404, "Conversation not found")
     factory = sessionmaker(bind=c.db.get_bind())
+    source_pairs, location_scope = c.db.info.get("source_pairs"), c.location_ids
+    allow_unassigned_pos = c.db.info.get("allow_unassigned_pos", False)
     user_id, translate, lang = c.user.id, c.t, c.lang
     events, stopped = Queue(), Event()
 
@@ -140,6 +142,7 @@ def chat_stream(question: str = Form(""), csrf: str = Form(""), page_url: str = 
     def work():
         try:
             with factory() as db:
+                db.info.update(source_pairs=source_pairs, location_scope=location_scope, allow_unassigned_pos=allow_unassigned_pos)
                 user = db.get(User, user_id)
                 context = SimpleNamespace(db=db, user=user, t=translate, lang=lang)
                 result = chat_support.respond(context, question, None, page_url, parent_id, progress)

@@ -1,0 +1,73 @@
+/* Sales page: the same look as the other updated pages (blue accents, soft borders, rounded cards). Nothing moves; only the styling is aligned. */
+.sales-page .sales-filters>div>select{height:42px;border:1px solid #dbe7ff;border-radius:12px;background:var(--surface)}
+.sales-page .drp-btn{height:42px;border:1px solid #dbe7ff;border-radius:12px}
+.sales-page .dl-btn{border:1px solid #dbe7ff;border-radius:12px;background:var(--surface)}
+.sales-page .dl-btn:hover{background:#e8efff}
+
+.sales-page .grid.g4 .card.stat{border:1px solid #dbe7ff;border-radius:18px;box-shadow:none;padding:16px 20px}
+.sales-page .grid.g4 .card.stat .label{color:#475f8a;font-weight:600}
+.sales-page .grid.g4 .card.stat .value{font-size:30px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sales-page .grid.g4 .card.stat .sub{color:#475f8a}
+.sales-page .grid.g4 .card.stat:first-child{background:#2563eb;border-color:#2563eb;color:#fff}
+.sales-page .grid.g4 .card.stat:first-child .label,.sales-page .grid.g4 .card.stat:first-child .sub{color:#dbeafe}
+.sales-page .grid.g4 .card.stat:first-child .value{color:#fff}
+
+.sales-page .card{border:1px solid #dbe7ff;border-radius:18px;box-shadow:none}
+.sales-page .card-head h2,.sales-page h2{font-size:16px}
+.sales-page .chip{border:1px solid #dbe7ff;border-radius:99px;background:var(--surface);color:#475f8a;font-weight:600;padding:6px 14px}
+.sales-page .chip.on{background:#2563eb;border-color:#2563eb;color:#fff}
+
+.sales-page .tw{border:1px solid #dbe7ff;border-radius:18px;background:var(--surface);overflow:hidden}
+.sales-page .tw table th{background:#f5f8ff;color:#475f8a;font-size:12.5px;font-weight:600;border-bottom:1px solid #dbe7ff}
+.sales-page .tw table td{border-bottom:1px solid #eef3ff}
+.sales-page .tw table tr:last-child td{border-bottom:0}
+.sales-page .tw table tbody tr:hover td,.sales-page .tw table tr[data-href]:hover td{background:#f5f8ff}
+.sales-page .tw table td a{color:#1d4ed8;font-weight:600}
+.sales-page .grid.g4 .card.stat:first-child *{color:inherit}
+.sales-page .grid.g4 .card.stat:first-child .label,.sales-page .grid.g4 .card.stat:first-child .sub,.sales-page .grid.g4 .card.stat:first-child .sub *{color:#dbeafe}
+.sales-page .grid.g4 .card.stat:first-child svg{display:none}
+.sales-page .tw{overflow-x:auto}
+.sales-page .chips .chip{border:1px solid #dbe7ff!important;border-radius:99px!important;background:var(--surface)!important;color:#475f8a!important;font-weight:600;padding:6px 14px}
+.sales-page .chips .chip.on{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important}
+
+/* compact header: title, filters and downloads share one row; the note is a small line */
+.sales-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:12px;padding-bottom:0;border:0}
+.sales-head>div:first-child{flex:1 1 280px;min-width:0}
+.sales-head h1{margin:0}
+.sales-head p{margin:2px 0 0;font-size:12.5px;color:#475f8a}
+.sales-head .sales-filters{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin:0;padding:0;border:0;background:none}
+.sales-head .sales-filters>div{margin:0;min-width:0}
+.sales-head .sales-filters>div>label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.sales-head .sales-filters>div>select{min-width:200px}
+.sales-head .dl-pair .row{gap:6px}
+@media(max-width:700px){.sales-head .sales-filters{flex-wrap:wrap;width:100%}.sales-head .sales-filters>div:first-child{flex:1 1 100%}.sales-head .sales-filters>div>select{width:100%}}
+.sales-head .sales-filters{border:0!important;padding:0!important;margin:0!important}
+.sales-head .sales-filters>div,.sales-head .drp{flex:none;width:auto}
+.sales-head .dl-pair{margin-left:4px}
+@media(max-width:700px){
+  .sales-head{flex-direction:row!important;flex-wrap:wrap;align-items:flex-start}
+  .sales-head>div:first-child{flex:1 1 100%!important}
+  .sales-head .sales-filters{gap:8px}
+}
+@media(max-width:700px){
+  .sales-page>.grid.g4{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .sales-page>.grid.g4>.card.stat{min-width:0;padding:12px 10px;border-radius:14px}
+  .sales-page>.grid.g4>.card.stat:first-child{grid-column:1/-1;padding:16px 18px}
+  .sales-page>.grid.g4>.card.stat:nth-child(3){grid-column:span 2}
+  .sales-page>.grid.g4>.card.stat:first-child .value{font-size:clamp(28px,8vw,38px);white-space:nowrap;overflow-wrap:normal}
+  .sales-page>.grid.g4>.card.stat:not(:first-child) .value{font-size:clamp(12px,4vw,22px);letter-spacing:-.045em;white-space:nowrap;overflow-wrap:normal}
+  .sales-page>.grid.g4>.card.stat:not(:first-child) .label{font-size:11px}
+  .sales-page>.grid.g4>.card.stat:not(:first-child) .sub{font-size:10px}
+}
+@media(max-width:360px){
+  .sales-page>.grid.g4>.card.stat{padding-right:8px;padding-left:8px}
+  .sales-page>.grid.g4>.card.stat:not(:first-child) .label{font-size:9px;letter-spacing:-.04em}
+  .sales-page>.grid.g4>.card.stat:not(:first-child) .sub{font-size:9px}
+}
+@media(max-width:700px){.sales-page .tw td:nth-child(2){display:none}}   /* the tiny bar in each day card has no label on a phone */
+.zr-interim td{opacity:.62}.zr-interim td:first-child{opacity:1}
+
+/* phone: Sales keeps the total, the three small numbers and the chart; the "hover" hint cannot be used on a phone */
+@media(max-width:700px){
+  main:has(.sales-head) #sales-line+.small.mute{display:none}
+}

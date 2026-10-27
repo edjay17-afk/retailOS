@@ -130,6 +130,14 @@ def cmd_transfers_inbox(a):
         print(transfer_inbox.process_inbox(db))
 
 
+def cmd_zreadings_run(a):
+    """Read official Z-reading reports from StoreHub with GET requests only, then save them locally."""
+    _boot()
+    from .services import zreadings
+    with SessionLocal() as db:
+        print(zreadings.run(db))
+
+
 def cmd_verify_audit(a):
     _boot()
     with SessionLocal() as db:
@@ -162,6 +170,7 @@ def main(argv=None) -> int:
     sub.add_parser("lark-mirror").set_defaults(fn=cmd_lark_mirror)
     sub.add_parser("robot-check").set_defaults(fn=cmd_robot_check)
     sub.add_parser("robot-run").set_defaults(fn=cmd_robot_run)
+    sub.add_parser("zreadings-run").set_defaults(fn=cmd_zreadings_run)
     sub.add_parser("transfers-inbox").set_defaults(fn=cmd_transfers_inbox)
     a = p.parse_args(argv)
     return a.fn(a) or 0

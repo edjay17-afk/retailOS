@@ -16,7 +16,7 @@ def test_supplier_limits_sales_and_export(client,session,sync,fake):
     url=f"/sales/products?days=60&supplier={supplier.id}"
     r=client.get(url)
     assert r.status_code==200 and 'name="supplier"' in r.text and 'class="drp"' in r.text
-    assert 'form="product-sales-filters" name="export" value="csv"' in r.text
+    assert 'data-export="csv"' in r.text
     rows=list(csv.DictReader(io.StringIO(client.get(url+'&export=csv').text.lstrip('\ufeff'))))
     assert rows and all(row['Product']==product.name for row in rows)
     assert not list(csv.DictReader(io.StringIO(client.get('/sales/products?days=60&supplier=999999&export=csv').text.lstrip('\ufeff'))))

@@ -96,10 +96,17 @@ def build(db: Session, user: User | None, location_ids: list[int]) -> Context:
     ctx.meta = {"business_date": str(today), "generated_at_utc": now_utc().isoformat(timespec="seconds"), "currency": "PHP",
                 "locations": [l.name for l in locs.values()], "timezone": "Asia/Manila"}
 
-    # ---- data freshness
-    for f in freshness.freshness(db):
-        age = "never synced" if f["age_min"] is None else f"last synced {f['age_min']:.0f} minutes ago (limit {f['limit_min']})"
-        ctx.add("freshness", f"{f['label']} data is {f['status']}: {age}", "/sync")
+    # ---- data freshness by selected source/account
+    selected_locs = list(db.scalars(select(Location).where(Location.id.in_(location_ids or [0]))))
+    accounts = {loc.source_account for loc in selected_locs if loc.source == 'loyverse'}
+    if any(loc.source == 'storehub' for loc in selected_locs) or not accounts:
+        for f in freshness.freshness(db):
+            ctx.add('freshness', f"StoreHub {f['label']} data is {f['status']}", '/sync')
+    if accounts:
+        from ..models import LoyverseAccount
+        for st in db.scalars(select(LoyverseAccount).where(LoyverseAccount.key.in_(accounts))):
+            ctx.add('freshness', f"Loyverse {st.key}: last successful reporting sync {fmt_local(st.reporting_success_at) if st.reporting_success_at else 'never'}; history starts {st.reporting_history_from}; error {st.reporting_error or 'none'}", '/sync')
+        ctx.add('source_rules', 'Loyverse purchase orders, incoming transfers and staff attendance are unavailable. Do not interpret unavailable data as zero. Loyverse replenishment uses sold items and sales only. Local counts, wastage and expiry records do not update the POS.', '/replenishment/loyverse')
 
     # ---- store and sales context
     y = today - timedelta(days=1)
@@ -132,8 +139,8 @@ def build(db: Session, user: User | None, location_ids: list[int]) -> Context:
     # ---- replenishment context
     sales_only = cfg.get(db, "repl.mode") != "stock_and_sales"
     ctx.meta["replenishment_policy"] = {"mode": cfg.get(db, "repl.mode"), "cover_days": cfg.get(db, "repl.sales_only_cover_days")}
-    ctx.add("policy", (f"Active replenishment is sales-only: max(0, average daily sales x {cfg.get(db, 'repl.sales_only_cover_days')} cover days - incoming), then pack rounding, MOQ and caps. Stock on hand, safety stock and lead-time cover do not determine suggestions. Days of stock cover is unavailable, not zero. Recently ordered products are suppressed during the cover period."
-                       if sales_only else "Active replenishment uses sales and stock: target = average daily sales x (lead time + review period) + safety stock; order = max(0, target - on hand - incoming), then pack rounding, MOQ and caps."), "/replenishment")
+    ctx.add("policy", (f"StoreHub replenishment is sales-only: max(0, average daily sales x {cfg.get(db, 'repl.sales_only_cover_days')} cover days - incoming), then pack rounding, MOQ and caps. Stock on hand, safety stock and lead-time cover do not determine suggestions. Days of stock cover is unavailable, not zero. Recently ordered products are suppressed during the cover period."
+                       if sales_only else "StoreHub replenishment uses sales and stock: target = average daily sales x (lead time + review period) + safety stock; order = max(0, target - on hand - incoming), then pack rounding, MOQ and caps."), "/replenishment")
     recs = list(db.scalars(select(Recommendation).where(Recommendation.business_date == today, Recommendation.location_id.in_(location_ids or [0]),
                                                         Recommendation.status.in_(("pending", "needs_review")))))
     pend = [r for r in recs if r.status == "pending"]
@@ -157,8 +164,17 @@ def build(db: Session, user: User | None, location_ids: list[int]) -> Context:
             ctx.add("stockout_risk", f"Stockout risk: {r.product.name} at {r.location.name} has {r.days_cover:.1f} days of cover but lead time is {r.lead_time:g} days "
                                      f"(suggestion #{r.id}, status {r.status})", "/replenishment")
 
+    if accounts:
+        from ..loyverse.replenishment import report as loyverse_report
+        allowed = {(loc.source_account, loc.external_id) for loc in selected_locs if loc.source == 'loyverse'}
+        data = loyverse_report(db, allowed_pairs=allowed)
+        ctx.add('replenishment', f"Loyverse has {len(data['rows'])} sales-only demand suggestions. Formula: net sold / store days with sales times cover days, rounded up. No stock or incoming deductions, no automatic orders.", '/replenishment/loyverse')
+        for row in data['rows'][:12]:
+            ctx.add('replenishment', f"Loyverse {row['store']}: {row['name']}, net units sold {row['units']}, sales days {row['days']}, suggested {row['quantity'] if row['quantity'] is not None else 'unavailable'}; {row['reason']}", '/replenishment/loyverse')
+
     # ---- purchase orders
     _, stale = purchasing.incoming_map(db)
+    stale = [p for p in stale if p.location_id in location_ids]
     if stale:
         units = sum(max(0, l.ordered_qty - l.received_qty) for p in stale for l in p.lines)
         ctx.add("purchase_orders", f"{len(stale)} open purchase orders are more than {cfg.get(db, 'po.stale_days')} days past their expected date and are not counted as incoming stock "

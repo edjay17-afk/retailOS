@@ -127,6 +127,8 @@ def start(db: Session, user: User, supplier_name: str, location_id: int, allowed
     loc = db.get(Location, location_id)
     if loc is None or loc.id not in allowed:
         raise PoError("Choose where the order is delivered")
+    if loc.source != "storehub" or sup.source != "storehub":
+        raise PoError("Purchase-order exports are currently supported for StoreHub only")
     d = current(db, user)
     if d is not None:  # an open order is carried on, never started twice
         return change(db, user, d, supplier_name, location_id, allowed)
@@ -145,6 +147,8 @@ def change(db: Session, user: User, d: PoDraft, supplier_name: str, location_id:
     loc = db.get(Location, location_id)
     if loc is None or loc.id not in allowed:
         raise PoError("Choose where the order is delivered")
+    if loc.source != "storehub" or sup.source != "storehub":
+        raise PoError("Purchase-order exports are currently supported for StoreHub only")
     d.supplier_id, d.location_id = sup.id, loc.id
     db.flush()
     return d
@@ -179,6 +183,8 @@ def catalog(db: Session, supplier_id: int) -> list[list]:
 
 
 def add_line(db: Session, d: PoDraft, product: Product, qty, price) -> PoDraftLine:
+    if product.source != "storehub":
+        raise PoError("Loyverse items cannot be exported to StoreHub")
     """Add a product. The same product again adds to the quantity of its line and takes the new price."""
     _draft(d)
     q, p = check_qty(qty), check_price(price)

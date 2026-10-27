@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Sync') }}{% endblock %}
 {% block content %}
+{% if loyverse_states %}<section class="card"><h2>{{ t('Loyverse sync') }}</h2><p>{{ t('Sales and inventory sync every minute. Catalog refreshes every 15 minutes. Reporting history: up to 90 days, subject to account access.') }}</p>
+{% for state in loyverse_states %}<p><strong>{{ account_labels.get(state.key, state.key|replace('LOYVERSE_TOKEN_', '')) }}</strong> &middot; {{ state.currency or '-' }} &middot; {{ state.reporting_success_at|local if state.reporting_success_at else t('Waiting for first sync') }}{% if state.reporting_error %}<span class="bad"> &middot; {{ t(state.reporting_error) }}</span>{% endif %}{% if state.reporting_history_from %} &middot; {{ t('History from') }} {{ state.reporting_history_from }}{% endif %}</p>{% endfor %}</section>{% endif %}
+
 <h1>{{ t('Sync status') }}</h1>
 <div class="grid g4">{% for f in fresh %}
 <div class="card"><b>{{ t(f.label) }}</b> <span class="badge {{ 'b-ok' if f.status == 'fresh' else 'b-bad' }}">{{ t(f.status) }}</span>

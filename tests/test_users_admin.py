@@ -156,9 +156,9 @@ def test_staff_can_run_replenishment_and_dashboard_links_are_openable(sync, fake
     session.commit()
     staff = add_user(session, "crew2", "staff", locs=[1])
     login(client, "crew2")
-    html = client.get("/replenishment").text
+    html = client.get("/replenishment?view=list").text
     assert 'action="/replenishment/run"' in html
-    tok = csrf_of(client, "/replenishment")
+    tok = csrf_of(client, "/replenishment?view=list")
     r = client.post("/replenishment/run", data={"csrf": tok})
     assert r.status_code in (302, 303) and "err=" not in r.headers["location"]
     session.expire_all()
@@ -183,8 +183,8 @@ def test_staff_can_decide_replenishment_within_limit(sync, fake, session, client
     assert rec is not None
     staff = add_user(session, "crew3", "staff", locs=[rec.location_id])
     login(client, "crew3")
-    assert f'action="/replenishment/{rec.id}/decide"' in client.get("/replenishment").text
-    tok = csrf_of(client, "/replenishment")
+    assert f'action="/replenishment/{rec.id}/decide"' in client.get("/replenishment?view=list").text
+    tok = csrf_of(client, "/replenishment?view=list")
     r = client.post(f"/replenishment/{rec.id}/decide", data={"action": action, "qty": str(rec.final_qty) if action == "approve" else "4", "reason": "Other", "csrf": tok})
     assert r.status_code in (302, 303) and "err=" not in r.headers.get("location", "")
     session.expire_all()
@@ -201,10 +201,10 @@ def test_staff_decisions_keep_location_scope_and_approval_limit(sync, fake, sess
     add_user(session, "crew_outside", "staff", locs=[other.id])
     add_user(session, "crew_limit", "staff", locs=[rec.location_id])
     login(client, "crew_outside")
-    tok = csrf_of(client, "/replenishment")
+    tok = csrf_of(client, "/replenishment?view=list")
     assert client.post(f"/replenishment/{rec.id}/decide", data={"action": "approve", "csrf": tok}).status_code == 403
     login(client, "crew_limit")
-    tok = csrf_of(client, "/replenishment")
+    tok = csrf_of(client, "/replenishment?view=list")
     r = client.post(f"/replenishment/{rec.id}/decide", data={"action": "modify", "qty": "1000000", "reason": "Other", "csrf": tok})
     assert "err=" in r.headers["location"]
     session.expire_all()

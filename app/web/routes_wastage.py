@@ -32,9 +32,11 @@ def wastage_page(loc: int = 0, days: int = 30, c: Ctx = Depends(need("wastage.re
 
 
 @router.get("/wastage/products")
-def wastage_products(q: str = "", c: Ctx = Depends(need("wastage.record"))):
+def wastage_products(q: str = "", loc: int = 0, c: Ctx = Depends(need("wastage.record"))):
     from ..services.product_lookup import search
-    return search(c.db, q)
+    from ..models import Location
+    if loc: c.check_loc(loc)
+    return search(c.db, q, c.db.get(Location, loc) if loc else None)
 
 
 @router.post("/wastage/add")

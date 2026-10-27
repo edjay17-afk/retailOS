@@ -1,0 +1,20 @@
+  <div class="expl" style="margin-top:0">
+    {% set e = r.explanation %}
+    {% if e.mode == 'sales_only' %}<div class="small mute" style="margin-bottom:6px">{{ t('Sales-only suggestion: stock on hand is not used, so the figures below that mention stock are for reference.') }}</div>{% endif %}
+    <div><b>{{ t('Source:') }}</b> {{ t(e.source) }}</div>
+    <table><tr><td>{{ t('Units sold (') }}{{ e.inputs.trading_days }} {{ t('trading days)') }}</td><td class="right">{{ e.inputs.units_sold|num }}</td></tr>
+    <tr><td>{{ t('Average daily sales') }}</td><td class="right">{{ r.ads|num }}</td></tr>
+    <tr><td>{{ t('Lead time + review period') }}</td><td class="right">{{ r.lead_time|num }} + {{ r.review_period|num }} {{ t('days') }}</td></tr>
+    <tr><td>{{ t('Safety stock (') }}{{ r.safety_days|num }} {{ t('days)') }}</td><td class="right">{{ r.safety_stock|num }}</td></tr>
+    <tr><td><b>{{ t('Target stock') }}</b></td><td class="right"><b>{{ r.target_stock|num }}</b></td></tr>
+    <tr><td>{{ t('On hand (synced') }} {{ e.inputs.stock_synced_at[:16].replace('T',' ') }} UTC)</td><td class="right">{{ r.on_hand|num }}</td></tr>
+    <tr><td>{{ t('Incoming (open POs, not overdue)') }}</td><td class="right">{{ r.incoming|num }}</td></tr>
+    <tr><td><b>{{ t('Position') }}</b> {{ t('(on hand, not below 0, + incoming)') }}</td><td class="right"><b>{{ r.position|num }}</b></td></tr>
+    <tr><td>{{ t('Raw order = target - position') }}</td><td class="right">{{ r.raw_qty|num }}</td></tr>
+    {% for s in e.steps if s.step != 'raw' %}<tr><td>{{ t('Adjusted:') }} {{ t(s.step|replace('_',' ')) }}</td><td class="right">{{ s['from']|num }} {{ t('to') }} {{ s.to|num }}</td></tr>{% endfor %}
+    <tr><td><b>{{ t('Suggested quantity') }}</b></td><td class="right"><b>{{ r.final_qty|num }}</b></td></tr></table>
+    {% for n in e.notes %}<div class="small" style="color:var(--warn)">{{ n }}</div>{% endfor %}
+    {% if can('ai.use') %}<form novalidate method="post" action="/replenishment/{{ r.id }}/explain" data-explain style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm ai" type="submit"><svg class="i" style="width:14px;height:14px"><use href="#i-sparkles"/></svg><span class="idle">{{ t('Ask AI to explain') }}</span><span class="thinking">{{ t('Thinking...') }}</span></button></form>
+    <div class="explain-out" hidden></div>{% endif %}
+    {% if e.confidence_penalties %}<div class="small mute">{{ t('Confidence lowered by:') }} {% for p in e.confidence_penalties %}{{ t(p.reason) }} (-{{ (p.penalty*100)|int }}%){% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+  </div>

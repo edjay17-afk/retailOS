@@ -35,6 +35,9 @@ def find_product(db: Session, text: str) -> Product:
 
 
 def add(db: Session, user: User, *, location_id: int, product: Product, qty: float, reason: str, on: date | None = None) -> WastageEntry:
+    from .sources import matches
+    if not matches(product, db.get(Location, location_id)):
+        raise WastageError("Choose a product from the same POS account as the store")
     if not qty or qty <= 0:
         raise WastageError("Quantity must be greater than zero")
     if reason not in REASONS:

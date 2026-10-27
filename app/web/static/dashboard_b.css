@@ -1,0 +1,45 @@
+/* Today page: one card per store, then the warehouse jobs and the 14-day total. */
+.b-head{margin:2px 0 18px}.b-head h1{margin:0}.b-head p{margin:4px 0 0;color:var(--mute)}
+.b-stores{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.b-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 24px}
+.b-card h2{font-size:18px;margin:0}.b-card h2 a{color:var(--ink)}
+.b-reg{margin:2px 0 0;color:var(--mute);font-size:13.5px;min-height:20px}
+.b-big{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+.b-big small{font-size:15px;font-weight:600;color:var(--mute);letter-spacing:0}
+.b-big.b-none{font-size:26px;color:var(--mute)}
+.b-y{margin:0;color:var(--mute);font-size:13.5px}
+.b-card.off{background:var(--surface2)}
+.b-card ul{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--line)}
+.b-card li{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}.b-card li:last-child{border:0}
+.b-chip{display:inline-block;border-radius:99px;padding:2px 10px;font-size:12.5px;font-weight:600;background:var(--primary-soft);color:var(--primary)}
+.b-chip.r{background:var(--bad-soft);color:var(--bad)}.b-chip.y{background:var(--warn-soft);color:var(--warn)}.b-chip.mute{background:var(--surface2);color:var(--mute)}
+.b-note{margin:10px 0 0}
+.b-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;margin-top:18px}
+.b-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 24px}
+.b-box h2{font-size:16px;margin:0 0 6px}
+.b-job{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);color:var(--ink)!important;text-decoration:none}.b-job:last-child{border:0}
+.b-job b{font-size:18px}.b-job small{display:block;color:var(--mute);font-size:13px}
+.b-job em{font-style:normal;background:var(--primary);color:#fff;border-radius:99px;padding:7px 16px;font-weight:600;font-size:14px;white-space:nowrap}
+.b-total{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.b-strip{display:flex;align-items:flex-end;gap:5px;height:70px;margin:12px 0 10px}.b-strip i{flex:1;background:var(--primary-soft);border-radius:3px;min-height:3px}.b-strip i:last-child{background:var(--primary)}
+.b-link{display:inline-block;border:1px solid var(--line2);border-radius:99px;padding:6px 14px;font-weight:600;color:var(--ink)!important;text-decoration:none}
+.b-more{margin:22px 0 10px}.b-more>summary{cursor:pointer;font-weight:650;font-size:16px;padding:10px 0}.b-more>summary .small{margin-left:8px;font-weight:400}
+@media(max-width:900px){.b-row{grid-template-columns:1fr}.b-job{align-items:flex-start}}
+
+/* the 14-day bars: grow in, light up on hover, show the day and its exact amount */
+.b-strip{position:relative;display:flex;align-items:flex-end;gap:5px;height:110px;margin:14px 0 12px}
+.b-bar{flex:1;height:var(--h);min-height:4px;background:var(--primary-soft);border-radius:4px;cursor:pointer;outline:0;transform-origin:bottom;transition:background .15s,opacity .15s,transform .15s;animation:b-grow .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 28ms)}
+.b-bar.last{background:var(--primary)}
+.b-strip.hot .b-bar{opacity:.45}
+.b-strip.hot .b-bar.on{opacity:1;background:var(--primary);transform:scaleY(1.04)}
+.b-bar:focus-visible{box-shadow:0 0 0 2px var(--primary)}
+.b-tip{position:absolute;z-index:5;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;padding:7px 11px;white-space:nowrap;font-size:13px;line-height:1.35;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(15,23,42,.25);animation:b-pop .14s ease-out}
+.b-tip[hidden]{display:none}
+.b-tip b{font-weight:600;opacity:.8;font-size:12px}.b-tip span{font-weight:700;font-variant-numeric:tabular-nums}
+.b-total span{display:inline-block;min-width:1ch}
+.b-cap{margin:2px 0 6px;min-height:18px}
+@keyframes b-grow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+@keyframes b-pop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.b-bar,.b-tip{animation:none;transition:none}}
+.b-strip{margin-top:46px}
+.b-strip{margin-top:60px}

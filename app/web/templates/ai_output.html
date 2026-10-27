@@ -18,7 +18,7 @@
   {% else %}
     {% for st in statements %}{{ statement(st, 'f', facts) }}{% endfor %}
     {% set table = out.output_json.get('table') %}{% include '_chat_table.html' %}
-    {% if out.kind == 'chat' %}<button type="button" class="sec sm" data-chat-resume="{{ out.id }}">Continue conversation</button>{% endif %}
+    {% if out.kind == 'chat' %}<button type="button" class="sec sm" data-chat-resume="{{ out.id }}">{{ t('Continue conversation') }}</button>{% endif %}
     {% if out.output_json.follow_ups %}<div class="chips" style="margin-top:10px">{% for q in out.output_json.follow_ups[:3] %}<form novalidate method="post" action="/assistant/ask" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="question" value="{{ q }}">{% if out.kind == 'chat' %}<input type="hidden" name="parent_id" value="{{ out.id }}">{% endif %}<button class="chip sec" type="submit">{{ q }}</button></form>{% endfor %}</div>{% endif %}
   {% endif %}
   <div class="sep"></div>

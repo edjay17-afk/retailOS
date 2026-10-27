@@ -1,0 +1,124 @@
+/* Sign-in: the left half is blue with the words, the right half is the sign-in form. No animation. */
+.login-blob{display:none}
+.login-page{background:linear-gradient(90deg,#2563eb 50%,#fff 50%);color:#0f172a}
+.login-toolbar{position:relative;z-index:1;height:84px;padding:24px 40px}
+.login-wordmark{color:#fff;font-size:20px;font-weight:800;letter-spacing:0}
+.login-wordmark img{width:40px;height:40px;border-radius:12px}
+.login-toolbar .iconbtn{background:#fff;border:1px solid #dbe7ff;color:#2563eb}
+.login-main{position:relative;z-index:1;display:block;min-height:calc(100dvh - 84px);padding:0}
+.login-layout{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:none;width:100%;min-height:calc(100dvh - 84px);align-items:center}
+
+/* left: the words on blue */
+.login-story{max-width:none;padding:0 72px 84px 40px;color:#fff}
+.login-story-label{color:#bfdbfe;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
+.login-story h2{color:#fff;font-size:44px;line-height:1.12;font-weight:800;letter-spacing:-.03em;max-width:480px;margin:0 0 20px}
+.login-story>p{color:#dbeafe;font-size:16px;line-height:1.7;max-width:440px;margin:0 0 30px}
+.login-story ul{gap:14px}
+.login-story li{color:#fff;font-size:14.5px;line-height:1.6;max-width:460px}
+.login-story li>.i{color:#bfdbfe}
+
+/* right: the sign-in form, no box */
+.login-card{justify-self:center;width:100%;max-width:400px;padding:0 24px 84px;margin:0;border:0;border-radius:0;background:none;box-shadow:none;text-align:left;color:#0f172a}
+.login-emblem{display:block;width:auto;height:auto;background:none;border:0;margin:0 0 22px}
+.login-emblem img{width:56px;height:56px;border-radius:16px}
+.login-company{color:#2563eb;font-size:12px;font-weight:700;letter-spacing:.06em;margin:0 0 6px}
+.login-card h1{color:#0f172a;font-size:32px;letter-spacing:-.03em;margin:0 0 6px}
+.login-intro{color:#64748b;font-size:15px}
+.login-form{margin-top:26px}
+.login-field label{color:#334155;font-size:13px;font-weight:600}
+.login-input{background:#f8faff;border:1px solid #cfdcf7;border-radius:12px;min-height:50px}
+.login-input>.i{color:#7f93bd}
+.login-input:focus-within{border-color:#2563eb;background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.14)}
+.login-page .login-input input{font-size:16px;color:#0f172a}
+.login-page .login-submit{min-height:52px;border:0;border-radius:12px;background:#2563eb;font-size:16px;font-weight:700;box-shadow:none}
+.login-page .login-submit:hover{background:#1d4ed8}
+.login-language{justify-content:flex-start;border-color:#e8efff;margin-top:24px}
+.login-language a{color:#64748b;font-size:13px}.login-language a.on{background:#e8efff;color:#2563eb}
+.login-foot{display:none}
+
+/* dark mode: a deep blue half on the left, a near-black half on the right */
+[data-theme=dark] .login-page{background:linear-gradient(90deg,#0f2a6b 50%,#0b1020 50%);color:#e5ecfa}
+[data-theme=dark] .login-wordmark{color:#fff}
+[data-theme=dark] .login-toolbar .iconbtn{background:#141c33;border-color:#27355f;color:#fde68a}
+[data-theme=dark] .login-story-label{color:#93c5fd}
+[data-theme=dark] .login-story h2{color:#fff}
+[data-theme=dark] .login-story>p{color:#c3d3f2}
+[data-theme=dark] .login-story li{color:#e5ecfa}
+[data-theme=dark] .login-story li>.i{color:#93c5fd}
+[data-theme=dark] .login-card{background:none!important;border:0!important;box-shadow:none!important;color:#e5ecfa}
+[data-theme=dark] .login-company{color:#7dd3fc}
+[data-theme=dark] .login-card h1{color:#fff}
+[data-theme=dark] .login-intro{color:#93a7cc}
+[data-theme=dark] .login-field label{color:#c3d1ee}
+[data-theme=dark] .login-input{background:#111a33;border-color:#27355f}
+[data-theme=dark] .login-input>.i{color:#7f93bd}
+[data-theme=dark] .login-input:focus-within{background:#111a33;border-color:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.2)}
+[data-theme=dark] .login-page .login-input input{color:#fff}
+[data-theme=dark] .login-page .login-submit{background:#3b82f6}
+[data-theme=dark] .login-page .login-submit:hover{background:#60a5fa}
+[data-theme=dark] .login-language{border-color:#1f2c52}
+[data-theme=dark] .login-language a{color:#8ea3cc}
+[data-theme=dark] .login-language a.on,[data-theme=dark] .login-language a:hover{background:#17265a;color:#c7d8ff}
+
+/* narrower screens */
+@media(max-width:1000px){.login-story{padding:0 40px 84px 32px}.login-story h2{font-size:36px}}
+/* phone: only the sign-in form, on one plain background */
+@media(max-width:760px){
+  .login-page{background:#fff}[data-theme=dark] .login-page{background:#0b1020}
+  .login-toolbar{height:66px;padding:17px 20px}
+  .login-wordmark{color:#0f172a}[data-theme=dark] .login-wordmark{color:#fff}
+  .login-toolbar .iconbtn{background:#f8faff}[data-theme=dark] .login-toolbar .iconbtn{background:#141c33}
+  .login-story,.login-foot{display:none}
+  .login-main{min-height:calc(100dvh - 66px)}
+  .login-layout{display:flex;min-height:calc(100dvh - 66px);justify-content:center}
+  .login-card{padding:0 22px 64px}
+}
+[data-theme=dark] .login-emblem{background:none!important;border:0!important}
+.login-wordmark img{background:#fff;padding:3px;box-sizing:border-box}
+[data-theme=dark] .login-wordmark img{background:none;padding:0}
+@media(max-width:760px){.login-wordmark img{background:none;padding:0}}
+@media(max-width:760px){.login-emblem{display:none}.login-layout{align-items:flex-start;padding-top:48px}}
+/* fields: a clear dark-blue outline */
+.login-input{border:2px solid #1e40af;background:#fff}
+.login-input>.i{color:#1e40af}
+.login-input:focus-within{border-color:#1d4ed8;box-shadow:0 0 0 4px rgba(29,78,216,.22)}
+[data-theme=dark] .login-input{border:2px solid #3b82f6;background:#111a33}
+[data-theme=dark] .login-input>.i{color:#60a5fa}
+[data-theme=dark] .login-input:focus-within{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(96,165,250,.28)}
+
+/* a richer blue on the left, a soft pale blue on the right, and quiet shapes on both halves */
+.login-page{position:relative;background:linear-gradient(90deg,transparent 50%,#f1f6ff 50%),linear-gradient(160deg,#1e3a8a 0,#2563eb 100%)}
+.login-page:before,.login-page:after{content:"";position:absolute;top:0;bottom:0;width:50%;pointer-events:none;z-index:0}
+.login-page:before{left:0;background:
+  radial-gradient(circle at 8% 92%,rgba(255,255,255,.10) 0 170px,transparent 171px),
+  radial-gradient(circle at 88% 14%,transparent 0 104px,rgba(255,255,255,.18) 105px 108px,transparent 109px),
+  radial-gradient(circle at 80% 86%,transparent 0 58px,rgba(255,255,255,.16) 59px 61px,transparent 62px),
+  radial-gradient(circle at 70% 70%,#fbbf24 0 8px,transparent 9px),
+  radial-gradient(circle at 20% 22%,#f472b6 0 6px,transparent 7px),
+  radial-gradient(circle at 92% 58%,#34d399 0 7px,transparent 8px),
+  linear-gradient(135deg,transparent 0 58%,rgba(255,255,255,.07) 58% 78%,transparent 78%)}
+.login-page:after{right:0;background:
+  radial-gradient(circle at 92% 8%,transparent 0 86px,#dbe7ff 87px 90px,transparent 91px),
+  radial-gradient(circle at 96% 92%,#e3ecff 0 150px,transparent 151px),
+  radial-gradient(circle at 10% 90%,transparent 0 46px,#dbe7ff 47px 49px,transparent 50px),
+  radial-gradient(circle at 14% 18%,#bfd3ff 0 7px,transparent 8px),
+  radial-gradient(circle at 84% 70%,#bfd3ff 0 5px,transparent 6px)}
+.login-language{justify-content:center}
+[data-theme=dark] .login-page{background:linear-gradient(90deg,transparent 50%,#0b1020 50%),linear-gradient(160deg,#0a1f55 0,#14338a 100%)}
+[data-theme=dark] .login-page:before{background:
+  radial-gradient(circle at 8% 92%,rgba(147,197,253,.10) 0 170px,transparent 171px),
+  radial-gradient(circle at 88% 14%,transparent 0 104px,rgba(147,197,253,.22) 105px 108px,transparent 109px),
+  radial-gradient(circle at 80% 86%,transparent 0 58px,rgba(147,197,253,.2) 59px 61px,transparent 62px),
+  radial-gradient(circle at 70% 70%,#fbbf24 0 8px,transparent 9px),
+  radial-gradient(circle at 20% 22%,#f472b6 0 6px,transparent 7px),
+  radial-gradient(circle at 92% 58%,#34d399 0 7px,transparent 8px)}
+[data-theme=dark] .login-page:after{background:
+  radial-gradient(circle at 92% 8%,transparent 0 86px,#1b2a55 87px 90px,transparent 91px),
+  radial-gradient(circle at 96% 92%,#0f1a38 0 150px,transparent 151px),
+  radial-gradient(circle at 10% 90%,transparent 0 46px,#1b2a55 47px 49px,transparent 50px),
+  radial-gradient(circle at 14% 18%,#27408a 0 7px,transparent 8px),
+  radial-gradient(circle at 84% 70%,#27408a 0 5px,transparent 6px)}
+@media(max-width:760px){
+  .login-page{background:#f1f6ff}[data-theme=dark] .login-page{background:#0b1020}
+  .login-page:before{display:none}.login-page:after{left:0;right:0;width:auto}
+}

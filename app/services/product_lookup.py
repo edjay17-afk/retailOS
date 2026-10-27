@@ -3,11 +3,13 @@ from sqlalchemy import select, or_, case
 from ..models import Product
 
 
-def search(db, q):
+def search(db, q, location=None):
     term = q.strip()[:150]
     if not term:
         return []
     stmt = select(Product).where(Product.in_api.is_(True))
+    if location is not None:
+        stmt = stmt.where(Product.source == location.source, Product.source_account == location.source_account)
     for word in term.split():
         stmt = stmt.where(or_(Product.name.icontains(word, autoescape=True),
                              Product.barcode.icontains(word, autoescape=True),

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Replenishment') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/replenishment_sheet.css?v={{ asset_v('replenishment_sheet.css') }}">
+{% set qs = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&search=' ~ (search|urlencode) %}
+{% set here = '/replenishment/sheet?' ~ qs ~ '&page=' ~ page %}
+<div class="page-head">
+  <div><h1>{{ t('Auto replenishment') }}</h1>
+    <p class="sync-note">{{ t('One sheet for every store: what each store needs, what the warehouse can send, and what to order from suppliers.') }}</p></div>
+  <div class="row noprint">
+    {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
+    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
+    <a class="btn sec" href="/replenishment/batches"><svg class="i"><use href="#i-file"/></svg>{{ t('Order batches') }}</a>
+    <a class="btn sec" href="/replenishment?view=list">{{ t('List view') }}</a>
+  </div>
+</div>
+
+{% if sales_only %}<p class="rs-note small mute"><b>{{ t('Based on sales only for now.') }}</b> {{ t('Stock on hand is not used while inventory is not accurate. Each suggestion covers {days} days of sales, minus what is already on order, and anything approved in the last {days} days is not suggested again.', days=cover_days) }}</p>{% endif %}
+
+<div class="rs-kpis">
+  <div class="rs-kpi"><b>{{ kpi.products|num(0) }}</b><small>{{ t('products need stock') }}</small></div>
+  <div class="rs-kpi"><b>PHP {{ kpi.value|money }}</b><small>{{ t('total to move or order') }}</small></div>
+  {% if has_wh %}<div class="rs-kpi"><b>PHP {{ kpi.send|money }}</b><small>{{ t('can be sent from the warehouse') }}</small></div>
+  <div class="rs-kpi {{ 'hot' if kpi.order > 0 }}"><b>PHP {{ kpi.order|money }}</b><small>{{ t('must be ordered from suppliers') }}</small></div>{% endif %}
+</div>
+{% if last %}<p class="small {{ 'mute' if last.status == 'ok' else '' }}" {% if last.status != 'ok' %}style="color:var(--bad)"{% endif %}>{{ t('Last run') }} {{ last.run_at|local }} ({{ t(last.status) }}){% if last.note %}: {{ t(last.note) }}{% endif %}</p>{% endif %}
+
+<form novalidate class="rs-tools" method="get">
+  <span class="rs-seg">
+    {% for v, l, n in (('pending', 'Ready to review', counts.get('pending', 0)), ('needs_review', 'Needs review', counts.get('needs_review', 0)), ('decided', 'Decided', counts.get('approved', 0) + counts.get('modified', 0)), ('all', 'All', none)) %}<a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}">{{ t(l) }}{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>{% endfor %}
+  </span>
+  <input type="hidden" name="status" value="{{ status }}">
+  <input type="search" name="search" value="{{ search }}" placeholder="{{ t('Product name or barcode') }}" aria-label="{{ t('Search') }}">
+  <select name="loc" class="rs-store" onchange="this.form.submit()" aria-label="{{ t('Store') }}"><option value="0">{{ t('All stores') }}</option>{% for l in all_stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ short(l.name) }}</option>{% endfor %}</select>
+  <select name="supplier" onchange="this.form.submit()" aria-label="{{ t('Supplier') }}"><option value="0">{{ t('All suppliers') }}</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if supplier == s.id }}>{{ s.name }}</option>{% endfor %}</select>
+  <button class="sm">{{ t('Search') }}</button>
+  {% if not sales_only %}<span class="rs-legend"><i class="u"></i>{{ t('Urgent (under 1 day)') }}<i class="w"></i>{{ t('Soon (1 to 3 days)') }}<i class="n"></i>{{ t('Normal') }}</span>{% endif %}
+</form>
+
+<form novalidate method="post" action="{{ '/replenishment/transfer-sheets' if can('transfer.sheet') else '/replenishment/bulk' }}" id="bulk">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ here }}">
+  <div class="rs-dock noprint" id="repl-selection" hidden>
+    <div><b><span id="repl-selected-count">0</span> {{ t('selected') }}</b><small>PHP <span id="rs-selected-value">0.00</span> <span id="repl-save-hint" hidden>· {{ t('Save edited quantities before proceeding.') }}</span></small></div>
+    <button type="submit" id="repl-proceed">{{ t('Proceed to transfer sheets') if can('transfer.sheet') else t('Approve selected') }}</button>
+  </div>
+</form>
+
+<div class="rs-wrap"><table class="rs">
+  <thead><tr>
+    <th class="rs-cb">{% if can('repl.decide') %}<label class="rs-all"><input type="checkbox" id="repl-select-all"><span>{{ t('Select all') }}</span></label>{% endif %}</th>
+    <th>{{ t('Product') }}</th>
+    {% if has_wh %}<th class="r">{{ t('Warehouse has') }}</th>{% endif %}
+    {% for l in stores %}<th class="c" title="{{ l.name }}">{{ short(l.name) }}</th>{% endfor %}
+    <th class="r">{{ t('Stores need') }}</th><th>{{ t('What to do') }}</th>
+  </tr></thead>
+  <tbody>
+  {% for row in rows %}
+  <tr class="rs-row">
+    <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
+    <td class="rs-p"><b>{{ row.p.name }}</b><small>{{ row.p.barcode or '' }}{% if row.supplier %} · {{ row.supplier.name }}{% endif %}</small>
+      <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}">{{ t('Why this number') }}</button>
+      <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template></td>
+    {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh {{ 'short' if row.todo[0] != 'send' }}">{{ row.wh|num }}</td>{% endif %}
+    {% for l in stores %}{% set x = row.cells.get(l.id) %}
+    <td class="c" data-label="{{ short(l.name) }}">
+      {% if not x %}<span class="q z" title="{{ t('Nothing suggested') }}">0</span>
+      {% else %}{% set r = x.r %}{% set tip = r.product.name ~ ' · ' ~ short(l.name) ~ ': ' ~ t('sells') ~ ' ' ~ (r.ads|num) ~ '/' ~ t('day') ~ (' · ' ~ t('on hand') ~ ' ' ~ (r.on_hand|num) if not sales_only else '') ~ (' · +' ~ (r.incoming|num) ~ ' ' ~ t('incoming') if r.incoming else '') ~ ' · ' ~ t('Suggested') ~ ' ' ~ (r.final_qty|num) %}
+        {% if x.selectable %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" data-unit="{{ r.unit_cost or 0 }}" hidden>{% endif %}
+        {% if x.editable %}
+        <form id="repl-quantity-{{ r.id }}" method="post" action="/replenishment/{{ r.id }}/decide" class="repl-quantity" data-nobusy data-rec-id="{{ r.id }}" data-saved="{{ x.qty|int }}">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save"><input type="hidden" name="back" value="{{ here }}">
+          <input class="q {{ x.level }}" type="number" name="qty" min="1" max="100000" step="1" required value="{{ x.qty|int }}" title="{{ tip }}" aria-label="{{ t('Quantity') }}: {{ r.product.name }} · {{ short(l.name) }}">
+          <button hidden name="saveButton" type="submit">{{ t('Save') }}</button><span class="repl-save-status" role="status" aria-live="polite"></span>
+        </form>
+        {% elif x.review %}<span class="q rv" title="{{ tip }} — {% for z in r.needs_review_reasons %}{{ t(z|replace('_',' ')) }}{{ '; ' if not loop.last }}{% endfor %}">{{ x.qty|num }}</span>
+        {% else %}<span class="q d" title="{{ tip }}">{{ x.qty|num }}{% if r.transfer_sheet_id %}<em>{{ t('sheet') }}</em>{% elif r.batch_id %}<em>{{ t('batch') }}</em>{% endif %}</span>{% endif %}
+      {% endif %}
+    </td>{% endfor %}
+    <td class="r rs-need" data-label="{{ t('Stores need') }}"><b>{{ row.need|num }}</b></td>
+    <td class="rs-todo">{% set td = row.todo %}
+      {% if td[0] == 'send' %}<span class="need">{{ t('Send') }} {{ td[1]|num }}</span>
+      {% elif td[0] == 'order' %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
+      {% else %}<span class="need">{{ t('Send') }} {{ td[1]|num }}</span> <span class="need sup">{{ t('Order') }} {{ td[2]|num }}</span>{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="{{ stores|length + (5 if has_wh else 4) }}"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>
+  {% endfor %}
+  </tbody>
+  {% if rows %}<tfoot><tr><td></td><td>{{ t('Total') }} <small>({{ t('all pages') }})</small></td>{% if has_wh %}<td></td>{% endif %}{% for l in stores %}<td class="c">{{ col_totals[l.id]|num }}</td>{% endfor %}<td class="r">{{ grand|num }}</td><td></td></tr></tfoot>{% endif %}
+</table></div>
+<p class="small mute rs-foot">{{ t('Change a number and it saves by itself. Tick the rows you have checked, then proceed.') }} {{ t('Managers can approve up to') }} {{ limit|money }} {{ t('per line') }}.</p>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + pages - 1) // pages) or 1 }} · {{ total }} {{ t('products') }}</span>
+{% if page * pages < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+<div class="drawer-scrim" id="drawer-scrim" hidden></div>
+<dialog class="drawer" id="drawer" aria-labelledby="drawer-title" hidden>
+  <div class="drawer-head"><h2 id="drawer-title"></h2><button type="button" class="iconbtn" id="drawer-close" aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="drawer-body" id="drawer-body"></div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}<script src="/static/replenishment_sheet.js?v={{ asset_v('replenishment_sheet.js') }}" data-saving="{{ t('Saving?') }}" data-failed="{{ t('Could not save. Please try again.') }}" data-unsaved="{{ t('Unsaved changes') }}" data-saved="{{ t('Saved') }}"></script>{% endblock %}

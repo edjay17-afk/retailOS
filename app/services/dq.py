@@ -117,7 +117,7 @@ def r_no_supplier(db: Session) -> Desired:
 def r_no_cost(db: Session) -> Desired:
     q = select(Product.id, Product.name).where(Product.in_api.is_(True), Product.track_stock.is_(True),
                                                (Product.cost.is_(None)) | (Product.cost <= 0))
-    return {f"nocost:{i}": _ev("warning", "product", i, f"{n}: no cost set in StoreHub, margin and order value are unreliable", prod=i)
+    return {f"nocost:{i}": _ev("warning", "product", i, f"{n}: no cost set in the POS, margin and order value are unreliable", prod=i)
             for i, n in db.execute(q)}
 
 
@@ -128,12 +128,12 @@ def r_no_barcode(db: Session) -> Desired:
 
 
 def r_duplicate_barcode(db: Session) -> Desired:
-    dup = select(Product.barcode).where(Product.in_api.is_(True), Product.barcode.is_not(None), Product.barcode != "") \
-        .group_by(Product.barcode).having(func.count() > 1)
+    dup = select(Product.source, Product.source_account, Product.barcode).where(Product.in_api.is_(True), Product.barcode.is_not(None), Product.barcode != "") \
+        .group_by(Product.source, Product.source_account, Product.barcode).having(func.count() > 1)
     out: Desired = {}
-    for bc in db.scalars(dup):
-        names = [n for n in db.scalars(select(Product.name).where(Product.barcode == bc, Product.in_api.is_(True)))]
-        out[f"dupbc:{bc}"] = _ev("info", "product", bc, f"Barcode {bc} is used by {len(names)} products: {', '.join(names[:3])}")
+    for source, account, bc in db.execute(dup):
+        names = [n for n in db.scalars(select(Product.name).where(Product.barcode == bc, Product.in_api.is_(True), Product.source == source, Product.source_account == account))]
+        out[f"dupbc:{bc}" if source == "storehub" else f"dupbc:{account}:{bc}"] = _ev("info", "product", bc, f"Barcode {bc} is used by {len(names)} products: {', '.join(names[:3])}")
     return out
 
 

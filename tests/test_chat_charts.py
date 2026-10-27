@@ -193,7 +193,7 @@ def test_explain_answers_inline_when_called_from_the_drawer(client, session, syn
     boss.password_hash = hash_password(PW); session.commit()
     login(client, "boss")
     rec = session.scalar(select(Recommendation))
-    tok = csrf_of(client, "/replenishment")
+    tok = csrf_of(client, "/replenishment?view=list")
     ai({"answer": [{"type": "calculation", "text": "Because daily sales drive it", "refs": ["F1"]}], "suggested_actions": [], "follow_ups": []})
     r = client.post(f"/replenishment/{rec.id}/explain", data={"csrf": tok}, headers={"X-Requested-With": "fetch"})
     d = r.json()

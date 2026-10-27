@@ -287,19 +287,31 @@ def _scan_count(c, cid):
     return cc
 
 
+@router.get("/counts/{cid}/products")
+def count_products(cid: int, q: str = "", c: Ctx = Depends(need("count.enter"))):
+    from ..services.product_lookup import search
+    cc = _scan_count(c, cid)
+    return search(c.db, q, cc.location)
+
+
 @router.post("/counts/{cid}/scan")
-def count_scan(cid: int, code: str = Form(...), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
+def count_scan(cid: int, code: str = Form(""), product_id: int = Form(0), csrf: str = Form(""), c: Ctx = Depends(need("count.enter"))):
     from ..services.transfer_sheets import find
     from ..storehub.client import StoreHubError
     c.check_csrf(csrf)
     cc = _scan_count(c, cid)
-    product, _ = find(c.db, code)
+    if product_id:
+        product = c.db.get(Product, product_id)
+    else:
+        from ..services.product_lookup import search
+        matches = search(c.db, code, cc.location)
+        product = c.db.get(Product, matches[0]['id']) if len(matches) == 1 else None
     if product is None or not product.in_api:
         raise HTTPException(404, "Product not found. Scan its barcode or enter its SKU.")
     try:
         qty = countsvc.live_quantity(cc.location, product)
     except (StoreHubError, countsvc.CountError, ValueError):
-        raise HTTPException(503, "Could not fetch current stock from StoreHub. Please retry.")
+        raise HTTPException(503, "Could not fetch current stock from the POS. Please retry.")
     line = next((l for l in cc.lines if l.product_id == product.id), None)
     return {"id":product.id,"name":product.name,"system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else ""}
 
@@ -317,7 +329,7 @@ def count_scan_save(cid: int, product_id: int = Form(...), counted: float = Form
     except countsvc.CountError as e:
         raise HTTPException(400, str(e))
     except (StoreHubError, ValueError):
-        raise HTTPException(503, "Could not fetch current stock from StoreHub. Your count was not saved; please retry.")
+        raise HTTPException(503, "Could not fetch current stock from the POS. Your count was not saved; please retry.")
     return {"name":product.name,"counted":line.counted_qty,"system":line.system_qty,"difference":line.variance}
 
 
@@ -393,6 +405,9 @@ def counts_targeted(location_id: int = Form(...), product_id: int = Form(...), c
     loc = c.db.get(Location, location_id)
     if loc is None:
         raise HTTPException(404)
+    from ..services.sources import matches
+    if not matches(c.db.get(Product, product_id), loc):
+        raise HTTPException(400, "Choose a product from the same POS account as the store")
     cc = countsvc.create_targeted(c.db, c.user, loc, [product_id])
     return redirect(f"/counts/{cc.id}")
 
@@ -494,9 +509,10 @@ def expiry_page(loc: int = 0, c: Ctx = Depends(need("expiry.view"))):
 
 
 @router.get("/expiry/products")
-def expiry_products(q: str = "", c: Ctx = Depends(need("expiry.view"))):
+def expiry_products(q: str = "", loc: int = 0, c: Ctx = Depends(need("expiry.view"))):
     from ..services.product_lookup import search
-    return search(c.db, q)
+    if loc: c.check_loc(loc)
+    return search(c.db, q, c.db.get(Location, loc) if loc else None)
 
 
 @router.post("/expiry/add")

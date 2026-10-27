@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from .config import get_config
@@ -257,5 +257,135 @@ def _po_prices_once(wanted: set[int], earliest, today) -> dict[int, list[tuple[s
                 except Exception as e:  # noqa: BLE001
                     log.warning("po %s price read failed: %s: %s", no, type(e).__name__, str(e).strip().splitlines()[0][:160] if str(e).strip() else "")
             return out
+        finally:
+            browser.close()
+
+
+# ------------------------------------------------------------------------------------------------ register shifts
+def fetch_shifts(start, end, skip: set[str], max_details: int = 40, attempts: int = 2) -> tuple[list[dict], dict[str, str]]:
+    """StoreHub's Shift Reports (read only). Returns (every shift between the dates as its list row, {shift id: text of the shift's own page} for up to
+    `max_details` shifts whose id is not in `skip`, newest first)."""
+    last: Exception | None = None
+    for i in range(attempts):
+        try:
+            return _shifts_once(start, end, skip, max_details)
+        except (RobotNotConfigured, RobotLoginFailed):
+            raise
+        except Exception as e:  # noqa: BLE001
+            last = e
+            log.warning("shift report read failed (attempt %s/%s): %s: %s", i + 1, attempts, type(e).__name__, str(e).strip().splitlines()[0][:200] if str(e).strip() else "")
+    raise RobotError(f"could not read StoreHub's Shift Reports: {type(last).__name__}")
+
+
+def _shifts_once(start, end, skip: set[str], max_details: int) -> tuple[list[dict], dict[str, str]]:
+    from playwright.sync_api import sync_playwright
+    cfg = get_config()
+    base = cfg.storehub_bo_url.rstrip("/")
+    with sync_playwright() as pw:
+        browser, ctx = open_browser(pw, headless=cfg.robot_headless)
+        try:
+            page = ctx.new_page()
+            sign_in(page)
+            page.goto(base + "/reports/sales/shifts", wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_load_state("networkidle", timeout=60000)
+            url = f"/reports/sales/ajaxShifts?fromdate={start:%m/%d/%Y}&todate={end:%m/%d/%Y}&store=allStores"
+            data = page.evaluate("async (u) => { const r = await fetch(u, {credentials: 'same-origin'}); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }", url)
+            rows = data.get("aaData") if isinstance(data, dict) else None
+            if not isinstance(rows, list):
+                raise RobotError("StoreHub's Shift Reports did not return a list")
+            texts: dict[str, str] = {}
+            todo = [r for r in rows if r.get("DT_RowId") and r["DT_RowId"] not in skip][:max_details]
+            for r in todo:
+                try:
+                    page.goto(f"{base}/reports/sales/shifts/id={r['DT_RowId']}", wait_until="domcontentloaded", timeout=60000)
+                    page.wait_for_selector("text=Payments Received", timeout=30000)
+                    texts[r["DT_RowId"]] = page.inner_text("body")
+                except Exception as e:  # noqa: BLE001
+                    log.warning("shift %s page read failed: %s: %s", r["DT_RowId"], type(e).__name__, str(e).strip().splitlines()[0][:160] if str(e).strip() else "")
+            return rows, texts
+        finally:
+            browser.close()
+
+
+# ------------------------------------------------------------------------------------------------ official Z-reading reports (GET only)
+_GET_JSON_JS = """async (u) => {
+  const r = await fetch(u, {method: "GET", credentials: "same-origin"});
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return await r.json();
+}"""
+
+_Z_DETAIL_JS = r"""() => {
+  const sections = [];
+  let current = null;
+  for (const el of document.querySelectorAll('h1, h2, h3, h4, table')) {
+    if (el.tagName === 'TABLE') {
+      if (!current) continue;
+      const rows = [...el.querySelectorAll('tr')].map(tr =>
+        [...tr.querySelectorAll('th,td')].map(cell => cell.innerText.trim())
+      ).filter(row => row.some(Boolean));
+      if (rows.length) current.tables.push({rows});
+      continue;
+    }
+    const title = el.innerText.trim();
+    if (!title || /^Z-Reading Details$/i.test(title)) continue;
+    current = {title, tables: []};
+    sections.push(current);
+  }
+  return sections;
+}"""
+
+
+def fetch_zreadings(start, end, skip: set[str], max_details: int = 40, attempts: int = 2) -> tuple[list[dict], dict[str, dict]]:
+    """Read StoreHub's official Z-reading list and detail pages. After the existing sign-in, every report request is a GET; no report controls are clicked or changed.
+
+    Returns (all list rows, {report id: {sections, source_text}} for up to `max_details` reports not in `skip`, newest first).
+    """
+    last: Exception | None = None
+    for i in range(attempts):
+        try:
+            return _zreadings_once(start, end, skip, max_details)
+        except (RobotNotConfigured, RobotLoginFailed):
+            raise
+        except Exception as e:  # noqa: BLE001
+            last = e
+            log.warning("Z-reading read failed (attempt %s/%s): %s: %s", i + 1, attempts, type(e).__name__, str(e).strip().splitlines()[0][:200] if str(e).strip() else "")
+    raise RobotError(f"could not read StoreHub's Z-Reading Reports: {type(last).__name__}")
+
+
+def _read_zreadings(page, base: str, start, end, skip: set[str], max_details: int) -> tuple[list[dict], dict[str, dict]]:
+    """GET-only page reader, separated from browser setup so tests can prove no mutating page controls are used."""
+    page.goto(base + "/reports/bir/zreadings", wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_load_state("networkidle", timeout=60000)
+    url = f"/reports/bir/ajaxZreadings?fromdate={start:%m/%d/%Y}&todate={end:%m/%d/%Y}&store=allStores"
+    data = page.evaluate(_GET_JSON_JS, url)
+    rows = data.get("aaData") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        raise RobotError("StoreHub's Z-Reading Reports did not return a list")
+    details: dict[str, dict] = {}
+    todo = [r for r in rows if r.get("DT_RowId") and r["DT_RowId"] not in skip][:max_details]
+    for r in todo:
+        sid = r["DT_RowId"]
+        try:
+            page.goto(f"{base}/reports/bir/zreading/id={sid}", wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_selector("table", timeout=30000)
+            sections = page.evaluate(_Z_DETAIL_JS)
+            if not sections:
+                raise RobotError("StoreHub's Z-reading detail did not contain its official sections")
+            details[sid] = {"sections": sections, "source_text": page.inner_text("body")}
+        except Exception as e:  # noqa: BLE001
+            log.warning("Z-reading %s detail read failed: %s: %s", sid, type(e).__name__, str(e).strip().splitlines()[0][:160] if str(e).strip() else "")
+    return rows, details
+
+
+def _zreadings_once(start, end, skip: set[str], max_details: int) -> tuple[list[dict], dict[str, dict]]:
+    from playwright.sync_api import sync_playwright
+    cfg = get_config()
+    base = cfg.storehub_bo_url.rstrip("/")
+    with sync_playwright() as pw:
+        browser, ctx = open_browser(pw, headless=cfg.robot_headless)
+        try:
+            page = ctx.new_page()
+            sign_in(page)
+            return _read_zreadings(page, base, start, end, skip, max_details)
         finally:
             browser.close()

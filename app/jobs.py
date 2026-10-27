@@ -11,7 +11,7 @@ from . import audit
 from .config import get_config
 from .db import SessionLocal
 from .models import Recommendation
-from .services import (backup, brief, counts, dq, expiry, inspections, issues, notifications, receiving, po_prices, replenishment, sales_profit, stock_events, transfer_inbox, transfer_sheets)
+from .services import (backup, brief, counts, dq, expiry, inspections, issues, notifications, receiving, po_prices, replenishment, sales_profit, sales_shifts, stock_events, transfer_inbox, transfer_sheets, zreadings)
 from .storehub.client import AuthError
 from .storehub.sync import SyncService
 from .timeutil import now_utc, today_local
@@ -41,6 +41,13 @@ def _db_job(fn):
         out = fn(db)
         db.commit()
         return out
+
+
+@_safe("sync_loyverse")
+def sync_loyverse():
+    from .loyverse.sync import sync_all
+    from .loyverse.reporting import sync_all as sync_reports
+    return {"replenishment": sync_all(), "reporting": sync_reports() if get_config().loyverse_reporting_enabled else []}
 
 
 @_safe("sync_sales")
@@ -106,6 +113,30 @@ def run_sales_profit():
     out = _db_job(go)
     if out and out.get("ran"):
         log.info("gross profit report: %s", out)
+
+
+@_safe("sales_shifts")
+def run_sales_shifts():
+    """StoreHub's register shifts (read from its Shift Reports); checked every 15 minutes, it only runs when due."""
+    def go(db):
+        if not sales_shifts.due(db):
+            return {"ran": False}
+        return sales_shifts.run(db)
+    out = _db_job(go)
+    if out and out.get("ran"):
+        log.info("sales shifts: %s", out)
+
+
+@_safe("zreadings")
+def run_zreadings():
+    """StoreHub's official Z-readings (GET-only back-office reads); checked every 15 minutes, fetched only when due."""
+    def go(db):
+        if not zreadings.due(db):
+            return {"ran": False}
+        return zreadings.run(db)
+    out = _db_job(go)
+    if out and out.get("ran"):
+        log.info("Z-readings: %s", out)
 
 
 @_safe("po_prices")
@@ -200,6 +231,8 @@ def start() -> BackgroundScheduler | None:
     tzname = ZoneInfo("Asia/Manila")
     s = BackgroundScheduler(timezone=tzname, job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 300})
     soon = lambda sec: datetime.now() + timedelta(seconds=sec)  # noqa: E731
+    if cfg.loyverse_tokens_file:
+        s.add_job(sync_loyverse, "interval", minutes=cfg.loyverse_sync_minutes, next_run_time=soon(12), id="loyverse")
     # data syncs (spec 6.1 defaults); first run shortly after start-up so a restart catches up at once
     s.add_job(sync_reference, "interval", hours=6, next_run_time=soon(2), id="reference")
     s.add_job(sync_products, "interval", minutes=1, next_run_time=soon(8), id="products")  # one job also handles the initial catch-up
@@ -228,6 +261,8 @@ def start() -> BackgroundScheduler | None:
     s.add_job(run_transfer_robot, "interval", minutes=1, next_run_time=soon(240), id="transfer_robot")  # due-check only; actual fetching defaults to every 20 minutes
     s.add_job(run_sales_profit, "interval", minutes=15, next_run_time=soon(330), id="sales_profit")
     s.add_job(run_po_prices, "interval", minutes=15, next_run_time=soon(420), id="po_prices")
+    s.add_job(run_sales_shifts, "interval", minutes=15, next_run_time=soon(500), id="sales_shifts")
+    s.add_job(run_zreadings, "interval", minutes=15, next_run_time=soon(580), id="zreadings")
     s.add_job(compliance_check, "cron", hour=6, minute=20, id="compliance")
     s.add_job(compliance_check, "date", run_date=soon(120), id="compliance_boot")
     s.start()

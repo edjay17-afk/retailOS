@@ -73,9 +73,9 @@ def find_product(db: Session, key: str) -> tuple[Product | None, str]:
     key = key.strip()
     if re.fullmatch(r"\d+\.0", key):  # Excel turns barcodes into numbers
         key = key[:-2]
-    p = db.scalar(select(Product).where(Product.barcode == key)) or db.scalar(select(Product).where(Product.sku == key))
-    if p:
-        return p, ""
+    exact = list(db.scalars(select(Product).where((Product.barcode == key) | (Product.sku == key)).limit(2)))
+    if len(exact) == 1: return exact[0], ""
+    if len(exact) > 1: return None, "Barcode matches multiple accounts; select a single POS account first"
     found = list(db.scalars(select(Product).where(Product.in_api.is_(True), Product.name == key).limit(2)))
     if not found:
         found = list(db.scalars(select(Product).where(Product.in_api.is_(True), Product.name.like(f"%{key}%")).limit(3)))

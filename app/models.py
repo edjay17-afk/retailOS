@@ -12,6 +12,13 @@ from .db import Base
 from .timeutil import now_utc
 
 
+class SourceEntity:
+    """Source identity; legacy storehub_id remains an internal compatibility key."""
+    source: Mapped[str] = mapped_column(String(20), default="storehub", server_default="storehub")
+    source_account: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    external_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+
+
 # --------------------------------------------------------------------------- settings / people
 class OrderDocument(Base):
     """Editable print/export copy. Never changes StoreHub stock or receiving records."""
@@ -63,7 +70,7 @@ class WebSession(Base):
     user: Mapped[User] = relationship()
 
 
-class Employee(Base):
+class Employee(SourceEntity, Base):
     __tablename__ = "employee"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storehub_id: Mapped[str] = mapped_column(String(40), unique=True)
@@ -78,7 +85,7 @@ class Employee(Base):
 
 
 # --------------------------------------------------------------------------- master data
-class Location(Base):
+class Location(SourceEntity, Base):
     __tablename__ = "location"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storehub_id: Mapped[str] = mapped_column(String(40), unique=True)
@@ -93,7 +100,7 @@ class Location(Base):
     closes_at: Mapped[str] = mapped_column(String(5), default="22:00")
 
 
-class Supplier(Base):
+class Supplier(SourceEntity, Base):
     __tablename__ = "supplier"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storehub_id: Mapped[Optional[str]] = mapped_column(String(40), unique=True, nullable=True)
@@ -107,7 +114,7 @@ class Supplier(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Product(Base):
+class Product(SourceEntity, Base):
     __tablename__ = "product"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storehub_id: Mapped[str] = mapped_column(String(40), unique=True)
@@ -124,6 +131,7 @@ class Product(Base):
     in_api: Mapped[bool] = mapped_column(Boolean, default=True)  # False once it disappears from /products
     first_seen: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
     last_seen: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # system-owned configuration (StoreHub has no such fields)
     supplier_id: Mapped[Optional[int]] = mapped_column(ForeignKey("supplier.id"), nullable=True)
     supplier_source: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)  # po_history | manual
@@ -261,6 +269,48 @@ class SalesDayProduct(Base):
     units: Mapped[float] = mapped_column(Float, default=0)  # net of returns, excludes cancelled
     net_sales: Mapped[float] = mapped_column(Float, default=0)  # incl. tax
     __table_args__ = (Index("ix_sdp_prod_date", "product_id", "business_date"),)
+
+
+class SalesShift(Base):
+    """One register shift as StoreHub's back-office Shift Reports show it (read only; the API has no shifts). Times are Manila local time."""
+    __tablename__ = "sales_shift"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sh_id: Mapped[str] = mapped_column(String(40), unique=True)  # StoreHub's shift id
+    location_id: Mapped[int] = mapped_column(ForeignKey("location.id"), index=True)
+    register: Mapped[str] = mapped_column(String(20), default="")
+    opened_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # empty while the shift is still open
+    tx_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_sales: Mapped[float] = mapped_column(Float, default=0)
+    deposit: Mapped[float] = mapped_column(Float, default=0)
+    cashier: Mapped[str] = mapped_column(String(120), default="")
+    opening_fund: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    payments: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # {"Cash": [qty, amount], "GCASH": [qty, amount], ...}
+    withdrawals_qty: Mapped[int] = mapped_column(Integer, default=0)
+    withdrawals: Mapped[float] = mapped_column(Float, default=0)
+    void_total: Mapped[float] = mapped_column(Float, default=0)
+    refund_total: Mapped[float] = mapped_column(Float, default=0)
+    discount_total: Mapped[float] = mapped_column(Float, default=0)
+    tax_total: Mapped[float] = mapped_column(Float, default=0)
+    detail_ok: Mapped[bool] = mapped_column(Boolean, default=False)  # the shift's own page has been read (cashier, payments, ...)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+
+
+class ZReading(Base):
+    """One official Z-reading copied from StoreHub's back office with GET requests only. Times are Manila local time."""
+    __tablename__ = "z_reading"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sh_id: Mapped[str] = mapped_column(String(40), unique=True)  # StoreHub's Z-reading report id
+    location_id: Mapped[int] = mapped_column(ForeignKey("location.id"), index=True)
+    close_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    z_count: Mapped[int] = mapped_column(Integer, default=0)
+    register: Mapped[str] = mapped_column(String(20), default="")
+    tx_count: Mapped[int] = mapped_column(Integer, default=0)
+    gross_sales: Mapped[float] = mapped_column(Float, default=0)
+    detail_ok: Mapped[bool] = mapped_column(Boolean, default=False)  # the official detail page has been read
+    detail_json: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # exact section/table text, grouped as StoreHub shows it
+    source_text: Mapped[str] = mapped_column(Text, default="")  # source-page text retained for audit; never recalculated
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
 
 
 # --------------------------------------------------------------------------- purchase orders
@@ -1075,3 +1125,51 @@ class ComplianceItem(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
     location: Mapped[Optional[Location]] = relationship()
     owner: Mapped[Optional[User]] = relationship()
+
+
+# Loyverse data is account-scoped and never mixed into StoreHub mirrors.
+class LoyverseAccount(Base):
+    reporting_catalog_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    reporting_history_from: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    reporting_error: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    reporting_success_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    __tablename__ = "loyverse_account"
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    last_success_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    catalog_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    history_from: Mapped[Optional[date]] = mapped_column(Date)
+    last_error: Mapped[Optional[str]] = mapped_column(String(200))
+
+
+class LoyverseStore(Base):
+    __tablename__ = "loyverse_store"
+    account_key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    store_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class LoyverseVariant(Base):
+    __tablename__ = "loyverse_variant"
+    account_key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    variant_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    item_id: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(400))
+    sku: Mapped[Optional[str]] = mapped_column(String(120))
+    barcode: Mapped[Optional[str]] = mapped_column(String(200))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sold_by_weight: Mapped[bool] = mapped_column(Boolean, default=False)
+    composite: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class LoyverseReceipt(Base):
+    __tablename__ = "loyverse_receipt"
+    account_key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    receipt_number: Mapped[str] = mapped_column(String(100), primary_key=True)
+    store_id: Mapped[str] = mapped_column(String(80), index=True)
+    business_date: Mapped[date] = mapped_column(Date, index=True)
+    receipt_type: Mapped[str] = mapped_column(String(10))
+    cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+    lines: Mapped[list] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)

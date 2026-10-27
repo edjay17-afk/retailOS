@@ -24,6 +24,7 @@ def build(db: Session, location_ids: list[int]) -> dict:
 
     # 1. data freshness (nothing else can be trusted if this is red)
     bad = [f for f in freshness.freshness(db) if f["status"] != "fresh" and f["critical"]]
+    if locs and all(l.source == "loyverse" for l in locs.values()): bad = []
     if bad:
         items.append({"priority": "high", "title": "Some data is stale", "location": None,
                       "facts": [f"{f['label']}: " + ("never synced" if f['age_min'] is None else f"last synced {f['age_min']:.0f} min ago (limit {f['limit_min']})") for f in bad],
@@ -53,8 +54,19 @@ def build(db: Session, location_ids: list[int]) -> dict:
                       "calculations": [f"Suggestions use max(0, average daily sales x {cfg.get(db, 'repl.sales_only_cover_days')} cover days - incoming), followed by pack, minimum and maximum order rules." if sales_only else "Suggestions use average daily sales x (lead time + review period) + safety stock, less stock on hand and incoming"],
                       "recommendation": "Review the suggestions; approve, modify or reject each with a reason.", "link": "/replenishment"})
 
+    lv_locs = [l for l in locs.values() if l.source == 'loyverse']
+    if lv_locs:
+        from ..loyverse.replenishment import report
+        data = report(db, allowed_pairs={(l.source_account,l.external_id) for l in lv_locs})
+        if data['rows']:
+            items.append({'priority':'medium','title':f"{len(data['rows'])} Loyverse demand suggestions",'location':None,
+                          'facts':['Suggestions are for items sold; inventory and incoming orders are not deducted.'],
+                          'calculations':['Net sold / store sales days times cover days, rounded up.'],
+                          'recommendation':'Review sales-only suggestions before preparing orders.','link':'/replenishment/loyverse'})
+
     # 4. purchase orders far past their date
     _, stale = purchasing.incoming_map(db)
+    stale = [p for p in stale if p.location_id in location_ids]
     if stale:
         items.append({"priority": "medium", "title": f"{len(stale)} open PO(s) are far past their date", "location": None,
                       "facts": [f"PO #{p.sh_po_id} ({p.supplier.name if p.supplier else 'no supplier'}) is {p.status}" for p in stale[:5]],

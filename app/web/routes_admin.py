@@ -320,6 +320,44 @@ async def products_import(file: UploadFile = File(...), csrf: str = Form(""), c:
     return redirect("/products", ok=msg)
 
 
+@router.get("/employees")
+def employees_page(q: str = "", loc: str = "", page: int = 1, c: Ctx = Depends(need("users.manage"))):
+    from sqlalchemy import or_
+    from ..models import Timesheet, SalesTx
+    from sqlalchemy import union
+    locations = c.locations()
+    allowed = [l.id for l in locations]
+    activity = union(select(Timesheet.employee_sh_id.label("employee_id"), Timesheet.location_id.label("location_id")).where(Timesheet.location_id.in_(allowed)),
+                     select(SalesTx.employee_sh_id.label("employee_id"), SalesTx.location_id.label("location_id")).where(SalesTx.location_id.in_(allowed))).subquery()
+    names = {l.id: l.name for l in locations}
+    stores = {}
+    for eid, lid in c.db.execute(select(activity)):
+        if eid:
+            stores.setdefault(eid, []).append(names[lid])
+    for values in stores.values():
+        values.sort()
+    q = q.strip()[:150]
+    stmt = select(Employee)
+    if loc == "unknown":
+        stmt = stmt.where(~Employee.storehub_id.in_(select(activity.c.employee_id).where(activity.c.employee_id.is_not(None))))
+    elif loc:
+        try:
+            lid = int(loc)
+        except ValueError:
+            raise HTTPException(400, "Invalid store filter")
+        c.check_loc(lid)
+        stmt = stmt.where(Employee.storehub_id.in_(select(activity.c.employee_id).where(activity.c.location_id == lid)))
+    if q:
+        stmt = stmt.where(or_(*[column.icontains(q, autoescape=True) for column in
+                              (Employee.first_name, Employee.last_name, Employee.email, Employee.phone, Employee.storehub_id)],
+                             (Employee.first_name + " " + Employee.last_name).icontains(q, autoescape=True)))
+    total = c.db.scalar(select(func.count()).select_from(stmt.subquery()))
+    pages = max(1, (total + PAGE - 1) // PAGE)
+    page = min(max(1, page), pages)
+    employees = list(c.db.scalars(stmt.order_by(Employee.first_name, Employee.last_name, Employee.id).offset((page - 1) * PAGE).limit(PAGE)))
+    return render(c, "employees.html", employees=employees, q=q, loc=loc, locations=locations, stores=stores, page=page, pages=pages, total=total)
+
+
 @router.get("/users")
 def users_page(loc: str = "", q: str = "", c: Ctx = Depends(need("users.manage"))):
     db = c.db

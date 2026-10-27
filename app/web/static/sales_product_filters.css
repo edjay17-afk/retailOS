@@ -41,3 +41,14 @@
  .product-sales-metric:nth-child(3):before{display:none}
  .product-sales-metric:nth-child(4):before{top:14px;bottom:14px}
 }
+
+/* phone: Sales by product keeps the net sales, the search and one line per product (name, units, net sales) */
+@media(max-width:700px){
+  main:has(#product-sales-filters) .page-head p,
+  main:has(#product-sales-filters) .page-head .row button{display:none}
+  main:has(#product-sales-filters) .product-sales-metric:not(.product-sales-revenue){display:none}
+  main:has(#product-sales-filters) .tw table td:nth-child(3),
+  main:has(#product-sales-filters) .tw table td:nth-child(6),
+  main:has(#product-sales-filters) .tw table td:nth-child(7),
+  main:has(#product-sales-filters) .tw table td:nth-child(8){display:none!important}
+}

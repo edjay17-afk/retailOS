@@ -1,0 +1,85 @@
+/* Shared dark palette and fixes for the newer navigation/mobile shell.
+   All rules are theme-scoped so the light design stays unchanged. */
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000;--surface:#101114;--surface2:#1a1c21;
+  --ink:#f1f3f7;--mute:#b0b7c3;--mute2:#949dab;
+  --line:#30343c;--line2:#484f5b;
+  --primary:#91b8ff;--primary-h:#bfd5ff;--primary-soft:#182942;
+  --accent:#91b8ff;--accent-h:#bfd5ff;--accent-soft:#182942;
+  --btn:#2563eb;--btn-h:#1d4ed8;--primary-ink:#fff;
+  --ok:#65dda8;--ok-soft:#112d23;--warn:#f3bf68;--warn-soft:#342810;
+  --bad:#ff9898;--bad-soft:#371c23;--info:#82cdff;--info-soft:#152d3b;
+  --chart:#91b8ff;
+}
+html[data-theme="dark"] body{background:#000;color:var(--ink)}
+html[data-theme="dark"] #sidebar{background:#000;border-color:var(--line)}
+html[data-theme="dark"] #sidebar #sidebar-nav .ng,
+html[data-theme="dark"] #sidebar #sidebar-nav .nav-home .nl,
+html[data-theme="dark"] #sidebar #sidebar-nav .nav-group:not(.nav-home) .nl,
+html[data-theme="dark"] #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl{color:var(--ink)}
+html[data-theme="dark"] #sidebar #sidebar-nav .ns-h{color:var(--mute2)}
+html[data-theme="dark"] #sidebar #sidebar-nav .current-group>.ng,
+html[data-theme="dark"] #sidebar #sidebar-nav .nav-group.fly-open>.ng{background:var(--primary-soft);color:var(--primary)}
+html[data-theme="dark"] #sidebar #sidebar-nav .current-group>.ng .group-icon{color:var(--primary)}
+html[data-theme="dark"] #sidebar #sidebar-nav .ng:hover,
+html[data-theme="dark"] #sidebar #sidebar-nav .nl:hover,
+html[data-theme="dark"] #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl:hover{background:var(--surface2);color:var(--ink)}
+html[data-theme="dark"] #sidebar #sidebar-nav .ng-links{border-color:var(--line)}
+html[data-theme="dark"] #sidebar #sidebar-nav .tag{background:var(--primary-soft);color:var(--primary)}
+html[data-theme="dark"] #sidebar #sidebar-nav a.nl.on,
+html[data-theme="dark"] #sidebar #sidebar-nav .nav-home a.nl.on,
+html[data-theme="dark"] #sidebar #sidebar-nav .nav-group:not(.nav-home) a.nl.on{background:#2459c4;color:#fff!important;box-shadow:none}
+html[data-theme="dark"] #sidebar #sidebar-nav a.nl.on .ic-tile,
+html[data-theme="dark"] #sidebar #sidebar-nav a.nl.on .tag{color:#fff;background:#ffffff1f}
+html[data-theme="dark"] .pos-source-toolbar{border-bottom-color:var(--line)!important}
+html[data-theme="dark"] .pos-source-switch button:hover,
+html[data-theme="dark"] .pos-account-switch button.is-active{color:var(--primary)!important}
+html[data-theme="dark"] .pos-account-switch button.is-active::after{background:var(--primary)!important}
+html[data-theme="dark"] .date-chip .i{color:var(--primary)}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder{color:var(--mute2);opacity:1}
+html[data-theme="dark"] :focus-visible{outline-color:var(--primary)}
+html[data-theme="dark"] .more-scrim{background:#000b}
+html[data-theme="dark"] .more-sheet{border:1px solid var(--line);box-shadow:0 -12px 40px #0009}
+html[data-theme="dark"] .more-grab{background:var(--line2)}
+html[data-theme="dark"] .more-h{color:var(--mute)}
+html[data-theme="dark"] .more-grid a{background:var(--surface2);color:var(--ink)}
+html[data-theme="dark"] .more-grid a .i{color:var(--primary)}
+html[data-theme="dark"] .more-grid a.on{background:var(--primary-soft);box-shadow:inset 0 0 0 1px var(--primary)}
+html[data-theme="dark"] .more-list,
+html[data-theme="dark"] .more-list>*{border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] .more-list b{color:var(--mute)}
+html[data-theme="dark"] .more-list .more-out{color:var(--bad)}
+html[data-theme="dark"] .more-lang a{color:var(--mute);border-color:var(--line2)}
+html[data-theme="dark"] .more-lang a.on{color:#fff;background:var(--btn);border-color:var(--btn)}
+html[data-theme="dark"] .mtabs .mt{color:var(--mute)}
+html[data-theme="dark"] .mtabs .mt.on{color:var(--primary)}
+html[data-theme="dark"] .mtabs .mt.on .i{background:var(--primary-soft)}
+html[data-theme="dark"] .mf-toggle{color:var(--primary);border-color:var(--line2)}
+html[data-theme="dark"] .mf-toggle:after{color:var(--mute)}
+html[data-theme="dark"] table.mcards tr,
+html[data-theme="dark"] table.mcards td:first-child{border-color:var(--line)}
+html[data-theme="dark"] table.mcards td::before{color:var(--mute)}
+
+/* Store cards and chart labels use the same dark surfaces as reports. */
+html[data-theme="dark"] .lv-card.off{background:var(--surface2)}
+html[data-theme="dark"] .lv-empty{border-color:var(--line2);color:var(--mute)}
+html[data-theme="dark"] .lv-worst{color:var(--mute);border-color:var(--line)}
+html[data-theme="dark"] .lv-t .lv-s,html[data-theme="dark"] .lv-s,
+html[data-theme="dark"] .b-note,html[data-theme="dark"] .b-y,
+html[data-theme="dark"] .lv-sharel,html[data-theme="dark"] .lv-hl,
+html[data-theme="dark"] .lv-mini,html[data-theme="dark"] .lv-ax{color:var(--mute)}
+html[data-theme="dark"] .lv-badge,html[data-theme="dark"] .lv-ic,
+html[data-theme="dark"] .lv-rank .n{background:var(--primary-soft);color:var(--primary)}
+html[data-theme="dark"] .lv-rank .t,html[data-theme="dark"] .lv-share,
+html[data-theme="dark"] .lv-by u{background:var(--primary-soft)}
+html[data-theme="dark"] .lv-ring,html[data-theme="dark"] .lv-ring.warn{background:conic-gradient(var(--primary) calc(var(--p) * 1%),var(--surface2) 0)}
+html[data-theme="dark"] .hv-bar,html[data-theme="dark"] .lv-hours .hv-bar{background:#304a73}
+html[data-theme="dark"] .hv-bar.last,html[data-theme="dark"] .hv-bar.peak,
+html[data-theme="dark"] .lv-hours .hv-bar.peak{background:var(--primary)}
+html[data-theme="dark"] .lv-big{background:#14346c}
+html[data-theme="dark"] .lv-herobars .hv-bar{background:#91b8ff66}
+html[data-theme="dark"] .lv-herobars .hv-bar.last{background:#fff}
+html[data-theme="dark"] .b-tip,html[data-theme="dark"] .hv-tip,
+html[data-theme="dark"] .lv-big .hv-tip,html[data-theme="dark"] .lv-herobars .hv-tip{background:#242b38;color:var(--ink);border:1px solid var(--line2)}

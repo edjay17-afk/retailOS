@@ -12,6 +12,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Config(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
+    loyverse_reporting_enabled: bool = False
+    loyverse_tokens_file: str = ""
+    loyverse_sync_minutes: int = Field(default=1, ge=1, le=60)
+
     storehub_username: str = ""
     storehub_token: str = ""
     storehub_base_url: str = "https://api.storehubhq.com"

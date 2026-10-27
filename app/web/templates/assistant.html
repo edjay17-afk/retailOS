@@ -12,8 +12,8 @@
 </div>
 
 <div class="assistant-workspace">
-  <aside class="assistant-conversations"><div class="row"><h2>Conversations</h2><button type="button" class="sec sm" data-chat-new>New chat</button></div>
-    {% for chat in conversations %}<button type="button" class="assistant-thread" data-chat-resume="{{ chat.id }}">{{ chat.title }}</button>{% else %}<p class="small mute">Your saved conversations will appear here.</p>{% endfor %}
+  <aside class="assistant-conversations"><div class="row"><h2>{{ t('Conversations') }}</h2><button type="button" class="sec sm" data-chat-new>{{ t('New chat') }}</button></div>
+    {% for chat in conversations %}<button type="button" class="assistant-thread" data-chat-resume="{{ chat.id }}">{{ chat.title }}</button>{% else %}<p class="small mute">{{ t('Your saved conversations will appear here.') }}</p>{% endfor %}
   </aside>
   <div id="assistant-chat-mount"></div>
 </div>

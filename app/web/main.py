@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    from . import routes_loyverse
     app = FastAPI(title="Retail OS", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
@@ -66,7 +67,7 @@ def create_app() -> FastAPI:
         resp.headers.setdefault("X-Frame-Options", "DENY")
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("Referrer-Policy", "same-origin")
-        resp.headers.setdefault("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'")
+        resp.headers.setdefault("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https://api.loyverse.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'")
         if not request.url.path.startswith("/static/"):
             resp.headers.setdefault("Cache-Control", "no-store")  # pages hold business data: never cache them
         return resp
@@ -95,6 +96,7 @@ def create_app() -> FastAPI:
 
     for r in (routes_core, routes_po_drafts, routes_stock, routes_ops, routes_ai, routes_admin, routes_transfers, routes_products, routes_documents, routes_planogram, routes_wastage, routes_v21, routes_transfer_sheets):
         app.include_router(r.router)
+    app.include_router(routes_loyverse.router)
     return app
 
 

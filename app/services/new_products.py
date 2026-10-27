@@ -109,11 +109,11 @@ def lookup(db: Session, barcode: str) -> Product | None:
     v = barcode_variants(barcode)
     if not v:
         return None
-    p = db.scalar(select(Product).where(Product.barcode.in_(v)).order_by(Product.in_api.desc(), Product.id))
+    p = db.scalar(select(Product).where(Product.source == "storehub", Product.barcode.in_(v)).order_by(Product.in_api.desc(), Product.id))
     if p is not None:
         return p
     # StoreHub lets one product carry several barcodes, stored comma-separated ("100070161773,6977318633319")
-    for cand in db.scalars(select(Product).where(Product.barcode.like("%,%"), or_(*[Product.barcode.like(f"%{x}%") for x in v])).order_by(Product.in_api.desc(), Product.id)):
+    for cand in db.scalars(select(Product).where(Product.source == "storehub", Product.barcode.like("%,%"), or_(*[Product.barcode.like(f"%{x}%") for x in v])).order_by(Product.in_api.desc(), Product.id)):
         if v & {t.strip() for t in (cand.barcode or "").split(",")}:
             return cand
     return None

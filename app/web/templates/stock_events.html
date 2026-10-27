@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
 <div class="page-head counts-page-head stock-change-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
-    <p class="stock-change-intro">{{ t('Every physical change to stock is recorded here: who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p><p class="stock-change-mobile-intro">Record stock received or written off.</p></div>
+    <p class="stock-change-intro">{{ t('Every physical change to stock is recorded here: who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p><p class="stock-change-mobile-intro">{{ t('Record stock received or written off.') }}</p></div>
   <button type="button" class="sec sm counts-upload-button" data-modal="counts-upload">{{ t('Upload') }} CSV</button>
 </div>
 

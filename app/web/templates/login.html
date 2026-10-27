@@ -1,38 +1,55 @@
 <!doctype html>
-<html lang="{{ 'zh' if lang == 'zh' else 'en' }}" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
 <script>(function(){try{var th=localStorage.getItem('ros-theme');if(th!=='dark'&&th!=='light'){th='light'}document.documentElement.dataset.theme=th}catch(e){document.documentElement.dataset.theme='light'}})();</script>
-<title>{{ t('Sign in') }} | Retail OS</title><link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/style.css?v={{ asset_v('style.css') }}"><link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}"></head>
-<body>
-<div class="auth">
-  <section class="hero">
-    <div class="brand"><span class="mark"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" alt="" width="38" height="38"></span><span>Retail OS<small>{{ company }}</small></span></div>
-    <div>
-      <h2>{{ t('Run every store from one calm screen.') }}</h2>
-      <p>{{ t('Sales and stock from StoreHub, checked and explained. Orders suggested, issues owned, nothing lost.') }}</p>
-      <ul>
-        <li><svg class="i"><use href="#i-check"/></svg>{{ t('Every number traces back to StoreHub data') }}</li>
-        <li><svg class="i"><use href="#i-check"/></svg>{{ t('An AI assistant that cites its facts and asks before it acts') }}</li>
-        <li><svg class="i"><use href="#i-check"/></svg>{{ t('Full audit trail of who did what, and why') }}</li>
-      </ul>
-    </div>
-    <div class="mute small">{{ t('The Daily Centro · Cebu') }}</div>
-  </section>
-  <section class="panel">
-    <form novalidate method="post" action="/login">
-      <h1>{{ t('Welcome back') }}</h1>
-      <p class="mute" style="margin:0 0 18px">{{ t('Sign in to continue.') }}</p>
-      {% if err %}<div class="flash err">{{ t(err) }}</div>{% endif %}
-      {% if ok %}<div class="flash ok">{{ t(ok) }}</div>{% endif %}
-      <input type="hidden" name="next" value="{{ next or '/' }}">
-      <label for="login-username">{{ t('Username') }}</label><input id="login-username" name="username" autocomplete="username" autofocus required style="width:100%">
-      <label for="login-password">{{ t('Password') }}</label><input id="login-password" name="password" type="password" autocomplete="current-password" required style="width:100%">
-      <p style="margin-top:18px"><button style="width:100%;justify-content:center;padding:11px">{{ t('Sign in') }}</button></p>
-      <p class="small mute" style="text-align:center;margin-top:16px"><a href="/lang/en?back=/login">{{ t('English') }}</a> · <a href="/lang/zh?back=/login">中文</a></p>
-    </form>
-    <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false" style="position:fixed;top:14px;right:14px"><svg class="i"><use href="#i-moon"/></svg></button>
-  </section>
-</div>
+<title>{{ t('Sign in') }} | Retail OS</title>
+<link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ asset_v('style.css') }}">
+<link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}">
+<link rel="stylesheet" href="/static/login.css?v={{ asset_v('login.css') }}">
+<link rel="stylesheet" href="/static/login_lively.css?v={{ asset_v('login_lively.css') }}">
+<link rel="stylesheet" href="/static/dark.css?v={{ asset_v('dark.css') }}">
+</head>
+<body class="login-page">
 {% include "_icons.html" %}
+<div class="login-blob b1" aria-hidden="true"></div><div class="login-blob b2" aria-hidden="true"></div><div class="login-blob b3" aria-hidden="true"></div>
+<header class="login-toolbar">
+  <span class="login-wordmark"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" width="28" height="28" alt="">Retail OS</span>
+  <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</header>
+<main class="login-main">
+  <div class="login-layout">
+  <section class="login-story" aria-labelledby="login-story-title">
+    <span class="login-story-label">{{ company }}</span>
+    <h2 id="login-story-title">{{ t('Run every store from one calm screen.') }}</h2>
+    <p>{{ t('Sales and stock from StoreHub, checked and explained. Orders suggested, issues owned, nothing lost.') }}</p>
+    <ul>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>{{ t('Every number traces back to StoreHub data') }}</span></li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>{{ t('An AI assistant that cites its facts and asks before it acts') }}</span></li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>{{ t('Full audit trail of who did what, and why') }}</span></li>
+    </ul>
+  </section>
+  <section class="login-card" aria-labelledby="login-title">
+    <div class="login-emblem"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" width="48" height="48" alt=""></div>
+    <p class="login-company">{{ company }}</p>
+    <h1 id="login-title">{{ t('Welcome back') }}</h1>
+    <p class="login-intro">{{ t('Sign in to continue.') }}</p>
+    <form novalidate method="post" action="/login" class="login-form">
+      {% if err %}<div class="flash err" role="alert">{{ t(err) }}</div>{% endif %}
+      {% if ok %}<div class="flash ok" role="status">{{ t(ok) }}</div>{% endif %}
+      <input type="hidden" name="next" value="{{ next or '/' }}">
+      <div class="login-field"><label for="login-username">{{ t('Username') }}</label><div class="login-input"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><input id="login-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required></div></div>
+      <div class="login-field"><label for="login-password">{{ t('Password') }}</label><div class="login-input"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><input id="login-password" name="password" type="password" autocomplete="current-password" required></div></div>
+      <button class="login-submit" type="submit"><span>{{ t('Sign in') }}</span><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    </form>
+    <div class="login-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="en" lang="en" class="{{ 'on' if lang == 'en' }}" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="zh" lang="zh" class="{{ 'on' if lang == 'zh' }}" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
+  </section>
+  </div>
+  <p class="login-foot">Retail OS <span aria-hidden="true">&middot;</span> {{ company }}</p>
+</main>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
-<script src="/static/app.js?v=20261012-2"></script>
+<script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
 </body></html>

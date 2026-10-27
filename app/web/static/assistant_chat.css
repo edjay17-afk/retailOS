@@ -118,3 +118,16 @@ html[data-theme="dark"] .chat-panel header .iconbtn:hover{background:var(--surfa
 .chat-typing-status{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 @keyframes chat-typing-pulse{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.chat-typing-dots i{animation:none;opacity:.65;transform:none}}
+
+/* The dedicated Assistant page is one calm chat surface on phones. */
+@media(max-width:700px){
+ main:has(#assistant-chat-mount)>.page-head{display:none}
+ main:has(#assistant-chat-mount) .assistant-workspace{display:block;margin:0}
+ body.has-mtabs .chat-panel.chat-workspace{position:relative;inset:auto;width:calc(100% + 36px);max-width:none;height:calc(100dvh - 190px);min-height:420px;max-height:none;margin:0 -18px;border:0;border-radius:0;box-shadow:none}
+ .chat-workspace .chat-t>div{display:none}
+ .chat-workspace>header{min-height:56px;padding:8px 16px}
+ .chat-workspace>header .iconbtn{width:44px;height:44px}
+ .chat-workspace .chat-scope{margin:0 16px}
+ .chat-workspace .chat-form{margin-bottom:12px}
+ .chat-workspace .chat-form #chat-send{width:44px;height:44px;min-height:44px;flex-basis:44px}
+}

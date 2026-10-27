@@ -1,0 +1,211 @@
+/* Quiet navigation: one icon per section and a clear, restrained active page. */
+#sidebar{padding:20px 12px 18px}
+.sidebar-brand-row{display:flex;align-items:center;gap:6px;padding:0 4px 22px;margin-bottom:12px;border-bottom:1px solid var(--line);flex-shrink:0}
+#sidebar .brand{padding:0;gap:9px;flex:1;min-width:0}
+#sidebar .brand .mark,#sidebar .brand .mark img{width:34px;height:34px}
+#sidebar .brand-name{font-size:14px}
+#sidebar .brand small{font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+#sidebar .rail-toggle{margin:0;width:26px;height:28px;min-height:28px;background:none;border-radius:6px;color:var(--mute);flex-shrink:0}
+#sidebar .rail-toggle:hover{background:var(--surface2);color:var(--ink)}
+#sidebar-nav .nav-group{margin:2px 0}
+#sidebar-nav .ng{display:flex;align-items:center;gap:11px;min-height:41px;height:auto;margin:0;padding:9px 10px;border:0;border-radius:7px;background:none;color:var(--mute);font-size:12.5px;font-weight:500;text-transform:none;letter-spacing:0;pointer-events:auto;box-shadow:none}
+#sidebar-nav .ng:hover{background:var(--surface2);color:var(--ink)}
+#sidebar-nav .group-icon{width:18px;height:18px;flex-shrink:0;stroke-width:1.6;color:inherit}
+#sidebar-nav .group-label{flex:1;text-align:left;white-space:nowrap}
+#sidebar-nav .ng-chev{display:block;width:12px;height:12px;color:var(--mute2);stroke-width:1.6}
+#sidebar-nav .current-group>.ng{color:var(--ink);font-weight:650;background:none}
+#sidebar-nav .current-group>.ng .group-icon{color:var(--primary)}
+#sidebar-nav .ng-links{margin:2px 0 9px 18px;padding-left:13px;border-left:1px solid var(--line)}
+#sidebar-nav .nl{position:relative;font-size:12px;font-weight:450;min-height:34px;padding:7px 10px!important;gap:6px;border-radius:6px;margin:1px 0;color:var(--mute);line-height:1.4}
+#sidebar-nav .nav-group:not(.nav-home) .nl>.i{display:none}
+#sidebar-nav .nl.on{background:color-mix(in srgb,var(--primary) 7%,var(--surface));color:var(--primary);font-weight:600}
+#sidebar-nav .nl.on:before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:2px;border-radius:2px;background:var(--primary)}
+#sidebar-nav .tag{background:var(--surface2);color:var(--mute);border-radius:4px;font-size:9px;padding:1px 5px;font-weight:600}
+#sidebar-nav .nl.on .tag{background:var(--primary-soft);color:var(--primary)}
+#sidebar-nav .nav-home{margin-bottom:9px}
+#sidebar-nav .nav-home .ng-links{margin:0;padding:0;border:0}
+#sidebar-nav .nav-home .nl{font-size:12.5px;font-weight:500;min-height:41px;padding:9px 10px!important;gap:11px}
+#sidebar-nav .nav-home .nl>.i{width:18px;height:18px;stroke-width:1.6}
+#sidebar-nav .nav-home .nl.on:before{left:0}
+#sidebar-nav .nav-group.collapsed .ng-links{display:none}
+@media(min-width:1001px){
+ body:not(.rail-expanded) .sidebar-brand-row{flex-direction:column;gap:14px;padding:0 0 14px}
+ body:not(.rail-expanded) #sidebar .brand{padding:0;flex:none}
+ body:not(.rail-expanded) #sidebar-nav .group-label,body:not(.rail-expanded) #sidebar-nav .ng-chev{display:none}
+ body:not(.rail-expanded) #sidebar-nav .ng{justify-content:center;margin:0;padding:10px;min-height:41px}
+ body:not(.rail-expanded) #sidebar-nav .nav-group:not(.nav-home) .ng-links{display:none}
+ body:not(.rail-expanded) #sidebar-nav .current-group>.ng{background:var(--primary-soft)}
+}
+@media(max-width:1000px){
+ #sidebar{padding:20px 14px}
+ #sidebar .sidebar-brand-row{padding-right:26px;padding-bottom:20px}
+ #sidebar .rail-toggle{display:none}
+ #sidebar-nav .group-label,#sidebar-nav .ng .ng-chev{display:block}
+ #sidebar-nav .ng,#sidebar-nav .nav-home .nl{min-height:44px}
+ #sidebar-nav .nav-group:not(.nav-home) .nl{min-height:40px;display:flex;align-items:center}
+}
+
+/* Financial-dashboard reference: gray rail, white selection, soft depth. */
+#sidebar{background:#f5f6f8;border-right:0;padding:24px 14px;color:#44474f}
+#sidebar .sidebar-brand-row{padding:0 5px 23px;margin-bottom:20px;border-color:#e8e9ed;gap:8px}
+#sidebar .brand{gap:10px}
+#sidebar .brand-name{font-size:14px;font-weight:650;color:#292c34;letter-spacing:-.025em}
+#sidebar .brand small{font-size:10.5px;font-weight:450;color:#858892;margin-top:3px}
+#sidebar .brand .mark,#sidebar .brand .mark img{width:35px;height:35px;border-radius:10px}
+#sidebar .rail-toggle{color:#93969f}
+.sidebar-search{display:flex;align-items:center;gap:8px;padding:0 10px;height:37px;min-height:37px;border:1px solid transparent;border-radius:9px;background:#ebedf0;margin-bottom:16px}
+.sidebar-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.sidebar-search>.i{width:16px;height:16px;color:#92969f;flex:none}
+#sidebar .sidebar-search input{background:none;border:0;outline:0;box-shadow:none;min-width:0;width:100%;padding:0;min-height:32px;font-size:12px;color:var(--ink)}
+.sidebar-search input::placeholder{color:#92969f}
+.sidebar-search kbd{display:grid;place-items:center;background:#fff;color:#878b94;border:1px solid #e6e8ec;border-radius:6px;width:20px;height:23px;font:12px var(--font);box-shadow:0 1px 2px #10182808;flex:none}
+.sidebar-no-results{font-size:12px;color:var(--mute);padding:0 10px}
+#sidebar-nav .nav-group{margin:4px 0}
+#sidebar-nav .ng{min-height:42px;padding:10px 11px;border:1px solid transparent;border-radius:9px;font-size:12.5px;color:#6c707a;gap:11px;font-weight:500}
+#sidebar-nav .ng:hover{background:#eceef2;color:#30343e}
+#sidebar-nav .group-icon{width:18px;height:18px;stroke-width:2;color:#9498a1}
+#sidebar-nav .ng-chev{color:#a0a4ac;width:11px;height:11px}
+#sidebar-nav .current-group>.ng{background:#fff;border-color:#e9eaee;box-shadow:0 2px 3px #171b2606,0 1px 1px #171b2605;color:#30343d;font-weight:600}
+#sidebar-nav .current-group>.ng .group-icon{color:#505761}
+#sidebar-nav .ng-links{border:0;margin:5px 0 10px 20px;padding-left:11px}
+#sidebar-nav .nl{font-size:12px;min-height:33px;color:#7c8089;border-radius:7px;padding:7px 10px!important}
+#sidebar-nav .nl:hover{background:#eceef2;color:#353b45}
+#sidebar-nav .nl.on{background:#e6eaef;color:#284368;font-weight:600}
+#sidebar-nav .nl.on:before{display:none}
+#sidebar-nav .tag{background:#e8eaee;color:#787d87;border-radius:5px;font-size:9px}
+#sidebar-nav .nav-home{margin-bottom:6px}
+#sidebar-nav .nav-home .nl{min-height:42px;padding:10px 11px!important;border:1px solid transparent;font-size:12.5px;color:#6c707a}
+#sidebar-nav .nav-home .nl>.i{color:#9498a1;stroke-width:2}
+#sidebar-nav .nav-home .nl.on{background:#fff;border-color:#e9eaee;box-shadow:0 2px 3px #171b2606,0 1px 1px #171b2605;color:#30343d}
+#sidebar-nav .nav-home .nl.on>.i{color:#505761}
+#sidebar-nav [hidden]{display:none!important}
+@media(min-width:1001px){
+ .main{border-left:1px solid var(--line)}
+ body:not(.rail-expanded) #sidebar .sidebar-search,body:not(.rail-expanded) #sidebar .sidebar-no-results{display:none}
+ body:not(.rail-expanded) #sidebar-nav .current-group>.ng{background:#fff}
+}
+@media(max-width:1000px){
+ #sidebar{padding:22px 14px;background:#f5f6f8}
+ #sidebar .sidebar-brand-row{padding-right:26px}
+ #sidebar-nav .ng,#sidebar-nav .nav-home .nl{min-height:44px}
+ #sidebar-nav .nav-group:not(.nav-home) .nl{min-height:40px}
+ #sidebar .sidebar-search input{font-size:16px}
+}
+[data-theme=dark] #sidebar{background:#000;color:var(--ink)}
+[data-theme=dark] #sidebar .brand-name{color:var(--ink)}
+[data-theme=dark] #sidebar .sidebar-brand-row{border-color:var(--line)}
+[data-theme=dark] .sidebar-search{background:#101113}
+[data-theme=dark] .sidebar-search kbd{background:#1b1c1e;border-color:#303238;color:#aaa}
+[data-theme=dark] #sidebar-nav .ng,[data-theme=dark] #sidebar-nav .nav-home .nl{color:#a2a5ad}
+[data-theme=dark] #sidebar-nav .current-group>.ng,[data-theme=dark] #sidebar-nav .nav-home .nl.on{background:#17191b;border-color:#2b2e32;color:#eee;box-shadow:none}
+[data-theme=dark] #sidebar-nav .current-group>.ng .group-icon,[data-theme=dark] #sidebar-nav .nav-home .nl.on>.i{color:#c3c6cc}
+[data-theme=dark] #sidebar-nav .ng:hover,[data-theme=dark] #sidebar-nav .nl:hover{background:#181a1d;color:#eee}
+[data-theme=dark] #sidebar-nav .nl.on{background:#101a29;color:#809fcb}
+[data-theme=dark] #sidebar-nav .tag{background:#24272b;color:#b1b5bd}
+
+/* Full-strength typography and colored section icons, with teal selection. */
+#sidebar{--nav-text:#262f3b;--nav-secondary:#454f5d;--nav-hover:#e1e6ee;--nav-selected:#2563eb;background:#f2f4f7;color:var(--nav-text);opacity:1}
+#sidebar .brand-name{color:var(--nav-text)}
+#sidebar .brand small,#sidebar .rail-toggle{color:var(--nav-secondary);opacity:1}
+#sidebar .sidebar-brand-row{border-color:#d9dee6}
+#sidebar .sidebar-search{background:#e3e8ee;border-color:#d6dce5}
+#sidebar .sidebar-search>.i{color:#2563eb}
+#sidebar .sidebar-search input::placeholder{color:var(--nav-secondary);opacity:1}
+#sidebar .sidebar-search kbd{color:#314259;border-color:#cbd3de}
+#sidebar-nav .nav-group{--section-color:#2563eb}
+#sidebar-nav [data-group="Store operations"]{--section-color:#b45309}
+#sidebar-nav [data-group="Purchasing"]{--section-color:#7152b3}
+#sidebar-nav [data-group="Transfers"]{--section-color:#0f4590}
+#sidebar-nav [data-group="Auto replenishment"]{--section-color:#458022}
+#sidebar-nav [data-group="Sales"]{--section-color:#187b51}
+#sidebar-nav [data-group="Team"]{--section-color:#b04476}
+#sidebar-nav [data-group="Settings"]{--section-color:#5367a1}
+#sidebar-nav .ng,#sidebar-nav .nav-home .nl{color:var(--nav-text);font-weight:550;opacity:1}
+#sidebar-nav .group-icon,#sidebar-nav .nav-home .nl>.i{color:var(--section-color);opacity:1}
+#sidebar-nav .ng-chev{color:var(--nav-secondary);opacity:1}
+#sidebar-nav .nl{color:var(--nav-secondary);opacity:1}
+#sidebar-nav .ng:hover,#sidebar-nav .nl:hover{color:var(--nav-text);background:var(--nav-hover)}
+#sidebar-nav .current-group>.ng,#sidebar-nav .nav-home .nl.on,body:not(.rail-expanded) #sidebar-nav .current-group>.ng{background:var(--nav-selected);border-color:var(--nav-selected);color:#fff;box-shadow:0 2px 5px #2563eb20}
+#sidebar-nav .current-group>.ng .group-icon,#sidebar-nav .current-group>.ng .ng-chev,#sidebar-nav .nav-home .nl.on>.i{color:#fff}
+#sidebar-nav .nl.on{background:#d4deeb;color:#1d4ed8;font-weight:650}
+#sidebar-nav .tag,#sidebar-nav .nl.on .tag{background:#2563eb;color:#fff}
+[data-theme=dark] #sidebar{--nav-text:#edf0f5;--nav-secondary:#b8c0cb;--nav-hover:#141b24;--nav-selected:#2563eb;background:#000}
+[data-theme=dark] #sidebar .sidebar-brand-row{border-color:#232a35}
+[data-theme=dark] #sidebar .sidebar-search{background:#101720;border-color:#293342}
+[data-theme=dark] #sidebar .sidebar-search>.i{color:#7099d2}
+[data-theme=dark] #sidebar .sidebar-search kbd{background:#1b2532;color:#c2d0e4;border-color:#364355}
+[data-theme=dark] #sidebar-nav .nav-group{--section-color:#7099d2}
+[data-theme=dark] #sidebar-nav [data-group="Store operations"]{--section-color:#f5b65f}
+[data-theme=dark] #sidebar-nav [data-group="Purchasing"]{--section-color:#bca1f5}
+[data-theme=dark] #sidebar-nav [data-group="Transfers"]{--section-color:#6e9ee0}
+[data-theme=dark] #sidebar-nav [data-group="Auto replenishment"]{--section-color:#add56a}
+[data-theme=dark] #sidebar-nav [data-group="Sales"]{--section-color:#79dda6}
+[data-theme=dark] #sidebar-nav [data-group="Team"]{--section-color:#ee98bf}
+[data-theme=dark] #sidebar-nav [data-group="Settings"]{--section-color:#a5b6ec}
+[data-theme=dark] #sidebar-nav .nl.on{background:#16253a;color:#a4c0e7}
+
+:root{--sidebar-width:276px}
+#sidebar-nav .nav-group:not(.nav-home) .nl>.i{display:block;width:16px;height:16px;flex:0 0 16px;color:var(--section-color);stroke-width:1.9;opacity:1}
+#sidebar-nav .nav-group:not(.nav-home) .nl{display:flex;align-items:center;gap:9px}
+#sidebar-nav .nav-group:not(.nav-home) .nl.on>.i{color:#2563eb}
+[data-theme=dark] #sidebar-nav .nav-group:not(.nav-home) .nl.on>.i{color:#a4c0e7}
+
+/* Keep account controls anchored while navigation scrolls independently. */
+#sidebar{overflow:hidden;height:100dvh}
+#sidebar-nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(37,99,235,.3) transparent}
+#sidebar-nav::-webkit-scrollbar{width:6px}
+#sidebar-nav::-webkit-scrollbar-thumb{background:rgba(37,99,235,.3);border-radius:8px}
+#sidebar-nav::-webkit-scrollbar-thumb:hover{background:rgba(37,99,235,.6)}
+.sidebar-search,.sidebar-no-results{flex-shrink:0}
+
+
+.sidebar-footer{display:flex;flex-direction:column;gap:9px;flex-shrink:0;margin-top:14px;padding:14px 0 env(safe-area-inset-bottom);border-top:1px solid #d8dde5}
+.sidebar-language{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#e1e5eb;border:1px solid #d1d8e1;border-radius:11px}
+.sidebar-language a{display:flex;align-items:center;justify-content:center;gap:7px;min-height:35px;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:550;color:#455161;text-decoration:none;line-height:1.2}
+.sidebar-language a.on{background:#fff;color:#2563eb;box-shadow:0 1px 3px #173b2520;font-weight:650}
+.sidebar-language a:hover{background:#f3f5f8;color:#1d4ed8}
+.sidebar-language .i{width:13px;height:13px;stroke-width:2.5}
+.language-short{display:none}
+.sidebar-signout-form{margin:0}
+.sidebar-footer .sidebar-signout{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:38px;padding:9px 12px;color:#3e4c60;background:transparent;border:1px solid #d7dce4;border-radius:9px;font-size:12px;font-weight:550;box-shadow:none}
+.sidebar-footer .sidebar-signout:hover{background:#fff;border-color:#a9b4c4;color:#2563eb}
+.sidebar-signout .i{width:16px;height:16px;color:inherit}
+@media(min-width:1001px){
+ body:not(.rail-expanded) .sidebar-language{grid-template-columns:1fr;padding:3px;gap:3px}
+ body:not(.rail-expanded) .language-full,body:not(.rail-expanded) .sidebar-language .i,body:not(.rail-expanded) .sidebar-signout span{display:none}
+ body:not(.rail-expanded) .language-short{display:inline}
+ body:not(.rail-expanded) .sidebar-language a{padding:6px 2px;font-size:11px}
+}
+@media(max-width:1000px){.sidebar-language a,.sidebar-footer .sidebar-signout{min-height:44px}}
+[data-theme=dark] .sidebar-footer{border-color:#252f3d}
+[data-theme=dark] .sidebar-language{background:#101722;border-color:#283343}
+[data-theme=dark] .sidebar-language a{color:#a9b6c9}
+[data-theme=dark] .sidebar-language a.on{background:#243751;color:#dee9f8;box-shadow:none}
+[data-theme=dark] .sidebar-language a:hover{background:#1d2a3d;color:#fff}
+[data-theme=dark] .sidebar-footer .sidebar-signout{border-color:#283444;color:#a9bcd7}
+[data-theme=dark] .sidebar-footer .sidebar-signout:hover{background:#141c27;border-color:#415673;color:#dee9f8}
+
+/* Navigation-only motion; the sidebar and page retain their dimensions. */
+#sidebar-nav,.sidebar-footer,.sidebar-brand-row,.sidebar-search{position:relative;z-index:1}
+.navigation-moving-highlight{position:absolute;z-index:0;border-radius:9px;pointer-events:none;transform-origin:top left}
+#sidebar-nav .navigation-motion-source{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+#sidebar-nav .navigation-motion-source.ng,#sidebar-nav .nav-home .navigation-motion-source{color:var(--nav-text)!important}
+#sidebar-nav .navigation-motion-source .group-icon,#sidebar-nav .navigation-motion-source .ng-chev{color:var(--section-color)!important}
+.sidebar-language{position:relative;isolation:isolate}
+.sidebar-language:before{content:"";position:absolute;z-index:-1;left:4px;top:4px;bottom:4px;width:calc((100% - 12px)/2);border-radius:7px;background:#fff;box-shadow:0 1px 3px #173b2520;transform:translateX(0);transition:transform .22s cubic-bezier(.22,.7,.25,1)}
+.sidebar-language:has(a[hreflang=zh].on):before,.sidebar-language[data-target=zh]:before{transform:translateX(calc(100% + 4px))}
+.sidebar-language[data-target=en]:before{transform:translateX(0)}
+.sidebar-language a.on,.sidebar-language a:hover{background:transparent;box-shadow:none}
+[data-theme=dark] .sidebar-language:before{background:#243751;box-shadow:none}
+[data-theme=dark] .sidebar-language a.on,[data-theme=dark] .sidebar-language a:hover{background:transparent}
+@media(min-width:1001px){body:not(.rail-expanded) .sidebar-language:before{left:3px;right:3px;top:3px;bottom:auto;width:auto;height:calc((100% - 9px)/2)}body:not(.rail-expanded) .sidebar-language:has(a[hreflang=zh].on):before,body:not(.rail-expanded) .sidebar-language[data-target=zh]:before{transform:translateY(calc(100% + 3px))}body:not(.rail-expanded) .sidebar-language[data-target=en]:before{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.sidebar-language:before{transition:none}.navigation-moving-highlight{display:none}}
+
+/* Stronger navigation labels without changing spacing or dimensions. */
+#sidebar-nav .ng,#sidebar-nav .nav-home .nl{font-weight:650}
+#sidebar-nav .nav-group:not(.nav-home) .nl{font-weight:600}
+#sidebar-nav .current-group>.ng,#sidebar-nav .nl.on,#sidebar-nav .nav-home .nl.on{font-weight:700}
+.sidebar-language a,.sidebar-footer .sidebar-signout{font-weight:600}
+.sidebar-language a.on{font-weight:700}
+
+#sidebar #navigation-close{z-index:2}

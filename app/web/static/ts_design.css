@@ -189,7 +189,7 @@
 
 /* Keep draft actions anchored to the viewport, clear of the navigation rail. */
 @media(min-width:761px){
-  .ts-bar.np-bar.tsx-bar{position:fixed;bottom:0;left:248px;right:0;z-index:35;max-width:none;margin:0;padding:12px 28px;min-height:66px;box-shadow:0 -3px 12px rgba(0,0,0,.04)}
+  .ts-bar.np-bar.tsx-bar{position:fixed;bottom:0;left:var(--sidebar-width, 276px);right:0;z-index:35;max-width:none;margin:0;padding:12px 28px;min-height:66px;box-shadow:0 -3px 12px rgba(0,0,0,.04)}
   body:not(.rail-expanded) .ts-bar.np-bar.tsx-bar{left:84px}
   .tsx-bar .ts-bar-info{order:1;flex:1}
   .tsx-bar form{order:2}

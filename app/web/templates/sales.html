@@ -3,8 +3,9 @@
 {% block content %}
 <link rel="stylesheet" href="/static/sales.css?v={{ asset_v('sales.css') }}">
 <link rel="stylesheet" href="/static/daterange.css?v={{ asset_v('daterange.css') }}">
+<link rel="stylesheet" href="/static/sales_align.css?v={{ asset_v('sales_align.css') }}">
 <div class="sales-page">
-<div class="page-head"><div><h1>{{ t('Sales') }}</h1><p>{% if location %}{{ location.name }} &middot; {% endif %}{{ t('Philippine business days; cancelled sales excluded, returns subtracted. Last synced') }} {{ fr.last_success|ago }}.</p></div></div>
+<div class="page-head sales-head"><div><h1>{{ t('Sales') }}</h1><p>{% if location %}{{ location.name }} &middot; {% endif %}{{ t('Philippine business days; cancelled sales excluded, returns subtracted. Last synced') }} {{ fr.last_success|ago }}.</p></div>
 {% if location %}<form novalidate class="filters sales-filters" method="get">
   <div><label for="sales-location">{{ t('Location') }}</label><select id="sales-location" name="loc" onchange="this.form.submit()">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location.id }}>{{ l.name }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Period') }}</label>
@@ -13,7 +14,7 @@
          data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div></div>
   <div class="dl-pair"><label>&nbsp;</label><span class="row" style="gap:6px;flex-wrap:nowrap">
     <a class="btn sec sm dl-btn" href="/sales/report.xlsx?loc={{ location.id }}" data-tip="{{ t('Download Excel: the whole sales history of this store') }}" aria-label="{{ t('Download Excel: the whole sales history of this store') }}"><svg class="i"><use href="#i-download-sheet"/></svg></a>
-    <a class="btn sec sm dl-btn" href="/sales?loc={{ location.id }}&days={{ 'custom' if custom else days }}{% if custom %}&frm={{ frm }}&to={{ to }}{% endif %}&export=csv" data-tip="{{ t('Download CSV: the days shown for this store') }}" aria-label="{{ t('Download CSV: the days shown for this store') }}"><svg class="i"><use href="#i-download-file"/></svg></a></span></div></form>{% endif %}
+    <a class="btn sec sm dl-btn" href="/sales?loc={{ location.id }}&days={{ 'custom' if custom else days }}{% if custom %}&frm={{ frm }}&to={{ to }}{% endif %}&export=csv" data-tip="{{ t('Download CSV: the days shown for this store') }}" aria-label="{{ t('Download CSV: the days shown for this store') }}"><svg class="i"><use href="#i-download-file"/></svg></a></span></div></form>{% endif %}</div>
 {% if location %}
 <div class="grid g4" style="margin-bottom:14px">
   <div class="card stat"><div><div class="label">{{ t('Net sales (') }}{% if custom %}{{ frm }} → {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %})</div><div class="value">{{ totals.net|money }}</div>{% if days > 1 %}<div class="sub" style="white-space:nowrap">{{ t('Avg / day') }}: <b>{{ (totals.net / days)|money }}</b></div>{% endif %}</div>{{ sparkline(chart|map(attribute=1)|list, labels=chart|map(attribute=0)|list) }}</div>

@@ -22,7 +22,7 @@ def test_save_stays_pending_and_proceed_creates_new_sheet_once(client, session, 
     existing = transfer_sheets.create(session, user, rec.location_id)
     session.commit()
     login(client, user.username)
-    csrf = csrf_of(client, "/replenishment")
+    csrf = csrf_of(client, "/replenishment?view=list")
     response = client.post(f"/replenishment/{rec.id}/decide", data={"csrf": csrf, "action": "save", "qty": "17"},
                            headers={"X-Requested-With": "fetch"})
     assert response.status_code == 200 and response.json()["quantity"] == 17
@@ -56,7 +56,7 @@ def test_group_by_store_and_rollback_invalid_selection(client, session, sync, fa
     session.add(other)
     user = add_user(session, "group-admin", "admin")
     login(client, user.username)
-    csrf = csrf_of(client, "/replenishment")
+    csrf = csrf_of(client, "/replenishment?view=list")
     other.status = "needs_review"
     session.commit()
     response = client.post("/replenishment/transfer-sheets", data={"csrf": csrf, "ids": [rec.id, other.id]})
@@ -108,7 +108,7 @@ def test_v38_migration_is_repeatable(cfg, session):
     schema = re.sub(r',\s*FOREIGN KEY\(transfer_sheet_id\) REFERENCES transfer_sheet \(id\) ON DELETE SET NULL', '', schema)
     session.execute(text("DROP TABLE recommendation"))
     session.execute(text(schema))
-    session.execute(text("DELETE FROM schema_version WHERE version = 38"))
+    session.execute(text("DELETE FROM schema_version WHERE version >= 38"))
     session.commit()
     init_db()
     init_db()

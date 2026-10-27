@@ -121,6 +121,6 @@
  .np-entry{padding-bottom:90px}
 }
 @media(min-width:1001px){
- body.rail-expanded .np-entry-bar{left:248px}
+ body.rail-expanded .np-entry-bar{left:var(--sidebar-width, 276px)}
  body:not(.rail-expanded) .np-entry-bar{left:84px}
 }

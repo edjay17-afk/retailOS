@@ -42,7 +42,7 @@ def _mark(db: Session, key: str) -> None:
 
 
 def stores(db: Session) -> list[Location]:
-    return list(db.scalars(select(Location).where(Location.type == "store", Location.monitored.is_(True)).order_by(Location.name)))
+    return list(db.scalars(select(Location).where(Location.type == "store", Location.source == "storehub", Location.monitored.is_(True)).order_by(Location.name)))
 
 
 def local_date(stamp: str) -> date:

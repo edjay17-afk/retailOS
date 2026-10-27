@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Callable
 from urllib.parse import quote, unquote
@@ -56,8 +56,12 @@ class Ctx:
     def __init__(self, request: Request, db: Session, session: WebSession):
         self.request, self.db, self.session, self.user = request, db, session, session.user
         self.csrf = session.csrf
+        from ..services.sources import setup_scope
+        self.source_scope, self.source_options = setup_scope(db, self.user, ('storehub' if request.cookies.get('pos_scope', 'storehub') == 'all' else request.cookies.get('pos_scope', 'storehub')))
 
     def can(self, perm: str) -> bool:
+        if perm == 'loyverse.view' and self.user.role not in ('admin', 'management'):
+            return has_perm(self.user, perm) and bool(self.db.scalar(select(Location.id).where(Location.id.in_(self.location_ids or [0]), Location.source == 'loyverse').limit(1)))
         return has_perm(self.user, perm)
 
     @property
@@ -79,6 +83,28 @@ class Ctx:
         if location_id is not None and location_id not in self.location_ids:
             raise HTTPException(403, "You do not have access to this location")
 
+    def freshness(self):
+        from ..models import LoyverseAccount
+        rows = freshness.freshness(self.db)
+        pairs = self.db.info.get('source_pairs', set())
+        accounts = {account for source, account in pairs if source == 'loyverse'}
+        if self.source_scope == 'loyverse' and not accounts and self.user.role in ('admin', 'management'):
+            accounts = set(self.db.scalars(select(LoyverseAccount.key)))
+        if not accounts: return rows if self.source_scope != 'loyverse' else []
+        states = list(self.db.scalars(select(LoyverseAccount).where(LoyverseAccount.key.in_(accounts))))
+        for row in rows:
+            if row['domain'] == 'purchase_orders':
+                if not any(source == 'storehub' for source, _ in pairs): row['critical'] = False
+                continue
+            timestamps = [state.reporting_success_at for state in states]
+            if any(source == 'storehub' for source, _ in pairs): timestamps.append(row['last_success'])
+            last = min(timestamps) if timestamps and all(timestamps) else None
+            age = (now_utc()-last).total_seconds()/60 if last else None
+            error = next((state.reporting_error for state in states if state.reporting_error), None)
+            row.update(last_success=last, age_min=age, last_error=error,
+                       status='never' if last is None else 'stale' if error or age > 15 else 'fresh')
+        return rows
+
     def check_csrf(self, token: str) -> None:
         if not token or not secrets.compare_digest(token, self.csrf):
             raise HTTPException(403, "Security token missing or expired. Reload the page and try again.")
@@ -92,6 +118,8 @@ def ctx_dep(allow_must_change: bool = False):
         c = Ctx(request, db, s)
         if s.user.must_change_password and not allow_must_change:
             raise MustChangePassword()
+        if c.source_scope.startswith('loyverse') and request.url.path.startswith(('/new-product', '/purchase-orders/new', '/transfer-sheets')):
+            raise HTTPException(409, 'This workflow exports to StoreHub and is not available for Loyverse. Manage Loyverse purchase orders, transfers and new products in Loyverse.')
         return c
     return dep
 
@@ -208,22 +236,7 @@ templates.env.globals.update({name: localized_chart(getattr(charts, name))
                               for name in ("sparkline", "bars", "ring", "area", "donut", "hbars")})
 
 # (group title, [(url, label, icon, permission, tag)])
-NAV_GROUPS = [
-    ("Overview", [("/", "Today", "home", "dashboard.view", "")]),
-    ("Operations", [("/issues", "Issues", "alert", "issue.view", ""), ("/inspections", "Inspections", "clipboard", "inspection.do", ""),
-                    ("/counts", "Cycle counts", "count", "count.enter", ""),
-                    ("/stock-events", "Stock events", "camera", "count.enter", ""),
-                    ("/wastage", "Wastage", "trash", "wastage.record", ""),
-                    ("/expiry", "Expiry", "clock", "expiry.view", ""), ("/compliance", "Permits", "shield", "compliance.view", ""), ("/planogram", "Planogram", "grid", "planogram.view", "")]),
-    ("Stock and ordering", [("/replenishment", "Replenishment", "trend", "repl.view", ""), ("/replenishment/repairs", "Repair queue", "wrench", "repl.view", ""), ("/inventory", "Inventory", "box", "inventory.view", ""),
-                            ("/transfer-sheets", "Transfer sheet", "scan", "transfer.sheet", ""), ("/stock-transfers", "Stock transfers", "sync", "transfer.view", ""), ("/new-product", "New product", "plus", "product.add", ""),
-                            ("/purchase-orders/new", "New purchase order", "plus", "po.create", ""), ("/purchase-orders", "Purchase orders", "file", "po.view", ""), ("/sales", "Sales", "chart", "sales.view", ""), ("/sales/products", "Sales by product", "tag", "sales.view", ""),
-                            ("/sales/transactions", "Transactions", "list", "sales.detail", ""), ("/sales/employees", "Sales by employee", "user", "sales.detail", "")]),
-    ("Intelligence", [("/assistant", "Assistant", "sparkles", "ai.use", "AI"), ("/performance", "Performance", "gauge", "performance.view", ""), ("/data-quality", "Data quality", "shield", "dq.view", ""),
-                      ("/traceability", "Traceability", "link", "traceability.view", ""),
-                      ("/sync", "Sync status", "pulse", "sync.view", "")]),
-    ("Administration", [("/settings", "Settings", "settings", "settings.manage", ""), ("/audit", "Audit log", "history", "audit.view", "")]),
-]
+NAV_GROUPS = [('Today', [('/', 'Today', 'home', 'dashboard.view', '')]), ('Store operations', [('/issues', 'Issues', 'alert', 'issue.view', ''), ('/inspections', 'Inspections', 'clipboard', 'inspection.do', ''), ('/compliance', 'Permits', 'shield', 'compliance.view', ''), ('/planogram', 'Planogram', 'grid', 'planogram.view', '')]), ('Inventory', [('/inventory', 'Inventory', 'box', 'inventory.view', ''), ('/counts', 'Cycle counts', 'count', 'count.enter', ''), ('/stock-events', 'Stock events', 'camera', 'count.enter', ''), ('/wastage', 'Wastage', 'trash', 'wastage.record', ''), ('/expiry', 'Expiry', 'clock', 'expiry.view', ''), ('/traceability', 'Traceability', 'link', 'traceability.view', '')]), ('Purchasing', [('/purchase-orders', 'Purchase orders', 'file', 'po.view', ''), ('/purchase-orders/new', 'New purchase order', 'plus', 'po.create', ''), ('/new-product', 'New product', 'plus', 'product.add', '')]), ('Transfers', [('/transfer-sheets', 'Transfer sheet', 'scan', 'transfer.sheet', ''), ('/stock-transfers', 'Stock transfers', 'sync', 'transfer.view', '')]), ('Auto replenishment', [('/replenishment', 'Replenishment', 'trend', 'repl.view', ''), ('/replenishment/repairs', 'Repair queue', 'wrench', 'repl.view', ''), ('/replenishment/loyverse', 'Loyverse', 'trend', 'loyverse.view', '')]), ('Sales', [('/sales', 'Sales', 'chart', 'sales.view', ''), ('/sales/products', 'Sales by product', 'tag', 'sales.view', ''), ('/sales/transactions', 'Transactions', 'list', 'sales.detail', ''), ('/sales/employees', 'Sales by employee', 'user', 'sales.detail', ''), ('/sales/shifts', 'Sales by shift', 'clock', 'sales.detail', ''), ('/sales/zreadings', 'Z-Reading Reports', 'file', 'sales.detail', '')]), ('Team', [('/employees', 'Employees', 'user', 'users.manage', ''), ('/performance', 'Performance', 'gauge', 'performance.view', '')]), ('Settings', [('/settings', 'General settings', 'settings', 'settings.manage', ''), ('/users', 'Users', 'user', 'users.manage', ''), ('/sync', 'Sync status', 'pulse', 'sync.view', ''), ('/data-quality', 'Data quality', 'shield', 'dq.view', ''), ('/audit', 'Audit log', 'history', 'audit.view', '')])]
 
 
 # a middle step whose own URL is not a page: the list page it belongs to
@@ -284,17 +297,33 @@ def asset_v(name: str) -> str:
 
 def render(c: Ctx, name: str, **kw):
     req = c.request
+    if c.source_scope.startswith('loyverse') and req.url.path in ('/purchase-orders', '/stock-transfers', '/performance'):
+        name = 'source_unavailable.html'
+        kw = {'feature_title': {'/purchase-orders':'Purchase orders','/stock-transfers':'Stock transfers','/performance':'Staff attendance and performance'}[req.url.path]}
     lang = i18n.norm(req.cookies.get(i18n.COOKIE_NAME))
-    fr = freshness.freshness(c.db)
+    fr = c.freshness()
     stale = [f for f in fr if f["status"] != "fresh" and f["critical"]]
     pills = _nav_pills(c)
-    base = dict(asset_v=asset_v, request=req, user=c.user, csrf=c.csrf, can=c.can, company=cfg.get(c.db, "app.company"),
+    visible_links = [u for _, links in NAV_GROUPS for u, _, _, permission, _ in links if c.can(permission)]
+    nav_path = req.url.path
+    if nav_path.startswith("/sales/product/"):
+        nav_path = "/sales/products"
+    active_nav_url = max((u for u in visible_links if nav_path == u or (u != "/" and nav_path.startswith(u + "/"))), key=len, default="")
+    base = dict(source_scope=c.source_scope, source_options=c.source_options, asset_v=asset_v, request=req, user=c.user, csrf=c.csrf, can=c.can, company=cfg.get(c.db, "app.company"),
                 nav_groups=[(t, [(u, l, i, str(pills[u]) if pills.get(u) else tag) for u, l, i, p, tag in links if c.can(p)]) for t, links in NAV_GROUPS if any(c.can(p) for _, _, _, p, _ in links)],
-                path=req.url.path, stale=stale, lang=lang, t=c.t,
+                active_nav_url=active_nav_url, path=req.url.path, stale=stale, lang=lang, t=c.t,
                 ui_messages={key: c.t(key) for key in i18n.JS_MESSAGES},
                 unit_fmt=lambda value: c.t("{count} units", count=f"{value:g}"),
                 unread=notifications.unread_count(c.db, c.user), ok=req.query_params.get("ok"), err=req.query_params.get("err"))
+    from ..models import LoyverseAccount, Setting
+    base["account_labels"] = {x.key.removeprefix("loyverse.account_name."): str(x.value) for x in c.db.scalars(select(Setting).where(Setting.key.like("loyverse.account_name.%")))}
+    visible_accounts = {a for source,a in c.db.info.get('source_pairs', set()) if source == 'loyverse'}
+    if c.source_scope == 'loyverse' and c.user.role in ('admin', 'management') and not c.user.location_ids:
+        visible_accounts = set(c.db.scalars(select(LoyverseAccount.key)))
+    base['source_states'] = list(c.db.scalars(select(LoyverseAccount).where(LoyverseAccount.key.in_(visible_accounts)))) if visible_accounts else []
     base.update(kw)
+    if 'fr' in base and isinstance(base['fr'], dict):
+        base['fr'] = next((f for f in fr if f['domain'] == base['fr']['domain']), base['fr'])
     base.setdefault("crumbs", _crumbs(c, req.url.path, kw.get("crumb")))
     if name == "sales_product.html" and kw.get("sales_products_url"):
         back_url = kw["sales_products_url"]
@@ -312,6 +341,21 @@ def _nav_pills(c: Ctx) -> dict:
     if c.can("issue.view"):
         pills["/issues"] = c.db.scalar(select(func.count()).select_from(Issue).where(
             (Issue.location_id.in_(ids or [0])) | Issue.location_id.is_(None), Issue.status.in_(issues.OPEN_STATES))) or 0
+    if c.can("inventory.view"):  # products that sold in the last 30 days and are out of stock where this user works
+        from ..models import InventoryCurrent, SalesDayProduct
+        since = today_local() - timedelta(days=30)
+        pills["/inventory"] = c.db.scalar(select(func.count()).select_from(InventoryCurrent).where(
+            InventoryCurrent.location_id.in_(ids or [0]), InventoryCurrent.on_hand <= 0,
+            select(SalesDayProduct.product_id).where(SalesDayProduct.product_id == InventoryCurrent.product_id, SalesDayProduct.location_id == InventoryCurrent.location_id,
+                                                     SalesDayProduct.units > 0, SalesDayProduct.business_date > since).exists())) or 0
+    if c.can("po.view"):
+        from ..models import PurchaseOrder
+        from ..services import purchasing
+        pills["/purchase-orders"] = c.db.scalar(select(func.count()).select_from(PurchaseOrder).where(
+            PurchaseOrder.status.in_(purchasing.OPEN_STATUSES), PurchaseOrder.missing_from_api.is_(False))) or 0
+    if c.can("transfer.sheet"):
+        from ..models import TransferSheet
+        pills["/transfer-sheets"] = c.db.scalar(select(func.count()).select_from(TransferSheet).where(TransferSheet.status.in_(("draft", "submitted")))) or 0
     return pills
 
 

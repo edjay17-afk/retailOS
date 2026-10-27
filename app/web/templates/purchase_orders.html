@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Purchase orders') }}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="/static/purchase_orders_phone.css?v={{ asset_v('purchase_orders_phone.css') }}">
 <div class="page-head"><h1>{{ t('Purchase orders') }}</h1>{% if can('po.create') %}<a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div>
 <p class="small mute">{{ t('Copied from StoreHub. A PO that is open more than') }} {{ stale_days }} {{ t('days past its expected date is shown as') }} <span class="badge b-warn">{{ t('stale') }}</span> {{ t('and is not counted as incoming stock. Receive or cancel it in StoreHub.') }}</p>
 <form class="filters" method="get"><input type="hidden" name="view" value="{{ view }}"><div><label for="po-location">{{ t('Location') }}</label><select id="po-location" name="loc"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div><button type="submit">{{ t('Apply') }}</button>{% if loc %}<a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% endif %}</form>

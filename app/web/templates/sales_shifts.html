@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Sales by shift') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/daterange.css?v={{ asset_v('daterange.css') }}">
+{% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
+{% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
+<div class="page-head"><div><h1>{{ t('Sales by shift') }}</h1>
+  <p>{{ t("Each register shift as StoreHub's Shift Reports show it: when it opened and closed, the cashier, and how it was paid.") }}{% if unread %} {{ unread }} {{ t('shifts are still being read from StoreHub; their cashier and payments appear soon.') }}{% endif %}</p></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/shifts?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+
+<form novalidate class="filters" method="get" style="margin-bottom:14px">
+  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div><label>{{ t('Period') }}</label>
+    <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
+    <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}"
+         data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div></div>
+</form>
+
+{% if rows %}
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card stat"><div><div class="label">{{ t('Shifts') }}</div><div class="value">{{ tot.shifts|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Transactions') }}</div><div class="value">{{ tot.tx|num(0) }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Total sales') }}</div><div class="value">{{ tot.sales|money }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Withdrawals') }}</div><div class="value">{{ tot.withdrawals|money }}</div></div></div>
+</div>
+<div class="tw"><table>
+  <tr><th>{{ t('Opened') }}</th><th>{{ t('Closed') }}</th><th>{{ t('Store') }}</th><th>{{ t('Register') }}</th><th>{{ t('Cashier') }}</th><th class="right">{{ t('Transactions') }}</th><th class="right">{{ t('Total sales') }}</th>{% for m in methods %}<th class="right">{{ m }}</th>{% endfor %}<th class="right">{{ t('Withdrawals') }}</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td class="nowrap">{{ r.opened_at.strftime('%d %b %H:%M') }}</td>
+    <td class="nowrap">{% if r.closed_at %}{{ r.closed_at.strftime('%d %b %H:%M') }}{% else %}<span class="badge b-warn">{{ t('Open') }}</span>{% endif %}</td>
+    <td>{{ names.get(r.location_id, '') }}</td>
+    <td>{{ r.register }}</td>
+    <td>{% if r.id in cashier_ids %}<a href="/sales/transactions?shift_id={{ r.id }}">{{ r.cashier }}</a>{% else %}{{ r.cashier or '—' }}{% endif %}</td>
+    <td class="right">{{ r.tx_count|num(0) }}</td>
+    <td class="right"><b>{{ r.total_sales|money }}</b></td>
+    {% for m in methods %}<td class="right">{% if r.detail_ok %}{{ (r.payments or {}).get(m, [0, 0])[1]|money }}{% else %}—{% endif %}</td>{% endfor %}
+    <td class="right">{% if r.detail_ok %}{{ r.withdrawals|money }}{% else %}—{% endif %}</td>
+  </tr>
+  {% endfor %}
+  <tr><td colspan="5"><b>{{ t('Total') }}</b></td><td class="right"><b>{{ tot.tx|num(0) }}</b></td><td class="right"><b>{{ tot.sales|money }}</b></td>{% for m in methods %}<td class="right"><b>{{ tot.payments[m]|money }}</b></td>{% endfor %}<td class="right"><b>{{ tot.withdrawals|money }}</b></td></tr>
+</table></div>
+<p class="small mute" style="margin-top:10px">{{ t('Times are Philippine time. Figures are read from StoreHub as they are; nothing is calculated here.') }}</p>
+{% else %}
+<div class="card empty">{{ t('No shifts found for this selection yet. They are read from StoreHub every hour.') }}</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/daterange.js?v={{ asset_v('daterange.js') }}"></script>{% endblock %}

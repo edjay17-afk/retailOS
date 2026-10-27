@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
 <div class="stock-event-editor">
 <h1>{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}</h1>
-<p class="small mute">{{ t('This records what physically happened. The same change must also be keyed into the StoreHub back office — only then does stock update.') }}</p>
+<p class="small mute">{{ t('This records what physically happened. Enter the matching stock adjustment in the original POS; this form does not change POS stock.') }}</p>
 <div class="card stock-event-form">
 <form novalidate method="post" action="/stock-events/new" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
 <div class="stock-event-fields">

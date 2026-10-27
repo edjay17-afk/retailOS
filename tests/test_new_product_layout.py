@@ -23,7 +23,7 @@ def test_layout(sync,fake,session,client):
             for scroll in (0, 10000):
                 page.evaluate("y=>window.scrollTo(0,y)", scroll)
                 bar=page.locator('.np-entry-bar').bounding_box()
-                assert abs(bar['y']+bar['height']-1000)<2
+                assert abs(bar['y']+bar['height']-(936 if width<=700 else 1000))<2   # on a phone the bar sits just above the 64 px tab bar
             page.evaluate("()=>window.scrollTo(0,0)")
             page.locator("#np-scan").fill("88776655")
             page.locator("#np-scan").press("Enter")

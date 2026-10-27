@@ -43,7 +43,7 @@ def warehouse(db: Session) -> Location | None:
 
 
 def stores(db: Session) -> list[Location]:
-    return list(db.scalars(select(Location).where(Location.type == "store", Location.monitored.is_(True)).order_by(Location.name)))
+    return list(db.scalars(select(Location).where(Location.type == "store", Location.source == "storehub", Location.monitored.is_(True)).order_by(Location.name)))
 
 
 def _draft_lines_ok(sheet: TransferSheet) -> None:
@@ -59,6 +59,8 @@ def create(db: Session, user: User, target_id: int, note: str | None = None) -> 
         raise SheetError("No warehouse is set up in the system")
     if target is None or target.type != "store":
         raise SheetError("Choose the store the goods are going to")
+    if target.source != "storehub":
+        raise SheetError("Loyverse transfer synchronization is not supported")
     existing = db.scalar(select(TransferSheet).where(TransferSheet.status == "draft", TransferSheet.target_location_id == target.id,
                                                      TransferSheet.source_location_id == src.id))
     if existing is not None:
@@ -78,10 +80,10 @@ def find(db: Session, code: str, limit: int = 8) -> tuple[Product | None, list[P
         return None, []
     exact = new_products.lookup(db, code)
     if exact is None:
-        exact = db.scalar(select(Product).where(Product.sku == code, Product.in_api.is_(True)))
+        exact = db.scalar(select(Product).where(Product.sku == code, Product.in_api.is_(True), Product.source == "storehub"))
     if exact is not None:
         return exact, []
-    q = select(Product).where(Product.in_api.is_(True))
+    q = select(Product).where(Product.in_api.is_(True), Product.source == "storehub")
     for word in re.split(r"\s+", code)[:5]:
         q = q.where(or_(Product.name.ilike(f"%{word}%"), Product.sku.ilike(f"%{word}%"), Product.barcode.ilike(f"%{word}%")))
     return None, list(db.scalars(q.order_by(Product.name).limit(limit)))
@@ -90,7 +92,7 @@ def find(db: Session, code: str, limit: int = 8) -> tuple[Product | None, list[P
 def catalog(db: Session, warehouse_id: int | None) -> list[list]:
     """Every StoreHub product in one small list, so the page can answer a scan instantly in the browser: [id, name, sku, [barcodes], warehouse stock]."""
     stock = {pid: q for pid, q in db.execute(select(InventoryCurrent.product_id, InventoryCurrent.on_hand).where(InventoryCurrent.location_id == warehouse_id))} if warehouse_id else {}
-    rows = db.execute(select(Product.id, Product.name, Product.sku, Product.barcode).where(Product.in_api.is_(True)).order_by(Product.name)).all()
+    rows = db.execute(select(Product.id, Product.name, Product.sku, Product.barcode).where(Product.in_api.is_(True), Product.source == "storehub").order_by(Product.name)).all()
     return [[i, n, s or "", [b.strip() for b in (bc or "").split(",") if b.strip()], stock.get(i)] for i, n, s, bc in rows]
 
 
@@ -116,6 +118,8 @@ def _check_qty(qty) -> float:
 def add_line(db: Session, sheet: TransferSheet, product: Product, qty) -> TransferSheetLine:
     """Add quantity for a product. Scanning the same product again adds to its line instead of making a second one."""
     _draft_lines_ok(sheet)
+    if product.source != "storehub":
+        raise SheetError("Loyverse items cannot be exported to StoreHub")
     qty = _check_qty(qty)
     line = next((l for l in sheet.lines if l.product_id == product.id), None)
     if line is None:

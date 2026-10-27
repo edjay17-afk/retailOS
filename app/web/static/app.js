@@ -123,7 +123,8 @@
     if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
     var tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
-    var box = document.querySelector('[data-search]');
+    var navSearch = document.getElementById('navigation-search');
+    var box = navSearch && navSearch.getClientRects().length && !navSearch.closest('[inert]') ? navSearch : document.querySelector('[data-search]');
     if (box) { e.preventDefault(); box.focus(); box.select(); }
   });
   // Zeigarnik effect / error prevention: a half-filled checklist or count is not lost by a stray click on another page.
@@ -153,27 +154,42 @@
     setRail(expanded);
     try { localStorage.setItem('retailos.navigation', expanded ? 'expanded' : 'compact'); } catch (e) { /* optional preference */ }
   });
-  // Collapsible sidebar groups. The group holding the current page always stays open.
+  // One expanded group; the current page is opened by the server on navigation.
   (function () {
-    var KEY = 'retailos.navgroups';
-    var collapsed = [];
-    try { collapsed = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { collapsed = []; }
-    document.querySelectorAll('#sidebar-nav .nav-group').forEach(function (g) {
-      var name = g.getAttribute('data-group'), btn = g.querySelector('[data-ng-toggle]');
-      if (!btn) return;
-      if (collapsed.indexOf(name) !== -1 && !g.querySelector('a.nl.on')) {
-        g.classList.add('collapsed');
-        btn.setAttribute('aria-expanded', 'false');
-      }
+    var groups = Array.from(document.querySelectorAll('#sidebar-nav .nav-group:not(.nav-home)'));
+    groups.forEach(function (g) {
+      var btn = g.querySelector('[data-ng-toggle]');
       btn.addEventListener('click', function () {
-        var isCollapsed = g.classList.toggle('collapsed');
-        btn.setAttribute('aria-expanded', String(!isCollapsed));
-        var idx = collapsed.indexOf(name);
-        if (isCollapsed && idx === -1) collapsed.push(name);
-        if (!isCollapsed && idx !== -1) collapsed.splice(idx, 1);
-        try { localStorage.setItem(KEY, JSON.stringify(collapsed)); } catch (e) { /* optional preference */ }
+        var open = g.classList.contains('collapsed');
+        if (!document.body.classList.contains('rail-expanded') && window.innerWidth > 1000) {
+          setRail(true); open = true;
+          try { localStorage.setItem('retailos.navigation', 'expanded'); } catch(e) {}
+        }
+        groups.forEach(function (other) {
+          var expanded = other === g && open;
+          other.classList.toggle('collapsed', !expanded);
+          other.querySelector('[data-ng-toggle]').setAttribute('aria-expanded', String(expanded));
+        });
       });
     });
+  })();
+  (function () {
+    var input=document.getElementById('navigation-search'), nav=document.getElementById('sidebar-nav');
+    if(!input||!nav)return;
+    var groups=Array.from(nav.querySelectorAll('.nav-group')), previous=null;
+    input.addEventListener('input',function(){
+      var term=input.value.trim().toLocaleLowerCase(),total=0;
+      if(term&&!previous)previous=groups.map(function(g){return g.classList.contains('collapsed');});
+      groups.forEach(function(g,i){
+        var button=g.querySelector('[data-ng-toggle]'), parentMatch=button&&button.textContent.toLocaleLowerCase().includes(term),count=0;
+        g.querySelectorAll('a.nl').forEach(function(a){var match=!term||parentMatch||a.textContent.toLocaleLowerCase().includes(term);a.hidden=!match;if(match)count++;});
+        g.hidden=!count;total+=count;
+        if(button){var collapsed=term?false:(previous?previous[i]:g.classList.contains('collapsed'));g.classList.toggle('collapsed',collapsed);button.setAttribute('aria-expanded',String(!collapsed));}
+      });
+      document.getElementById('navigation-no-results').hidden=!!total;
+      if(!term)previous=null;
+    });
+    input.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();input.value='';input.dispatchEvent(new Event('input'));}else if(e.key==='Enter'){e.preventDefault();var link=Array.from(nav.querySelectorAll('a.nl')).find(function(a){return !a.hidden&&!a.closest('.nav-group').hidden;});if(input.value.trim()&&link)link.click();}});
   })();
   var mobileMenu = document.getElementById('mobile-menu'), sidebar = document.getElementById('sidebar');
   var mainWorkspace = document.querySelector('.main'), narrowNavigation = window.matchMedia('(max-width:1000px)');
@@ -198,7 +214,7 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setMobile(false); if (mobileMenu) mobileMenu.focus(); }
     if (e.key === 'Tab' && document.body.classList.contains('nav-open') && sidebar) {
-      var links = sidebar.querySelectorAll('a[href],button:not([disabled])');
+      var links = Array.from(sidebar.querySelectorAll('a[href],button:not([disabled])')).filter(function(el){return el.getClientRects().length;});
       var first = links[0], last = links[links.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }

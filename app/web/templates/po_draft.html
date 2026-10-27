@@ -89,7 +89,7 @@
 
 {% if open %}
 <div class="ts-bar np-bar noprint">
-  <div class="draft-bar-info"><div class="ts-bar-info" id="po-bar-info"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">Draft saved</span></div>
+  <div class="draft-bar-info"><div class="ts-bar-info" id="po-bar-info"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">{{ t('Draft saved') }}</span></div>
   <form novalidate method="post" action="/purchase-orders/new/save"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok ts-save" id="po-save" disabled>{{ t('Save purchase order') }}</button></form>
 </div>
 {% endif %}

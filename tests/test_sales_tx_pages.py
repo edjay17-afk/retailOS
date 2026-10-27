@@ -118,7 +118,7 @@ def test_custom_range_and_csv_export(client, session, sync, fake):
     r = client.get("/sales/transactions", params={"days": "custom", "frm": (t - timedelta(days=1)).isoformat(), "to": t.isoformat()})
     assert r.status_code == 200 and "T1" in r.text
     bad = client.get("/sales/transactions", params={"days": "custom", "frm": "2026-10-10", "to": "2026-10-01"})
-    assert bad.status_code == 200                                 # invalid range falls back to the preset
+    assert bad.status_code == 400                                 # invalid ranges must be rejected
     csvr = client.get("/sales/transactions", params={"export": "csv"})
     assert csvr.status_code == 200 and "Invoice" in csvr.text and "T4" in csvr.text
 

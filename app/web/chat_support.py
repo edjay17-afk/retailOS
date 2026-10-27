@@ -44,6 +44,9 @@ def respond(c, question, history=None, page_url="", parent_id=0, progress=None):
         raise HTTPException(404, str(exc)) from exc
     except (tools.ToolError, ValueError, TypeError) as exc:
         return {"ok": False, "error": str(exc)}
+    if page:
+        page["pos_sources"] = sorted([list(pair) for pair in c.db.info.get("source_pairs", [])])
+        page["source_note"] = "Data is restricted to the selected POS accounts and authorized stores. Loyverse purchase orders/transfers/timesheets are unavailable; replenishment remains sales-only."
     meta = {"parent_id": parent_id or None, "title": question[:100]}
     if previous:
         old = (previous[-1].context_json or {}).get("meta", {}).get("conversation", {})

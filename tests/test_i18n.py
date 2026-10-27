@@ -25,12 +25,12 @@ def test_pages_render_chinese_when_the_cookie_is_set(client, session):
     login(client, "boss")
     client.cookies.set("lang", "zh")
     dash = client.get("/")
-    assert dash.status_code == 200 and "销售汇总" in dash.text and "需要关注" in dash.text
+    assert dash.status_code == 200 and "所有门店今日净销售额" in dash.text and "需要关注" in dash.text
     assert 'lang="zh"' in dash.text
     login_page = client.get("/login")
     assert "欢迎回来" in login_page.text
     client.cookies.set("lang", "en")
-    assert "Sales summary" in client.get("/").text
+    assert "All stores, net sales today" in client.get("/").text
 
 
 def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, fake, monkeypatch):
@@ -59,14 +59,14 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
 
     # Check page content itself, so a translated sidebar cannot satisfy this test.
     pages = {
-        "/inventory": ("现有库存", "在途库存", "搜索"),
+        "/inventory?view=list": ("现有库存", "在途库存", "搜索"),
         "/sales": ("现金销售额", "每日净销售额", "交易笔数"),
         "/sales/products": ("售出数量", "全部分类", "排序方式"),
         f"/sales/product/{product.id}": ("Cola 500ml", "每日售出数量", "按门店"),
-        "/replenishment": ("待审核", "为什么是这个数量", "批准"),
+        "/replenishment?view=list": ("待审核", "为什么是这个数量", "批准"),
         "/replenishment/batches": ("订货批次", "返回建议"),
         "/purchase-orders": ("采购单", "供应商"),
-        f"/purchase-orders/{po.id}": ("开始收货盘点", "已收货（StoreHub）"),
+        f"/purchase-orders/{po.id}": ("记录到货数量", "已收货（StoreHub）"),
         f"/receiving/{receipt.id}": ("损坏数量", "保存并完成"),
         "/issues": ("指派给我", "Printer jam", "待处理"),
         "/issues/new": ("新建工单", "设备", "负责人"),
@@ -74,7 +74,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
         "/inspections": ("门店每日巡检", "检查清单"),
         f"/inspections/{inspection.id}": ("门店入口", "提交检查清单", "请添加照片供经理查看"),
         "/counts": ("开始今日盘点", "循环盘点"),
-        f"/counts/{count.id}": ("实盘数量", "保存并提交审核"),
+        f"/counts/{count.id}": ("实盘数量", "保存并继续"),
         "/stock-events": ("记录报损", "计划外收货"),
         "/stock-events/new": ("记录报损", "失窃 / 丢失", "照片（可选证据）"),
         "/stock-events/new?kind=unplanned_receipt": ("记录计划外收货", "无采购单到货"),
@@ -102,7 +102,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
             assert label in content, (path, label)
         assert 'lang="zh"' in response.text
     client.cookies.set("lang", "en")
-    for path, label in (("/inventory", "Stock now"), ("/settings", "Rules and limits"), ("/issues/new", "Add problem")):
+    for path, label in (("/inventory?view=list", "Stock now"), ("/settings", "Rules and limits"), ("/issues/new", "Add problem")):
         assert label in client.get(path).text
 
 
@@ -155,7 +155,7 @@ def test_chinese_chat_fragment_and_browser_messages(client, session, sync, fake,
     login(client, "boss")
     client.cookies.set("lang", "zh")
     html = client.get("/assistant").text
-    assert 'data-ask="本周哪些商品最可能缺货？"' in html
+    assert 'data-chat-ask="本周哪些商品最可能缺货？"' in html
     messages = json.loads(re.search(r'<script id="ui-messages" type="application/json">(.*?)</script>', html, re.S)[1])
     assert messages["Collapse navigation"] == "收起导航"
     assert messages["Something went wrong."] == "出现错误。"
@@ -185,10 +185,32 @@ def test_error_pages_use_chinese_and_keep_permission_status(client, session):
 
 def test_plain_english_uses_stable_keys_and_preserves_values():
     assert i18n.translate("en", "Cycle counts") == "Stock counts"
-    assert i18n.translate("en", "Replenishment") == "Order suggestions"
+    assert i18n.translate("en", "Replenishment") == "Auto replenishment"
     assert i18n.translate("en", "Data quality") == "Data checks"
     assert i18n.translate("en", "3 item(s) show negative stock") == "3 items have stock below zero"
     assert i18n.translate("en", "Photo {number}", number=2) == "Photo 2"
     assert i18n.translate("zh", "Replenishment") == "补货"
     assert i18n.translate("zh", "Photo {number}", number=2) == "照片 2"
     assert i18n.translate("en", "Custom product {name}") == "Custom product {name}"
+
+
+def test_new_navigation_and_employee_translations(client, session):
+    from app.web.deps import NAV_GROUPS
+    from app.models import Employee
+    session.add(Employee(storehub_id="I18N-EMP",first_name="Example",last_name="Person"));session.commit()
+    add_user(session,"locale_admin","admin");login(client,"locale_admin")
+    client.cookies.set("lang","zh")
+    text=client.get("/employees?q=Example").text
+    for title, links in NAV_GROUPS:
+        assert title in i18n.ZH
+        for _, label, _, _, _ in links:
+            assert label in i18n.ZH
+    for label in ("Employees", "Stores worked", "Email", "Search name, email, phone or ID", "No recorded store", "Sign out"):
+        assert i18n.translate("zh",label) in text
+        assert i18n.translate("zh",label) != label
+    assert 'Example Person' in text
+    assert '/lang/en?back=/employees%3Fq%3DExample' in text
+    topbar=text.split('<header class="topbar">')[1].split('</header>')[0]
+    assert '/logout' not in topbar and '/lang/' not in topbar
+    footer=text.split('<div class="sidebar-footer">')[1].split('</aside>')[0]
+    assert '/logout' in footer and 'sidebar-language' in footer

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Employees') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/employees.css?v={{ asset_v('employees.css') }}">
+<section class="employees-page">
+<header><div><h1>{{ t('Employees') }}</h1><p class="mute">{{ t('Employee details from the selected POS account.') }}</p></div><span class="badge">{{ t('{count} employees', count=total) }}</span></header>
+<form method="get" class="employee-search"><label class="sr-only" for="employee-store">{{ t('Store') }}</label><select id="employee-store" name="loc"><option value="">{{ t('All stores') }}</option>{% for location in locations %}<option value="{{ location.id }}" {{ 'selected' if loc == location.id|string }}>{{ location.name }}</option>{% endfor %}<option value="unknown" {{ 'selected' if loc == 'unknown' }}>{{ t('No recorded store') }}</option></select><label class="sr-only" for="employee-query">{{ t('Search employees') }}</label><input id="employee-query" name="q" value="{{ q }}" placeholder="{{ t('Search name, email, phone or ID') }}"><button>{{ t('Search') }}</button>{% if q or loc %}<a class="btn sec" href="/employees">{{ t('Clear') }}</a>{% endif %}</form>
+<div class="tw"><table class="wide employee-table"><thead><tr><th>{{ t('Employee') }}</th><th>{{ t('Stores worked') }}</th><th>{{ t('Email') }}</th><th>{{ t('Phone') }}</th><th>{{ t('POS ID') }}</th></tr></thead><tbody>
+{% for e in employees %}<tr><td data-label="{{ t('Employee') }}"><strong>{{ e.name }}</strong></td><td data-label="{{ t('Stores worked') }}">{{ stores.get(e.storehub_id, [])|join(", ") or t("No recorded store") }}</td><td data-label="{{ t('Email') }}">{{ e.email or t('Not provided') }}</td><td data-label="{{ t('Phone') }}">{{ e.phone or t('Not provided') }}</td><td data-label="{{ t('POS ID') }}"><span class="mute">{{ e.external_id or e.storehub_id }}</span></td></tr>
+{% else %}<tr><td colspan="5" class="empty">{{ t('No matching employees. Try another search.' if q or loc else 'No employee records synced yet.') }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% if pages > 1 %}<nav class="employee-pagination" aria-label="{{ t('Employee pages') }}">{% if page > 1 %}<a class="btn sec" href="/employees?q={{ q|urlencode }}&loc={{ loc|urlencode }}&page={{ page - 1 }}">{{ t('Previous') }}</a>{% endif %}<span>{{ t('Page {page} of {pages}', page=page, pages=pages) }}</span>{% if page < pages %}<a class="btn sec" href="/employees?q={{ q|urlencode }}&loc={{ loc|urlencode }}&page={{ page + 1 }}">{{ t('Next') }}</a>{% endif %}</nav>{% endif %}
+<p class="small mute">{{ t('Stores worked are based on synced timesheets and sales history, not permanent store assignments.') }}</p>
+<p class="small mute">{{ t('Read-only POS records. Missing fields are shown as Not provided. Manage employee information in the original POS.') }}</p>
+</section>
+{% endblock %}

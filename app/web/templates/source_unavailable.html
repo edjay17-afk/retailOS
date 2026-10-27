@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}{{ t(feature_title) }}{% endblock %}
+{% block content %}<h1>{{ t(feature_title) }}</h1><section class="card"><h2>{{ t('Not available through the Loyverse API') }}</h2><p>{{ t('Loyverse does not expose purchase orders, stock transfers or employee timesheets in the documented API. Manage these records in Loyverse. Sales by employee is available separately.') }}</p><a class="btn sec" href="/sales/employees">{{ t('Sales by employee') }}</a></section>{% endblock %}

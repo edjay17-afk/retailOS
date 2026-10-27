@@ -20,19 +20,23 @@ def test_mobile_layout_and_save(sync,fake,session,client):
         page.route("https://**",lambda r:r.abort())
         for width in (390,320,1440):
             page.set_viewport_size({"width":width,"height":844})
-            page.goto("http://qa.test/replenishment")
+            page.goto("http://qa.test/replenishment?view=list")
             assert page.evaluate("()=>document.documentElement.scrollWidth<=innerWidth")
             if width>700:
                 assert page.locator('.rep-guide').evaluate('e=>e.open')
+                assert page.locator('.rep-filter-panel').evaluate('e=>e.open')
                 continue
             assert not page.locator('.rep-guide').evaluate('e=>e.open')
+            assert not page.locator('.rep-filter-panel').evaluate('e=>e.open')
+            page.locator('.rep-filter-panel>summary').click()
+            assert page.locator('.rep-filter-panel').evaluate('e=>e.open')
             filters=page.locator('.filters').bounding_box()
             row=page.locator('.repl tbody tr').first.bounding_box()
             assert filters['y']<row['y']
             checkbox=page.locator('.rc').first
             checkbox.check()
             bar=page.locator('#repl-selection').bounding_box()
-            assert abs(bar['y']+bar['height']-844)<2
+            assert abs(bar['y']+bar['height']-(780 if width<=700 else 844))<2   # on a phone the bar sits just above the 64 px tab bar
             assert page.locator('#repl-proceed').is_enabled()
             tr=checkbox.locator('xpath=ancestor::tr')
             qty=tr.locator('input[name=qty]')

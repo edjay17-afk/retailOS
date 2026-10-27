@@ -9,7 +9,7 @@
 <div class="counts-create">
   <div class="card" style="margin:0">
     <div class="eyebrow" style="margin-bottom:6px">{{ t('New count') }}</div>
-    <p class="small mute" style="margin-top:0">Scan a barcode, enter the counted stock, then save and scan the next product.</p>
+    <p class="small mute" style="margin-top:0">{{ t('Scan a barcode, enter the counted stock, then save and scan the next product.') }}</p>
     <form novalidate method="post" action="/counts/create" class="row" style="flex-wrap:wrap"><input type="hidden" name="csrf" value="{{ csrf }}">
       <select name="location_id" style="flex:1;min-width:160px">{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
       <input type="hidden" name="mode" value="scan">

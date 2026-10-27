@@ -224,7 +224,7 @@ class SyncService:
     def _products(self, db: Session, client: StoreHubClient) -> dict:
         data = client.products()
         now = now_utc()
-        existing = {p.storehub_id: p for p in db.scalars(select(Product))}
+        existing = {p.storehub_id: p for p in db.scalars(select(Product).where(Product.source == "storehub"))}
         seen: set[str] = set()
         ins = upd = 0
         for d in data:
@@ -264,7 +264,7 @@ class SyncService:
 
     # ---------------------------------------------------------------- inventory
     def _inventory(self, db: Session, client: StoreHubClient) -> dict:
-        locs = list(db.scalars(select(Location).where(Location.monitored.is_(True))))
+        locs = list(db.scalars(select(Location).where(Location.monitored.is_(True), Location.source == "storehub")))
         prod_ids = {sid: pid for sid, pid in db.execute(select(Product.storehub_id, Product.id))}
         recv = ins = upd = errors = unknown = 0
         now = now_utc()
@@ -327,7 +327,7 @@ class SyncService:
             else:
                 start = date.fromisoformat(cfgsvc.get(db, "sync.backfill_start"))
         end = end or today
-        locs = {l.storehub_id: l for l in db.scalars(select(Location))}
+        locs = {l.storehub_id: l for l in db.scalars(select(Location).where(Location.source == "storehub"))}
         prods = {sid: pid for sid, pid in db.execute(select(Product.storehub_id, Product.id))}
         recv = ins = upd = skipped = errors = 0
         touched: set[tuple[int, date]] = set()
@@ -429,7 +429,7 @@ class SyncService:
     def _purchase_orders(self, db: Session, client: StoreHubClient) -> dict:
         since = date.fromisoformat(cfgsvc.get(db, "sync.po_since"))
         data = client.purchase_orders(local_iso(since), local_iso(today_local() + timedelta(days=1), end=True))
-        locs = {l.storehub_id: l.id for l in db.scalars(select(Location))}
+        locs = {l.storehub_id: l.id for l in db.scalars(select(Location).where(Location.source == "storehub"))}
         prods = {sid: pid for sid, pid in db.execute(select(Product.storehub_id, Product.id))}
         sups = {s.storehub_id: s for s in db.scalars(select(Supplier)) if s.storehub_id}
         existing = {p.sh_po_id: p for p in db.scalars(select(PurchaseOrder))}
@@ -497,7 +497,7 @@ class SyncService:
         frm = local_iso(today_local() - timedelta(days=3))
         to = local_iso(today_local() + timedelta(days=1), end=True)
         data = client.timesheets(frm, to)
-        locs = {l.storehub_id: l.id for l in db.scalars(select(Location))}
+        locs = {l.storehub_id: l.id for l in db.scalars(select(Location).where(Location.source == "storehub"))}
         ins = upd = 0
         for t in data:
             ci = parse_iso(t.get("clockInTime"))
@@ -517,7 +517,7 @@ class SyncService:
     def _reconcile(self, db: Session, client: StoreHubClient) -> dict:
         """Compare StoreHub with our copy for the last 7 days. Any difference becomes a data-quality event."""
         today = today_local()
-        locs = {l.storehub_id: l for l in db.scalars(select(Location).where(Location.monitored.is_(True)))}
+        locs = {l.storehub_id: l for l in db.scalars(select(Location).where(Location.monitored.is_(True), Location.source == "storehub"))}
         mismatches = 0
         checked = 0
         for back in range(7):

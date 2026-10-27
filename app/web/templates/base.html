@@ -14,53 +14,121 @@
 <link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}">
 <link rel="stylesheet" href="/static/assistant_chat.css?v={{ asset_v('assistant_chat.css') }}">
 {% if path != "/" %}<link rel="stylesheet" href="/static/list_workspace.css?v={{ asset_v('list_workspace.css') }}">{% endif %}
+<link rel="stylesheet" href="/static/sidebar.css?v={{ asset_v('sidebar.css') }}">
+<link rel="stylesheet" href="/static/sidebar_a.css?v={{ asset_v('sidebar_a.css') }}">
+<link rel="stylesheet" href="/static/mobile.css?v={{ asset_v('mobile.css') }}">
 <link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}">
+<link rel="stylesheet" href="/static/dark.css?v={{ asset_v('dark.css') }}">
+<link rel="stylesheet" href="/static/phone_app.css?v={{ asset_v('phone_app.css') }}">
+<link rel="stylesheet" href="/static/account_menu.css?v={{ asset_v('account_menu.css') }}">
 </head>
-<body>
+<body class="rail-expanded">
+<script>(function(){try{document.body.classList.add('rail-expanded')}catch(e){/* Keep the default expanded layout. */}})();</script>
 <a class="skip-link" href="#main-content">{{ t('Skip to content') }}</a>
 {% include "_icons.html" %}
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <button class="iconbtn drawer-close" id="navigation-close" type="button" aria-label="{{ t('Close navigation') }}"><svg class="i"><use href="#i-x"/></svg></button>
+    <div class="sidebar-brand-row">
     <a class="brand" href="/" aria-label="{{ t('Retail OS home') }}"><span class="mark"><img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" alt="" width="38" height="38"></span><span class="brand-name">Retail OS<small>{{ company }}</small></span></a>
     <button class="rail-toggle" id="rail-toggle" type="button" aria-label="{{ t('Expand navigation') }}" aria-expanded="false" aria-controls="sidebar-nav" title="{{ t('Expand navigation') }}"><svg class="i"><use href="#i-menu"/></svg></button>
+    </div>
     <nav id="sidebar-nav" aria-label="{{ t('Main navigation') }}">
-    {% for title, links in nav_groups %}
-      <div class="nav-group" data-group="{{ title }}">
-      <button class="ng" type="button" data-ng-toggle aria-expanded="true"><span>{{ t(title) }}</span><svg class="i ng-chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
-      <div class="ng-links">
+    {% set group_icons = {'Store operations':'clipboard','Inventory':'box','Purchasing':'file','Transfers':'sync','Auto replenishment':'trend','Sales':'chart','Team':'user','Settings':'settings'} %}
+    {% set tile = {'Inventory':'green','Transfers':'blue','Purchasing':'amber','Auto replenishment':'purple','Sales':'green','Team':'pink','Settings':'grey','/':'green','/issues':'red','/inspections':'green','/compliance':'amber','/planogram':'blue'} %}
+    {% set g = {} %}{% for title, links in nav_groups %}{% if g.update({title: links}) %}{% endif %}{% endfor %}
+    {% set sections = [(none, ['Today']), ('Run the stores', ['Store operations']), ('Stock', ['Inventory', 'Transfers', 'Purchasing', 'Auto replenishment']), ('Insight', ['Sales', 'Team', 'Settings'])] %}
+    {% for heading, names in sections %}
+      {% set shown = [] %}{% for n in names %}{% if n in g %}{% if shown.append(n) %}{% endif %}{% endif %}{% endfor %}
+      {% if shown %}
+      {% if heading %}<h6 class="ns-h">{{ t(heading) }}</h6>{% endif %}
+      {% for title in shown %}
+      {% set links = g[title] %}
+      {% set state = namespace(active=false, n=0) %}
+      {% for url, label, icon, tag in links %}{% if active_nav_url == url %}{% set state.active = true %}{% endif %}{% if tag and tag|string|int(0) > 0 %}{% set state.n = state.n + tag|string|int %}{% endif %}{% endfor %}
+      {% if title in ('Today', 'Store operations') %}
+      <div class="nav-group nav-home flat {{ 'current-group' if state.active else '' }}" data-group="{{ title }}"><div class="ng-links">
       {% for url, label, icon, tag in links %}
-      {% set active = (path == url or (url != '/' and path.startswith(url) and not (url == '/sales' and path != '/sales' and path.startswith('/sales/')) and not (url == '/purchase-orders' and path.startswith('/purchase-orders/new'))) or (url == '/sales/products' and path.startswith('/sales/product'))) %}
-      <a class="nl {{ 'on' if active else '' }}" href="{{ sales_products_url if url == '/sales/products' and sales_products_url is defined else url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span class="nav-label">{{ t(label) }}</span>{% if tag %}<span class="tag">{{ tag }}</span>{% endif %}</a>
+        {% set active = active_nav_url == url %}
+        <a class="nl {{ 'on' if active else '' }}" href="{{ url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><span class="ic-tile" data-c="{{ tile.get(url, 'green') }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg></span><span class="nav-label">{{ t(label) }}</span>{% if tag %}<em class="tag">{{ tag }}</em>{% endif %}</a>
       {% endfor %}
+      </div></div>
+      {% else %}
+      <div class="nav-group {{ 'current-group' if state.active else '' }} {{ 'collapsed' if not state.active else '' }}" data-group="{{ title }}">
+        <button class="ng" type="button" data-ng-toggle aria-expanded="{{ 'true' if state.active else 'false' }}" aria-controls="nav-links-{{ title|replace(' ', '-') }}" title="{{ title if lang == 'en' else t(title) }}"><span class="ic-tile" data-c="{{ tile.get(title, 'green') }}"><svg class="i group-icon" aria-hidden="true"><use href="#i-{{ group_icons[title] }}"/></svg></span><span class="group-label">{{ title if lang == 'en' else t(title) }}</span>{% if state.n and not state.active %}<em class="tag">{{ state.n }}</em>{% endif %}<svg class="i ng-chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+        <div class="ng-links" id="nav-links-{{ title|replace(' ', '-') }}">
+        <div class="fo-title">{{ title if lang == 'en' else t(title) }}</div>
+        {% for url, label, icon, tag in links %}
+          {% set active = active_nav_url == url %}
+          <a class="nl {{ 'on' if active else '' }}" href="{{ sales_products_url if url == '/sales/products' and sales_products_url is defined else url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><span class="nav-label">{{ t(label) }}</span>{% if tag %}<em class="tag">{{ tag }}</em>{% endif %}</a>
+        {% endfor %}
+        </div>
       </div>
-      </div>
+      {% endif %}
+      {% endfor %}
+      {% endif %}
     {% endfor %}
     </nav>
-    {% if can('ai.use') %}<a class="rail-assistant" href="/assistant" title="{{ t('Assistant') }}" aria-label="{{ t('Assistant') }}"><span>AI</span><span class="nav-label">{{ t('Assistant') }}</span></a>{% endif %}
+
+    <div class="sidebar-footer">
+      <div class="sf-me"><span class="sf-av" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}</span>
+        <span class="sf-t"><b>{{ user.full_name or user.username }}</b><small>{{ t(ROLE_LABELS[user.role]) }} · <span class="sidebar-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a> <a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></span></small></span>
+        <form novalidate method="post" action="/logout" class="sidebar-signout-form"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sidebar-signout" title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i" aria-hidden="true"><use href="#i-logout"/></svg><span>{{ t('Sign out') }}</span></button></form>
+      </div>
+    </div>
   </aside>
   <div class="scrim"></div>
   <div class="main">
     <header class="topbar">
+      <a class="phone-only phone-home-logo" href="/" aria-label="{{ t('Retail OS home') }}"><img src="/static/retailos-mark.svg" alt="" width="32" height="32"></a>
       <button class="iconbtn menu-btn" id="mobile-menu" type="button" aria-label="{{ t('Open navigation') }}" aria-expanded="false" aria-controls="sidebar"><svg class="i"><use href="#i-menu"/></svg></button>
-      <div class="workspace-title">{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}{{ t('Dashboard') }}{% else %}{{ self.title() }}{% endif %}</div>
+      <div class="workspace-title">{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" role="heading" aria-level="1" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}<span role="heading" aria-level="1">{{ t('Dashboard') }}</span>{% else %}<span role="heading" aria-level="1">{{ self.title() }}</span>{% endif %}</div>
       <span class="grow"></span>
       <div class="header-actions">
+      <div class="top-lang" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
       <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false"><svg class="i"><use href="#i-moon"/></svg></button>
       <button type="button" class="btn ghost print-report hide-m" data-print><svg class="i"><use href="#i-file"/></svg>{{ t('Print report') }}</button>
-      <span class="lang-toggle" role="group" aria-label="{{ t('Language / 语言') }}"><a href="/lang/en?back={{ path }}" class="{{ 'on' if lang == 'en' }}" hreflang="en">EN</a><a href="/lang/zh?back={{ path }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh">中文</a></span>
       <a class="iconbtn" href="/notifications" title="{{ t('Notifications') }}" aria-label="{{ t('Notifications') }}"><svg class="i"><use href="#i-bell"/></svg>{% if unread %}<b>{{ unread if unread < 100 else '99+' }}</b>{% endif %}</a>
-      <a class="me header-account" href="/password" title="{{ t('Change password') }}"><span class="avatar" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}{{ ((user.full_name or '').split(' ')[1:2] or [''])[0][:1]|upper }}</span><span class="account-copy"><span class="n">{{ user.full_name or user.username }}</span>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<span class="r">{{ t(ROLE_LABELS[user.role]) }}</span>{% endif %}</span><svg class="i account-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></a>
-      <form novalidate method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="iconbtn"  title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i"><use href="#i-logout"/></svg></button></form>
+      <details class="account-dropdown" id="account-dropdown">
+      <summary class="me header-account" title="{{ t('Settings') }}"><span class="avatar" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}{{ ((user.full_name or '').split(' ')[1:2] or [''])[0][:1]|upper }}</span><span class="account-copy"><span class="n">{{ user.full_name or user.username }}</span>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<span class="r">{{ t(ROLE_LABELS[user.role]) }}</span>{% endif %}</span><svg class="i account-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+      <nav class="account-menu" aria-label="{{ t('Settings') }}">
+        <div class="account-menu-title">{{ t('Settings') }}</div>
+        {% for title, links in nav_groups %}{% if title == 'Settings' %}{% for url, label, icon, tag in links %}<a href="{{ url }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}</span></a>{% endfor %}{% endif %}{% endfor %}
+        <a class="account-password" href="/password"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><span>{{ t('Change password') }}</span></a>
+      </nav>
+      </details>
       </div>
     </header>
     <main class="content" id="main-content" tabindex="-1">
       {% if ok %}<div class="flash ok" role="status"><svg class="i"><use href="#i-check"/></svg>{{ t(ok) }}</div>{% endif %}
       {% if err %}<div class="flash err" role="alert"><svg class="i"><use href="#i-alert"/></svg>{{ t(err) }}</div>{% endif %}
       {% if stale %}<div class="banner"><b>{{ t('Data warning.') }}</b> {% for f in stale %}{{ t(f.label) }} — {{ t('not synced yet') if f.status == 'never' else t('stale') ~ ' (' ~ (f.age_min|int) ~ t(' min old') ~ ')' }}{% if not loop.last %}; {% endif %}{% endfor %}. {{ t('Figures may be out of date; order suggestions are paused until it recovers.') }} <a href="/sync">{{ t('Sync status') }}</a></div>{% endif %}
+      {% if source_options and source_options|length > 1 %}
+      <div class="pos-source-toolbar no-print">
+      <form method="post" action="/data-source" class="pos-source-picker">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ request.url.path }}?{{ request.url.query }}">
+        {% set active_source = 'loyverse' if source_scope.startswith('loyverse') else source_scope %}
+        <div id="pos-source" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
+          <button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' }}" aria-pressed="{{ 'true' if source_scope == 'storehub' else 'false' }}">{{ t('Daily Centro') }}</button>
+          {% for value,label in source_options if value.startswith('loyverse:') %}
+          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value }}" aria-pressed="{{ 'true' if source_scope == value else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
+          {% endfor %}
+        </div>
+      </form>
+      <form novalidate method="post" action="/data-source" class="pos-source-mobile">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ request.url.path }}?{{ request.url.query }}">
+        <select name="scope" aria-label="{{ t('Sales source') }}" onchange="this.form.submit()">
+          <option value="storehub" {{ 'selected' if source_scope == 'storehub' }}>{{ t('Daily Centro') }}</option>
+          {% for value,label in source_options if value.startswith('loyverse:') %}<option value="{{ value }}" {{ 'selected' if source_scope == value }}>{{ label|replace('Loyverse / ', '') }}</option>{% endfor %}
+        </select>
+      </form>
+      <div class="pos-source-aside">{% block source_aside %}{% endblock %}</div>
+      </div>
+      {% endif %}
+      {% if source_states %}<div class="pos-sync-status no-print">{% for st in source_states %}<span class="pos-sync-item{{ ' has-error' if st.reporting_error }}"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span><b>{{ account_labels.get(st.key, st.key|replace('LOYVERSE_TOKEN_', '')) }}</b><span class="pos-sync-separator"> &middot; </span>{{ t('Last synced') }} {{ st.reporting_success_at|ago }}{% if st.reporting_history_from %} &middot; {{ t('History from') }} {{ st.reporting_history_from }}{% endif %}{% if st.reporting_error %} &middot; {{ t(st.reporting_error) }}{% endif %}</span></span>{% endfor %}</div>{% endif %}
       {% block content %}{% endblock %}
     </main>
-    <footer class="foot">{{ t('Retail OS · StoreHub is the source of truth for sales, stock and purchase orders. This system never writes to StoreHub.') }}</footer>
+    <footer class="foot">{{ t('Sales and stock are read from the selected POS source. Local operational records do not update POS stock.') }}</footer>
   </div>
 </div>
 <script>
@@ -72,11 +140,45 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
   <p id="confirm-description"></p>
   <div class="row confirm-actions"><button type="button" class="sec" id="confirm-cancel" autofocus>{{ t('Cancel') }}</button><button type="button" class="bad" id="confirm-accept"></button></div>
 </dialog>
+<nav class="mtabs" id="mtabs" aria-label="{{ t('Main navigation') }}">
+  {% set tabs = [('/', 'Today', 'home', 'dashboard.view'), ('/inventory', 'Stock', 'box', 'inventory.view'), ] %}
+  {% for url, label, icon, perm in tabs %}{% if can(perm) %}<a class="mt {{ 'on' if active_nav_url == url or (url != '/' and active_nav_url.startswith(url ~ '/')) else '' }}" href="{{ '/inventory?view=list' if url == '/inventory' else url }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}</span></a>{% endif %}{% endfor %}
+  <button type="button" class="mt" data-modal="phone-work" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg><span>{{ t('Work') }}</span></button>
+  <button type="button" class="mt" id="mt-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="more-sheet"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg><span>{{ t('More') }}</span></button>
+</nav>
+<dialog id="phone-work" class="phone-work-dialog" aria-labelledby="phone-work-title">
+<header><h2 id="phone-work-title">{{ t('Work') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}">&times;</button></header>
+<div class="phone-actions">{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in ['/issues','/inspections','/counts','/transfer-sheets','/purchase-orders','/replenishment','/replenishment/loyverse'] %}<a href="{{ url }}"><svg class="i"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}{% if tag %}<small>{{ tag }}</small>{% endif %}</span><b>&rsaquo;</b></a>{% endif %}{% endfor %}{% endfor %}</div>
+</dialog>
+<div class="more-scrim" id="more-scrim" hidden></div>
+<section class="more-sheet" id="more-sheet" role="dialog" aria-modal="true" aria-label="{{ t('More') }}" hidden>
+  <div class="more-grab"></div>
+  {% set quick_urls = ['/issues', '/inspections', '/counts', '/replenishment', '/sales', '/purchase-orders'] %}
+  <div class="more-grid more-quick">{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in quick_urls %}<a href="{{ url }}" class="{{ 'on' if active_nav_url == url else '' }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}</span>{% if tag %}<em>{{ tag }}</em>{% endif %}</a>{% endif %}{% endfor %}{% endfor %}</div>
+  <details class="more-all"><summary>{{ t('All pages') }}</summary>
+  {% set shown = ['/', '/inventory'] %}
+  {% for title, links in nav_groups %}{% set rest = [] %}{% for url, label, icon, tag in links %}{% if url not in shown and url != '/' %}{% if rest.append((url, label, icon, tag)) %}{% endif %}{% endif %}{% endfor %}
+  {% if rest %}<h6 class="more-h">{{ t(title) }}</h6><div class="more-grid">{% for url, label, icon, tag in rest %}<a href="{{ sales_products_url if url == '/sales/products' and sales_products_url is defined else url }}" class="{{ 'on' if active_nav_url == url else '' }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}</span>{% if tag %}<em>{{ tag }}</em>{% endif %}</a>{% endfor %}</div>{% endif %}
+  {% endfor %}
+  </details>
+  <div class="more-list">
+    <button type="button" id="more-ask"><span>{{ t('Ask the assistant') }}</span><b>›</b></button>
+    <button type="button" id="more-theme"><span>{{ t('Dark mode') }}</span><b>›</b></button>
+    <div class="more-lang"><span>{{ t('Language') }}</span><span><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}">English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}">&#20013;&#25991;</a></span></div>
+    <a href="/password" class="more-row"><span>{{ user.full_name or user.username }} · {{ t('Change password') }}</span><b>›</b></a>
+    <form novalidate method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="more-out"><span>{{ t('Sign out') }}</span></button></form>
+  </div>
+</section>
 <div id="tip" class="tip" role="tooltip" hidden></div>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
 <script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
+<script src="/static/navigation_motion.js?v={{ asset_v('navigation_motion.js') }}"></script>
+<script src="/static/sidebar_fly.js?v={{ asset_v('sidebar_fly.js') }}"></script>
+<script src="/static/mobile.js?v={{ asset_v('mobile.js') }}"></script>
+<script src="/static/phone_app.js?v={{ asset_v('phone_app.js') }}"></script>
 <script src="/static/assistant_chat.js?v={{ asset_v('assistant_chat.js') }}"></script>
 <script src="/static/tabs.js?v={{ asset_v('tabs.js') }}"></script>
+<script src="/static/account_menu.js?v={{ asset_v('account_menu.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

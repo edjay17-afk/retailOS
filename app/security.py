@@ -62,6 +62,7 @@ PERMS: dict[str, set[str]] = {
     "ai.metrics": {"warehouse", "management", "admin"},
     "settings.manage": {"admin"},
     "users.manage": {"admin"},
+    "loyverse.view": {"staff", "store_manager", "warehouse", "admin", "management"},
 }
 
 # Store-bound users (assigned locations + a store role) get only their own store's daily work:
@@ -81,6 +82,7 @@ LINK_PERMS = (
     ("/stock-transfers", "transfer.view"),
     ("/purchase-orders/new", "po.create"),
     ("/purchase-orders", "po.view"),
+    ("/replenishment/loyverse", "loyverse.view"),
     ("/replenishment", "repl.view"),
     ("/data-quality", "dq.view"),
     ("/performance", "performance.view"),
@@ -171,4 +173,8 @@ def allowed_location_ids(db: Session, user: User) -> list[int]:
     if user.location_ids:
         scope = set(user.location_ids)
         ids = [i for i in ids if i in scope]
+    if not user.location_ids and user.role not in ('admin', 'management'):
+        ids = list(db.scalars(select(Location.id).where(Location.id.in_(ids or [0]), Location.source == 'storehub')))
+    if 'location_scope' in db.info:
+        ids = [i for i in ids if i in db.info['location_scope']]
     return ids

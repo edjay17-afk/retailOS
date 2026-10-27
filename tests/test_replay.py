@@ -64,3 +64,28 @@ def test_sales_only_mode_ignores_stock_skips_recent_orders_and_still_replays(syn
     session.commit()
     again = {(r.location_id, r.product_id) for r in session.scalars(select(Recommendation).where(Recommendation.business_date == today_local()))}
     assert (done.location_id, done.product_id) not in again
+
+
+def test_storehub_run_survives_loyverse_scope_and_restores_expired(sync,fake,session):
+    seeded(sync,fake,session)
+    replenishment.run(session);session.commit()
+    recs=list(session.scalars(select(Recommendation)))
+    assert recs
+    expired=recs[0];expired.status='expired'
+    session.commit()
+    expected={r.id:r.final_qty for r in recs}
+    scope={'source_pairs':{('loyverse','A')},'location_scope':[-1],'allow_unassigned_pos':False}
+    session.info.update(scope)
+    replenishment.run(session);session.commit()
+    assert all(session.info[k]==v for k,v in scope.items())
+    session.expire_all()
+    result=list(session.scalars(select(Recommendation)))
+    assert {r.id:r.final_qty for r in result}==expected
+    assert session.get(Recommendation,expired.id).status in ('pending','needs_review')
+    assert not any(r.status=='expired' for r in result)
+
+    expired.status='approved';expired.approved_qty=expired.final_qty
+    session.commit()
+    replenishment.run(session);session.commit()
+    session.refresh(expired)
+    assert expired.status=='approved' and expired.approved_qty==expected[expired.id]

@@ -7,7 +7,7 @@
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by product') }}</h1>
   <p>{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
-  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="submit" form="product-sales-filters" name="export" value="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="submit" form="product-sales-filters" name="export" value="detailed">Detailed CSV</button></div></div>
+  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="button" data-export="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="button" data-export="detailed">{{ t('Detailed CSV') }}</button></div></div>
 
 <form id="product-sales-filters" novalidate class="filters product-sales-filters" method="get" action="/sales/products">
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
@@ -20,6 +20,16 @@
   <div><label>{{ t('Sort by') }}</label><select name="sort" onchange="this.form.submit()">{% for k, t in (('sales', 'Net sales'), ('units', 'Units sold'), ('price', 'Average price'), ('name', 'Name')) %}<option value="{{ k }}" {{ 'selected' if k == sort }}>{{ t }}</option>{% endfor %}</select></div>
   <div class="product-sales-search"><label for="product-sales-search">{{ t('Search') }}</label><div class="product-sales-search-row"><input id="product-sales-search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"><button type="submit">{{ t('Search') }}</button></div></div>
 </form>
+<script>
+/* The downloads send the same filters, but only when they are clicked: pressing Enter in the search box searches. */
+document.querySelectorAll('[data-export]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var f = document.getElementById('product-sales-filters'), h = document.createElement('input');
+    h.type = 'hidden'; h.name = 'export'; h.value = b.dataset.export; f.appendChild(h); f.submit();
+    setTimeout(function () { h.remove(); }, 800);
+  });
+});
+</script>
 
 <dl class="product-sales-summary" aria-label="{{ t('Sales summary') }}">
   <div class="product-sales-metric product-sales-revenue">
@@ -36,7 +46,7 @@
   <tr><th>#</th><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Avg price') }}</th>{% if labels %}<th>{{ t('Trend') }}</th>{% endif %}</tr>
   {% for p, units, net, ds in rows %}
   <tr><td class="mute">{{ offset + loop.index }}</td>
-    <td><div style="font-weight:600"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days }}{% endif %}&loc={{ loc }}&list_query={{ (qs ~ '&page=' ~ page)|urlencode }}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}</div></td>
+    <td><div style="font-weight:600"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days }}{% endif %}&loc={{ loc }}&list_query={{ (qs ~ '&page=' ~ page)|urlencode }}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}{% if source_scope == 'all' or source_scope == 'loyverse' %} &middot; {{ 'StoreHub' if p.source == 'storehub' else account_labels.get(p.source_account, p.source_account|replace('LOYVERSE_TOKEN_', '')) }}{% endif %}</div></td>
     <td class="small">{{ p.category or '' }}</td>
     <td class="right">{{ units|num(0) if units == units|round(0) else units|num(2) }}</td>
     <td class="right"><b>{{ net|money }}</b></td>

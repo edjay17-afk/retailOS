@@ -48,3 +48,50 @@ def test_failure_csrf_and_scope(client,session,scan_setup,monkeypatch):
     client.post("/logout",data={"csrf":csrf})
     add_user(session,"other_scanner","staff",[999999]);login(client,"other_scanner")
     assert client.post(url+"/scan",data={"code":"123456789","csrf":csrf_of(client,"/counts")}).status_code==403
+
+
+def test_product_lookup(client, session, scan_setup):
+    url, csrf, pid, _ = scan_setup
+    session.add(Product(storehub_id="REMOVED_SCAN", name="Scan deleted", barcode="999", in_api=False))
+    session.commit()
+    for term in ("scan", "123456", "Scan product"):
+        rows = client.get(url + "/products", params={"q": term}).json()
+        assert [p["id"] for p in rows] == [pid]
+    assert client.get(url + "/products?q=missing").json() == []
+    assert client.post(url + "/scan", data={"product_id": pid, "csrf": csrf}).json()["system"] == 12
+    assert client.post(url + "/scan", data={"product_id": 999999, "csrf": csrf}).status_code == 404
+    client.post("/logout", data={"csrf": csrf})
+    add_user(session, "lookup_other", "staff", [999999]); login(client, "lookup_other")
+    assert client.get(url + "/products?q=scan").status_code == 403
+
+
+def test_count_lookup_browser(client, scan_setup):
+    from urllib.parse import urlsplit
+    from playwright.sync_api import sync_playwright
+    url, _, _, _ = scan_setup
+    def serve(route):
+        req = route.request; u = urlsplit(req.url)
+        r = client.request(req.method, u.path + ("?" + u.query if u.query else ""), content=req.post_data_buffer,
+                           headers={k:v for k,v in req.all_headers().items() if k in ("content-type", "x-requested-with")})
+        route.fulfill(status=r.status_code, body=r.content, headers={k:v for k,v in r.headers.items() if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")})
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel="msedge", headless=True)
+        page = browser.new_page()
+        page.route("http://qa.test/**", serve)
+        page.route("https://**", lambda r:r.abort())
+        for width in (1440, 390):
+            page.set_viewport_size({"width":width,"height":900})
+            page.goto("http://qa.test" + url)
+            page.locator("#count-code").fill("Scan prod")
+            page.locator("#count-products [role=option]").first.wait_for()
+            page.locator("#count-code").press("ArrowDown")
+            page.locator("#count-code").press("Enter")
+            page.locator("#count-entry").wait_for(state="visible")
+            assert page.locator("#count-product").inner_text() == "Scan product"
+            assert page.locator("#count-system").inner_text() == "12"
+            assert page.evaluate("() => document.documentElement.scrollWidth <= innerWidth")
+            page.locator("#count-cancel").click()
+            page.locator("#count-code").fill("123456789")
+            page.locator("#count-code").press("Enter")
+            page.locator("#count-entry").wait_for(state="visible")
+        browser.close()

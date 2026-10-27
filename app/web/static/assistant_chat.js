@@ -1,5 +1,8 @@
 (function () {
   'use strict';
+var localeMessages=JSON.parse(document.getElementById('ui-messages').textContent);
+function tr(key){return localeMessages[key]||key;}
+
   var panel = document.getElementById('chat-panel');
   if (!panel) return;
   var fab = document.getElementById('chat-fab'), log = document.getElementById('chat-log'),
@@ -23,8 +26,8 @@
   function hello() {
     var welcome = message('bot chat-welcome', ''), brand = fab.querySelector('img').cloneNode(true);
     var title = document.createElement('h2'), detail = document.createElement('p');
-    title.textContent = 'What can I help you with?';
-    detail.textContent = 'Explore sales, check stock, and plan your next step. Answers backed by your store data.';
+    title.textContent = tr('What can I help you with?');
+    detail.textContent = tr('Explore sales, check stock, and plan your next step. Answers backed by your store data.');
     welcome.append(brand, title, detail);
   }
   var mobile = window.matchMedia('(max-width: 640px)');
@@ -47,7 +50,7 @@
   }
   function paintContext(page) {
     context = page || {};
-    scope.textContent = useContext.checked ? ((context.chips || []).join(' · ') || 'Your accessible stores') : 'Page context off';
+    scope.textContent = useContext.checked ? ((context.chips || []).join(' · ') || tr('Your accessible stores')) : tr('Page context off');
     scope.title = scope.textContent;
     if (!parent && context.suggestions) {
       suggestions.replaceChildren();
@@ -61,10 +64,10 @@
     return r.json();
   }
   async function refreshContext() {
-    if (!useContext.checked) { scope.textContent = 'Page context off'; return; }
+    if (!useContext.checked) { scope.textContent = tr('Page context off'); return; }
     var requestId = ++contextRequest;
     try { var data = await json('/assistant/context?url=' + encodeURIComponent(pageURL())); if (requestId === contextRequest && useContext.checked) paintContext(data.page); }
-    catch (_) { scope.textContent = 'Page context unavailable'; }
+    catch (_) { scope.textContent = tr('Page context unavailable'); }
   }
   async function resume(id, openAfter) {
     if (busy || loading) return;
@@ -82,10 +85,10 @@
     if (busy || loading) return;
     historyList.hidden = !historyList.hidden;
     if (historyList.hidden) return;
-    historyList.textContent = 'Loading conversations…';
+    historyList.textContent = tr('Loading conversations…');
     try {
       var data = await json('/assistant/conversations'); historyList.replaceChildren();
-      if (!data.conversations.length) historyList.textContent = 'No saved conversations yet.';
+      if (!data.conversations.length) historyList.textContent = tr('No saved conversations yet.');
       data.conversations.forEach(function (chat) { var b = document.createElement('button'); b.type = 'button'; b.className = 'assistant-thread'; b.dataset.chatResume = chat.id; b.textContent = chat.title; historyList.appendChild(b); });
     } catch (e) { historyList.textContent = e.message; }
   }
@@ -105,7 +108,7 @@
   }
   function failure(text, question) {
     var el = message('bot err', text), b = document.createElement('button');
-    b.type = 'button'; b.className = 'sec sm chat-retry'; b.textContent = 'Retry';
+    b.type = 'button'; b.className = 'sec sm chat-retry'; b.textContent = tr('Retry');
     b.addEventListener('click', function () { ask(question); }); el.appendChild(b);
   }
   async function ask(question) {
@@ -117,7 +120,7 @@
     var dots = document.createElement('span'), statusText = document.createElement('span');
     dots.className = 'chat-typing-dots'; dots.setAttribute('aria-hidden', 'true');
     for (var dot = 0; dot < 3; dot++) dots.appendChild(document.createElement('i'));
-    statusText.className = 'chat-typing-status'; statusText.textContent = 'Sending your question...';
+    statusText.className = 'chat-typing-status'; statusText.textContent = tr('Sending your question...');
     statusText.setAttribute('role', 'status'); statusText.setAttribute('aria-live', 'polite');
     waiting.appendChild(dots); waiting.appendChild(statusText);
     var fd = new FormData(); fd.append('question', question); fd.append('parent_id', parent);
@@ -148,7 +151,7 @@
       }
       if (!gotResult) throw new Error('The connection ended before the answer arrived.');
     } catch (e) {
-      waiting.remove(); failure(e.name === 'AbortError' ? 'Stopped waiting. An in-progress request may still finish; check saved conversations before retrying.' : e.message, question);
+      waiting.remove(); failure(e.name === 'AbortError' ? tr('Stopped waiting. An in-progress request may still finish; check saved conversations before retrying.') : e.message, question);
     } finally {
       clearTimeout(timeout); controller = null; busy = false; send.disabled = false; stop.hidden = true;
       document.getElementById('chat-clear').disabled = false; log.removeAttribute('aria-busy');
@@ -183,7 +186,7 @@
     if (e.target.closest('[data-chat-new]')) { newChat(); return; }
     var copy = e.target.closest('[data-chat-copy]');
     if (copy) {
-      try { await navigator.clipboard.writeText(copy.closest('.msg, .explain-out').querySelector('.chat-answer-content').innerText); copy.textContent = 'Copied'; }
+      try { await navigator.clipboard.writeText(copy.closest('.msg, .explain-out').querySelector('.chat-answer-content').innerText); copy.textContent = tr('Copied'); }
       catch (_) { copy.textContent = 'Select the answer to copy'; }
       return;
     }

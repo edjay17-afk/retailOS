@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Stock') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/stock_compare.css?v={{ asset_v('stock_compare.css') }}">
+{% set qs = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&attention=' ~ attention ~ '&sort=' ~ sort %}
+<div class="page-head">
+  <div><h1>{{ t('Stock') }}</h1>
+    <p class="sync-note">{{ t('Every store side by side') }} · {{ t('Stock is a read-only copy of the selected POS, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
+  <div class="row">
+    <a class="btn sec" href="/inventory?view=list">{{ t('List view') }}</a>
+    <a class="btn sec" href="?{{ qs }}&export=csv">{{ t('Export CSV') }}</a>
+    {% if can('count.enter') %}<a class="btn" href="/stock-events/new?kind=write_off">{{ t('Record stock event') }}</a>{% endif %}
+  </div>
+</div>
+
+<form novalidate class="sc-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="{{ t('Search name, barcode or SKU') }}" aria-label="{{ t('Search') }}">
+  <select name="category" aria-label="{{ t('Category') }}"><option value="">{{ t('All categories') }}</option>{% for ctg in cats %}<option value="{{ ctg }}" {{ 'selected' if ctg == category }}>{{ ctg }}</option>{% endfor %}</select>
+  <select name="sort" aria-label="{{ t('Sort') }}"><option value="attention" {{ 'selected' if sort != 'name' }}>{{ t('Needs attention first') }}</option><option value="name" {{ 'selected' if sort == 'name' }}>{{ t('Name') }}</option></select>
+  <label class="sc-check"><input type="checkbox" name="attention" value="1" {{ 'checked' if attention }}> {{ t('Only products that need attention') }}</label>
+  <button class="btn">{{ t('Apply') }}</button>
+</form>
+
+<div class="sc-sum">
+  <span><b>{{ summary.products|num(0) }}</b> {{ t('products') }}</span>
+  <span><b>{{ summary.out|num(0) }}</b> {{ t('out of stock or negative') }}</span>
+  <span><b>{{ summary.low|num(0) }}</b> {{ t('running low') }}</span>
+  <span class="sc-legend"><i class="lv-out"></i>{{ t('Out or negative') }}<i class="lv-low"></i>{{ t('Under 3 days left') }}<i class="lv-ok"></i>{{ t('OK') }}</span>
+</div>
+
+<div class="sc-wrap"><table class="sc">
+  <thead><tr><th class="sc-p">{{ t('Product') }}</th><th>{{ t('Category') }}</th>{% for l in locs %}<th class="r"><a href="/inventory?view=list&loc={{ l.id }}" title="{{ l.name }}">{{ short(l.name) }}</a></th>{% endfor %}<th class="r">{{ t('Total') }}</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td class="sc-p"><a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a><small>{{ r.p.barcode or r.p.sku or '' }}</small></td>
+    <td class="sc-cat">{{ r.p.category or '—' }}</td>
+    {% for l in locs %}{% set x = r.cells.get(l.id) %}
+    <td class="r">{% if x %}<a class="cell lv-{{ x.level }}" href="/inventory?view=list&loc={{ l.id }}&q={{ (r.p.barcode or r.p.name)|urlencode }}"
+        title="{{ r.p.name }} · {{ short(l.name) }}: {{ x.qty|num }}{% if x.ads %} · {{ t('sells') }} {{ x.ads|num(1) }}/{{ t('day') }}{% endif %}{% if x.cover is not none %} · {{ x.cover|num(1) }} {{ t('days left') }}{% endif %}{% if x.incoming %} · {{ x.incoming|num }} {{ t('on the way') }}{% endif %}">{{ x.qty|num }}{% if x.incoming %}<em>+{{ x.incoming|num }}</em>{% endif %}</a>{% else %}<span class="mute">—</span>{% endif %}</td>
+    {% endfor %}
+    <td class="r"><b>{{ r.total|num }}</b></td>
+  </tr>
+  {% else %}<tr><td colspan="{{ locs|length + 3 }}"><div class="empty">{{ t('No products match.') }} {% if q or category or attention %}<a class="btn sec" href="/inventory/compare">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+<p class="small mute sc-note">{{ t('Click a number to open that product in that store. A small +number is stock on its way on open purchase orders.') }}</p>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} · {{ total }} {{ t('products') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

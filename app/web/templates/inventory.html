@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Inventory') }}{% endblock %}
+{% block scripts %}<script src="/static/scan.js?v={{ asset_v('scan.js') }}"></script>{% endblock %}
 {% block content %}
 {% if location %}
 {% set base_qs = 'loc=' ~ location.id ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&inc=' ~ inc %}
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} / {{ location.name }}</div><h1>{{ t('Inventory') }}</h1>
-    <p class="sync-note">{{ t('Stock is a read-only copy of StoreHub, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
+    <p class="sync-note">{{ t('Stock is a read-only copy of the selected POS, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
   <div class="row">
+    {% if locations|length > 1 %}<a class="btn sec" href="/inventory/compare">{{ t('Compare stores') }}</a>{% endif %}
     {% if can('count.enter') %}<a class="btn" href="/stock-events/new?kind=write_off&location_id={{ location.id }}"><svg class="i"><use href="#i-camera"/></svg>{{ t('Record stock event') }}</a>{% endif %}
     <a class="btn sec" href="?{{ base_qs }}&status={{ status }}&export=csv"><svg class="i"><use href="#i-file"/></svg>{{ t('Export CSV') }}</a>
   </div>
@@ -20,9 +22,9 @@
   <a class="statcard {{ 'on' if status == 'low' }}" href="?{{ base_qs }}&status=low"><span><span class="v">{{ stats.low|num(0) }}</span><div class="l">{{ t('Under 3 days of cover') }}</div></span></a>
 </div>
 
-<form novalidate class="filters toolbar" method="get">
+<form novalidate class="filters toolbar" data-mf="1" method="get">
   <div><label for="inventory-location">{{ t('Location') }}</label><select id="inventory-location" name="loc">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location.id }}>{{ l.name }}</option>{% endfor %}</select></div>
-  <div style="flex:1;min-width:200px"><label for="inventory-search">{{ t('Search') }}</label><input id="inventory-search" data-search name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU — press Enter') }}" inputmode="search" style="width:100%"></div>
+  <div style="flex:1;min-width:200px"><label for="inventory-search">{{ t('Search') }}</label><input id="inventory-search" data-search name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}" inputmode="search" style="width:100%"><button type="button" class="phone-only sec" data-scan="inventory-search" aria-label="{{ t('Scan') }}"><svg class="i"><use href="#i-scan"/></svg></button></div>
   <div><label for="inventory-incoming">{{ t('Incoming (open POs)') }}</label><select id="inventory-incoming" name="inc">
     <option value="">{{ t('All') }}</option><option value="yes" {{ 'selected' if inc=='yes' }}>{{ t('Has incoming') }}</option><option value="ontime" {{ 'selected' if inc=='ontime' }}>{{ t('Incoming, on time') }}</option>
     <option value="late" {{ 'selected' if inc=='late' }}>{{ t('Incoming, overdue') }}</option><option value="none" {{ 'selected' if inc=='none' }}>{{ t('Nothing incoming') }}</option></select></div>
@@ -32,13 +34,18 @@
 </form>
 
 {% if q or category or inc or status %}<div class="active-filters" aria-label="{{ t('Active filters') }}">{% if q %}<span class="filter-token">{{ t('Search') }}: {{ q }}</span>{% endif %}{% if category %}<span class="filter-token">{{ t('Category') }}: {{ category }}</span>{% endif %}{% if inc %}<span class="filter-token">{{ t('Incoming (open POs)') }}: {{ t({'yes':'Has incoming','ontime':'Incoming, on time','late':'Incoming, overdue','none':'Nothing incoming'}.get(inc, inc)) }}</span>{% endif %}{% if status %}<span class="filter-token">{{ t({'negative':'Negative stock','zero':'Zero stock','low':'Under 3 days of cover'}.get(status, status)) }}</span>{% endif %}</div>{% endif %}
-<details class="list-help"><summary>{{ t('About inventory') }}</summary><p>{{ t('Incoming counts every open purchase order; overdue ones are marked. To change a quantity, record a stock event or adjust in StoreHub.') }}</p></details>
+<details class="list-help"><summary>{{ t('About inventory') }}</summary><p>{{ t('Incoming purchase orders are available for StoreHub only. Loyverse incoming quantities are unavailable. Local stock events do not update POS stock.') }}</p></details>
+<nav class="phone-only phone-stock-chips" aria-label="{{ t('Stock') }}">{% for value, label in [('', 'All'), ('low','Low stock'), ('zero','Zero stock'), ('negative','Negative stock')] %}<a class="{{ 'on' if status == value }}" href="?{{ base_qs }}&status={{ value }}">{{ t(label) }}</a>{% endfor %}</nav>
+<div class="phone-only phone-stock-list">
+{% for r in rows %}<a class="phone-stock-row" href="/sales/product/{{ r.p.id }}?loc={{ location.id }}"><span class="phone-stock-icon"><svg class="i"><use href="#i-box"/></svg></span><span class="phone-stock-copy">{{ r.p.name }}<small>{{ r.p.barcode or r.p.sku or '' }}</small>{% if r.on_hand <= 0 %}<em>{{ t('Zero stock') if r.on_hand == 0 else t('Negative stock') }}</em>{% elif r.cover is not none and r.cover < 3 %}<em>{{ t('Low stock') }}</em>{% endif %}</span><span class="phone-stock-qty">{{ r.on_hand|num }}<small>{{ t('On hand') }}</small></span></a>{% else %}<p class="empty">{{ t('No products match.') }}</p>{% endfor %}
+{% if can('count.enter') %}<div class="phone-stock-cta"><a class="btn" href="/counts?loc={{ location.id }}"><svg class="i"><use href="#i-scan"/></svg>{{ t('Scan and count') }}</a></div>{% endif %}
+</div>
 <div class="tw stick1"><table class="wide">
 <tr><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort>{{ t('Category') }}</th><th scope="col" class="right" data-sort>{{ t('On hand') }}</th><th scope="col" class="right" data-sort>{{ t('Incoming') }}</th><th scope="col" class="right" data-sort>{{ t('Avg daily sales') }}</th><th scope="col" class="right" data-sort>{{ t('Days of cover') }}</th><th scope="col" data-sort>{{ t('Supplier') }}</th></tr>
 {% for r in rows %}<tr>
-<td><b>{{ r.p.name }}</b><div class="small mute">{{ r.p.barcode or '' }}</div></td><td class="small">{{ r.p.category if r.p.category else '—' }}</td>
+<td><a href="/sales/product/{{ r.p.id }}?loc={{ location.id }}">{{ r.p.name }}</a><div class="small mute">{{ r.p.barcode or '' }}</div></td><td class="small">{{ r.p.category if r.p.category else '—' }}</td>
 <td class="right"><b style="{{ 'color:var(--bad)' if r.on_hand < 0 }}">{{ r.on_hand|num }}</b></td>
-<td class="right">{% if r.incoming %}<span data-tip="{% for o in r.pos %}{{ t('PO #') }}{{ o.no }} ({{ t('partly received') if o.status == 'partiallyReceived' else t('open') }}): {{ o.qty|num }}{% if o.expected %}{{ t(', expected') }} {{ o.expected|day }}{% if o.late %}, {{ o.days_late }} {{ t('days overdue') }}{% endif %}{% endif %}{{ ' | ' if not loop.last }}{% endfor %}"><b>{{ r.incoming|num }}</b>{% if r.late %}<div class="small"><span class="badge b-warn">{{ r.late|num }} {{ t('overdue') }}</span></div>{% endif %}</span>{% else %}<span class="mute">—</span>{% endif %}</td>
+<td class="right">{% if location.source == "loyverse" %}<span class="mute">{{ t("Unavailable") }}</span>{% elif r.incoming %}<span data-tip="{% for o in r.pos %}{{ t('PO #') }}{{ o.no }} ({{ t('partly received') if o.status == 'partiallyReceived' else t('open') }}): {{ o.qty|num }}{% if o.expected %}{{ t(', expected') }} {{ o.expected|day }}{% if o.late %}, {{ o.days_late }} {{ t('days overdue') }}{% endif %}{% endif %}{{ ' | ' if not loop.last }}{% endfor %}"><b>{{ r.incoming|num if location.source == 'storehub' else t('Unavailable') }}</b>{% if r.late %}<div class="small"><span class="badge b-warn">{{ r.late|num }} {{ t('overdue') }}</span></div>{% endif %}</span>{% else %}<span class="mute">—</span>{% endif %}</td>
 <td class="right">{{ r.ads|num if r.ads else '—' }}</td>
 <td class="right">{% if r.cover is not none %}<span class="covercell" data-tip="{{ r.cover|num(1) }} {{ t('days of stock at current sales') }}"><span class="coverbar {{ 'crit' if r.cover < 3 else 'risk' if r.cover < 7 }}"><i style="width:{{ [100, r.cover / 14 * 100]|min|round(1) }}%"></i></span><b>{{ r.cover|num(1) }}</b></span>{% else %}<span class="mute">—</span>{% endif %}</td>
 <td class="small">{{ r.p.supplier.name if r.p.supplier else '—' }}</td></tr>

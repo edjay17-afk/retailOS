@@ -1,0 +1,99 @@
+/* This entire presentation is phone-only. Desktop styles are never overridden. */
+.phone-only{display:none!important}
+@media screen and (max-width:700px){
+ .phone-only{display:block!important}
+ body.has-mtabs .content{padding:16px 18px calc(var(--mtab) + 24px)}
+ body.has-mtabs .topbar{height:56px;padding:0 16px;background:var(--bg)}
+ body.has-mtabs .topbar .menu-btn{display:none}
+ .phone-home-logo{width:40px;height:44px;flex:none;padding:6px 0}
+ .phone-home-logo img{display:block}
+ .mtabs{padding-top:7px;background:var(--bg);box-shadow:none}
+ .mtabs .mt{gap:4px;min-height:52px;font-size:11px}
+ .mtabs .mt .i{width:22px;height:22px}
+ .phone-section-title{font-size:17px;margin:22px 0 8px;font-weight:700}
+ .phone-actions a{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:66px}
+ .phone-actions a>.i{width:24px;height:24px;color:var(--primary);flex:none}
+ .phone-actions a>span{flex:1;min-width:0;font-weight:600}
+ .phone-actions small{display:block;color:var(--mute);font-size:12px;font-weight:400;margin-top:4px}
+ .phone-actions a>b{color:var(--mute);font-size:22px}
+ .phone-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 24px}
+ .phone-quick .btn{min-height:46px;font-size:13px;text-align:center}
+ body.has-mtabs #live-store-sales .lv-hero{display:block;margin:0}
+ body.has-mtabs #live-store-sales .lv-hero>.lv-t{display:none}
+ html body.has-mtabs #live-store-sales .lv-big{background:none;color:var(--ink);border:0;box-shadow:none;padding:12px 0 18px;border-radius:0}
+ body.has-mtabs #live-store-sales .lv-big:after{display:none}
+ body.has-mtabs #live-store-sales .lv-big small{color:var(--mute);font-size:13px}
+ body.has-mtabs #live-store-sales .lv-big strong{color:var(--ink);font-size:clamp(27px,8vw,36px);letter-spacing:-.04em;margin:8px 0}
+ body.has-mtabs #live-store-sales .lv-pill{background:none;color:var(--mute);padding:0;font-size:12px}
+ body.has-mtabs #live-store-sales .lv-herobars{height:48px!important;margin:16px 0 8px}
+ body.has-mtabs #live-store-sales .lv-herobars .hv-bar{background:var(--primary);opacity:.65}
+ body.has-mtabs #live-store-sales .lv-hn{color:var(--mute);font-size:10px}
+ .phone-metrics{display:grid!important;grid-template-columns:1fr 1fr;border-block:1px solid var(--line);padding:14px 0;gap:16px}
+ .phone-metrics a{color:var(--mute);font-size:12px;text-decoration:none}
+ .phone-metrics strong{display:block;color:var(--ink);font-size:24px;margin-top:4px}
+ body.has-mtabs #live-store-sales .b-stores{display:block}
+ body.has-mtabs #live-store-sales .b-card{border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;background:none;margin:0}
+ body.has-mtabs #live-store-sales .lv-in{padding:14px 0;display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 14px}
+ body.has-mtabs #live-store-sales .lv-top{grid-row:1/3;min-width:0}
+ body.has-mtabs #live-store-sales .lv-top h2{font-size:14px}
+ body.has-mtabs #live-store-sales .b-big{font-size:22px;text-align:right;margin:0}
+ body.has-mtabs #live-store-sales .b-y{text-align:right;margin:0;font-size:11px}
+ body.has-mtabs #live-store-sales .lv-edge,body.has-mtabs #live-store-sales .lv-card :is(.b-reg,.lv-badge,.lv-spark,.lv-share,.lv-sharel,.lv-health,.lv-hl,.lv-foot,.lv-empty){display:none}
+ body:has(#live-store-sales) .b-row{display:none}
+ body:has(#live-store-sales) .b-more{margin-top:18px}
+ /* Inventory: the same data and URLs, a separate compact phone list. */
+ main:has(.phone-stock-list) .statgrid,main:has(.phone-stock-list)>.tw,main:has(.phone-stock-list)>.page-head>.row,main:has(.phone-stock-list) .list-help{display:none}
+ main:has(.phone-stock-list)>.page-head{margin:0 0 10px}
+ main:has(.phone-stock-list)>.page-head h1{font-size:24px}
+ main:has(.phone-stock-list) form.filters{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:0;border:0;background:none;box-shadow:none;gap:10px}
+ main:has(.phone-stock-list) form.filters>div:first-child{grid-column:1;grid-row:1}
+ main:has(.phone-stock-list) form.filters>div:nth-child(2){min-width:0!important;display:flex;gap:8px;grid-column:1/-1;grid-row:2}
+ main:has(.phone-stock-list) form.filters>div:nth-child(2)>label{display:none}
+ main:has(.phone-stock-list) form.filters>div:nth-child(n+3){display:none}
+ main:has(.phone-stock-list) form.filters.phone-filters-open>div:nth-child(n+3){display:block;grid-column:1/-1}
+ main:has(.phone-stock-list) form.filters select{width:100%}
+ main:has(.phone-stock-list) form.filters>div:first-child label{display:none}
+ main:has(.phone-stock-list) form.filters>button[type=submit]{display:none}
+ main:has(.phone-stock-list) form.filters>.phone-stock-more{grid-column:2;grid-row:1;min-height:44px;white-space:nowrap}
+ main:has(.phone-stock-list) .phone-stock-chips{display:flex!important;flex-wrap:nowrap;gap:8px;margin:10px 0;overflow-x:auto;scrollbar-width:none}
+ main:has(.phone-stock-list) .phone-stock-chips::-webkit-scrollbar{display:none}
+ .phone-stock-chips a{display:inline-flex;align-items:center;flex:none;min-height:44px;white-space:nowrap;padding:6px 12px;border:1px solid var(--line);border-radius:9px;color:var(--mute);text-decoration:none;font-size:12px}
+ .phone-stock-chips a.on{color:var(--primary-ink);background:var(--btn);border-color:var(--btn)}
+ .phone-stock-row{display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
+ .phone-stock-icon{display:grid;place-items:center;flex:none;width:42px;height:44px;border-radius:10px;background:var(--primary-soft);color:var(--primary)}
+ .phone-stock-copy{flex:1;min-width:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+ .phone-stock-copy small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:4px}
+ .phone-stock-copy em{font-size:10px;font-style:normal;color:var(--warn);display:block;margin-top:4px}
+ .phone-stock-qty{font-size:22px;font-weight:700;text-align:right;max-width:100px;overflow-wrap:anywhere}
+ .phone-stock-qty small{display:block;font-size:10px;font-weight:400;color:var(--mute)}
+ .phone-stock-cta{position:sticky;bottom:calc(var(--mtab) + 8px);padding:10px 0;background:var(--bg);margin-top:12px}
+ .phone-stock-cta .btn{width:100%;min-height:48px}
+ /* Keep the existing scan/save handlers and validation. */
+ .count-workspace .count-page-head{margin:0 0 20px}
+ .count-workspace .count-page-head h1{font-size:24px}
+ .count-workspace .count-page-head .eyebrow{display:none}
+ .count-workspace .count-page-head p span{display:inline}
+ .count-workspace .count-scan{padding:0;border:0;background:none;margin-bottom:24px}
+ .count-workspace .count-scan>h2,.count-workspace .count-scan>p.small,.count-workspace #count-find>label{display:none}
+ .count-workspace .count-scan-row{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px}
+ .count-workspace .count-scan-row>button[type=submit]{grid-column:1/-1;background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+ .count-workspace .count-scan input{min-height:48px}
+ .count-workspace #count-entry{padding-top:22px;margin-top:22px}
+ .count-workspace #count-entry h3{font-size:20px;line-height:1.4}
+ .count-workspace .count-stock{padding:16px 0;background:none;border-bottom:1px solid var(--line);border-radius:0;color:var(--mute)}
+ .count-workspace .count-stock strong{display:block;margin:8px 0;font-size:32px;color:var(--ink)}
+ .count-workspace #count-qty{max-width:100%;font-size:28px;height:58px}
+ .count-workspace .count-actions{display:grid;grid-template-columns:1fr;gap:10px}
+ .count-workspace .count-actions button{min-height:48px}
+ .count-workspace #count-review{border-radius:12px;background:var(--surface)}
+ .phone-count-diff{margin:10px 0;color:var(--warn);font-size:13px}
+ .phone-count-desktop-label{display:none}
+ #phone-count-recent{margin-bottom:20px}
+ .phone-count-recent-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:13px}
+ .phone-count-recent-row>span{flex:1;min-width:0;overflow-wrap:anywhere}
+ .phone-count-recent-row .i{color:var(--primary);width:18px;height:18px}
+ .phone-work-dialog{width:calc(100% - 24px);max-height:85dvh;margin:auto auto 12px;padding:20px;border-radius:20px;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+ .phone-work-dialog::backdrop{background:rgba(0,0,0,.6)}
+ .phone-work-dialog header{display:flex;align-items:center;justify-content:space-between}
+ .phone-work-dialog h2{font-size:20px;margin:0}
+}

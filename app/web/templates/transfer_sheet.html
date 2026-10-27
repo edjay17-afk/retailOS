@@ -104,7 +104,7 @@
 
 {% if draft %}
 <div class="ts-bar np-bar tsx-bar noprint">
-  <div class="draft-bar-info"><div class="ts-bar-info" id="ts-total"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">Draft saved</span></div>
+  <div class="draft-bar-info"><div class="ts-bar-info" id="ts-total"></div><span id="draft-save-status" class="draft-save-status" role="status" aria-live="polite">{{ t('Draft saved') }}</span></div>
   <form novalidate method="post" action="/transfer-sheets/{{ sheet.id }}/submit"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok ts-save">{{ t('Save') }}</button></form>
 </div>
 {% else %}

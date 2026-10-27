@@ -24,7 +24,7 @@ class _NoWait:
 
 @pytest.fixture()
 def cfg(tmp_path):
-    c = Config(data_dir=tmp_path, storehub_username="test", storehub_token="secret", scheduler_enabled=False, secret_key="k" * 32)
+    c = Config(loyverse_reporting_enabled=False, loyverse_tokens_file="", data_dir=tmp_path, storehub_username="test", storehub_token="secret", scheduler_enabled=False, secret_key="k" * 32)
     set_config(c)
     dbm.init_engine()
     init_db()

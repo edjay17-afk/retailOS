@@ -194,6 +194,21 @@ def ensure_current(db: Session) -> ReplRun:
 # ======================================================================================= engine run
 @serialized
 def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplRun:
+    """Run the shared StoreHub calculation independently of a request's POS filters."""
+    keys = ('source_pairs', 'location_scope', 'allow_unassigned_pos')
+    original = {key: db.info[key] for key in keys if key in db.info}
+    try:
+        db.info['source_pairs'] = {('storehub', '')}
+        db.info['location_scope'] = list(db.scalars(select(Location.id).where(Location.source == 'storehub')))
+        db.info['allow_unassigned_pos'] = True
+        return _run_storehub(db, force=force, actor=actor)
+    finally:
+        for key in keys:
+            db.info.pop(key, None)
+        db.info.update(original)
+
+
+def _run_storehub(db: Session, *, force: bool = False, actor: User | None = None) -> ReplRun:
     """Generate recommendations for today. Idempotent per (location, product, day, calculation version)."""
     today = today_local()
     s = {k: cfg.get(db, k) for k in ("repl.lookback_days", "repl.min_trading_days", "repl.default_supplier_lead_days",
@@ -224,7 +239,7 @@ def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplR
 
     lookback = int(s["repl.lookback_days"])
     start, end = today - timedelta(days=lookback), today - timedelta(days=1)
-    locs = list(db.scalars(select(Location).where(Location.monitored.is_(True))))
+    locs = list(db.scalars(select(Location).where(Location.monitored.is_(True), Location.source == "storehub")))
     stores = [l for l in locs if l.type == "store"]
     warehouses = [l for l in locs if l.type == "warehouse"]
 
@@ -368,7 +383,7 @@ def run(db: Session, *, force: bool = False, actor: User | None = None) -> ReplR
                 db.add(Recommendation(run_id=run_row.id, location_id=loc.id, product_id=pid, business_date=today, calc_version=CALC_VERSION,
                                       status=status, **vals))
                 created += 1
-            elif rec.status in ("pending", "needs_review"):
+            elif rec.status in ("pending", "needs_review", "expired") and not rec.batch_id and not rec.transfer_sheet_id and rec.approved_qty is None:
                 for k, v in vals.items():
                     setattr(rec, k, v)
                 rec.status = status

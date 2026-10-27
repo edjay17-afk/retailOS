@@ -80,7 +80,7 @@ def test_staff_cannot_reach_admin_or_manager_pages(client, session):
     login(client, "stf")
     for path in ("/settings", "/users", "/suppliers", "/products", "/audit", "/sales", "/sync", "/issues", "/expiry", "/purchase-orders", "/performance", "/data-quality"):
         assert client.get(path).status_code == 403, path
-    for path in ("/", "/inspections", "/counts", "/stock-events", "/replenishment", "/inventory", "/assistant"):
+    for path in ("/", "/inspections", "/counts", "/stock-events", "/replenishment?view=list", "/inventory", "/assistant"):
         assert client.get(path).status_code == 200, path
     tok = csrf_of(client, "/")
     assert client.post("/sync/run", data={"job": "sales", "csrf": tok}).status_code == 403
@@ -132,7 +132,7 @@ def test_manager_decides_and_batches_via_the_ui(client, session, sync, fake):
     replenishment.run(session); session.commit()
     add_user(session, "boss", "management")
     login(client, "boss")
-    tok = csrf_of(client, "/replenishment")
+    tok = csrf_of(client, "/replenishment?view=list")
     rec = session.scalar(select(Recommendation).where(Recommendation.status == "pending", Recommendation.source_kind == "transfer"))
     r = client.post(f"/replenishment/{rec.id}/decide", data={"action": "modify", "qty": "4", "reason": "Other", "csrf": tok})
     assert "ok=" in r.headers["location"]
@@ -214,7 +214,7 @@ def test_every_page_renders_for_admin(client, session, sync, fake):
     replenishment.run(session); dq.run_all(session); inspections.generate_tasks(session, today_local()); session.commit()
     add_user(session, "adm", "admin")
     login(client, "adm")
-    for path in ["/", "/issues", "/issues/new", "/inspections", "/replenishment", "/replenishment?status=all", "/replenishment/batches", "/inventory", "/inventory?status=negative",
+    for path in ["/", "/issues", "/issues/new", "/inspections", "/replenishment/sheet", "/replenishment?view=list", "/replenishment?status=all", "/replenishment/batches", "/inventory?view=list", "/inventory/compare", "/inventory?status=negative",
                  "/inventory?export=csv", "/sales", "/purchase-orders", "/purchase-orders?view=all", "/counts", "/expiry", "/data-quality", "/sync", "/settings",
                  "/suppliers", "/products", "/products?export=csv", "/users", "/audit", "/notifications", "/compliance", "/performance", "/assistant", "/assistant/metrics"]:
         r = client.get(path)
@@ -330,7 +330,7 @@ def test_replenishment_row_details_open_in_the_drawer(client, session, sync, fak
     replenishment.run(session); session.commit()
     add_user(session, "adm2", "admin")
     login(client, "adm2")
-    html = client.get("/replenishment").text
+    html = client.get("/replenishment?view=list").text
     # detail and decision content live in inert <template> blocks, opened in the slide-over drawer
     assert 'id="drawer"' in html and 'id="drawer-body"' in html
     assert 'data-drawer="why-' in html and '<template id="why-' in html
@@ -348,7 +348,7 @@ def test_store_bound_user_is_limited_to_their_store(client, session, sync, fake)
     login(client, "storemgr")
     for page in ("/issues", "/performance", "/data-quality", "/sync"):
         assert client.get(page).status_code == 403, page
-    for page in ("/", "/replenishment", "/sales", "/inventory", "/inspections"):
+    for page in ("/", "/replenishment?view=list", "/sales", "/inventory", "/inspections"):
         assert client.get(page).status_code == 200, page
     assert client.get(f"/sales?loc={beta.id}").status_code == 403  # another store is off limits
     home = client.get("/").text
@@ -455,7 +455,8 @@ def test_permits_page_records_processed_and_expiry_dates_only(client, session):
     assert it.kind == "permit" and it.owner_id is None and it.processed_date == t and it.due_date == t + timedelta(days=365)
     page = client.get("/compliance").text
     assert "Mayor&#39;s permit" in page and str(t) in page and str(t + timedelta(days=365)) in page
-    assert f'data-modal="permit-{it.id}"' in page and f'<dialog class="modal" id="permit-{it.id}"' in page and "<details" not in page  # Update opens a modal, not a dropdown
+    before_permit = page.split(f'data-modal="permit-{it.id}"', 1)[0]
+    assert f'data-modal="permit-{it.id}"' in page and f'<dialog class="modal" id="permit-{it.id}"' in page and "<details" not in before_permit  # Update opens a modal, not a dropdown
     assert f'action="/compliance/{it.id}/renew"' in page and 'name="new_due"' in page
 
 
@@ -484,7 +485,7 @@ def test_staff_get_the_visual_dashboard_and_managers_keep_the_sales_overview(cli
     add_user(session, "boss_db", "management")
     login(client, "boss_db")
     html = client.get("/").text
-    assert 'class="sd-hero"' not in html and "Net sales today" in html
+    assert 'class="sd-hero"' not in html and "All stores, net sales today" in html
 
 
 def test_data_entry_pages_guard_unsaved_work_and_show_progress(client, session, sync):
@@ -613,7 +614,8 @@ def test_assigned_stores_are_saved_and_shown_checked(client, session):
     assert session.get(User, staff.id).location_ids == [b.id]
     html = client.get("/users").text
     import re
-    boxes = re.findall(r'name="location_ids" value="(\d+)" (checked)?', html.split("staff_loc")[1])
+    form_html = re.search(rf'<form[^>]+action="/users/{staff.id}"[^>]*>(.*?)</form>', html, re.S).group(1)
+    boxes = re.findall(r'name="location_ids" value="(\d+)" (checked)?', form_html)
     assert [(int(v), bool(ck)) for v, ck in boxes][:2] == [(a.id, False), (b.id, True)]
 
 

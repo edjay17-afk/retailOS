@@ -1,4 +1,4 @@
 {% if table and table.rows %}
-<div class="chat-table"><table><thead><tr>{% for col in table.columns %}<th>{{ col }}</th>{% endfor %}<th>Evidence</th></tr></thead><tbody>
-{% for row in table.rows %}<tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}<td>{% if row.check not in ('ok','derived') %}<span class="unverified">Unverified</span>{% elif row.check == 'derived' %}Calculated {% endif %}{% for ref in row.refs %}<span>{{ ref }} </span>{% endfor %}</td></tr>{% endfor %}
+<div class="chat-table"><table><thead><tr>{% for col in table.columns %}<th>{{ col }}</th>{% endfor %}<th>{{ t('Evidence') }}</th></tr></thead><tbody>
+{% for row in table.rows %}<tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}<td>{% if row.check not in ('ok','derived') %}<span class="unverified">{{ t('Unverified') }}</span>{% elif row.check == 'derived' %}Calculated {% endif %}{% for ref in row.refs %}<span>{{ ref }} </span>{% endfor %}</td></tr>{% endfor %}
 </tbody></table></div>{% endif %}

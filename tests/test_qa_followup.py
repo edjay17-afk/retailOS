@@ -67,20 +67,20 @@ def test_opening_dashboard_generates_suggestions_without_sync(client, session, s
     assert 'No open suggestions.' not in r.text
     assert len(fake.calls) == calls
     count = session.scalar(select(func.count()).select_from(ReplRun))
-    assert client.get('/replenishment').status_code == 200
+    assert client.get('/replenishment?view=list').status_code == 200
     assert session.scalar(select(func.count()).select_from(ReplRun)) == count
     rec = session.scalar(select(Recommendation).where(Recommendation.status == 'pending'))
     if rec:
         rec.saved_qty = 42; session.commit()
         latest = session.scalar(select(ReplRun).order_by(ReplRun.id.desc()))
         latest.run_at = now_utc() - timedelta(minutes=6); session.commit()
-        assert client.get('/replenishment').status_code == 200
+        assert client.get('/replenishment?view=list').status_code == 200
         session.refresh(rec); assert rec.saved_qty == 42
 
 
 def test_auto_generation_respects_stale_data(client, session):
     setup_user(session); login(client, 'qa_admin')
-    assert client.get('/replenishment').status_code == 200
+    assert client.get('/replenishment?view=list').status_code == 200
     row = session.scalar(select(ReplRun))
     assert row.status == 'blocked'
     assert session.scalar(select(func.count()).select_from(Recommendation)) == 0
@@ -130,7 +130,7 @@ def test_staff_replenishment_is_scoped_and_sync_is_denied(client, session, sync,
     add_user(session, 'qa_staff', 'staff', [a.id])
     login(client, 'qa_staff')
     assert client.get('/').status_code == 200
-    assert client.get('/replenishment').status_code == 200
+    assert client.get('/replenishment?view=list').status_code == 200
     assert client.get(f'/replenishment?loc={b.id}').status_code == 403
     assert client.get('/sync').status_code == 403
     assert client.get('/sales').status_code == 403

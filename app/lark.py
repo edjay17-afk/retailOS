@@ -234,7 +234,7 @@ def _names(db: Session):
 def rows_issues(db):
     locs, users = _names(db)
     out = []
-    for i in db.scalars(select(Issue)):
+    for i in db.scalars(select(Issue).where((Issue.location_id.is_(None)) | Issue.location_id.in_(select(Location.id).where(Location.source == "storehub")))):
         out.append((str(i.id), {"Key": f"issue-{i.id}", "Severity": i.severity, "Status": i.status, "Type": i.type, "Location": locs.get(i.location_id, ""), "Title": i.title,
                                 "Owner": users.get(i.owner_id, ""), "Opened": _ms(i.created_at), "Due": _ms(i.due_at), "Closed": _ms(i.closed_at),
                                 "Resolution": i.resolution_note or "", "Escalation level": i.escalation_level}))
@@ -253,7 +253,7 @@ def rows_products(db):
     from .models import Supplier
     sups = {x.id: x for x in db.scalars(select(Supplier))}
     out = []
-    for p in db.scalars(select(Product)):
+    for p in db.scalars(select(Product).where(Product.source == "storehub")):
         sp = sups.get(p.supplier_id)
         out.append((str(p.id), {"Distributor  经销商": sp.name if sp else "", "Contact No": (sp.contact if sp else None) or None, "Category 类别": p.category or None,
                                 "Product Name 产品名称": p.name}))
@@ -267,7 +267,7 @@ def _store(name: str | None) -> str:
 
 
 def _monitored(db):
-    return {l.id: _store(l.name) for l in db.scalars(select(Location).where(Location.monitored.is_(True)))}
+    return {l.id: _store(l.name) for l in db.scalars(select(Location).where(Location.monitored.is_(True), Location.source == "storehub"))}
 
 
 def rows_inventory(db):
@@ -315,7 +315,7 @@ def rows_stock_transfers(db):
 
 def rows_wastage(db):
     """The 损耗记录 Wastage Record table: one row per wasted product."""
-    q = select(WastageEntry).options(selectinload(WastageEntry.product), selectinload(WastageEntry.location)).order_by(WastageEntry.id)
+    q = select(WastageEntry).where(WastageEntry.location.has(Location.source == "storehub")).options(selectinload(WastageEntry.product), selectinload(WastageEntry.location)).order_by(WastageEntry.id)
     return [(str(e.id), {"Store 店铺": _store(e.location.name), "Date Created 创建日期": _ms(e.entry_date), "Product 产品": e.product.name, "Category 类别": e.category or None,
                          "Supplier 供应商": e.supplier_name or None, "Quantity 数量": e.qty, "Reason 原因": e.reason}) for e in db.scalars(q)]
 
@@ -351,7 +351,7 @@ _INSPECTION_COLUMNS = (("entrance", "Store Entrance"), ("counter", "Counter Area
 def rows_daily_inspection(db):
     """One row per completed Store Daily Inspection; each photo goes into the column of the checklist item it was taken for."""
     locs = {l.id: _store(l.name) for l in db.scalars(select(Location))}
-    q = (select(Inspection).join(InspectionTemplate, InspectionTemplate.id == Inspection.template_id)
+    q = (select(Inspection).where(Inspection.location.has(Location.source == "storehub")).join(InspectionTemplate, InspectionTemplate.id == Inspection.template_id)
          .where(InspectionTemplate.code == "store_daily", Inspection.status.in_(("completed", "late"))).order_by(Inspection.id))
     out = []
     for i in db.scalars(q):
@@ -368,7 +368,7 @@ def rows_daily_inspection(db):
 
 def rows_staff(db):
     """Fills the existing 员工名录 Staff Directory layout (store and position are not known to StoreHub, so they stay for people to fill in)."""
-    return [(str(e.id), {"Name 姓名": e.name, "Phone 电话": e.phone or None, "Email Address  电子邮件": e.email or None, "Status 地位": "Active"}) for e in db.scalars(select(Employee))]
+    return [(str(e.id), {"Name 姓名": e.name, "Phone 电话": e.phone or None, "Email Address  电子邮件": e.email or None, "Status 地位": "Active"}) for e in db.scalars(select(Employee).where(Employee.source == "storehub"))]
 
 
 def rows_recs(db):
@@ -382,7 +382,7 @@ def rows_recs(db):
 
 def rows_inspections(db):
     locs, users = _names(db)
-    q = select(Inspection).where(Inspection.status.in_(("completed", "late", "missed"))).options(selectinload(Inspection.template))
+    q = select(Inspection).where(Inspection.location.has(Location.source == "storehub"), Inspection.status.in_(("completed", "late", "missed"))).options(selectinload(Inspection.template))
     return [(str(i.id), {"Key": f"insp-{i.id}", "Date": _ms(i.business_date), "Location": locs.get(i.location_id, ""), "Checklist": i.template.name, "Status": i.status,
                          "Failed items": i.fail_count, "Completed by": users.get(i.completed_by, ""), "Completed at": _ms(i.completed_at)}) for i in db.scalars(q)]
 
@@ -396,7 +396,7 @@ def rows_receiving(db):
 
 
 def rows_expiry(db):
-    q = select(ExpiryBatch).options(selectinload(ExpiryBatch.product), selectinload(ExpiryBatch.location))
+    q = select(ExpiryBatch).where(ExpiryBatch.location.has(Location.source == "storehub")).options(selectinload(ExpiryBatch.product), selectinload(ExpiryBatch.location))
     return [(str(b.id), {"Key": f"exp-{b.id}", "Product": b.product.name, "Location": b.location.name, "Quantity": b.qty, "Expiry": _ms(b.expiry_date), "Status": b.status,
                          "Batch": b.batch_no or ""}) for b in db.scalars(q)]
 

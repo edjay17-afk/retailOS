@@ -72,7 +72,8 @@ def t_get_inventory(db: Session, user: User, a: dict) -> dict:
     for inv, p in rows:
         ads = sold.get(p.id, 0) / days
         cover = f", {max(inv.on_hand, 0) / ads:.1f} days of cover" if ads > 0 else ""
-        facts.append(f"{p.name} at {loc.name}: on hand {inv.on_hand:g}, incoming {inc.get((loc.id, p.id), 0):g}, average daily sales {ads:.2f}{cover}")
+        incoming = f"{inc.get((loc.id, p.id), 0):g}" if loc.source == 'storehub' else 'unavailable from the Loyverse API'
+        facts.append(f"{p.name} at {loc.name}: on hand {inv.on_hand:g}, incoming {incoming}, average daily sales {ads:.2f}{cover}; stock synced {fmt_local(inv.synced_at)}")
     return {"facts": facts or [f"No products at {loc.name} match that search"]}
 
 
@@ -101,6 +102,8 @@ def t_get_product_sales(db: Session, user: User, a: dict) -> dict:
 
 def t_get_open_purchase_orders(db: Session, user: User, a: dict) -> dict:
     ids = allowed_location_ids(db, user)
+    if db.info.get('source_pairs') and all(source == 'loyverse' for source, _ in db.info['source_pairs']):
+        return {'facts':['Purchase orders and incoming transfer quantities are unavailable from the Loyverse API.']}
     stale_days = 7
     out = []
     for po in db.scalars(select(PurchaseOrder).where(PurchaseOrder.status.in_(purchasing.OPEN_STATUSES), PurchaseOrder.missing_from_api.is_(False),

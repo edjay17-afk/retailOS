@@ -246,6 +246,20 @@ def dashboard(c: Ctx = Depends(need("dashboard.view"))):
     sids = list(db.scalars(select(Location.id).where(Location.id.in_(ids or [0]), Location.type == "store")))
     recs = db.execute(select(func.count(), func.coalesce(func.sum(Recommendation.value), 0)).where(
         Recommendation.business_date == today, Recommendation.status == "pending", Recommendation.location_id.in_(sids))).one()
+    lv_locs = [x for x in c.locations() if x.source == 'loyverse']
+    if lv_locs and c.can('loyverse.view'):
+        from ..loyverse.replenishment import report as lv_report
+        from ..models import Product
+        data = lv_report(db, allowed_pairs={(x.source_account,x.external_id) for x in lv_locs})
+        costs = {(p.source_account,p.external_id):p.cost or 0 for p in db.scalars(select(Product).where(Product.source == 'loyverse'))}
+        ready = [r for r in data['rows'] if r['quantity'] is not None]
+        recs = (recs[0]+len(ready), recs[1]+sum(float(r['quantity'])*costs.get((r['account'],r['variant_id']),0) for r in ready))
+    cards = wjobs = stat = None
+    if c.can("sales.view"):
+        from ..services import dashboard_cards
+        cards = dashboard_cards.store_cards(db, stores, today, lambda lids: _stock_health(db, lids, today))
+        wjobs = dashboard_cards.warehouse_jobs(db, c.can, recs)
+        stat = dashboard_cards.overview(db, cards, stores, today, wjobs, sum(n for _, n in open_issues), c.can)
     ai_brief = None
     if c.can("ai.use"):
         from ..ai import service as ai_service
@@ -254,8 +268,8 @@ def dashboard(c: Ctx = Depends(need("dashboard.view"))):
         return render(c, "dashboard_staff.html", brief=b, insp=dict(insp), my_tasks=my_tasks[:5], recs=recs, ai=ai_brief, now=now_utc(),
                       places=[l.name.replace("The Daily Centro - ", "") for l in c.locations()], **_stock_health(db, ids, today))
     ops = _ops_data(db, ids, today, c.t) if c.can("overview.ops") else None
-    return render(c, "dashboard.html", brief=b, open_issues=dict(open_issues), insp=dict(insp), my_tasks=my_tasks[:8], fresh=freshness.freshness(db),
-                  stores=stores, sales=sales, recs=recs, ai=ai_brief, now=now_utc(), ops=ops, fmt_int=lambda v: f"{v:,.0f}")
+    return render(c, "dashboard.html", brief=b, open_issues=dict(open_issues), insp=dict(insp), my_tasks=my_tasks[:8], fresh=c.freshness(),
+                  stores=stores, sales=sales, recs=recs, ai=ai_brief, now=now_utc(), ops=ops, cards=cards, wjobs=wjobs, stat=stat, fmt_int=lambda v: f"{v:,.0f}")
 
 
 # ----------------------------------------------------------------------------------------- notifications
@@ -282,7 +296,8 @@ def sync_page(c: Ctx = Depends(need("sync.view"))):
     db = c.db
     runs = list(db.scalars(select(SyncRun).order_by(SyncRun.id.desc()).limit(40)))
     errs = list(db.scalars(select(ApiErrorLog).order_by(ApiErrorLog.id.desc()).limit(15)))
-    return render(c, "sync.html", fresh=freshness.freshness(db), runs=runs, errs=errs, sched=jobs.status(),
+    from ..models import LoyverseAccount
+    return render(c, "sync.html", loyverse_states=list(db.scalars(select(LoyverseAccount))), fresh=c.freshness(), runs=runs, errs=errs, sched=jobs.status(),
                   backups=backup.list_backups()[:8], actions=list(JOB_ACTIONS))
 
 
@@ -366,3 +381,24 @@ def uploads(path: str, c: Ctx = Depends(ctx_dep())):
     if root not in f.parents or not f.is_file():
         raise HTTPException(404, "Not found")
     return FileResponse(f)
+
+
+@router.post("/data-source")
+def select_data_source(scope: str = Form("storehub"), back: str = Form("/"), csrf: str = Form(""), c: Ctx = Depends(ctx_dep())):
+    c.check_csrf(csrf)
+    if scope not in {x[0] for x in c.source_options}:
+        raise HTTPException(400, "Invalid POS account")
+    from urllib.parse import urlsplit
+    path = urlsplit(back).path
+    if not path.startswith('/') or path.startswith('//') or '\\' in path:
+        path = '/'
+    # Detail IDs from the old scope must not survive a source switch.
+    if path.startswith('/sales/product/'): path = '/sales/products'
+    if path.startswith('/sales/tx/'): path = '/sales/transactions'
+    if path in ('/replenishment', '/replenishment/loyverse'):
+        path = '/replenishment/loyverse' if scope.startswith('loyverse') else '/replenishment'
+    from urllib.parse import parse_qsl, urlencode
+    params = [(k,v) for k,v in parse_qsl(urlsplit(back).query) if k in ('days','frm','to','q','search','sort')]
+    response = RedirectResponse(path + ('?' + urlencode(params) if params else ''), status_code=303)
+    response.set_cookie('pos_scope', scope, httponly=True, samesite='lax', secure=c.request.url.scheme == 'https', max_age=31536000)
+    return response

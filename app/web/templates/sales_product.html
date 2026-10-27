@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ p.name }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ p.name }}</h1>
+<div class="page-head"><div>{% if p.source == 'loyverse' and p.image_url and p.image_url.startswith('https://api.loyverse.com/') %}<img src="{{ p.image_url }}" alt="" hidden onload="this.hidden=false" onerror="this.hidden=true" referrerpolicy="no-referrer" loading="lazy" style="width:56px;height:56px;object-fit:contain;border-radius:8px;margin-bottom:8px">{% endif %}<h1>{{ p.name }}</h1>
   <p>{{ p.category or t('No category') }}{% if p.barcode %} {{ t('· barcode') }} {{ p.barcode }}{% endif %}{% if p.supplier %} {{ t('· supplier') }} {{ p.supplier.name }}{% endif %}{{ t('.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% elif days == 1 %}{{ t('Today') }}. {% else %}{{ t('Last') }} {{ days }} {{ t('days') }}. {% endif %}{{ t('Cancelled sales excluded, returns subtracted. Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="{{ sales_products_url }}">{{ t('All products') }}</a>
     <form novalidate method="get" class="row" style="margin:0;gap:8px;align-items:center"><input type="hidden" name="loc" value="{{ loc }}"><input type="hidden" name="list_query" value="{{ list_query }}"><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d in ([days] if days not in (1, 7, 14, 30, 60, 90, 180) else []) + [1, 7, 14, 30, 60, 90, 180] %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{% if d == 1 %}{{ t('Today') }}{% else %}{{ t('Last') }} {{ d }} {{ t('days') }}{% endif %}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select><span id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:center"><input type="date" name="frm" value="{{ frm }}"><input type="date" name="to" value="{{ to }}"><button class="sec sm">{{ t('Apply') }}</button></span></form></div></div>
@@ -10,7 +10,7 @@
 <div class="grid g4" style="margin-bottom:14px">
   <div class="card stat"><div><div class="label">{{ t('Units sold') }}</div><div class="value">{{ total_units|num(0) }}</div><div class="sub">{{ (total_units / days)|num(1) }} {{ t('per day') }}</div></div></div>
   <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ total_net|money }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Average price') }}</div><div class="value">{{ (total_net / total_units)|money if total_units else '-' }}</div><div class="sub">{{ t('shelf price') }} {{ p.unit_price|money if p.unit_price is not none else '-' }} {{ t('before tax') }}</div></div></div>
+  <div class="card stat"><div><div class="label">{{ t('Average price') }}</div><div class="value">{{ (total_net / total_units)|money if total_units else '-' }}</div><div class="sub">{{ t('shelf price') }} {{ p.unit_price|money if p.unit_price is not none else '-' }} {{ t('before tax') if p.source == 'storehub' else t('POS catalog price') }}</div></div></div>
   <div class="card stat"><div><div class="label">{{ t('Best day') }}</div><div class="value">{{ best[1][1]|money if best else '-' }}</div><div class="sub">{{ best[0]|day if best else t('no sales') }}</div></div></div>
 </div>
 
@@ -25,7 +25,7 @@
 {% for s in stores %}<tr><td><b>{{ s.loc.name|replace('The Daily Centro - ','') }}</b></td>
 <td class="right">{{ s.units|num(0) }}</td><td class="right"><b>{{ s.net|money }}</b></td><td class="right">{{ s.days_sold }}</td>
 <td class="right" style="{{ 'color:var(--bad);font-weight:600' if s.on_hand is not none and s.on_hand < 0 }}">{{ s.on_hand|num if s.on_hand is not none else '' }}</td>
-<td class="right">{{ s.incoming|num if s.incoming else '' }}</td>
+<td class="right">{{ t('Unavailable') if p.source == 'loyverse' else s.incoming|num if s.incoming else '' }}</td>
 <td class="right">{% if s.cover is not none %}<span class="badge {{ 'b-bad' if s.cover < 3 else 'b-warn' if s.cover < 7 else 'b-ok' }}">{{ s.cover|num(1) }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
 {% if total_net %}<div class="card" style="margin-top:12px"><div class="card-head"><h2>{{ t('Share of sales by store') }}</h2></div>
   {{ hbars(stores|selectattr('net')|map('store_item')|list) }}</div>{% endif %}</div>

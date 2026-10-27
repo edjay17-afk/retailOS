@@ -11,6 +11,7 @@
     {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
     {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
     <a class="btn sec" href="/replenishment/batches"><svg class="i"><use href="#i-file"/></svg>{{ t('Order batches') }}</a>
+    <a class="btn sec" href="/replenishment/sheet">{{ t('Order sheet') }}</a>
   </div>
 </div>
 
@@ -27,7 +28,8 @@
 {% if oo.modified or oo.accepted %}<p class="small mute" style="margin:6px 0 0">{{ t('Do manager overrides work? Measured 7 days after the decision:') }} {{ oo.modified }} {{ t('modified suggestions stocked out at') }} {{ oo.modified_stockout_rate|pct if oo.modified_stockout_rate is not none else '-' }}; {{ oo.accepted }} {{ t('accepted-as-suggested at') }} {{ oo.accepted_stockout_rate|pct if oo.accepted_stockout_rate is not none else '-' }}. {% if oo.verdict %}<b>{{ t(oo.verdict) }}.</b>{% else %}{{ t('Not enough measured outcomes yet (need 10 of each) — overrides stay candidate context until outcomes prove them.') }}{% endif %}</p>{% endif %}
 {% if last %}<p class="small {{ 'mute' if last.status == 'ok' else '' }}" {% if last.status != 'ok' %}style="color:var(--bad)"{% endif %}>{{ t('Last run') }} {{ last.run_at|local }} ({{ t(last.status) }}){% if last.note %}: {{ t(last.note) }}{% endif %}</p>{% endif %}
 
-<form novalidate class="filters toolbar" method="get">
+<details class="rep-filter-panel" open><summary>{{ t('Filters') }}</summary>
+<form novalidate class="filters toolbar" data-mf="1" method="get">
   <div><label>{{ t('Show') }}</label><select name="status" onchange="this.form.submit()">
     {% for v, l in (('pending','Ready to review'),('needs_review','Needs review'),('decided','Decided'),('all','All')) %}<option value="{{ v }}" {{ 'selected' if status == v }}>{{ t(l) }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>
@@ -35,6 +37,7 @@
   <div><label>{{ t('Search') }}</label><input type="search" name="search" value="{{ search }}" data-search placeholder="{{ t('Product name or barcode') }}" style="min-width:220px"></div>
   <div style="align-self:flex-end"><button class="sm">{{ t('Search') }}</button>{% if search %} <a class="btn sec sm" href="?status={{ status }}&loc={{ loc }}&supplier={{ supplier }}">{{ t('Clear') }}</a>{% endif %}</div>
 </form>
+</details>
 </div>
 <div class="rep-work">
 <form novalidate method="post" action="{{ '/replenishment/transfer-sheets' if can('transfer.sheet') else '/replenishment/bulk' }}" id="bulk">

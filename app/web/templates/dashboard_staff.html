@@ -9,7 +9,7 @@
 <section class="sd-hero">
   <div class="sd-hero-text">
     <div class="sd-eyebrow">{{ places|join(' · ') or company }} &middot; {{ brief.date|day }}</div>
-    
+
     <p>{% if not total %}{{ t('No checklists scheduled today.') }}{% elif completed >= total %}{{ t('All checklists are done. Great work today.') }}{% else %}{{ total - completed }} {{ t('checklist(s) still to do today.') }}{% endif %}</p>
     {% if nxt %}<a class="sd-cta" href="/inspections/{{ nxt.id }}">{{ t('Start') }} {{ t(nxt.template.name|replace(' checklist', '')) }} <svg class="i"><use href="#i-arrow"/></svg></a>
     {% elif total %}<span class="sd-done"><svg class="i"><use href="#i-check"/></svg>{{ t('All done') }}</span>{% endif %}

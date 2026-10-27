@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Loyverse · {{ t('Replenishment') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/loyverse.css?v={{ asset_v('loyverse.css') }}">
+<div class="loyverse-page">
+<div class="page-head"><div><h1>Loyverse · {{ t('Replenishment') }}</h1><p class="small mute">{{ t('Sales only') }} · {{ start }} · {{ end }}</p></div><button type="button" class="sec" data-export-form="loyverse-filters" data-export="csv">{{ t('Export CSV') }}</button></div>
+<form method="get" id="loyverse-filters" class="filters"><div><label for="lv-account">{{ t('Account') }}</label><select name="account" id="lv-account"><option value="">{{ t('All accounts') }}</option>{% for key in accounts %}<option value="{{ key }}" {{ 'selected' if account == key }}>{{ account_labels.get(key, key|replace('LOYVERSE_TOKEN_', '')) }}</option>{% endfor %}</select></div><div><label for="lv-store">{{ t('Store') }}</label><select id="lv-store" name="store"><option value="">{{ t('All stores') }}</option>{% for s in stores %}<option value="{{ s.store_id }}" {{ 'selected' if store == s.store_id }}>{{ s.name }}</option>{% endfor %}</select></div><div class="lv-search"><label for="lv-search">{{ t('Search') }}</label><input id="lv-search" name="search" value="{{ search }}" placeholder="{{ t('Search name or barcode') }}"></div><button>{{ t('Apply') }}</button>{% if account or store or search %}<a class="btn sec" href="/replenishment/loyverse">{{ t('Clear') }}</a>{% endif %}</form>
+<details class="lv-rule"><summary>{{ t('Sales-only calculation') }}</summary><p>{{ t('Suggested quantity = net units sold / days with sales times cover days, rounded up. Refunds are deducted and cancelled receipts are excluded. Today is excluded.') }}</p><p>{{ t('Cover days') }}: <strong>{{ cover }}</strong> · {{ t('Lookback days') }}: <strong>{{ lookback }}</strong></p><p>{{ t('These suggestions are for sold items, not recipe ingredients. Stock, incoming orders and StoreHub sales are not used. No orders or transfers are created automatically.') }}</p></details>
+<div class="lv-sync">{% for key,state in accounts.items() %}<span><b>{{ account_labels.get(key, key|replace('LOYVERSE_TOKEN_', '')) }}</b> · {% if state.last_error %}<span class="lv-error">{{ t(state.last_error) }}</span>{% elif state.last_success_at %}{{ t('Last synced') }} {{ state.last_success_at|local }}{% else %}{{ t('Waiting for first sync') }}{% endif %}</span>{% endfor %}</div>
+<div class="tw"><table class="wide rcards"><thead><tr><th>{{ t('Product') }}</th><th>{{ t('Store') }}</th><th class="right">{{ t('Net units sold') }}</th><th class="right">{{ t('Sales days') }}</th><th class="right">{{ t('Average per day') }}</th><th class="right">{{ t('Suggested quantity') }}</th><th>{{ t('Status') }}</th></tr></thead><tbody>
+{% for r in rows %}<tr><td><strong>{{ r.name }}</strong><div class="small mute">{{ r.barcode or r.sku or '' }}</div>
+<button type="button" class="drawer-link" data-drawer="lv-why-{{ loop.index }}" data-drawer-title="{{ r.name }} - {{ t('Why this number') }}">{{ t('Why this number') }}</button>
+<template id="lv-why-{{ loop.index }}"><div class="lv-explanation">
+<p class="small mute">{{ r.store }} &middot; {{ start }} &ndash; {{ end }}</p>
+<dl><div><dt>{{ t('Net units sold') }}</dt><dd>{{ r.units }}</dd></div><div><dt>{{ t('Sales days') }}</dt><dd>{{ r.days }}</dd></div><div><dt>{{ t('Average per day') }}</dt><dd>{{ '%.4f'|format(r.average) }}</dd></div><div><dt>{{ t('Cover days') }}</dt><dd>{{ cover }}</dd></div></dl>
+<p class="lv-formula">{{ r.units }} &divide; {{ r.days }} &times; {{ cover }} = {{ '%.4f'|format(r.average * cover) }}</p>
+<p>{{ t('Rounded up to increments of {step}. The calculation uses the unrounded daily average.', step=r.rounding) }}</p>
+<p><b>{{ t('Suggested quantity') }}: {{ r.quantity if r.quantity is not none else '-' }}</b> &middot; {{ t(r.reason) }}</p>
+<p>{{ t('Sales days count days when this store made any sale, not only days when this product sold.') }}</p>
+<p>{{ t('Refunds are deducted. Cancelled receipts and today are excluded. Stock and incoming orders are not deducted.') }}</p>
+{% if r.quantity is none %}<p class="lv-error">{{ t('No quantity is suggested until the sync and catalog checks pass.') }}</p>{% endif %}
+</div></template></td><td>{{ r.store }}</td><td class="right">{{ r.units }}</td><td class="right">{{ r.days }}</td><td class="right">{{ '%.2f'|format(r.average) }}</td><td class="right"><strong>{{ r.quantity if r.quantity is not none else '-'  }}</strong></td><td><span class="badge {{ 'b-ok' if r.reason == 'Ready' else 'b-warn' }}">{{ t(r.reason) }}</span></td></tr>
+{% else %}<tr><td colspan="7" class="empty">{{ t('No Loyverse sales suggestions for these filters yet. Check the sync status above.') }}</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="pager"><span>{{ total }} {{ t('items') }}</span>{% if page > 1 %}<a class="btn sec sm" href="?account={{ account|urlencode }}&store={{ store|urlencode }}&search={{ search|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span>{{ t('Page {page} of {pages}',page=page,pages=pages) }}</span>{% if page < pages %}<a class="btn sec sm" href="?account={{ account|urlencode }}&store={{ store|urlencode }}&search={{ search|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+</div>
+<div class="drawer-scrim" id="drawer-scrim" hidden></div>
+<dialog class="drawer" id="drawer" aria-labelledby="drawer-title" hidden><div class="drawer-head"><h2 id="drawer-title"></h2><button type="button" class="iconbtn" id="drawer-close" aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div><div class="drawer-body" id="drawer-body"></div></dialog>
+<script src="/static/export_buttons.js?v={{ asset_v('export_buttons.js') }}" defer></script>
+{% endblock %}

@@ -3,7 +3,7 @@
   var messages = document.currentScript.dataset;
   var mobile = window.matchMedia('(max-width:700px)');
   function setGuideMode() {
-    document.querySelectorAll('.rep-guide,.rep-policy').forEach(function (el) { el.open = !mobile.matches; });
+    document.querySelectorAll('.rep-guide,.rep-policy,.rep-filter-panel').forEach(function (el) { el.open = !mobile.matches; });
   }
   setGuideMode();
   mobile.addEventListener('change', setGuideMode);

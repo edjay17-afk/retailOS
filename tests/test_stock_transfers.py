@@ -413,7 +413,7 @@ def test_import_modal_responsive(sync, fake, session, client):
             assert styles['padding'] >= 18
             assert styles['animation'] == 'transfer-import-open' and styles['backdrop'] == 'none'
 
-            assert page.evaluate("() => document.querySelector('[name=export]').form.id") == 'stock-transfer-filters'
+            assert page.evaluate("() => document.querySelector('[data-export-form]').dataset.exportForm") == 'stock-transfer-filters'
             page.locator('#transfer-import [data-modal-close]').click()
             assert not page.locator('#transfer-import').is_visible()
         browser.close()

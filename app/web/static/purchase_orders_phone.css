@@ -1,0 +1,9 @@
+/* phone: Purchase orders is a short list: PO number, supplier, status, total and the Receive button */
+@media(max-width:700px){
+  main:has(#po-location) > p.small.mute,
+  main:has(#po-location) form.filters{display:none}
+  main:has(#po-location) .tw table td:nth-child(3),
+  main:has(#po-location) .tw table td:nth-child(4),
+  main:has(#po-location) .tw table td:nth-child(5),
+  main:has(#po-location) .tw table td:nth-child(7){display:none!important}
+}

@@ -71,6 +71,8 @@ def create(db: Session, user: User, loc: Location, n: int = 30) -> CycleCount:
 
 
 def create_targeted(db: Session, user: User, loc: Location, product_ids: list[int]) -> CycleCount:
+    from .sources import require_match
+    for product_id in product_ids: require_match(db, loc.id, product_id)
     """A count for specific products (e.g. straight from a data-quality finding). Merges into today's open count
     at the location instead of opening a second one; products already in it are skipped."""
     inv = {r.product_id: r.on_hand for r in db.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == loc.id))}
@@ -233,7 +235,7 @@ def stock_take_csv(cc: CycleCount) -> str:
         if l.counted_qty is None:
             continue
         p = l.product
-        w.writerow([p.storehub_id, p.name, p.sku or "", p.barcode or "", p.category or "", f"{l.system_qty:g}", f"{l.counted_qty:g}"])
+        w.writerow([p.external_id or p.storehub_id, p.name, p.sku or "", p.barcode or "", p.category or "", f"{l.system_qty:g}", f"{l.counted_qty:g}"])
     return out.getvalue()
 
 
@@ -280,13 +282,13 @@ def reconcile_events(db: Session) -> dict:
         changes = db.scalars(select(InventoryChange).where(InventoryChange.location_id == e.location_id, InventoryChange.product_id == e.product_id,
                                                            InventoryChange.observed_at >= e.recorded_at))
         if any(abs(c.new_qty - (line.counted_qty or 0)) < 1e-6 or abs(c.delta - signed) < 1e-6 for c in changes):
-            ev.resolve(db, e, "matched", "StoreHub stock changed to the counted quantity")
+            ev.resolve(db, e, "matched", "POS stock changed to the counted quantity")
             matched += 1
         elif now_utc() - e.recorded_at > grace:
-            ev.resolve(db, e, "needs_review", f"StoreHub still has not reflected the count after {grace.days} days")
+            ev.resolve(db, e, "needs_review", f"POS still has not reflected the count after {grace.days} days")
             issues.create_issue(db, type="stock", severity="P3", location_id=e.location_id, product_id=e.product_id, source="count", source_ref=f"count_event:{e.id}",
-                                title="Count adjustment is not in StoreHub yet",
-                                description=f"A count found a difference of {signed:+g} but StoreHub stock has not changed. Enter the stock take in StoreHub.",
+                                title="Count adjustment is not in the POS yet",
+                                description=f"A count found a difference of {signed:+g} but POS stock has not changed. Enter the stock take in the original POS.",
                                 dedupe_key=f"cntpend:{e.id}")
             review += 1
     return {"matched": matched, "needs_review": review}
@@ -295,6 +297,26 @@ def reconcile_events(db: Session) -> dict:
 def live_quantity(loc: Location, product: Product) -> float:
     """Read a specific store's current quantity; never substitute stale stock on failure."""
     import math
+    from .sources import matches
+    if not matches(product, loc):
+        raise CountError('Choose a product from the same POS account as the store')
+    if loc.source == 'loyverse':
+        from ..loyverse.client import Client, accounts, LoyverseError
+        from ..config import get_config
+        token = accounts(get_config().loyverse_tokens_file).get(loc.source_account)
+        if not token: raise CountError('Loyverse account is unavailable')
+        client = Client(token)
+        try:
+            rows = client.pages('inventory', {'store_ids': loc.external_id, 'variant_ids': product.external_id})
+            row = next((r for r in rows if r.get('store_id') == loc.external_id and r.get('variant_id') == product.external_id), None)
+            if row is None or row.get('in_stock') is None: raise CountError('No tracked POS stock is available for this item')
+            qty = float(row['in_stock'])
+            if not math.isfinite(qty): raise CountError('POS returned an invalid quantity')
+            return qty
+        except LoyverseError as e:
+            raise CountError(str(e)) from None
+        finally:
+            client.close()
     from ..storehub.client import StoreHubClient
     client = StoreHubClient()
     try:

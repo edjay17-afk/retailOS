@@ -28,6 +28,9 @@ class StockEventError(Exception):
 
 def create(db: Session, user: User, *, kind: str, location_id: int, product_id: int, qty: float, reason: str,
            note: str | None = None, photo_path: str | None = None, supplier_id: int | None = None, already_in_storehub: bool = False) -> StockEvent:
+    from .sources import matches
+    if not matches(db.get(Product, product_id), db.get(Location, location_id)):
+        raise StockEventError("Choose a product from the same POS account as the store")
     if kind not in KINDS:
         raise StockEventError(f"kind must be one of {', '.join(KINDS)}")
     if qty is None or qty <= 0:
@@ -51,17 +54,18 @@ def create(db: Session, user: User, *, kind: str, location_id: int, product_id: 
     if already_in_storehub:
         return ev
     prod, loc = db.get(Product, product_id), db.get(Location, location_id)
+    pos_name = "Loyverse" if loc and loc.source == "loyverse" else "StoreHub"
     label = KIND_LABEL[kind]
     issue = issues.create_issue(
         db, type="stock", severity="P3", location_id=location_id, product_id=product_id, source="manual",
         source_ref=f"stock_event:{ev.id}", created_by=user.id,
-        title=f"Key the {label} into StoreHub: {prod.name if prod else product_id} at {loc.name if loc else location_id} ({qty:g})",
-        description=f"A {label} of {qty:g} ({reason}) was recorded in RetailOS. Enter the same adjustment in the StoreHub back office "
+        title=f"Key the {label} into {pos_name}: {prod.name if prod else product_id} at {loc.name if loc else location_id} ({qty:g})",
+        description=f"A {label} of {qty:g} ({reason}) was recorded in RetailOS. Enter the same adjustment in the {pos_name} back office "
                     "so stock updates. This issue closes by itself when a sync sees the change.",
         dedupe_key=f"stockevent:{ev.id}")
     ev.verify_issue_id = issue.id
     notifications.notify(db, role="store_manager", location_id=location_id, level="info",
-                         title=f"{label.capitalize()} recorded: {prod.name if prod else product_id} ({qty:g}) — key it into StoreHub",
+                         title=f"{label.capitalize()} recorded: {prod.name if prod else product_id} ({qty:g}) — key it into {pos_name}",
                          link="/stock-events", dedupe_key=f"stockevent:note:{ev.id}")
     return ev
 

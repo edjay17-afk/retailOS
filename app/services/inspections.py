@@ -50,6 +50,8 @@ def generate_tasks(db: Session, d: date) -> int:
 
 def clocked_in(db: Session, user: User, now: datetime | None = None) -> bool | None:
     """True/False from StoreHub timesheets, or None when the user is not linked to a StoreHub employee."""
+    employee = db.scalar(select(Employee).where(Employee.storehub_id == user.storehub_employee_id)) if user.storehub_employee_id else None
+    if employee and employee.source == "loyverse": return None
     if not user.storehub_employee_id:
         return None
     now = now or now_utc()
