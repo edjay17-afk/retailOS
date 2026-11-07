@@ -21,11 +21,27 @@
 <link rel="stylesheet" href="/static/dark.css?v={{ asset_v('dark.css') }}">
 <link rel="stylesheet" href="/static/phone_app.css?v={{ asset_v('phone_app.css') }}">
 <link rel="stylesheet" href="/static/account_menu.css?v={{ asset_v('account_menu.css') }}">
+<link rel="stylesheet" href="/static/ux_refinements.css?v={{ asset_v('ux_refinements.css') }}">
+{% block page_styles %}{% endblock %}
 </head>
-<body class="rail-expanded">
+<body class="rail-expanded has-mtabs">
 <script>(function(){try{document.body.classList.add('rail-expanded')}catch(e){/* Keep the default expanded layout. */}})();</script>
 <a class="skip-link" href="#main-content">{{ t('Skip to content') }}</a>
 {% include "_icons.html" %}
+{% set crumbs_html %}{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" role="heading" aria-level="1" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}<span role="heading" aria-level="1">{{ t('Dashboard') }}</span>{% else %}<span role="heading" aria-level="1">{{ self.title() }}</span>{% endif %}{% endset %}
+{% if source_options and source_options|length > 1 %}{% set source_switch_html %}      <form method="post" action="/data-source" class="pos-source-picker">
+        {% set on_seven = request.url.path.startswith('/seven-eleven') %}
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ '/' if on_seven else request.url.path ~ '?' ~ request.url.query }}">
+        {% set active_source = 'loyverse' if source_scope.startswith('loyverse') else source_scope %}
+        <div id="pos-source" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
+          {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' and not on_seven }}" aria-pressed="{{ 'true' if source_scope == 'storehub' and not on_seven else 'false' }}">{{ t('Daily Centro') }}</button>{% endif %}
+          {% for value,label in source_options if value.startswith('loyverse:') %}
+          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
+          {% endfor %}
+          {% if can('seven.view') %}<a class="seven-btn {{ 'is-active' if on_seven }}" href="/seven-eleven" {% if on_seven %}aria-current="page"{% endif %}>7-Eleven</a>{% endif %}
+        </div>
+      </form>
+{% endset %}{% endif %}
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <button class="iconbtn drawer-close" id="navigation-close" type="button" aria-label="{{ t('Close navigation') }}"><svg class="i"><use href="#i-x"/></svg></button>
@@ -82,7 +98,8 @@
     <header class="topbar">
       <a class="phone-only phone-home-logo" href="/" aria-label="{{ t('Retail OS home') }}"><img src="/static/retailos-mark.svg" alt="" width="32" height="32"></a>
       <button class="iconbtn menu-btn" id="mobile-menu" type="button" aria-label="{{ t('Open navigation') }}" aria-expanded="false" aria-controls="sidebar"><svg class="i"><use href="#i-menu"/></svg></button>
-      <div class="workspace-title">{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" role="heading" aria-level="1" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}<span role="heading" aria-level="1">{{ t('Dashboard') }}</span>{% else %}<span role="heading" aria-level="1">{{ self.title() }}</span>{% endif %}</div>
+      <div class="workspace-title wt-phone">{% if crumbs and crumbs|length > 1 %}<nav class="crumbs" aria-label="{{ t('Breadcrumb') }}">{% for label, url in crumbs %}{% if not loop.first %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="cur" role="heading" aria-level="1" aria-current="page">{{ label }}</span>{% endif %}{% endfor %}</nav>{% elif path == '/' %}<span role="heading" aria-level="1">{{ t('Dashboard') }}</span>{% else %}<span role="heading" aria-level="1">{{ self.title() }}</span>{% endif %}</div>
+      {% if source_options and source_options|length > 1 %}<div class="top-sources no-print">{{ source_switch_html|safe }}</div>{% endif %}
       <span class="grow"></span>
       <div class="header-actions">
       <div class="top-lang" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
@@ -102,30 +119,35 @@
     <main class="content" id="main-content" tabindex="-1">
       {% if ok %}<div class="flash ok" role="status"><svg class="i"><use href="#i-check"/></svg>{{ t(ok) }}</div>{% endif %}
       {% if err %}<div class="flash err" role="alert"><svg class="i"><use href="#i-alert"/></svg>{{ t(err) }}</div>{% endif %}
-      {% if stale %}<div class="banner"><b>{{ t('Data warning.') }}</b> {% for f in stale %}{{ t(f.label) }} — {{ t('not synced yet') if f.status == 'never' else t('stale') ~ ' (' ~ (f.age_min|int) ~ t(' min old') ~ ')' }}{% if not loop.last %}; {% endif %}{% endfor %}. {{ t('Figures may be out of date; order suggestions are paused until it recovers.') }} <a href="/sync">{{ t('Sync status') }}</a></div>{% endif %}
+      <div id="data-warning">{% include "_data_warning.html" %}</div>
+      <div class="crumbs-row workspace-title wt-desktop no-print">{{ crumbs_html|safe }}</div>
       {% if source_options and source_options|length > 1 %}
       <div class="pos-source-toolbar no-print">
       <form method="post" action="/data-source" class="pos-source-picker">
-        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ request.url.path }}?{{ request.url.query }}">
+        {% set on_seven = request.url.path.startswith('/seven-eleven') %}
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ '/' if on_seven else request.url.path ~ '?' ~ request.url.query }}">
         {% set active_source = 'loyverse' if source_scope.startswith('loyverse') else source_scope %}
-        <div id="pos-source" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
-          <button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' }}" aria-pressed="{{ 'true' if source_scope == 'storehub' else 'false' }}">{{ t('Daily Centro') }}</button>
+        <div id="pos-source-bar" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
+          {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' and not on_seven }}" aria-pressed="{{ 'true' if source_scope == 'storehub' and not on_seven else 'false' }}">{{ t('Daily Centro') }}</button>{% endif %}
           {% for value,label in source_options if value.startswith('loyverse:') %}
-          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value }}" aria-pressed="{{ 'true' if source_scope == value else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
+          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
           {% endfor %}
+          {% if can('seven.view') %}<a class="seven-btn {{ 'is-active' if on_seven }}" href="/seven-eleven" {% if on_seven %}aria-current="page"{% endif %}>7-Eleven</a>{% endif %}
         </div>
       </form>
       <form novalidate method="post" action="/data-source" class="pos-source-mobile">
-        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ request.url.path }}?{{ request.url.query }}">
-        <select name="scope" aria-label="{{ t('Sales source') }}" onchange="this.form.submit()">
-          <option value="storehub" {{ 'selected' if source_scope == 'storehub' }}>{{ t('Daily Centro') }}</option>
-          {% for value,label in source_options if value.startswith('loyverse:') %}<option value="{{ value }}" {{ 'selected' if source_scope == value }}>{{ label|replace('Loyverse / ', '') }}</option>{% endfor %}
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ '/' if on_seven else request.url.path ~ '?' ~ request.url.query }}">
+        <select name="scope" aria-label="{{ t('Sales source') }}" onchange="if (this.value === '__seven') { location.href = '/seven-eleven'; } else { this.form.submit(); }">
+          {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<option value="storehub" {{ 'selected' if source_scope == 'storehub' }}>{{ t('Daily Centro') }}</option>{% endif %}
+          {% for value,label in source_options if value.startswith('loyverse:') %}<option value="{{ value }}" {{ 'selected' if source_scope == value and not on_seven }}>{{ label|replace('Loyverse / ', '') }}</option>{% endfor %}
+          {% if can('seven.view') %}<option value="__seven" {{ 'selected' if on_seven }}>7-Eleven</option>{% endif %}
         </select>
       </form>
       <div class="pos-source-aside">{% block source_aside %}{% endblock %}</div>
       </div>
       {% endif %}
-      {% if source_states %}<div class="pos-sync-status no-print">{% for st in source_states %}<span class="pos-sync-item{{ ' has-error' if st.reporting_error }}"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span><b>{{ account_labels.get(st.key, st.key|replace('LOYVERSE_TOKEN_', '')) }}</b><span class="pos-sync-separator"> &middot; </span>{{ t('Last synced') }} {{ st.reporting_success_at|ago }}{% if st.reporting_history_from %} &middot; {{ t('History from') }} {{ st.reporting_history_from }}{% endif %}{% if st.reporting_error %} &middot; {{ t(st.reporting_error) }}{% endif %}</span></span>{% endfor %}</div>{% endif %}
+      {% if source_states %}<div class="pos-sync-status no-print" hidden>{% for st in source_states %}<span class="pos-sync-item{{ ' has-error' if st.reporting_error }}"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span><b>{{ account_labels.get(st.key, st.key|replace('LOYVERSE_TOKEN_', '')) }}</b><span class="pos-sync-separator"> &middot; </span>{{ t('Last synced') }} {{ st.reporting_success_at|ago }}{% if st.reporting_history_from %} &middot; {{ t('History from') }} {{ st.reporting_history_from }}{% endif %}{% if st.reporting_error %} &middot; {{ t(st.reporting_error) }}{% endif %}</span></span>{% endfor %}</div>{% endif %}
+
       {% block content %}{% endblock %}
     </main>
     <footer class="foot">{{ t('Sales and stock are read from the selected POS source. Local operational records do not update POS stock.') }}</footer>
@@ -148,7 +170,11 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 </nav>
 <dialog id="phone-work" class="phone-work-dialog" aria-labelledby="phone-work-title">
 <header><h2 id="phone-work-title">{{ t('Work') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}">&times;</button></header>
-<div class="phone-actions">{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in ['/issues','/inspections','/counts','/transfer-sheets','/purchase-orders','/replenishment','/replenishment/loyverse'] %}<a href="{{ url }}"><svg class="i"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}{% if tag %}<small>{{ tag }}</small>{% endif %}</span><b>&rsaquo;</b></a>{% endif %}{% endfor %}{% endfor %}</div>
+<p class="work-intro">{{ t('Choose what you need to do') }}</p>
+{% for group, urls in [('Today', ['/inspections','/issues','/replenishment','/replenishment/loyverse']), ('Stock', ['/counts','/stock-events','/transfer-sheets']), ('Orders', ['/purchase-orders','/new-product'])] %}
+{% set available = [] %}{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in urls %}{% if available.append((url,label,icon,tag)) %}{% endif %}{% endif %}{% endfor %}{% endfor %}
+{% if available %}<section class="work-group"><h3>{{ t(group) }}</h3><div class="phone-actions">{% for url,label,icon,tag in available %}<a href="{{ url }}"><svg class="i"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}{% if tag %}<small>{{ tag }} {{ t('items') }}</small>{% endif %}</span><b>&rsaquo;</b></a>{% endfor %}</div></section>{% endif %}
+{% endfor %}
 </dialog>
 <div class="more-scrim" id="more-scrim" hidden></div>
 <section class="more-sheet" id="more-sheet" role="dialog" aria-modal="true" aria-label="{{ t('More') }}" hidden>
@@ -172,6 +198,8 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 <div id="tip" class="tip" role="tooltip" hidden></div>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
 <script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
+<script src="/static/crumbs.js?v={{ asset_v('crumbs.js') }}"></script>
+<script src="/static/data_warning.js?v={{ asset_v('data_warning.js') }}"></script>
 <script src="/static/navigation_motion.js?v={{ asset_v('navigation_motion.js') }}"></script>
 <script src="/static/sidebar_fly.js?v={{ asset_v('sidebar_fly.js') }}"></script>
 <script src="/static/mobile.js?v={{ asset_v('mobile.js') }}"></script>
@@ -179,6 +207,7 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 <script src="/static/assistant_chat.js?v={{ asset_v('assistant_chat.js') }}"></script>
 <script src="/static/tabs.js?v={{ asset_v('tabs.js') }}"></script>
 <script src="/static/account_menu.js?v={{ asset_v('account_menu.js') }}"></script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>

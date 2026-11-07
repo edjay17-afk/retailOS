@@ -296,6 +296,99 @@ class SalesShift(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
 
 
+class SevenLogLine(Base):
+    """One line of a 7-Eleven (Philippine Seven Corporation) Inventory Transaction Log: something the store received, by section (warehouse transfer, delivery ...)."""
+    __tablename__ = "seven_log_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    store_code: Mapped[str] = mapped_column(String(12), index=True)
+    store_name: Mapped[str] = mapped_column(String(120), default="")
+    report_from: Mapped[date] = mapped_column(Date)
+    report_to: Mapped[date] = mapped_column(Date)
+    section: Mapped[str] = mapped_column(String(40), index=True)
+    tx_date: Mapped[date] = mapped_column(Date, index=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    document_id: Mapped[str] = mapped_column(String(40), index=True)
+    supplier: Mapped[str] = mapped_column(String(160), default="")
+    retail: Mapped[float] = mapped_column(Float, default=0)
+    cost: Mapped[float] = mapped_column(Float, default=0)
+    read_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    __table_args__ = (Index("ux_seven_log", "store_code", "tx_date", "document_id", "section", "retail", unique=True),)
+
+
+class SevenSaleLine(Base):
+    """One product's sales for one day from the 7-Eleven OR Sales Monitor by Quantity (units and pesos), the basis for 7-Eleven ordering."""
+    __tablename__ = "seven_sale_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    store_code: Mapped[str] = mapped_column(String(12), index=True)
+    store_name: Mapped[str] = mapped_column(String(120), default="")
+    sale_date: Mapped[date] = mapped_column(Date, index=True)
+    category: Mapped[str] = mapped_column(String(80), default="", index=True)
+    item_code: Mapped[str] = mapped_column(String(12), index=True)
+    barcode: Mapped[str] = mapped_column(String(20), default="")
+    name: Mapped[str] = mapped_column(String(200))
+    qty: Mapped[float] = mapped_column(Float)
+    amount: Mapped[float] = mapped_column(Float)
+    read_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    __table_args__ = (Index("ux_seven_sale", "store_code", "sale_date", "item_code", unique=True),)
+
+
+class SevenBadSlip(Base):
+    """A 7-Eleven Bad Merchandise slip: damaged or expired goods taken off the store's stock, with the cost and retail value."""
+    __tablename__ = "seven_bad_slip"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    slip_id: Mapped[str] = mapped_column(String(20), unique=True)
+    document_id: Mapped[str] = mapped_column(String(30), default="")
+    store_code: Mapped[str] = mapped_column(String(12), index=True)
+    store_name: Mapped[str] = mapped_column(String(120), default="")
+    slip_date: Mapped[date] = mapped_column(Date, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="")
+    total_cost: Mapped[float] = mapped_column(Float, default=0)
+    total_retail: Mapped[float] = mapped_column(Float, default=0)
+    read_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    items: Mapped[list["SevenBadItem"]] = relationship(order_by="SevenBadItem.line_no", cascade="all, delete-orphan")
+
+
+class SevenBadItem(Base):
+    __tablename__ = "seven_bad_item"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    slip_id: Mapped[int] = mapped_column(ForeignKey("seven_bad_slip.id"), index=True)
+    line_no: Mapped[int] = mapped_column(Integer)
+    item_code: Mapped[str] = mapped_column(String(12), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    qty: Mapped[float] = mapped_column(Float)
+    unit_cost: Mapped[float] = mapped_column(Float)
+    unit_retail: Mapped[float] = mapped_column(Float)
+    total_cost: Mapped[float] = mapped_column(Float)
+    total_retail: Mapped[float] = mapped_column(Float)
+
+
+class StockMovement(Base):
+    """One line of StoreHub's back-office Audit Trail: a change to one product's quantity in one store (sale, receiving, stock take, transfer ...).
+    Read with GET requests only; Retail OS never writes it back. Times are Manila local time."""
+    __tablename__ = "stock_movement"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    location_id: Mapped[int] = mapped_column(ForeignKey("location.id"), index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    employee: Mapped[str] = mapped_column(String(120), default="")
+    action: Mapped[str] = mapped_column(String(80), default="")
+    kind: Mapped[str] = mapped_column(String(40), default="")  # StoreHub's own type code, e.g. sale
+    qty_before: Mapped[float] = mapped_column(Float, default=0)
+    change: Mapped[float] = mapped_column(Float, default=0)
+    qty_after: Mapped[float] = mapped_column(Float, default=0)
+    link_id: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)  # the transaction / order / transfer it came from
+    read_at: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
+    __table_args__ = (Index("ux_stock_movement", "location_id", "product_id", "occurred_at", "qty_before", "change", "action", unique=True),)
+
+
+class StockMovementRead(Base):
+    """Per product and store: how far its Audit Trail has been read, so only products with newer stock changes are asked for again."""
+    __tablename__ = "stock_movement_read"
+    location_id: Mapped[int] = mapped_column(ForeignKey("location.id"), primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), primary_key=True)
+    read_through: Mapped[datetime] = mapped_column(DateTime)
+
+
 class ZReading(Base):
     """One official Z-reading copied from StoreHub's back office with GET requests only. Times are Manila local time."""
     __tablename__ = "z_reading"

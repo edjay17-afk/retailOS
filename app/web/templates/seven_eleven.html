@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}7-Eleven{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+{% set qs = 'frm=' ~ frm ~ '&to=' ~ to ~ '&q=' ~ (q|urlencode) ~ '&section=' ~ (section|urlencode) ~ '&category=' ~ (category|urlencode) %}
+<div class="page-head"><div><div class="eyebrow">{{ store or 'Philippine Seven Corporation' }}</div><h1>7-Eleven</h1>
+  <p class="sync-note">{{ t('Inventory logs (what the store received) and bad merchandise slips, read from the 7-Eleven PDFs. A PDF is saved only when its numbers add up to the totals printed on it.') }}</p></div>
+  <div class="row">{% if can('seven.import') %}<button type="button" class="btn" data-modal="seven-upload">{{ t('Upload PDFs') }}</button>{% endif %}
+    {% if tab in ('order', 'sales', 'slips', 'log') %}<a class="btn sec" href="/seven-eleven?tab={{ tab }}&{{ qs }}&only={{ only|default('') }}&export=csv">{{ t('Download CSV') }}</a>{% endif %}</div></div>
+<nav class="stock-change-tabs">
+{% for value, label in (('summary','Summary'),('order','Order suggestions'),('sales','Sales'),('slips','Bad merchandise'),('log','Inventory log')) %}<a href="/seven-eleven?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}</a>{% endfor %}
+</nav>
+{% if can('seven.import') %}<dialog id="seven-upload" class="modal" aria-labelledby="seven-upload-title">
+  <div class="counts-upload-head"><h2 id="seven-upload-title">{{ t('Upload 7-Eleven PDFs') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <form novalidate method="post" action="/seven-eleven/upload" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <p class="small mute">{{ t('Choose the Inventory Log and Bad Merchandise PDFs (many at once is fine). A file that is already saved is skipped; a file whose numbers do not add up is refused.') }}</p>
+    <input type="file" name="files" accept="application/pdf,.pdf" multiple required>
+    <div class="row" style="margin-top:12px"><button class="ok" type="submit">{{ t('Upload') }}</button></div>
+  </form></dialog>{% endif %}
+
+{% if tab not in ('summary', 'order') %}
+<form novalidate class="filters" method="get" action="/seven-eleven" style="margin-bottom:14px"><input type="hidden" name="tab" value="{{ tab }}">
+  <div><label for="sv-frm">{{ t('From') }}</label><input id="sv-frm" type="date" name="frm" value="{{ frm }}"></div>
+  <div><label for="sv-to">{{ t('To') }}</label><input id="sv-to" type="date" name="to" value="{{ to }}"></div>
+  {% if tab == 'sales' %}<div><label for="sv-cat">{{ t('Category') }}</label><select id="sv-cat" name="category" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for k in categories %}<option value="{{ k }}" {{ 'selected' if k == category }}>{{ k }}</option>{% endfor %}</select></div>{% endif %}
+  {% if tab == 'log' %}<div><label for="sv-sec">{{ t('Section') }}</label><select id="sv-sec" name="section" onchange="this.form.submit()"><option value="">{{ t('All sections') }}</option>{% for s in sections %}<option value="{{ s }}" {{ 'selected' if s == section }}>{{ s|title }}</option>{% endfor %}</select></div>{% endif %}
+  <div style="flex:1;min-width:200px"><label for="sv-q">{{ t('Search') }}</label><input id="sv-q" type="search" name="q" value="{{ q }}" placeholder="{{ t('Product, supplier or document') if tab == 'log' else t('Product, item code or barcode') if tab == 'sales' else t('Product, item code or slip') }}"></div>
+  <div><label>&nbsp;</label><button class="sm">{{ t('Apply') }}</button></div>
+</form>{% endif %}
+
+{% if tab == 'summary' %}
+{% if months %}
+<div class="tw"><table class="wide"><tr><th>{{ t('Month') }}</th><th class="right">{{ t('Sales days') }}</th><th class="right">{{ t('Units sold') }}</th><th class="right">{{ t('Sales') }}</th><th class="right">{{ t('Days logged') }}</th><th class="right">{{ t('Warehouse transfer') }}</th><th class="right">{{ t('Direct deliveries') }}</th><th class="right">{{ t('Kitchen transfer') }}</th><th class="right">{{ t('Bad merchandise (cost)') }}</th><th class="right">{{ t('Slips') }}</th></tr>
+{% for ym, v in months %}{% set sm = slip_months.get(ym) %}{% set sa = sales_months.get(ym) %}<tr><td><b>{{ ym }}</b></td><td class="right">{{ sa[0] if sa else '—' }}</td><td class="right">{{ sa[1]|num(0) if sa else '—' }}</td><td class="right">{{ sa[2]|money if sa else '—' }}</td><td class="right">{{ days.get(ym, 0) }}</td>
+<td class="right">{{ v.get('WAREHOUSE TRANSFER|cost', 0)|money }}<div class="small mute">{{ t('retail') }} {{ v.get('WAREHOUSE TRANSFER|retail', 0)|money }}</div></td>
+<td class="right">{{ v.get('DIRECT TO STORE DELIVERY|cost', 0)|money }}<div class="small mute">{{ t('retail') }} {{ v.get('DIRECT TO STORE DELIVERY|retail', 0)|money }}</div></td>
+<td class="right">{{ v.get('KITCHEN TRANSFER|cost', 0)|money }}<div class="small mute">{{ t('retail') }} {{ v.get('KITCHEN TRANSFER|retail', 0)|money }}</div></td>
+<td class="right"><b style="color:var(--bad)">{{ v.get('BAD MERCHANDISE|cost', 0)|money }}</b><div class="small mute">{{ t('retail') }} {{ v.get('BAD MERCHANDISE|retail', 0)|money }}</div></td>
+<td class="right">{% if sm %}{{ sm[0] }}<div class="small mute">{{ sm[1]|money }}</div>{% else %}—{% endif %}</td></tr>{% endfor %}</table></div>
+<p class="small mute">{{ t('Amounts are at cost; the retail value is underneath. Negative amounts are goods taken out (bad merchandise). Months with fewer days logged than the calendar have missing logs.') }}</p>
+{% else %}<div class="card empty">{{ t('Nothing uploaded yet. Press Upload PDFs.') }}</div>{% endif %}
+
+{% elif tab == 'order' %}
+{% for w in meta.warnings %}<p class="small" role="status" style="color:var(--bad);margin:0 0 10px"><b>{{ t('Note') }}:</b> {{ w }}</p>{% endfor %}
+<div class="card" style="margin-bottom:14px">
+  <p class="small mute" style="margin:0 0 8px"><b>{{ t('Sales only') }}:</b> {{ t('there is no 7-Eleven stock-on-hand report yet, so this does not subtract what is already on the shelf. Check the shelf before ordering.') }}</p>
+  <p style="margin:0 0 10px">{{ t('Based on sales up to') }} <b>{{ meta.as_of|day if meta.as_of else '—' }}</b> &middot; {{ meta.trading_days }} {{ t('trading days in the last') }} {{ meta.lookback_days }} &middot; {{ t('covers') }} <b>{{ meta.cover_days }}</b> {{ t('days') }} &middot; <b>{{ meta.to_order }}</b> {{ t('products to order') }}, <b>{{ meta.units }}</b> {{ t('units') }}{% if meta.review %} &middot; <b>{{ meta.review }}</b> {{ t('need a look') }}{% endif %}</p>
+  {% if can('seven.import') %}<form novalidate method="post" action="/seven-eleven/settings" class="row" style="gap:12px;align-items:flex-end"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label for="so-cover">{{ t('Days to cover') }}</label><input id="so-cover" name="cover_days" type="number" min="1" max="14" value="{{ cfg.cover_days }}" style="width:90px"></div>
+    <div><label for="so-look">{{ t('Look back (days)') }}</label><input id="so-look" name="lookback_days" type="number" min="7" max="120" value="{{ cfg.lookback_days }}" style="width:90px"></div>
+    <div><button class="sm">{{ t('Save') }}</button></div></form>{% endif %}
+</div>
+<form novalidate class="filters" method="get" action="/seven-eleven" style="margin-bottom:14px"><input type="hidden" name="tab" value="order">
+  <div><label for="so-only">{{ t('Show') }}</label><select id="so-only" name="only" onchange="this.form.submit()"><option value="order" {{ 'selected' if only == 'order' }}>{{ t('To order') }}</option><option value="review" {{ 'selected' if only == 'review' }}>{{ t('Need a look') }}</option><option value="all" {{ 'selected' if only == 'all' }}>{{ t('All products') }}</option></select></div>
+  <div><label for="so-cat">{{ t('Category') }}</label><select id="so-cat" name="category" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for k in categories %}<option value="{{ k }}" {{ 'selected' if k == category }}>{{ k }}</option>{% endfor %}</select></div>
+  <div style="flex:1;min-width:200px"><label for="so-q">{{ t('Search') }}</label><input id="so-q" type="search" name="q" value="{{ q }}" placeholder="{{ t('Product, item code or barcode') }}"></div>
+  <div><label>&nbsp;</label><button class="sm">{{ t('Apply') }}</button></div></form>
+<div class="tw"><table class="wide"><tr><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Order') }}</th><th class="right">{{ t('Per day') }}</th><th class="right">{{ t('Last 7 days') }}</th><th class="right">{{ t('Waste') }}</th><th>{{ t('Notes') }}</th></tr>
+{% for r in order_rows %}<tr><td><b>{{ r.name }}</b><div class="small mute">{{ r.code }} &middot; {{ r.barcode }}</div></td><td class="small">{{ r.category }}</td>
+<td class="right"><b style="font-size:16px">{{ r.order }}</b></td><td class="right">{{ r.per_day|num(2) }}</td><td class="right">{{ r.per_day7|num(2) }}</td><td class="right">{{ r.waste|num if r.waste else '—' }}</td>
+<td class="small">{% for f in r.flags %}<span class="badge {{ 'b-warn' if f in ('Selling faster lately', 'Selling slower lately', 'High waste', 'Few sales') else '' }}">{{ t(f) }}</span> {% endfor %}</td></tr>
+{% else %}<tr><td colspan="7"><div class="empty">{{ t('Nothing to order.') }}</div></td></tr>{% endfor %}</table></div>
+<p class="small mute">{{ t('Order = average units per day x days to cover, rounded up; nothing is suggested when less than half a unit is expected (slow mover). Per day divides by the days the store traded, so days a product did not sell count as zero. Waste is from the bad merchandise slips of the last 60 days.') }}</p>
+
+{% elif tab == 'sales' %}
+<p class="small mute">{{ trading }} {{ t('trading days') }} &middot; {{ total }} {{ t('products') }} &middot; {{ totals[0]|num(0) }} {{ t('units') }} &middot; <b>{{ totals[1]|money }}</b> &middot; {{ t('Per day = units sold divided by the trading days in the period.') }}</p>
+<div class="tw"><table class="wide"><tr><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units sold') }}</th><th class="right">{{ t('Per day') }}</th><th class="right">{{ t('Days sold') }}</th><th class="right">{{ t('Amount') }}</th></tr>
+{% for r in products %}<tr><td><b>{{ r.name }}</b><div class="small mute">{{ r.code }} &middot; {{ r.barcode }}</div></td><td class="small">{{ r.category }}</td><td class="right">{{ r.qty|num }}</td><td class="right">{{ r.upsd|num(2) }}</td><td class="right">{{ r.days_sold }}</td><td class="right">{{ r.amount|money }}</td></tr>
+{% else %}<tr><td colspan="6"><div class="empty">{{ t('No sales in this period.') }}</div></td></tr>{% endfor %}</table></div>
+
+{% elif tab == 'slips' %}
+<p class="small mute">{{ total }} {{ t('slips') }} &middot; {{ t('cost') }} <b>{{ totals[0]|money }}</b> &middot; {{ t('retail') }} <b>{{ totals[1]|money }}</b></p>
+<div class="tw"><table class="wide"><tr><th>{{ t('Date') }}</th><th>{{ t('Slip') }}</th><th class="right">{{ t('Items') }}</th><th class="right">{{ t('Cost') }}</th><th class="right">{{ t('Retail') }}</th><th></th></tr>
+{% for s in slips %}<tr data-href="/seven-eleven/slip/{{ s.id }}"><td class="nowrap">{{ s.slip_date|day }}</td><td><a href="/seven-eleven/slip/{{ s.id }}">{{ s.slip_id }}</a><div class="small mute">{{ s.status }}</div></td><td class="right">{{ s.items|length }}</td><td class="right">{{ s.total_cost|money }}</td><td class="right">{{ s.total_retail|money }}</td><td class="right"><svg class="i" style="width:15px;height:15px"><use href="#i-arrow"/></svg></td></tr>
+{% else %}<tr><td colspan="6"><div class="empty">{{ t('No slips in this period.') }}</div></td></tr>{% endfor %}</table></div>
+
+{% else %}
+<p class="small mute">{{ total }} {{ t('lines') }} &middot; {{ t('cost') }} <b>{{ totals[0]|money }}</b> &middot; {{ t('retail') }} <b>{{ totals[1]|money }}</b></p>
+<div class="tw"><table class="wide"><tr><th>{{ t('Date') }}</th><th>{{ t('Section') }}</th><th>{{ t('Document') }}</th><th>{{ t('Delivered by') }}</th><th class="right">{{ t('Cost') }}</th><th class="right">{{ t('Retail') }}</th></tr>
+{% for r in log %}<tr><td class="nowrap">{{ r.tx_date|day }}</td><td class="small">{{ r.section|title }}</td><td class="small">{{ r.document_id }}</td><td class="small">{{ r.supplier }}</td><td class="right">{{ r.cost|money }}</td><td class="right">{{ r.retail|money }}</td></tr>
+{% else %}<tr><td colspan="6"><div class="empty">{{ t('No lines in this period.') }}</div></td></tr>{% endfor %}</table></div>
+{% endif %}
+{% if tab not in ('summary',) %}<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?tab={{ tab }}&{{ qs }}&only={{ only|default('') }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} / {{ pages }}</span>{% if page < pages %}<a class="btn sec sm" href="?tab={{ tab }}&{{ qs }}&only={{ only|default('') }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>{% endif %}
+{% endblock %}

@@ -181,8 +181,8 @@ def test_source_switch_keeps_dates_and_assigned_staff(client,session):
     assert client.get('/replenishment/loyverse').status_code==200
     assert client.get('/inventory').status_code==200
     assert client.post('/data-source',data=dict(csrf=token,scope='loyverse:B',back='/')).status_code==400
-    response=client.post('/data-source',data=dict(csrf=token,scope='storehub',back='/replenishment/loyverse'),follow_redirects=False)
-    assert response.headers['location']=='/replenishment'
+    assert client.post('/data-source',data=dict(csrf=token,scope='storehub',back='/replenishment/loyverse')).status_code==400   # a user limited to Loyverse stores has no StoreHub switch
+    assert 'name="scope" value="storehub"' not in client.get('/').text
 
 
 def test_desktop_mobile_shared_sales(client,session):

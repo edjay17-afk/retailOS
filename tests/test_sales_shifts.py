@@ -57,6 +57,22 @@ def row(sid, opened, closed, store, n="82", total="12266.00"):
     return {"0": opened, "1": closed, "2": store, "3": "5", "4": n, "5": total, "6": "0.00", "7": "", "DT_RowId": sid}
 
 
+def test_shifts_are_saved_when_storehub_prints_the_new_time_format(sync, fake, session):
+    """In late October 2026 StoreHub started sending 'Oct 28, 2026, 2:03 PM' (plus an ISO time) instead of '10/28/2026 14:03'; the shifts must still be saved."""
+    seeded(sync, fake, session, days=2, qty=1)
+    alpha = session.scalar(select(Location).where(Location.name.like("%Alpha%")))
+    new_style = {"0": "Oct 28, 2026, 2:03 PM", "1": "Oct 28, 2026, 10:10 PM", "2": alpha.name, "3": "5", "4": "132", "5": "13588.00", "6": "0.00", "7": "", "DT_RowId": "n1",
+                 "openTimeIso": "2026-10-28T14:03:04+08:00", "closeTimeIso": "2026-10-28T22:10:41+08:00"}
+    text_only = dict(new_style, DT_RowId="n2", **{"0": "Oct 29, 2026, 5:57 AM", "1": "Oct 29, 2026, 10:04 AM"}); text_only.pop("openTimeIso"); text_only.pop("closeTimeIso")
+    still_open = dict(new_style, DT_RowId="n3", **{"1": "", "closeTimeIso": ""})
+    out = sales_shifts.apply(session, [new_style, text_only, still_open], {})
+    assert out["new"] == 3
+    got = {s.sh_id: s for s in session.scalars(select(SalesShift))}
+    assert got["n1"].opened_at.isoformat() == "2026-10-28T14:03:04" and got["n1"].closed_at.isoformat() == "2026-10-28T22:10:41"
+    assert got["n2"].opened_at.isoformat() == "2026-10-29T05:57:00" and got["n2"].closed_at.isoformat() == "2026-10-29T10:04:00"
+    assert got["n3"].closed_at is None
+
+
 def test_the_shift_page_is_read_exactly():
     d = sales_shifts.parse_detail(PAGE)
     assert d["cashier"] == "Torniado Jennifer" and d["opening_fund"] == 450.0
@@ -171,3 +187,17 @@ def test_cashier_matching_never_guesses_duplicate_or_unknown_names(session):
     rows = [SalesShift(id=1, cashier="Ana Reyes"), SalesShift(id=2, cashier="  GO,  Bong "),
             SalesShift(id=3, cashier="Unknown"), SalesShift(id=4, cashier="")]
     assert sales_shifts.cashier_employee_ids(session, rows) == {2: "match3"}
+
+
+def test_unreadable_times_fail_loudly_and_a_gap_is_caught_up_quickly(sync, fake, session):
+    """If StoreHub changes its time format again, the run must say so (not report success), and a store whose sales are ahead of its shifts is 'behind'."""
+    seeded(sync, fake, session, days=3, qty=1)
+    alpha = session.scalar(select(Location).where(Location.name.like("%Alpha%")))
+    broken = {"0": "sometime on Tuesday", "1": "", "2": alpha.name, "3": "5", "4": "10", "5": "100.00", "6": "0.00", "7": "", "DT_RowId": "bad1"}
+    out = sales_shifts.run(session, fetch=lambda start, end, skip, n: ([broken], {}))
+    assert out["ok"] is False and out["unreadable"] == 1 and "could not be read" in out["error"]
+    assert session.get(sales_shifts.Setting, "sales_shifts.last_ok") is None                 # a failed run is never marked as done
+    t = today_local()
+    session.add(SalesShift(sh_id="old", location_id=alpha.id, opened_at=__import__("datetime").datetime.combine(t - timedelta(days=9), __import__("datetime").time(8, 0)), closed_at=None))
+    session.commit()
+    assert alpha.name in sales_shifts.behind(session)

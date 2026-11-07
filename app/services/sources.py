@@ -34,11 +34,14 @@ def setup_scope(db, user, selection):
     allowed = allowed_location_ids(db, user)
     from sqlalchemy import select
     locations = list(db.scalars(select(Location).where(Location.id.in_(allowed or [0]))))
-    options = [('all', 'All POS sources'), ('storehub', 'StoreHub'), ('loyverse', 'Loyverse')]
+    # only a user limited to specific stores, none of them on StoreHub, loses the StoreHub button
+    has_storehub = any(x.source == 'storehub' for x in locations) or not locations or not user.location_ids
+    options = [('all', 'All POS sources')] + ([('storehub', 'StoreHub')] if has_storehub else []) + [('loyverse', 'Loyverse')]
     for account in sorted({x.source_account for x in locations if x.source == 'loyverse'}):
         label = db.get(Setting, 'loyverse.account_name.' + account)
         options.append(('loyverse:' + account, 'Loyverse / ' + (str(label.value) if label else account.replace('LOYVERSE_TOKEN_', ''))))
-    if selection not in {x[0] for x in options}: selection = 'storehub'
+    if selection not in {x[0] for x in options}: selection = 'storehub' if has_storehub else 'loyverse'
+    if selection == 'all' and not has_storehub: selection = 'loyverse'
     if selection == 'loyverse':  # the switch lists each Loyverse account on its own; an old combined choice opens the first account
         accounts = [x[0] for x in options if x[0].startswith('loyverse:')]
         if accounts: selection = accounts[0]

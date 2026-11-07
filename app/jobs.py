@@ -97,7 +97,11 @@ def run_transfer_robot():
             return {"ran": False}
         transfer_inbox.mark_robot_attempt(db)
         db.commit()
-        return transfer_inbox.run_robot(db)
+        out = transfer_inbox.run_robot(db)
+        from .services import stock_movements
+        stock_movements.from_transfers(db)   # the transfer shows in Stock changes straight away
+        db.commit()
+        return out
     out = _db_job(go)
     if out and out.get("ran"):
         log.info("stock transfer robot: %s", out)
@@ -125,6 +129,20 @@ def run_sales_shifts():
     out = _db_job(go)
     if out and out.get("ran"):
         log.info("sales shifts: %s", out)
+
+
+@_safe("stock_movements")
+def run_stock_movements():
+    """StoreHub's Audit Trail (every stock change, with who and why), read for the products whose quantity changed. It only runs when due."""
+    from .services import stock_movements
+
+    def go(db):
+        if not stock_movements.due(db):
+            return {"ran": False}
+        return stock_movements.run(db)
+    out = _db_job(go)
+    if out and out.get("ran"):
+        log.info("stock changes: %s", out)
 
 
 @_safe("zreadings")
@@ -258,10 +276,11 @@ def start() -> BackgroundScheduler | None:
     s.add_job(lark_alerts, "interval", minutes=2, next_run_time=soon(260), id="lark_alerts")
     s.add_job(import_transfer_inbox, "interval", minutes=5, next_run_time=soon(280), id="transfer_inbox")
     s.add_job(check_transfer_freshness, "cron", minute=10, id="transfer_fresh")
-    s.add_job(run_transfer_robot, "interval", minutes=1, next_run_time=soon(240), id="transfer_robot")  # due-check only; actual fetching defaults to every 20 minutes
+    s.add_job(run_transfer_robot, "interval", minutes=1, next_run_time=soon(240), id="transfer_robot")  # due-check only; actual fetching every 5 minutes
     s.add_job(run_sales_profit, "interval", minutes=15, next_run_time=soon(330), id="sales_profit")
     s.add_job(run_po_prices, "interval", minutes=15, next_run_time=soon(420), id="po_prices")
-    s.add_job(run_sales_shifts, "interval", minutes=15, next_run_time=soon(500), id="sales_shifts")
+    s.add_job(run_sales_shifts, "interval", minutes=15, next_run_time=soon(150), id="sales_shifts")
+    s.add_job(run_stock_movements, "interval", minutes=5, next_run_time=soon(330), id="stock_movements")
     s.add_job(run_zreadings, "interval", minutes=15, next_run_time=soon(580), id="zreadings")
     s.add_job(compliance_check, "cron", hour=6, minute=20, id="compliance")
     s.add_job(compliance_check, "date", run_date=soon(120), id="compliance_boot")

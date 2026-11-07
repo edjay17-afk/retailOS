@@ -389,3 +389,38 @@ def _zreadings_once(start, end, skip: set[str], max_details: int) -> tuple[list[
             return _read_zreadings(page, base, start, end, skip, max_details)
         finally:
             browser.close()
+
+
+def fetch_audit_trails(pairs: list[tuple[str, str]], start, end, budget_seconds: int = 270) -> dict[tuple[str, str], list[dict]]:
+    """StoreHub's Stock > Audit Trail (read only: GET requests, nothing is clicked or saved). `pairs` are (StoreHub store id, StoreHub product id).
+    Returns {pair: rows}; a pair that could not be read is left out, so it is asked for again next time."""
+    import time
+    from playwright.sync_api import sync_playwright
+    cfg = get_config()
+    base = cfg.storehub_bo_url.rstrip("/")
+    out: dict[tuple[str, str], list[dict]] = {}
+    began = time.monotonic()
+    with sync_playwright() as pw:
+        browser, ctx = open_browser(pw, headless=cfg.robot_headless)
+        try:
+            page = ctx.new_page()
+            sign_in(page)
+            page.goto(base + "/stocks/auditTrail", wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_load_state("networkidle", timeout=60000)
+            for store, product in pairs:
+                if time.monotonic() - began > budget_seconds:
+                    break
+                url = f"/stocks/ajaxAuditTrail?product={product}&store={store}&fromdate={start:%m/%d/%Y}&todate={end:%m/%d/%Y}"
+                try:
+                    data = page.evaluate("async (u) => { const r = await fetch(u, {credentials: 'same-origin', headers: {'Accept': 'application/json'}}); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }", url)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("audit trail read failed: %s", type(e).__name__)
+                    continue
+                rows = data.get("aaData") if isinstance(data, dict) else None
+                if isinstance(rows, list):
+                    out[(store, product)] = rows
+                time.sleep(.15)
+        finally:
+            browser.close()
+    return out
+

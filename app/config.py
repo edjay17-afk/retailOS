@@ -47,7 +47,7 @@ class Config(BaseSettings):
     storehub_bo_email: str = ""  # the back-office login the robot signs in with (type it in .env yourself)
     storehub_bo_password: str = ""
     robot_enabled: bool = True  # a kill switch: the robot only runs when the back-office login is also set
-    robot_every_minutes: int = 20  # fetch when the last import is this old; checked every minute for catch-up after sleep
+    robot_every_minutes: int = 5  # fetch when the last import is this old; checked every minute for catch-up after sleep
     robot_headless: bool = True
 
     lark_app_id: str = ""

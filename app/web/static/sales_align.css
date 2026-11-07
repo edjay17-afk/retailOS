@@ -71,3 +71,35 @@
 @media(max-width:700px){
   main:has(.sales-head) #sales-line+.small.mute{display:none}
 }
+
+/* Sales header: store, Today | 7 days | 14 days | Custom, Download CSV. */
+.sales-filters .sales-seg-wrap{display:flex;align-items:flex-end}
+.sales-seg{display:inline-flex;align-items:center;background:#e3ebfb;border-radius:12px;padding:4px;gap:2px;height:44px}
+.sales-seg>a,.sales-seg .drp-btn{height:36px;padding:0 16px;display:inline-flex;align-items:center;border-radius:9px;border:0;background:transparent;font-size:14px;font-weight:600;color:#4b5b82;text-decoration:none;box-shadow:none}
+.sales-seg>a:hover,.sales-seg .drp-btn:hover{color:var(--ink);background:rgba(255,255,255,.55)}
+.sales-seg>a.on,.sales-seg .drp.on .drp-btn{background:#fff;color:var(--primary-h,#1d4ed8);font-weight:800;box-shadow:0 1px 3px rgba(16,26,51,.14)}
+.sales-seg .drp-btn>*{display:none}
+.sales-seg .drp-btn::after{content:var(--lbl,"Custom")}
+.sales-filters>div>label[for="sales-location"]{display:none}
+.sales-filters .dl-pair>label{display:none}
+.sales-filters .dl-csv{width:auto;padding:0 18px;height:44px;font-weight:700;font-size:14.5px}
+.sales-seg>a{color:#4b5b82!important}.sales-seg>a.on{color:#1d4ed8!important}.sales-seg .drp.on .drp-btn{color:#1d4ed8}.sales-seg .drp-btn{color:#4b5b82!important}.sales-seg .drp.on .drp-btn{color:#1d4ed8!important}
+.sales-seg>a,.sales-seg>a.on,.sales-seg .drp-btn,.sales-seg .drp.on .drp-btn{color:#111827!important}
+.sales-seg{background:#fff!important;border:1px solid #d6d9e6}
+.sales-seg>a:hover,.sales-seg .drp-btn:hover{background:#f3f4f7}
+.sales-seg>a.on,.sales-seg .drp.on .drp-btn{background:#eceef3!important;box-shadow:none!important}
+
+/* Sales by shift: one clean row, no filter card, plain summary tiles. */
+@media (min-width:1001px){
+  .shifts-filters{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;justify-content:space-between;align-items:flex-end}
+  .shifts-filters>div>label{display:none}
+  .shifts-filters select{height:44px;border:1px solid #d6d9e6;border-radius:12px;font-weight:600;color:#111827}
+  .grid>.card.stat{border-top:1px solid #e3e6ee!important}
+}
+@media (min-width:1001px){
+  .page-head>.shifts-filters{margin-left:auto!important;margin-right:12px!important;align-items:center!important;flex-wrap:nowrap;gap:12px}
+  .page-head>.shifts-filters label{display:none!important}
+  .page-head>.shifts-filters select{height:46px}
+  .page-head>.shifts-filters .sales-seg{height:46px}
+  .page-head>.row{margin-left:0}
+}

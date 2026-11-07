@@ -129,3 +129,63 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
   .rs td[data-label]:not(.rs-wh):not(.rs-need)::before{margin:0;flex:none;max-width:64px}
   .rs td[data-label] .q,.rs td[data-label] input.q{height:36px;font-size:16px;width:100%;min-width:0}
 }
+
+/* Compact status navigation on phones; all four options remain visible. */
+.rs-label-mobile{display:none}
+@media(max-width:700px){
+ .rs-seg{display:grid;width:100%;grid-template-columns:1.05fr 1.3fr 1fr .6fr;overflow:visible;padding:3px;gap:2px;background:var(--surface2);border:1px solid var(--line);border-radius:11px}
+ .rs-seg a{display:flex;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:40px;padding:4px 2px;border-radius:8px;text-align:center;white-space:normal;line-height:1.15;font-size:11px;color:var(--mute)}
+ .rs-seg a b{flex:none;padding:1px 5px;font-size:10px;background:var(--surface);color:var(--primary)}
+ .rs-seg a.on{background:var(--btn);color:#fff}
+ .rs-seg a.on b{background:rgba(255,255,255,.22);color:#fff}
+ .rs-seg .rs-label-full{display:none}
+ .rs-seg .rs-label-mobile{display:inline}
+}
+
+/* Desktop: the cleaner sheet from the approved design. */
+.need.mix{background:#fff1d1;color:#8a5200}
+.need{background:#d9f7ea;color:#047857}.need.sup{background:#fde4e4;color:#c62828}
+@media (min-width:1001px){
+  .rs-kpis,.rs-legend,.rs-tools button.sm{display:none!important}
+  .rs-tools{flex-wrap:nowrap;gap:12px;margin:0 0 16px}
+  .rs-seg{background:#fff;border:1px solid #d6d9e6;border-radius:12px;padding:4px;gap:2px;overflow:visible}
+  .rs-seg a{color:#111827;border-radius:9px;padding:7px 14px;flex-direction:column;gap:0;line-height:1.2}
+  .rs-seg a.on{background:#eceef3;color:#111827;font-weight:800}.rs-seg a b{background:none;color:inherit;padding:0;font-size:13px}.rs-seg a.on b{background:none;color:inherit}
+  .rs-tools input[type=search]{height:46px;border:1px solid #d6d9e6;border-radius:12px}
+  .rs-tools select{height:46px;border:1px solid #d6d9e6;border-radius:12px;font-weight:600;color:#111827}
+  .rs-wrap{background:#fff;border:1px solid #e3e6ee;border-radius:20px;overflow:hidden}
+  .rs thead th{background:#fff;color:#374151;font-weight:600;text-transform:none;letter-spacing:0;font-size:13px;border-bottom:1px solid #e3e6ee}
+  .rs tbody td{padding-top:12px;padding-bottom:12px;border-top:1px solid #eceef3}
+  .rs-p b{font-size:15px}
+}
+@media (min-width:1001px){
+  input.q,.q.u,.q.w{background:#fff;border:1.5px solid #9aa4b8;color:#111827}
+  input.q.u{border-color:#c62828}
+  .page-head:has(+ .rs-kpis),.page-head{align-items:flex-start}
+  .page-head>.row.noprint{margin-left:auto}
+  p.small.mute:has(+ .rs-tools),.rs-kpis+p.small{display:none}
+}
+
+.rs-p>b{display:inline}
+.rs-p .rs-why{display:inline-flex;align-items:center;vertical-align:middle;margin:0 0 0 7px;padding:0;border:0;background:none;color:#111827;cursor:pointer;text-decoration:none;position:static;width:auto;height:auto;border-radius:0}
+.rs-p .rs-why svg{display:block}
+.rs-p .rs-why:hover{color:#2563eb}
+.rs-p small{display:block}
+@media (min-width:1001px){
+  .rs .rs-p b{display:inline!important}
+  .rs .rs-p .rs-why{display:inline-flex!important;margin-left:7px}
+  .rs-seg .rs-label-full{display:none}.rs-seg .rs-label-mobile{display:inline}
+  .rs-seg a{flex-direction:row!important;gap:8px!important;align-items:center;white-space:nowrap;padding:8px 14px!important}
+  .rs-seg a b{background:#eceef3!important;color:#111827!important;border-radius:99px;padding:1px 9px!important;font-size:12.5px!important}
+  .rs-seg a.on b{background:#fff!important}
+}
+@media (min-width:1001px){
+  .page-head .row.noprint form[action="/replenishment/batches/create"],.page-head .row.noprint a[href="/replenishment?view=list"]{display:none!important}
+  .page-head .row.noprint .btn,.page-head .row.noprint button{background:#fff;color:#111827;border:1px solid #d6d9e6;border-radius:12px;height:44px;padding:0 20px;font-weight:700;font-size:15px;box-shadow:none}
+  .page-head .row.noprint svg{display:none}
+  .page-head .row.noprint .btn:hover,.page-head .row.noprint button:hover{background:#f3f4f7;filter:none}
+}
+
+/* "Why this number" slide-over: square, full height, no dark strips. */
+.drawer{border-radius:0!important;border:0!important;border-left:1px solid var(--line)!important;box-shadow:-10px 0 30px rgba(16,24,40,.10)!important}
+.drawer::backdrop{background:rgba(16,24,40,.08)!important;backdrop-filter:none!important}

@@ -13,7 +13,7 @@ def scan_setup(client,session,monkeypatch):
     csrf=csrf_of(client,"/counts")
     r=client.post("/counts/create",data={"location_id":loc.id,"mode":"scan","csrf":csrf})
     url=r.headers["location"]
-    monkeypatch.setattr(counts,"live_quantity",lambda loc,prod:12.0)
+    monkeypatch.setattr(counts,"live_quantity",lambda loc,prod,**kw:12.0)
     return url,csrf,prod.id,loc.id
 
 def test_scan_save_rescan_and_submit(client,session,scan_setup):
@@ -40,7 +40,7 @@ def test_failure_csrf_and_scope(client,session,scan_setup,monkeypatch):
     url,csrf,pid,loc=scan_setup
     assert client.post(url+"/scan",data={"code":"123456789","csrf":"bad"}).status_code in (400,403)
     assert client.post(url+"/scan",data={"code":"unknown","csrf":csrf}).status_code==404
-    def fail(*args):raise counts.CountError("Unavailable")
+    def fail(*args,**kw):raise counts.CountError("Unavailable")
     monkeypatch.setattr(counts,"live_quantity",fail)
     assert client.post(url+"/scan",data={"code":"123456789","csrf":csrf}).status_code==503
     assert client.post(url+"/scan-save",data={"product_id":pid,"counted":10,"csrf":csrf}).status_code==400
@@ -95,3 +95,49 @@ def test_count_lookup_browser(client, scan_setup):
             page.locator("#count-code").press("Enter")
             page.locator("#count-entry").wait_for(state="visible")
         browser.close()
+
+
+def test_when_the_pos_cannot_be_reached_the_last_synced_stock_is_used_and_labelled(client,session,scan_setup,monkeypatch):
+    from datetime import timedelta
+    from app.models import InventoryCurrent
+    from app.storehub.client import StoreHubError
+    from app.timeutil import now_utc
+    url,csrf,pid,lid=scan_setup
+    session.add(InventoryCurrent(location_id=lid,product_id=pid,on_hand=9,synced_at=now_utc()-timedelta(minutes=15)));session.commit()
+    def down(*args,**kw):raise StoreHubError("the secure connection timed out")
+    monkeypatch.setattr(counts,"live_quantity",down)
+    r=client.post(url+"/scan",data={"code":"123456789","csrf":csrf}).json()
+    assert r["system"]==9 and r["stale"] is True and "last sync" in r["notice"]
+    saved=client.post(url+"/scan-save",data={"product_id":pid,"counted":7,"csrf":csrf})
+    assert saved.status_code==200 and saved.json()["stale"] is True and saved.json()["difference"]==-2
+    session.expire_all();line=session.get(CycleCount,int(url.rsplit("/",1)[1])).lines[0]
+    assert line.reason.startswith("scanned (stock from the last sync") and line.system_qty==9 and line.counted_qty==7
+    session.delete(session.get(InventoryCurrent,(lid,pid)));session.commit()                     # nothing to fall back on: an honest error, not a guess
+    assert client.post(url+"/scan",data={"code":"123456789","csrf":csrf}).status_code==503
+
+
+def test_a_live_answer_is_marked_as_live(client,session,scan_setup):
+    url,csrf,pid,_=scan_setup
+    r=client.post(url+"/scan",data={"code":"123456789","csrf":csrf}).json()
+    assert r["system"]==12 and r["stale"] is False and "notice" not in r
+
+
+def test_the_count_can_be_downloaded_as_csv_right_after_saving(client,session,scan_setup):
+    import csv, io
+    url,csrf,pid,_=scan_setup
+    cid=int(url.rsplit("/",1)[1])
+    empty=client.get(url+"/counted.csv",follow_redirects=False)                   # nothing counted yet: a message, not an empty file
+    assert empty.status_code in (302,303) and "err=" in empty.headers["location"]
+    assert client.post(url+"/scan-save",data={"product_id":pid,"counted":10,"note":"Two missing","csrf":csrf}).status_code==200
+    assert "Download CSV" in client.get(url).text and f"/counts/{cid}/counted.csv" in client.get(url).text
+    r=client.get(url+"/counted.csv")                                              # the count is still open: not submitted, not approved
+    assert r.status_code==200 and "attachment" in r.headers["content-disposition"]
+    rows=list(csv.DictReader(io.StringIO(r.text.lstrip("\ufeff"))))
+    assert len(rows)==1 and rows[0]["Product"]=="Scan product" and rows[0]["Counted quantity"]=="10" and rows[0]["System quantity"]=="12"
+    assert rows[0]["Difference"]=="-2" and rows[0]["Note"]=="Two missing" and rows[0]["Status"].startswith("Draft")
+    lid=session.get(CycleCount,cid).lines[0].id
+    client.post(url+"/save",data={"csrf":csrf,"submit":"1",f"c_{lid}":10,f"n_{lid}":"Two missing"})
+    assert list(csv.DictReader(io.StringIO(client.get(url+"/counted.csv").text.lstrip("\ufeff"))))[0]["Status"].startswith("Submitted")
+    client.post("/logout",data={"csrf":csrf})
+    add_user(session,"csv_other","staff",[999999]);login(client,"csv_other")
+    assert client.get(url+"/counted.csv").status_code==403                        # another store cannot download it

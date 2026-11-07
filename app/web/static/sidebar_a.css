@@ -158,3 +158,68 @@ html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[dat
 .top-lang a.on{background:#fff;color:#1d4ed8;box-shadow:0 1px 3px rgba(37,99,235,.18)}
 [data-theme=dark] .top-lang{background:#111a33;border-color:#27355f}
 [data-theme=dark] .top-lang a{color:#9fb3da}[data-theme=dark] .top-lang a.on{background:#1f3a7a;color:#fff;box-shadow:none}
+
+/* account switch as buttons (computers): each account is its own button, the open one is solid blue */
+@media(min-width:701px){
+  .pos-source-toolbar{border-bottom:0!important;margin-bottom:16px!important}
+  .pos-source-switch,.pos-source-switch[data-x]{gap:10px}
+  .pos-source-switch button{padding:10px 20px!important;margin:0;min-height:42px!important;border:1.5px solid #bcd0f7!important;border-radius:12px!important;background:#fff!important;color:#1d4ed8!important;font-size:14.5px!important;font-weight:650;box-shadow:none}
+  .pos-source-switch button:hover{background:#e8efff!important;border-color:#2563eb!important;color:#1d4ed8!important}
+  .pos-source-switch button.is-active{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important;box-shadow:0 4px 12px rgba(37,99,235,.28)!important}
+  [data-theme=dark] .pos-source-switch button{background:#111a33!important;border-color:#27355f!important;color:#bcd2ff!important}
+  [data-theme=dark] .pos-source-switch button:hover{background:#17265a!important;border-color:#3b82f6!important}
+  [data-theme=dark] .pos-source-switch button.is-active{background:#3b82f6!important;border-color:#3b82f6!important;color:#fff!important}
+}
+
+
+/* the 7-Eleven button sits with the account buttons and looks the same */
+@media(min-width:701px){
+  .pos-source-switch a.seven-btn{display:inline-flex;align-items:center;padding:10px 20px;min-height:42px;border:1.5px solid #bcd0f7;border-radius:12px;background:#fff;color:#1d4ed8;font-size:14.5px;font-weight:650;text-decoration:none;box-shadow:none}
+  .pos-source-switch a.seven-btn:hover{background:#e8efff;border-color:#2563eb}
+  .pos-source-switch a.seven-btn.is-active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.28)}
+  [data-theme=dark] .pos-source-switch a.seven-btn{background:#111a33;border-color:#27355f;color:#bcd2ff}
+  [data-theme=dark] .pos-source-switch a.seven-btn:hover{background:#17265a;border-color:#3b82f6}
+  [data-theme=dark] .pos-source-switch a.seven-btn.is-active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+}
+
+/* Desktop: the business buttons (Daily Centro, Steamy Co. ...) sit in the top bar; the breadcrumb sits under it where the buttons used to be. */
+.top-sources,.crumbs-row{display:none}
+@media (min-width:1001px){
+  .topbar .wt-phone{display:none!important}
+  .topbar .top-sources{display:flex;align-items:center;min-width:0}
+  .topbar .top-sources form{margin:0}
+  .topbar .top-sources .pos-source-mobile{display:none}
+  .topbar .top-sources .pos-source-switch{display:inline-flex;gap:8px;border:0!important}
+  .crumbs-row{display:block;margin:0 0 14px;overflow:visible}
+  .crumbs-row>span{font-size:17px;font-weight:650}
+  .pos-source-toolbar .pos-source-picker,.pos-source-toolbar .pos-source-mobile{display:none!important}
+}
+@media (max-width:1000px){.crumbs-row,.top-sources{display:none!important}}
+
+/* The date picker sits at the right end of the filter row. */
+@media (min-width:1001px){.filters>div:has(>.drp){margin-left:auto}}
+@media (min-width:1001px){
+  .pos-source-toolbar{justify-content:flex-end!important}
+  .pos-source-toolbar .pos-source-aside{margin-left:auto}
+  .crumbs-row:has(+ .pos-source-toolbar .pos-source-aside>*){float:left;margin:0 0 14px}
+  .pos-source-toolbar:not(:has(.pos-source-aside>*)){display:none!important}
+  .crumbs-row{margin-bottom:8px}
+  .pos-source-toolbar{margin-bottom:14px!important;min-height:44px}
+}
+
+/* Business buttons: black text; the selected one is black with white text. */
+.pos-source-switch button,.pos-source-switch .seven-btn{color:#111827!important}
+.pos-source-switch button:hover,.pos-source-switch button:focus,.pos-source-switch .seven-btn:hover,.pos-source-switch .seven-btn:focus{background:#eef0f4!important;border-color:#111827!important;color:#111827!important;outline:none}
+.pos-source-switch button.is-active,.pos-source-switch .seven-btn.is-active,.pos-source-switch button.is-active:hover,.pos-source-switch button.is-active:focus{background:#111827!important;border-color:#111827!important;color:#fff!important;box-shadow:none!important}
+
+/* Language switcher: black text. */
+.top-lang a,.top-lang a.on,.top-lang a:hover{color:#111827!important}
+.top-lang a.on{font-weight:800}
+.top-lang{background:#fff!important;border:1px solid #d6d9e6!important}
+.top-lang a:hover{background:#f3f4f7!important}
+.top-lang a.on{background:#eceef3!important}
+
+/* Buttons in the page header: bigger and rounder. */
+@media (min-width:1001px){
+  .page-head .row .btn.sm,.page-head .row button.sm{height:46px;padding:0 22px;font-size:15.5px;font-weight:700;border-radius:16px}
+}

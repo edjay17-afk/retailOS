@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ t('Replenishment') }}{% endblock %}
+{% block title %}{{ t('Auto replenishment') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/replenishment_sheet.css?v={{ asset_v('replenishment_sheet.css') }}">
 {% set qs = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&search=' ~ (search|urlencode) %}
 {% set here = '/replenishment/sheet?' ~ qs ~ '&page=' ~ page %}
 <div class="page-head">
   <div><h1>{{ t('Auto replenishment') }}</h1>
-    <p class="sync-note">{{ t('One sheet for every store: what each store needs, what the warehouse can send, and what to order from suppliers.') }}</p></div>
+    <p class="sync-note"><span class="rs-sub-count">{{ kpi.products|num(0) }} {{ t('products need stock') }} · </span>{{ t('One sheet for every store: what each store needs, what the warehouse can send, and what to order from suppliers.') }}</p></div>
   <div class="row noprint">
     {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
     {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
@@ -27,7 +27,7 @@
 
 <form novalidate class="rs-tools" method="get">
   <span class="rs-seg">
-    {% for v, l, n in (('pending', 'Ready to review', counts.get('pending', 0)), ('needs_review', 'Needs review', counts.get('needs_review', 0)), ('decided', 'Decided', counts.get('approved', 0) + counts.get('modified', 0)), ('all', 'All', none)) %}<a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}">{{ t(l) }}{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>{% endfor %}
+    {% for v, l, n in (('pending', 'Ready to review', counts.get('pending', 0)), ('needs_review', 'Needs review', counts.get('needs_review', 0)), ('decided', 'Decided', counts.get('approved', 0) + counts.get('modified', 0)), ('all', 'All', none)) %}<a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&search={{ search|urlencode }}"><span class="rs-label-full">{{ t(l) }}</span><span class="rs-label-mobile">{{ t({'pending':'Ready','needs_review':'Needs review','decided':'Decided','all':'All'}[v]) }}</span>{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>{% endfor %}
   </span>
   <input type="hidden" name="status" value="{{ status }}">
   <input type="search" name="search" value="{{ search }}" placeholder="{{ t('Product name or barcode') }}" aria-label="{{ t('Search') }}">
@@ -57,8 +57,7 @@
   {% for row in rows %}
   <tr class="rs-row">
     <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
-    <td class="rs-p"><b>{{ row.p.name }}</b><small>{{ row.p.barcode or '' }}{% if row.supplier %} · {{ row.supplier.name }}{% endif %}</small>
-      <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}">{{ t('Why this number') }}</button>
+    <td class="rs-p"><button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button><b>{{ row.p.name }}</b><button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/><path d="M10.4 10.6h2.2v6.4h1.4v1.6h-4.2V17h1.4v-4.8h-.8z" fill="currentColor"/></svg></button><small>{{ row.p.barcode or '' }}{% if row.supplier %} · {{ row.supplier.name }}{% endif %}</small>
       <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template></td>
     {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh {{ 'short' if row.todo[0] != 'send' }}">{{ row.wh|num }}</td>{% endif %}
     {% for l in stores %}{% set x = row.cells.get(l.id) %}
@@ -80,7 +79,7 @@
     <td class="rs-todo">{% set td = row.todo %}
       {% if td[0] == 'send' %}<span class="need">{{ t('Send') }} {{ td[1]|num }}</span>
       {% elif td[0] == 'order' %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
-      {% else %}<span class="need">{{ t('Send') }} {{ td[1]|num }}</span> <span class="need sup">{{ t('Order') }} {{ td[2]|num }}</span>{% endif %}</td>
+      {% else %}<span class="need mix">{{ t('Send') }} {{ td[1]|num }}, {{ t('Order')|lower }} {{ td[2]|num }}</span>{% endif %}</td>
   </tr>
   {% else %}<tr><td colspan="{{ stores|length + (5 if has_wh else 4) }}"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>
   {% endfor %}

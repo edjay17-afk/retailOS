@@ -225,6 +225,27 @@ def import_counts(db: Session, user: User, filename: str, data: bytes, locations
     return {"lines": counted, "counts": len(per_loc), "created": created, "submitted": submitted, "errors": errors}
 
 
+STATUS_TEXT = {"open": "Draft, not submitted", "submitted": "Submitted, waiting for approval", "approved": "Approved"}
+
+
+def counted_csv(cc: CycleCount) -> str:
+    """Everything counted so far, for any count and any POS, at any stage. The Status column says whether it is approved."""
+    def cell(v) -> str:       # text that starts with = + - @ must not run as a formula in Excel
+        v = str(v or "")
+        return "'" + v if v.lstrip().startswith(("=", "+", "-", "@")) else v
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["Count", "Store", "Date", "Status", "Product", "Barcode", "SKU", "Category", "System quantity", "Counted quantity", "Difference", "Note"])
+    for l in cc.lines:
+        if l.counted_qty is None:
+            continue
+        p = l.product
+        diff = l.variance if l.variance is not None else round(l.counted_qty - l.system_qty, 3)
+        w.writerow([cc.id, cc.location.name, cc.business_date, STATUS_TEXT.get(cc.status, cc.status), cell(p.name), p.barcode or "", p.sku or "", cell(p.category), f"{l.system_qty:g}",
+                    f"{l.counted_qty:g}", f"{diff:g}", cell(l.note)])
+    return out.getvalue()
+
+
 def stock_take_csv(cc: CycleCount) -> str:
     """File for StoreHub's Stock Take import. Columns follow the StoreHub export (product, SKU, category, quantity); each row
     carries the StoreHub product id because the import needs it. Check the headers against the template you download."""
@@ -294,8 +315,8 @@ def reconcile_events(db: Session) -> dict:
     return {"matched": matched, "needs_review": review}
 
 
-def live_quantity(loc: Location, product: Product) -> float:
-    """Read a specific store's current quantity; never substitute stale stock on failure."""
+def live_quantity(loc: Location, product: Product, fast: bool = False) -> float:
+    """Read a specific store's current quantity. `fast` waits about 10 seconds for the POS, not minutes (the count screen shows the answer to a person who is waiting)."""
     import math
     from .sources import matches
     if not matches(product, loc):
@@ -306,6 +327,9 @@ def live_quantity(loc: Location, product: Product) -> float:
         token = accounts(get_config().loyverse_tokens_file).get(loc.source_account)
         if not token: raise CountError('Loyverse account is unavailable')
         client = Client(token)
+        if fast:
+            import httpx
+            client.http.timeout = httpx.Timeout(10.0, connect=5.0)
         try:
             rows = client.pages('inventory', {'store_ids': loc.external_id, 'variant_ids': product.external_id})
             row = next((r for r in rows if r.get('store_id') == loc.external_id and r.get('variant_id') == product.external_id), None)
@@ -319,6 +343,10 @@ def live_quantity(loc: Location, product: Product) -> float:
             client.close()
     from ..storehub.client import StoreHubClient
     client = StoreHubClient()
+    if fast:
+        import httpx
+        client.MAX_ATTEMPTS = 1
+        client.http.timeout = httpx.Timeout(10.0, connect=5.0)
     try:
         rows = client.inventory(loc.storehub_id)
         row = next((r for r in rows if r.get("productId") == product.storehub_id), None)
@@ -332,21 +360,39 @@ def live_quantity(loc: Location, product: Product) -> float:
         client.close()
 
 
+def quantity_for_count(db: Session, loc: Location, product: Product) -> tuple[float, "datetime | None"]:
+    """(stock, None) read from the POS now, or (stock, time of the last sync) when the POS cannot be reached. Raises CountError when neither is available."""
+    import httpx
+    from datetime import datetime  # noqa: F401
+    from ..storehub.client import StoreHubError
+    from .sources import matches
+    if not matches(product, loc):
+        raise CountError('Choose a product from the same POS account as the store')
+    try:
+        return live_quantity(loc, product, fast=True), None
+    except (StoreHubError, CountError, ValueError, httpx.HTTPError):
+        inv = db.get(InventoryCurrent, (loc.id, product.id))
+        if inv is None or inv.on_hand is None or inv.synced_at is None:
+            raise
+        return float(inv.on_hand), inv.synced_at
+
+
 def save_scanned(db: Session, cc: CycleCount, user: User, product: Product, counted: float, note: str) -> CycleCountLine:
     import math
     if cc.status != "open":
         raise CountError("This count is already submitted")
     if not math.isfinite(counted) or counted < 0 or counted > 100000000:
         raise CountError("Enter a valid counted quantity, zero or greater.")
-    system = live_quantity(cc.location, product)
+    system, synced_at = quantity_for_count(db, cc.location, product)
     line = next((l for l in cc.lines if l.product_id == product.id), None)
     if line is None:
         line = CycleCountLine(product_id=product.id, reason="scanned", system_qty=system)
         cc.lines.append(line)
-    line.reason = "scanned"
+    from ..timeutil import fmt_clock, to_local
+    line.reason = "scanned" if synced_at is None else f"scanned (stock from the last sync, {fmt_clock(synced_at)})"[:80]
     line.system_qty, line.counted_qty = system, counted
     line.variance, line.note = round(counted - system, 3), note.strip()[:1000] or None
     db.flush()
     audit.log(db, actor_type="human", actor_id=user.id, action="count.scan_save", entity_type="cycle_count", entity_id=cc.id,
-              after={"product_id":product.id,"system":system,"counted":counted,"note":line.note})
+              after={"product_id":product.id,"system":system,"counted":counted,"note":line.note,"system_source":"POS now" if synced_at is None else f"last sync {synced_at}"})
     return line

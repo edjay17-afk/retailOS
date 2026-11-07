@@ -63,6 +63,9 @@ PERMS: dict[str, set[str]] = {
     "settings.manage": {"admin"},
     "users.manage": {"admin"},
     "loyverse.view": {"staff", "store_manager", "warehouse", "admin", "management"},
+    "loyverse.stock_edit": {"admin", "management"},
+    "seven.view": {"admin", "management"},
+    "seven.import": {"admin", "management"},
 }
 
 # Store-bound users (assigned locations + a store role) get only their own store's daily work:

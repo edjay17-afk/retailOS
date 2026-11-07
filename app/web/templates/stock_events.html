@@ -13,7 +13,7 @@
     <a class="btn sec" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a>
   </div>
 <nav class="stock-change-tabs" aria-label="{{ t('Type') }}">
-{% for value, label in (('all','All events'),('write_off','Write-offs'),('unplanned_receipt','Unplanned receipts')) %}
+{% for value, label in (('history','StoreHub history'),('all','Recorded by people'),('write_off','Write-offs'),('unplanned_receipt','Unplanned receipts')) %}
 <a href="/stock-events?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}</a>
 {% endfor %}
 </nav>

@@ -1,0 +1,37 @@
+/* Shared status, work queue and document context use existing theme colours. */
+.pos-sync-status[hidden]{display:none!important}
+.desktop-work-queue{margin:20px 0;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.work-queue-head h2{font-size:17px;margin:0 0 8px}
+.desktop-work-queue>a{display:flex;align-items:center;gap:13px;padding:13px 0;color:var(--ink);text-decoration:none;border-top:1px solid var(--line)}
+.work-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--primary-soft);color:var(--primary)}
+.work-copy{flex:1;min-width:0}.work-copy strong{display:block;font-size:13px}.work-copy small{display:block;color:var(--mute);margin-top:4px;font-size:12px}
+.work-link{font-size:12px;color:var(--primary);font-weight:700}
+.delivery-progress{margin:0 0 16px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.delivery-progress h2{font-size:15px;margin:0 0 12px}.delivery-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.delivery-steps>div{display:flex;align-items:flex-start;gap:10px}.delivery-number{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700}
+.delivery-steps b,.delivery-steps small{display:block}.delivery-steps b{font-size:12px}.delivery-steps small,.delivery-progress p{font-size:11px;color:var(--mute);margin:4px 0 0}.delivery-steps a{display:inline-block;font-size:11px;margin-top:4px}.delivery-progress p{margin-top:12px}
+.product-context{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 12px;margin:0 0 14px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:12px;color:var(--mute)}
+.product-context a{font-weight:600}.product-context b{color:var(--ink)}
+.work-intro{color:var(--mute);font-size:13px}.work-group h3{font-size:13px;margin:18px 0 0}.work-group .phone-actions a{min-height:50px;padding:9px 0}.work-group .phone-actions small{display:inline;margin-left:8px}
+.rs .repl-save-status{display:block;font-size:10px;line-height:1.3;color:var(--ok);min-height:0}
+.rs .repl-quantity:has(.bad) .repl-save-status{color:var(--bad)}
+.rs-phone-open{display:none}
+@media(max-width:700px){
+ .desktop-work-queue{display:none}
+ .delivery-progress{padding:14px}.delivery-steps{grid-template-columns:1fr;gap:12px}
+ .product-context{display:grid;gap:6px}
+ .rs .rs-why{display:inline-flex!important;margin-top:5px;font-size:12px}
+ .rs-phone-enhanced .rs tbody tr.rs-row{position:relative;align-items:flex-start}
+ .rs-phone-enhanced .rs tbody tr.rs-row td.rs-p{flex:1 1 calc(100% - 40px);padding-right:75px!important;min-width:0}
+ .rs-phone-enhanced .rs-phone-open{display:block;position:absolute;top:4px;right:7px;float:none;min-width:48px;min-height:44px;padding:0 8px;margin:0;background:transparent;color:var(--primary);font-size:11px;isolation:isolate}
+ .rs-phone-enhanced .rs-phone-open::before{content:"";position:absolute;inset:8px 3px;z-index:-1;background:var(--primary-soft);border-radius:7px}
+ .rs-phone-enhanced .rs tbody tr.rs-row td.rs-todo{order:4;flex:1 1 100%;padding:4px 0 0}
+ .rs-phone-enhanced .rs-row:not(.rs-expanded) td[data-label],.rs-phone-enhanced .rs-row:not(.rs-expanded) .rs-todo,.rs-phone-enhanced .rs-row:not(.rs-expanded) .rs-why{display:none!important}
+ .rs-phone-enhanced .rs tbody tr.rs-row td[data-label]:not(.rs-wh):not(.rs-need){flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:8px;border-top:1px solid var(--line)}
+ .rs-phone-enhanced .rs tbody tr.rs-row td[data-label]:not(.rs-wh):not(.rs-need)::before{max-width:none;flex:1;white-space:normal;font-size:12px}
+ .rs-phone-enhanced .rs tbody tr.rs-row td[data-label] .repl-quantity,.rs-phone-enhanced .rs tbody tr.rs-row td[data-label]>.q{flex:0 0 110px;max-width:110px}
+ .rs tbody tr.rs-row{border-color:var(--line);background:var(--surface)}
+ .rs tbody tr.rs-row.picked{border-color:var(--primary);background:var(--primary-soft)}
+ .rs td[data-label]:not(.rs-wh):not(.rs-need)::before{color:var(--mute)}
+ .rs .repl-save-status{display:block;min-width:0}
+}

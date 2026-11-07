@@ -32,11 +32,22 @@ def money(text: str | None) -> float:
         return 0.0
 
 
-def when(text: str | None) -> datetime | None:
-    try:
-        return datetime.strptime((text or "").strip(), "%m/%d/%Y %H:%M")
-    except ValueError:
-        return None
+TIME_FORMATS = ("%m/%d/%Y %H:%M", "%b %d, %Y, %I:%M %p", "%B %d, %Y, %I:%M %p")   # StoreHub changed from the first to the second in late October 2026
+
+
+def when(text: str | None, iso: str | None = None) -> datetime | None:
+    """A shift time as the store's own wall-clock time. The ISO time StoreHub sends beside the text is used first; the printed text is the fallback."""
+    if iso:
+        try:
+            return datetime.fromisoformat(str(iso).strip()).replace(tzinfo=None)
+        except ValueError:
+            pass
+    for fmt in TIME_FORMATS:
+        try:
+            return datetime.strptime((text or "").strip(), fmt)
+        except ValueError:
+            continue
+    return None
 
 
 def _after(label: str, text: str) -> str:
@@ -83,10 +94,12 @@ def apply(db: Session, rows: list[dict], texts: dict[str, str]) -> dict:
     """Save the list rows (one per shift) and, where the page was read, the details. Returns counts."""
     locs = stores(db)
     have = {s.sh_id: s for s in db.scalars(select(SalesShift))}
-    new = updated = detailed = 0
+    new = updated = detailed = unreadable = 0
     for r in rows:
         sid, loc = r.get("DT_RowId"), locs.get(str(r.get("2", "")).strip())
-        opened = when(r.get("0"))
+        opened = when(r.get("0"), r.get("openTimeIso"))
+        if sid and loc is not None and opened is None:
+            unreadable += 1          # one of our stores, but StoreHub's time is in a form we do not understand: never skip these silently
         if not sid or loc is None or opened is None:
             continue
         s = have.get(sid)
@@ -97,7 +110,7 @@ def apply(db: Session, rows: list[dict], texts: dict[str, str]) -> dict:
             new += 1
         else:
             updated += 1
-        s.location_id, s.opened_at, s.closed_at = loc.id, opened, when(r.get("1"))
+        s.location_id, s.opened_at, s.closed_at = loc.id, opened, when(r.get("1"), r.get("closeTimeIso"))
         s.register = str(r.get("3", "")).strip()
         s.tx_count = int(money(r.get("4")))
         s.total_sales, s.deposit = money(r.get("5")), money(r.get("6"))
@@ -109,7 +122,7 @@ def apply(db: Session, rows: list[dict], texts: dict[str, str]) -> dict:
             detailed += 1
         s.updated_at = now_utc()
     db.flush()
-    return {"new": new, "updated": updated, "detailed": detailed}
+    return {"new": new, "updated": updated, "detailed": detailed, "unreadable": unreadable}
 
 
 def pending(db: Session) -> int:
@@ -124,9 +137,21 @@ def _mark(db: Session, key: str) -> None:
     db.flush()
 
 
+def behind(db: Session) -> list[str]:
+    """Stores that sold at least two days after their newest saved shift opened: their shifts are behind."""
+    from ..models import SalesDay
+    out = []
+    for loc in stores(db).values():
+        last_shift = db.scalar(select(func.max(SalesShift.opened_at)).where(SalesShift.location_id == loc.id))
+        last_sale = db.scalar(select(func.max(SalesDay.business_date)).where(SalesDay.location_id == loc.id, SalesDay.tx_count > 0))
+        if last_shift is not None and last_sale is not None and last_sale - last_shift.date() >= timedelta(days=2):
+            out.append(loc.name)
+    return out
+
+
 def due(db: Session) -> bool:
     now = now_utc()
-    gap_ok = CATCH_UP_MINUTES if pending(db) else EVERY_MINUTES
+    gap_ok = CATCH_UP_MINUTES if (pending(db) or behind(db)) else EVERY_MINUTES   # catch up quickly whenever anything is missing
     for key, gap in (("sales_shifts.last_ok", gap_ok), ("sales_shifts.last_attempt", RETRY_MINUTES)):
         row = db.get(Setting, key)
         if row and row.value:
@@ -167,6 +192,10 @@ def run(db: Session, fetch=None) -> dict:
         log.error("shift report failed: %s", e)
         return {"ran": True, "ok": False, "error": str(e)}
     out = apply(db, rows, texts)
+    if out["unreadable"]:
+        db.commit()
+        log.error("shift report: %s shift(s) have a time we cannot read (StoreHub may have changed its format); they were not saved", out["unreadable"])
+        return {"ran": True, "ok": False, "error": f"{out['unreadable']} shift time(s) could not be read", "listed": len(rows), **out}
     _mark(db, "sales_shifts.last_ok")
     db.commit()
     return {"ran": True, "ok": True, "listed": len(rows), "still_unread": pending(db), **out}

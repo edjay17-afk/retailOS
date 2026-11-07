@@ -49,3 +49,36 @@ def test_a_store_user_with_one_location_keeps_the_list(client, sync, fake, sessi
     alpha = session.scalar(select(Location).where(Location.storehub_id == "S_A"))
     add_user(session, "onestore", "store_manager", [alpha.id]); login(client, "onestore")
     assert client.get("/inventory").status_code == 200       # one location: no comparison to make
+
+
+def test_mobile_compare_opens_stock_list_but_desktop_keeps_compare(client, session, sync, fake):
+    from urllib.parse import urlsplit
+    from playwright.sync_api import sync_playwright
+    seeded(sync, fake, session)
+    add_user(session, 'stock_view_admin', 'admin'); login(client, 'stock_view_admin')
+
+    def serve(route):
+        req = route.request
+        url = urlsplit(req.url)
+        response = client.request(req.method, url.path + ('?' + url.query if url.query else ''),
+                                  content=req.post_data_buffer,
+                                  headers={k: v for k, v in req.all_headers().items()
+                                           if k in ('content-type', 'x-requested-with')})
+        route.fulfill(status=response.status_code, body=response.content,
+                      headers={k: v for k, v in response.headers.items()
+                               if k.lower() not in ('content-length', 'content-encoding', 'transfer-encoding')})
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel='msedge', headless=True)
+        page = browser.new_page(viewport={'width': 1440, 'height': 844})
+        page.route('http://qa.test/**', serve)
+        page.route('https://**', lambda route: route.abort())
+        page.goto('http://qa.test/inventory/compare?q=Cola')
+        assert '/inventory/compare' in page.url and page.locator('.sc-wrap').is_visible()
+        for width in (320, 390, 700):
+            page.set_viewport_size({'width': width, 'height': 844})
+            page.goto('http://qa.test/inventory/compare?q=Cola&category=Drinks')
+            page.wait_for_url('**/inventory?**')
+            assert 'view=list' in page.url and 'q=Cola' in page.url and 'category=Drinks' in page.url
+            assert page.locator('.phone-stock-list').is_visible()
+        browser.close()

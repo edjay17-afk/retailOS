@@ -6,4 +6,20 @@
   main:has(#po-location) .tw table td:nth-child(4),
   main:has(#po-location) .tw table td:nth-child(5),
   main:has(#po-location) .tw table td:nth-child(7){display:none!important}
+
+  /* Keep the action in a predictable place within each purchase-order card. */
+  main:has(#po-location) table.mcards tr:has(> td:not([colspan])){
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:6px 12px;
+  }
+  main:has(#po-location) table.mcards td:nth-child(1){grid-column:1;grid-row:1;min-width:0}
+  main:has(#po-location) table.mcards td:nth-child(2){grid-column:1;grid-row:2;min-width:0;overflow-wrap:anywhere}
+  main:has(#po-location) table.mcards td:nth-child(6){grid-column:2;grid-row:1;justify-self:end}
+  main:has(#po-location) table.mcards td:nth-child(8){grid-column:1;grid-row:3}
+  main:has(#po-location) table.mcards td:nth-child(9){grid-column:1;grid-row:4;min-width:0;overflow-wrap:anywhere}
+  main:has(#po-location) table.mcards td:nth-child(10){grid-column:2;grid-row:4;justify-self:end}
+  main:has(#po-location) table.mcards td:nth-child(10) form{margin:0}
+  main:has(#po-location) table.mcards td:nth-child(10) button{min-height:44px;white-space:nowrap}
 }

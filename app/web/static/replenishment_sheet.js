@@ -6,6 +6,25 @@
   var rowChecks = Array.prototype.slice.call(document.querySelectorAll('.rs-row-check'));
   var recChecks = Array.prototype.slice.call(document.querySelectorAll('.rc[form="bulk"]'));
   var forms = Array.prototype.slice.call(document.querySelectorAll('.repl-quantity'));
+  var phoneRows = Array.prototype.slice.call(document.querySelectorAll('.rs-row'));
+  var phone = window.matchMedia('(max-width:700px)');
+  function setPhoneRow(row) {
+    phoneRows.forEach(function (r) {
+      var open = r === row;
+      r.classList.toggle('rs-expanded', open);
+      var button = r.querySelector('.rs-phone-open');
+      if (button) { button.setAttribute('aria-expanded', String(open)); button.textContent = open ? button.dataset.closeLabel : button.dataset.openLabel; }
+    });
+  }
+  if (phoneRows.length) {
+    document.querySelector('.rs-wrap').classList.add('rs-phone-enhanced');
+    phoneRows.forEach(function (row) {
+      var button = row.querySelector('.rs-phone-open');
+      if (button) button.addEventListener('click', function () { setPhoneRow(row.classList.contains('rs-expanded') ? null : row); });
+    });
+    setPhoneRow(phoneRows[0]);
+  }
+
   var money = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function dirty(f) { return Number(f.elements.qty.value) !== Number(f.dataset.saved); }
   function formOf(id) { return document.getElementById('repl-quantity-' + id); }
@@ -42,25 +61,25 @@
   async function save(form) {
     if (form.dataset.saving === 'true' || !dirty(form)) return;
     if (!form.reportValidity()) return;
-    var status = form.querySelector('.repl-save-status'), input = form.elements.qty;
-    form.dataset.saving = 'true'; input.classList.add('busy'); input.classList.remove('bad'); status.textContent = msg.saving; update();
+    var status = form.querySelector('.repl-save-status'), input = form.elements.qty, failed = false;
+    form.querySelector('button[name=saveButton]').hidden = true; form.dataset.saving = 'true'; input.classList.add('busy'); input.classList.remove('bad'); status.textContent = msg.saving; update();
     try {
       var response = await fetch(form.getAttribute('action'), { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } });
       var result = await response.json();
       if (!response.ok) throw new Error(result.error || msg.failed);
       form.dataset.saved = result.quantity;
-      status.textContent = '';
+      status.textContent = msg.saved;
       input.classList.add('ok'); setTimeout(function () { input.classList.remove('ok'); }, 1200);
     } catch (e) {
-      status.textContent = e.message || msg.failed; input.classList.add('bad'); input.title = status.textContent;
+      failed = true; form.querySelector('button[name=saveButton]').hidden = false; status.textContent = e.message || msg.failed; input.classList.add('bad'); input.title = status.textContent;
     } finally {
       form.dataset.saving = 'false'; input.classList.remove('busy'); update();
-      if (dirty(form)) save(form);                       // typed again while saving
+      if (!failed && dirty(form)) save(form);                       // typed again while saving
     }
   }
   forms.forEach(function (form) {
     var timer;
-    form.addEventListener('input', function () { form.elements.qty.classList.remove('bad'); clearTimeout(timer); timer = setTimeout(function () { save(form); }, 700); update(); });
+    form.addEventListener('input', function () { form.querySelector('.repl-save-status').textContent = ''; form.elements.qty.classList.remove('bad'); clearTimeout(timer); timer = setTimeout(function () { save(form); }, 700); update(); });
     form.addEventListener('change', function () { clearTimeout(timer); save(form); });
     form.addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(timer); save(form); });
   });

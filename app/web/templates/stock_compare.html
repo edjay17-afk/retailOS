@@ -1,16 +1,39 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Stock') }}{% endblock %}
 {% block content %}
+<script>
+(function () {
+  var phone = window.matchMedia('(max-width:700px)');
+  function showStock() {
+    if (!phone.matches) return;
+    var current = new URLSearchParams(window.location.search);
+    var target = new URLSearchParams({view:'list'});
+    ['q', 'category'].forEach(function (key) {
+      if (current.get(key)) target.set(key, current.get(key));
+    });
+    window.location.replace('/inventory?' + target.toString());
+  }
+  showStock();
+  phone.addEventListener('change', showStock);
+})();
+</script>
 <link rel="stylesheet" href="/static/stock_compare.css?v={{ asset_v('stock_compare.css') }}">
+<link rel="stylesheet" href="/static/stock_design.css?v={{ asset_v('stock_design.css') }}">
 {% set qs = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&attention=' ~ attention ~ '&sort=' ~ sort %}
-<div class="page-head">
+<div class="page-head stock-compare-head">
   <div><h1>{{ t('Stock') }}</h1>
     <p class="sync-note">{{ t('Every store side by side') }} · {{ t('Stock is a read-only copy of the selected POS, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
   <div class="row">
     <a class="btn sec" href="/inventory?view=list">{{ t('List view') }}</a>
     <a class="btn sec" href="?{{ qs }}&export=csv">{{ t('Export CSV') }}</a>
-    {% if can('count.enter') %}<a class="btn" href="/stock-events/new?kind=write_off">{{ t('Record stock event') }}</a>{% endif %}
+    {% if can('count.enter') %}<a class="btn sec" href="/stock-events/new?kind=write_off">{{ t('Record stock event') }}</a><a class="btn" href="/counts"><svg class="i"><use href="#i-scan"/></svg>{{ t('Stock counts') }}</a>{% endif %}
   </div>
+</div>
+
+<div class="sc-sum" aria-label="{{ t('Stock summary') }}">
+  <div class="sc-metric"><span>{{ t('Products') }}</span><b>{{ summary.products|num(0) }}</b></div>
+  <div class="sc-metric sc-metric-alert"><span>{{ t('Out of stock or negative') }}</span><b>{{ summary.out|num(0) }}</b><small>{{ t('Stock levels') }}</small></div>
+  <div class="sc-metric sc-metric-low"><span>{{ t('Under 3 days left') }}</span><b>{{ summary.low|num(0) }}</b><small>{{ t('Stock levels') }}</small></div>
 </div>
 
 <form novalidate class="sc-filters" method="get">
@@ -21,13 +44,7 @@
   <button class="btn">{{ t('Apply') }}</button>
 </form>
 
-<div class="sc-sum">
-  <span><b>{{ summary.products|num(0) }}</b> {{ t('products') }}</span>
-  <span><b>{{ summary.out|num(0) }}</b> {{ t('out of stock or negative') }}</span>
-  <span><b>{{ summary.low|num(0) }}</b> {{ t('running low') }}</span>
-  <span class="sc-legend"><i class="lv-out"></i>{{ t('Out or negative') }}<i class="lv-low"></i>{{ t('Under 3 days left') }}<i class="lv-ok"></i>{{ t('OK') }}</span>
-</div>
-
+<div class="sc-section-heading"><h2>{{ t('Stock by store') }}</h2><span class="sc-legend"><i class="lv-out"></i>{{ t('Out or negative') }}<i class="lv-low"></i>{{ t('Under 3 days left') }}<i class="lv-ok"></i>{{ t('OK') }}</span></div>
 <div class="sc-wrap"><table class="sc">
   <thead><tr><th class="sc-p">{{ t('Product') }}</th><th>{{ t('Category') }}</th>{% for l in locs %}<th class="r"><a href="/inventory?view=list&loc={{ l.id }}" title="{{ l.name }}">{{ short(l.name) }}</a></th>{% endfor %}<th class="r">{{ t('Total') }}</th></tr></thead>
   <tbody>

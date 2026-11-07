@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Bad merchandise slip') }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">{{ slip.store_code }}-{{ slip.store_name }}</div><h1>{{ t('Bad merchandise slip') }} {{ slip.slip_id }}</h1>
+  <p class="sync-note">{{ slip.slip_date|day }} &middot; {{ slip.status }} &middot; {{ t('Document') }} {{ slip.document_id }}</p></div>
+  <div class="row"><a class="btn sec" href="/seven-eleven?tab=slips">{{ t('Back to slips') }}</a></div></div>
+<div class="tw"><table class="wide"><tr><th>#</th><th>{{ t('Item code') }}</th><th>{{ t('Product') }}</th><th class="right">{{ t('Qty') }}</th><th class="right">{{ t('Unit cost') }}</th><th class="right">{{ t('Unit retail') }}</th><th class="right">{{ t('Cost') }}</th><th class="right">{{ t('Retail') }}</th></tr>
+{% for i in slip.items %}<tr><td class="mute">{{ i.line_no }}</td><td class="small">{{ i.item_code }}</td><td><b>{{ i.name }}</b></td><td class="right">{{ i.qty|num }}</td><td class="right">{{ i.unit_cost|money }}</td><td class="right">{{ i.unit_retail|money }}</td><td class="right">{{ i.total_cost|money }}</td><td class="right">{{ i.total_retail|money }}</td></tr>{% endfor %}
+<tr><td colspan="6" class="right"><b>{{ t('Total') }}</b></td><td class="right"><b>{{ slip.total_cost|money }}</b></td><td class="right"><b>{{ slip.total_retail|money }}</b></td></tr></table></div>
+{% endblock %}

@@ -60,7 +60,7 @@ def hourly(db: Session, ids: list[int], today) -> list[dict]:
     counts: dict[int, int] = {}
     for (t,) in db.execute(select(SalesTx.tx_time).where(SalesTx.location_id.in_(ids or [0]), SalesTx.business_date == today, SalesTx.cancelled.is_(False),
                                                          SalesTx.tx_type != "Return")):
-        counts[t.hour] = counts.get(t.hour, 0) + 1
+        counts[to_local(t).hour] = counts.get(to_local(t).hour, 0) + 1
     if not counts:
         return []
     first, last = min(min(counts), 6), max(max(counts), to_local(now_utc()).hour)

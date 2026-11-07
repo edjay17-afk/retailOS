@@ -9,7 +9,7 @@
   <p>{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="button" data-export="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="button" data-export="detailed">{{ t('Detailed CSV') }}</button></div></div>
 
-<form id="product-sales-filters" novalidate class="filters product-sales-filters" method="get" action="/sales/products">
+<form id="product-sales-filters" data-mf="1" novalidate class="filters product-sales-filters" method="get" action="/sales/products">
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
   <div class="product-sales-period"><label>{{ t('Period') }}</label>
     <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">

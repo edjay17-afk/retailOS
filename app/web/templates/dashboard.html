@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Today') }}{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}">{% endblock %}
 {% block source_aside %}<span class="date-chip" aria-label="{{ brief.date|day }}"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>{{ brief.date|day }}</span>{% endblock %}
 {% block content %}
 {% set completed = insp.get('completed', 0) + insp.get('late', 0) + insp.get('submitted', 0) %}
 {% set checklist_total = insp.values()|sum %}
 {% set urgent = open_issues.get('P0', 0) + open_issues.get('P1', 0) %}
 
-<link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}">
-<link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}">
 {% if not source_options %}<div class="b-head"><p>{{ brief.date|day }}</p></div>{% endif %}
 {% if cards is not none %}
 <div id="live-store-sales">
@@ -48,13 +47,14 @@
 
   <section class="lv-t">
     <div class="lv-k"><i style="background:var(--warn)"></i>{{ t('Jobs waiting for you') }}</div>
-    <div class="lv-jr"><div class="lv-v">{{ stat.jobs_total|num(0) }}</div>
+    <div class="lv-jr" data-live="jobs-head"><div class="lv-v">{{ stat.jobs_total|num(0) }}</div>
       {% if stat.checks_total %}<div class="lv-ring" style="--p:{{ stat.checks_pct }}"><b>{{ stat.checks_done }}/{{ stat.checks_total }}</b></div><small class="lv-s">{{ t('checklists done') }}</small>{% endif %}</div>
-    <div class="lv-todo">
+    <div class="lv-todo" data-live="jobs-list">
       {% for j in stat.jobs %}<a href="{{ {'po': '/purchase-orders', 'sheets': '/transfer-sheets', 'recs': '/replenishment', 'issues': '/issues'}[j.key] }}"><em class="{{ 'ok' if not j.n else '' }}">{{ '✓' if not j.n else '' }}</em><span>{{ {'po': t('Purchase orders to receive'), 'sheets': t('Transfer sheets'), 'recs': t('Orders to review'), 'issues': t('Open issues')}[j.key] }}</span><b>{{ j.n }}</b></a>{% else %}<p class="lv-s">{{ t('Nothing is waiting.') }}</p>{% endfor %}
     </div>
   </section>
 </div>
+
 
 <section class="phone-only phone-home-actions">
 <div class="phone-metrics">{% for j in stat.jobs if j.key in ['recs','issues'] %}<a href="{{ '/replenishment' if j.key == 'recs' else '/issues' }}">{{ t('Orders to review') if j.key == 'recs' else t('Open issues') }}<strong>{{ j.n }}</strong></a>{% endfor %}</div>
@@ -88,7 +88,7 @@
       <div class="lv-health" role="img" aria-label="{{ t('Stock health') }}"><i style="flex:{{ s.health.ok }};background:#16a34a"></i><i style="flex:{{ s.health.low }};background:#f59e0b"></i><i style="flex:{{ s.health.out }};background:#dc2626"></i></div>
       <div class="lv-hl"><span><b>{{ s.health_pct.ok }}%</b> {{ t('in stock') }}</span><span><b>{{ s.health.low }}</b> {{ t('low') }}</span><span><b>{{ s.health.out }}</b> {{ t('out') }}</span></div>
       {% else %}<div class="lv-hl"><span>{{ t('Stock health unavailable') }}</span></div>{% endif %}
-      <div class="lv-foot">
+      <div class="lv-foot" data-live="foot-{{ s.id }}">
         <div class="lv-mini">{% if s.checks_total %}<div class="lv-ring sm{{ ' warn' if s.checks_left else '' }}" style="--p:{{ s.checks_pct }}"><b>{{ '✓' if not s.checks_left else (s.checks_total - s.checks_left) ~ '/' ~ s.checks_total }}</b></div>{% endif %}<span>{{ t('Checklists') }}<br><b>{{ t('done') if s.checks_total and not s.checks_left else (s.checks_left ~ ' ' ~ t('left') if s.checks_total else '—') }}</b></span></div>
         <div class="lv-mini"><span>{{ t('Orders') }}<br><b>{{ s.orders }}</b></span></div>
         <div class="lv-mini"><span>{{ t("Open issues") }}<br><b>{{ s.issues }}</b></span></div>
@@ -98,10 +98,12 @@
   {% endfor %}
 </div>
 <p class="b-note small mute store-note">{{ t('Today so far, from the latest sync.') }} {{ t('Updates automatically.') }}</p>
+<section class="desktop-work-queue" aria-labelledby="work-today-title"><div class="work-queue-head"><h2 id="work-today-title">{{ t('Your work today') }}</h2></div>
+{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in ['/replenishment','/replenishment/loyverse','/inspections','/issues'] and not (source_scope.startswith('loyverse') and url == '/replenishment') and not (not source_scope.startswith('loyverse') and url == '/replenishment/loyverse') %}<a href="{{ url }}"><span class="work-icon"><svg class="i"><use href="#i-{{ icon }}"/></svg></span><span class="work-copy"><strong>{{ t(label) }}</strong><small>{% if tag %}{{ tag }} {{ t('items') }}{% elif url == '/inspections' %}{{ completed }}/{{ checklist_total }} {{ t('completed') }}{% else %}{{ t('Open') }}{% endif %}</small></span><span class="work-link">{{ t('Review') if 'replenishment' in url else t('Open') }} &rarr;</span></a>{% endif %}{% endfor %}{% endfor %}</section>
 </div>
 
 <div class="b-row">
-  <section class="b-box">
+  <section class="b-box" data-live="wh">
     <h2>{{ t('Warehouse') }}</h2>
     {% for j in wjobs %}
     <a class="b-job" href="{{ j.href }}">
@@ -113,7 +115,7 @@
     </a>
     {% else %}<p class="small mute">{{ t('Nothing is waiting.') }}</p>{% endfor %}
   </section>
-  <section class="b-box">
+  <section class="b-box" data-live="best">
     <h2>{{ t('Best sellers today') }}</h2>
     {% for r in stat.best %}
     <div class="lv-rank"><span class="n">{{ loop.index }}</span><span class="nm">{{ r.name }}</span><span class="t"><i style="width:{{ r.pct }}%"></i></span><b>{{ r.units|num(0) if r.units == r.units|round(0) else r.units|num(1) }}</b></div>
@@ -206,4 +208,4 @@
 </details>
 {% endblock %}
 
-{% block scripts %}<script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script><script src="/static/dashboard_refresh.js?v={{ asset_v('dashboard_refresh.js') }}"></script>{% endblock %}

@@ -47,3 +47,34 @@ def test_dashboard_updates_without_navigation(sync,fake,session,client):
         assert calls and page.url=='http://qa.test/'
         assert page.locator('.store-today').first.inner_text()=='1,234.56'
         browser.close()
+
+
+def test_dashboard_phone_layout_is_ready_before_javascript(sync, fake, session, client):
+    from playwright.sync_api import sync_playwright
+    from urllib.parse import urlsplit
+    seeded(sync, fake, session)
+    add_user(session, 'first_paint_admin', 'admin'); login(client, 'first_paint_admin')
+
+    def serve(route):
+        url = urlsplit(route.request.url)
+        response = client.get(url.path)
+        route.fulfill(status=response.status_code, body=response.content,
+                      headers={k: v for k, v in response.headers.items()
+                               if k.lower() not in ('content-length', 'content-encoding', 'transfer-encoding')})
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel='msedge', headless=True)
+        page = browser.new_page(viewport={'width': 390, 'height': 844}, java_script_enabled=False)
+        page.route('http://qa.test/**', serve)
+        page.route('https://**', lambda route: route.abort())
+        page.goto('http://qa.test/')
+        assert 'has-mtabs' in page.locator('body').get_attribute('class')
+        assert page.locator('head link[href*="dashboard_lv.css"]').count() == 1
+        assert page.locator('.phone-home-actions').is_visible()
+        assert not page.locator('.lv-hero > .lv-t').first.is_visible()
+        assert page.locator('.lv-hero').evaluate('(el) => getComputedStyle(el).display') == 'block'
+        page.set_viewport_size({'width': 1440, 'height': 900})
+        assert not page.locator('.phone-home-actions').is_visible()
+        assert page.locator('.lv-hero > .lv-t').first.is_visible()
+        assert page.locator('.lv-hero').evaluate('(el) => getComputedStyle(el).display') == 'grid'
+        browser.close()

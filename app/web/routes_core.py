@@ -6,7 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -188,6 +188,15 @@ def _ops_data(db, ids, today, t):
     out["expiry"] = [(t(label), n) for label, n in eb]
     out["expiry_total"] = sum(n for _, n in eb)
     return out
+
+
+@router.get("/data-warning")
+def data_warning(c: Ctx = Depends(ctx_dep())):
+    """The data-freshness banner on its own, so a page that stays open clears the warning as soon as the sync catches up."""
+    from .deps import templates
+    stale = [f for f in c.freshness() if f["status"] != "fresh" and f["critical"]]
+    html = templates.get_template("_data_warning.html").render(stale=stale, t=c.t)
+    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/dashboard/store-sales")

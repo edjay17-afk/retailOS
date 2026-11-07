@@ -5,6 +5,11 @@
 <div class="po-detail-page">
 <div class="page-head po-detail-head"><div><div class="eyebrow">{{ t('Purchase orders') }}</div><h1>{{ t('PO #') }}{{ po.sh_po_id }} <span class="badge {{ 'b-ok' if kind == 'incoming' else 'b-warn' if kind == 'stale' else '' }}">{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}</span></h1></div>
 {% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ t('Record delivery count') }}</button></form>{% endif %}</div>
+<section class="delivery-progress" aria-label="{{ t('Delivery progress') }}"><h2>{{ t('Delivery progress') }}</h2><div class="delivery-steps">
+<div><span class="delivery-number">1</span><span><b>{{ t('Ordered') }}</b><small>{{ t('StoreHub no longer returns this PO (it was deleted there).') if po.missing_from_api else t('Recorded in StoreHub') }} · {{ t(po.status) }}</small></span></div>
+<div><span class="delivery-number">2</span><span><b>{{ t('Counted locally') }}</b><small>{% if local_receiving %}{{ t(local_receiving.status) }}{% else %}{{ t('No local count yet') }}{% endif %}</small>{% if local_receiving and can('receiving.count') %}<a href="/receiving/{{ local_receiving.id }}">{{ t('Open count') }}</a>{% endif %}</span></div>
+<div><span class="delivery-number">3</span><span><b>{{ t('Received in StoreHub') }}</b><small>{% if po.lines|selectattr('received_present')|selectattr('received_qty')|list %}{{ t('Received quantities recorded') }}{% else %}{{ t('No received quantity reported') }}{% endif %}</small></span></div>
+</div><p>{{ t('A local count does not receive the PO in StoreHub.') }}</p></section>
 <div class="po-overview">
 <section class="po-detail-info" aria-label="{{ t('Order details') }}"><dl class="po-meta">
 <div><dt>{{ t('Supplier') }}</dt><dd>{{ po.supplier.name if po.supplier else '-' }}</dd></div>

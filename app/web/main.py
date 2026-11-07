@@ -47,6 +47,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     from . import routes_loyverse
+    from . import routes_seven
     app = FastAPI(title="Retail OS", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
@@ -97,6 +98,7 @@ def create_app() -> FastAPI:
     for r in (routes_core, routes_po_drafts, routes_stock, routes_ops, routes_ai, routes_admin, routes_transfers, routes_products, routes_documents, routes_planogram, routes_wastage, routes_v21, routes_transfer_sheets):
         app.include_router(r.router)
     app.include_router(routes_loyverse.router)
+    app.include_router(routes_seven.router)
     return app
 
 

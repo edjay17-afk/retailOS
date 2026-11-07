@@ -58,7 +58,7 @@
   .page-head .eyebrow,.page-head h1{display:none}
   .page-head p,.page-head .sync-note{display:none}
   .page-head .row,.page-head>.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .pos-source-toolbar{margin:0 -16px 12px!important;padding:0 16px!important;overflow:visible;flex-wrap:nowrap!important}
+  .pos-source-toolbar{margin:0 -16px 12px!important;padding:0 16px 10px!important;overflow:visible;flex-wrap:nowrap!important}
   .pos-source-picker{display:none!important}
   .pos-source-mobile{display:flex!important;width:100%;margin:0}
   .pos-source-mobile select{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font-size:16px}

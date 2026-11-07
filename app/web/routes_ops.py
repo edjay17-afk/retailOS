@@ -309,11 +309,15 @@ def count_scan(cid: int, code: str = Form(""), product_id: int = Form(0), csrf: 
     if product is None or not product.in_api:
         raise HTTPException(404, "Product not found. Scan its barcode or enter its SKU.")
     try:
-        qty = countsvc.live_quantity(cc.location, product)
+        qty, synced_at = countsvc.quantity_for_count(c.db, cc.location, product)
     except (StoreHubError, countsvc.CountError, ValueError):
-        raise HTTPException(503, "Could not fetch current stock from the POS. Please retry.")
+        raise HTTPException(503, "Could not fetch current stock from the POS, and there is no earlier sync of this product to use. Please retry.")
     line = next((l for l in cc.lines if l.product_id == product.id), None)
-    return {"id":product.id,"name":product.name,"system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else ""}
+    out = {"id":product.id,"name":product.name,"system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else "","stale":synced_at is not None}
+    if synced_at is not None:
+        from ..timeutil import fmt_clock
+        out["notice"] = c.t("The POS could not be reached, so this is the stock from the last sync at {time}. Your count is still saved.").replace("{time}", fmt_clock(synced_at))
+    return out
 
 
 @router.post("/counts/{cid}/scan-save")
@@ -330,7 +334,10 @@ def count_scan_save(cid: int, product_id: int = Form(...), counted: float = Form
         raise HTTPException(400, str(e))
     except (StoreHubError, ValueError):
         raise HTTPException(503, "Could not fetch current stock from the POS. Your count was not saved; please retry.")
-    return {"name":product.name,"counted":line.counted_qty,"system":line.system_qty,"difference":line.variance}
+    out = {"name":product.name,"counted":line.counted_qty,"system":line.system_qty,"difference":line.variance,"stale":line.reason.startswith("scanned (")}
+    if out["stale"]:
+        out["notice"] = c.t("The stock shown with it is from the last sync, not live.")
+    return out
 
 
 @router.get("/counts/{cid}")
@@ -389,6 +396,20 @@ def count_delete(cid: int, csrf: str = Form(""), c: Ctx = Depends(need("count.en
     return redirect("/counts", ok=c.t("Count deleted"))
 
 
+@router.get("/counts/{cid}/counted.csv")
+def count_counted_csv(cid: int, c: Ctx = Depends(need("count.enter"))):
+    """What has been counted so far: available right after Save, before the count is submitted or approved."""
+    cc = c.db.scalar(select(CycleCount).where(CycleCount.id == cid).options(selectinload(CycleCount.lines).selectinload(countsvc.CycleCountLine.product), selectinload(CycleCount.location)))
+    if cc is None:
+        raise HTTPException(404)
+    c.check_loc(cc.location_id)
+    if not any(l.counted_qty is not None for l in cc.lines):
+        return redirect(f"/counts/{cid}", err=c.t("Nothing has been counted yet."))
+    audit.log(c.db, actor_type="user", actor_id=c.user.id, action="export_count", entity_type="cycle_count", entity_id=cid, after={"status": cc.status, "lines": len(cc.lines)})
+    c.db.commit()
+    return Response("\ufeff" + countsvc.counted_csv(cc), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-count-{cid}-{cc.business_date}.csv"'})
+
+
 @router.get("/counts/{cid}.csv")
 def count_csv(cid: int, c: Ctx = Depends(need("count.enter"))):
     cc = c.db.scalar(select(CycleCount).where(CycleCount.id == cid).options(selectinload(CycleCount.lines).selectinload(countsvc.CycleCountLine.product)))
@@ -413,9 +434,14 @@ def counts_targeted(location_id: int = Form(...), product_id: int = Form(...), c
 
 
 # ======================================================================================= stock events
+HISTORY_PAGE = 100
+
+
 @router.get("/stock-events")
-def stock_events_page(tab: str = "all", c: Ctx = Depends(need("count.enter"))):
+def stock_events_page(tab: str = "history", loc: int = 0, q: str = "", action: str = "", frm: str = "", to: str = "", page: int = 1, export: str = "", c: Ctx = Depends(need("count.enter"))):
     db = c.db
+    if tab == "history":
+        return _stock_history(c, loc, q, action, frm, to, page, export)
     ids = c.location_ids or [0]
     q = select(StockEvent).where(StockEvent.location_id.in_(ids)).options(selectinload(StockEvent.product), selectinload(StockEvent.location))
     if tab in stockevents.KINDS:
@@ -443,15 +469,15 @@ async def stock_events_import(file: UploadFile = File(...), location_id: int = F
         c.check_loc(location_id)
     data = await file.read(5_000_001)
     if len(data) > 5_000_000:
-        return redirect("/stock-events", err=c.t("The file is larger than 5 MB"))
+        return redirect("/stock-events?tab=all", err=c.t("The file is larger than 5 MB"))
     try:
         r = stockevents.import_events(c.db, c.user, file.filename or "", data, c.locations(), location_id or None,
                                       default_kind=kind if kind in stockevents.KINDS else None, already_in_storehub=bool(in_storehub))
     except (ValueError, stockevents.StockEventError) as e:
         c.db.rollback()
-        return redirect("/stock-events", err=str(e))
+        return redirect("/stock-events?tab=all", err=str(e))
     msg, ok = _import_message(c, f"Recorded {r['added']} stock change(s)", r, "; marked as already in StoreHub" if in_storehub else "")
-    return redirect("/stock-events", ok=msg) if ok else redirect("/stock-events", err=msg)
+    return redirect("/stock-events?tab=all", ok=msg) if ok else redirect("/stock-events?tab=all", err=msg)
 
 
 @router.get("/stock-events/new")
@@ -492,7 +518,7 @@ async def stock_event_create(request: Request, c: Ctx = Depends(need("count.ente
     except stockevents.StockEventError as e:
         c.db.rollback()
         return redirect(back, err=str(e))
-    return redirect("/stock-events", ok="Recorded. Now key the same change into the StoreHub back office so stock updates.")
+    return redirect("/stock-events?tab=all", ok="Recorded. Now key the same change into the StoreHub back office so stock updates.")
 
 
 # ======================================================================================= expiry
@@ -684,3 +710,46 @@ def performance_page(days: str = "60", frm: str = "", to: str = "", c: Ctx = Dep
     else:
         n_days = min(max(int(days) if days.isdigit() else 60, 7), 180)
     return render(c, "performance.html", m=performance.compute(c.db, c.location_ids, n_days, until=until), days=n_days, custom=custom, frm=frm, to=to)
+
+
+def _iso(value):
+    try:
+        return datetime.fromisoformat(str(value)) if value else None
+    except ValueError:
+        return None
+
+
+def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, page: int, export: str):
+    """Every stock change StoreHub's back-office Audit Trail has recorded (read only), newest first."""
+    import csv
+    import io
+    from ..models import Setting
+    from ..services import stock_movements as sm
+    db = c.db
+    today = today_local()
+    try:
+        start, end = date.fromisoformat(frm), date.fromisoformat(to)
+        if start > end or (end - start).days > 400:
+            raise ValueError
+    except ValueError:
+        start, end = today - timedelta(days=13), today
+    stores = [l for l in c.locations() if l.source == "storehub"]
+    if loc:
+        c.check_loc(loc)
+    ids = [loc] if loc and any(l.id == loc for l in stores) else [l.id for l in stores]
+    names = {l.id: l.name.replace("The Daily Centro - ", "") for l in stores}
+    page = max(page, 1)
+    if export == "csv":
+        rows, _total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=50000, offset=0)
+        out = io.StringIO(); w = csv.writer(out)
+        w.writerow(["Time", "Store", "Product", "Barcode", "Employee", "Action", "Qty before", "Change", "Qty after"])
+        for m, p, l in rows:
+            cell = lambda v: "'" + v if str(v).lstrip().startswith(("=", "+", "-", "@")) else v
+            w.writerow([m.occurred_at.strftime("%Y-%m-%d %H:%M"), names.get(l.id, l.name), cell(p.name), p.barcode or "", cell(m.employee), cell(m.action), f"{m.qty_before:g}", f"{m.change:g}", f"{m.qty_after:g}"])
+        audit.log(db, actor_type="user", actor_id=c.user.id, action="export_stock_changes", entity_type="report", entity_id="stock_changes", after={"rows": len(rows), "from": str(start), "to": str(end), "location": loc})
+        db.commit()
+        return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-changes-{start}-to-{end}.csv"'})
+    rows, total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=HISTORY_PAGE, offset=(page - 1) * HISTORY_PAGE)
+    last_ok = db.get(Setting, "stock_movements.last_ok")
+    return render(c, "stock_history.html", rows=rows, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action,
+                  actions=sm.actions(db, ids), frm=start.isoformat(), to=end.isoformat(), waiting=len(sm.pending(db)), last_ok=_iso(last_ok.value if last_ok else None), tab="history")

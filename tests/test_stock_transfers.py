@@ -246,7 +246,7 @@ def test_robot_exports_and_imports_and_warns_when_it_fails(sync, fake, session, 
     assert transfer_inbox.run_robot(session, export=broken_export) == {"ran": False}
 
 
-def test_robot_runs_every_twenty_minutes_and_catches_up_after_sleep(sync, fake, session, cfg):
+def test_robot_runs_every_five_minutes_and_catches_up_after_sleep(sync, fake, session, cfg):
     from app.services import transfer_inbox
     seeded(sync, fake, session)
     add_user(session, "robot_admin2", "admin")
@@ -256,19 +256,19 @@ def test_robot_runs_every_twenty_minutes_and_catches_up_after_sleep(sync, fake, 
     transfer_inbox.process_inbox(session)
     assert transfer_inbox.robot_due(session) is False  # imported just now: wait
     src = session.scalar(select(StockTransferImport).where(StockTransferImport.imported_at.is_not(None)))
-    src.imported_at = now_utc() - timedelta(minutes=19)
+    src.imported_at = now_utc() - timedelta(minutes=4)
     session.commit()
     assert transfer_inbox.robot_due(session) is False
-    src.imported_at = now_utc() - timedelta(minutes=21)
+    src.imported_at = now_utc() - timedelta(minutes=6)
     session.commit()
-    assert transfer_inbox.robot_due(session) is True  # twenty minutes passed (or the PC was asleep)
+    assert transfer_inbox.robot_due(session) is True  # five minutes passed (or the PC was asleep)
     transfer_inbox.mark_robot_attempt(session)
     assert transfer_inbox.robot_due(session) is False  # it tried a moment ago: no hammering if StoreHub is down
     src.imported_at = now_utc() - timedelta(hours=14)  # the PC was off overnight
     session.commit()
-    assert transfer_inbox.robot_due(session) is False  # still inside the 20-minute retry gap
+    assert transfer_inbox.robot_due(session) is False  # still inside the 5-minute retry gap
     from app.models import Setting
-    session.get(Setting, "robot.last_attempt").value = (now_utc() - timedelta(minutes=21)).isoformat()
+    session.get(Setting, "robot.last_attempt").value = (now_utc() - timedelta(minutes=6)).isoformat()
     session.commit()
     assert transfer_inbox.robot_due(session) is True
 

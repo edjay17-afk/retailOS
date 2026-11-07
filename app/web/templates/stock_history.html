@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Stock events') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+{% set qs = 'tab=history&loc=' ~ loc ~ '&q=' ~ (q|urlencode) ~ '&action=' ~ (action|urlencode) ~ '&frm=' ~ frm ~ '&to=' ~ to %}
+<div class="page-head counts-page-head stock-change-head">
+  <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
+    <p class="small mute" style="margin:2px 0 0">{% if last_ok %}{{ t('Last read') }} {{ last_ok|local('%d %b %H:%M') }}{% endif %}{% if waiting %}{{ ' · ' if last_ok }}{{ waiting }} {{ t('products still being read') }}{% endif %}</p>
+    <details class="small mute" style="margin-top:4px"><summary style="cursor:pointer">{{ t('About this page') }}</summary>
+      <p class="stock-change-intro" style="margin:6px 0">{{ t('Every physical change to stock is recorded here: who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p>
+      <p style="margin:6px 0">{{ t("Below is StoreHub's own record of every stock change: sales, receiving, stock takes, transfers and adjustments, with who made each one. It is read from the StoreHub back office (Audit Trail) and never changed from here.") }}</p></details></div>
+  <div class="row stock-change-actions">
+    <a class="btn" href="/stock-events/new?kind=write_off">{{ t('Record a write-off') }}</a>
+    <a class="btn sec" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a>
+    <a class="btn sec" href="/stock-events?{{ qs }}&export=csv">{{ t('Download CSV') }}</a>
+  </div>
+</div>
+<nav class="stock-change-tabs" aria-label="{{ t('Type') }}">
+{% for value, label in (('history','StoreHub history'),('all','Recorded by people'),('write_off','Write-offs'),('unplanned_receipt','Unplanned receipts')) %}
+<a href="/stock-events?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}</a>
+{% endfor %}
+</nav>
+
+<form novalidate class="filters" method="get" action="/stock-events" style="margin-bottom:14px">
+  <input type="hidden" name="tab" value="history">
+  <div><label for="sh-loc">{{ t('Store') }}</label><select id="sh-loc" name="loc" onchange="this.form.submit()"><option value="0">{{ t('All stores') }}</option>{% for l in stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ names[l.id] }}</option>{% endfor %}</select></div>
+  <div style="flex:1;min-width:200px"><label for="sh-q">{{ t('Search') }}</label><input id="sh-q" type="search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"></div>
+  <div><label for="sh-action">{{ t('Action') }}</label><select id="sh-action" name="action" onchange="this.form.submit()"><option value="">{{ t('All actions') }}</option>{% for a in actions %}<option value="{{ a }}" {{ 'selected' if a == action }}>{{ a }}</option>{% endfor %}</select></div>
+  <div><label for="sh-frm">{{ t('From') }}</label><input id="sh-frm" type="date" name="frm" value="{{ frm }}"></div>
+  <div><label for="sh-to">{{ t('To') }}</label><input id="sh-to" type="date" name="to" value="{{ to }}"></div>
+  <div><label>&nbsp;</label><button class="sm">{{ t('Apply') }}</button></div>
+</form>
+
+<div class="tw stick1"><table class="wide">
+  <tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Employee') }}</th><th scope="col">{{ t('Action') }}</th>
+    <th scope="col" class="right">{{ t('Before') }}</th><th scope="col" class="right">{{ t('Change') }}</th><th scope="col" class="right">{{ t('After') }}</th></tr>
+  {% for m, p, l in rows %}<tr>
+    <td class="small nowrap">{{ m.occurred_at|day }}<div class="mute">{{ m.occurred_at.strftime('%H:%M') }}</div></td>
+    <td class="small">{{ names.get(l.id, l.name) }}</td>
+    <td><b>{{ p.name }}</b>{% if p.barcode %}<div class="small mute">{{ p.barcode }}</div>{% endif %}</td>
+    <td class="small">{{ m.employee or '—' }}</td>
+    <td><span class="badge dot {{ 'b-ok' if m.change > 0 else 'b-warn' if m.change < 0 else '' }}">{{ m.action or '—' }}</span></td>
+    <td class="right">{{ m.qty_before|num }}</td>
+    <td class="right"><b style="color:{{ 'var(--ok)' if m.change > 0 else 'var(--bad)' if m.change < 0 else 'inherit' }}">{{ '+' if m.change > 0 }}{{ m.change|num }}</b></td>
+    <td class="right">{{ m.qty_after|num }}</td>
+  </tr>{% else %}<tr><td colspan="8"><div class="empty">{% if waiting %}{{ t('Reading StoreHub now. The first changes appear within a few minutes.') }}{% else %}{{ t('No stock changes in this period.') }}{% endif %}</div></td></tr>{% endfor %}
+</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} / {{ pages }} · {{ total }} {{ t('changes') }}</span>{% if page < pages %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% endblock %}

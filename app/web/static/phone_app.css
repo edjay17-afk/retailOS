@@ -66,8 +66,15 @@
  .phone-stock-copy em{font-size:10px;font-style:normal;color:var(--warn);display:block;margin-top:4px}
  .phone-stock-qty{font-size:22px;font-weight:700;text-align:right;max-width:100px;overflow-wrap:anywhere}
  .phone-stock-qty small{display:block;font-size:10px;font-weight:400;color:var(--mute)}
- .phone-stock-cta{position:sticky;bottom:calc(var(--mtab) + 8px);padding:10px 0;background:var(--bg);margin-top:12px}
+ .phone-stock-cta{position:fixed;left:0;right:0;bottom:var(--mtab);z-index:50;padding:10px 18px;background:var(--bg)}
  .phone-stock-cta .btn{width:100%;min-height:48px}
+ main:has(.phone-stock-list) .stock-pager{display:flex;gap:10px;margin:14px 0 80px}
+ main:has(.phone-stock-list) .stock-pager .small,
+ main:has(.phone-stock-list) .stock-edit-help,
+ main:has(.phone-stock-list) .stock-edit-spacer,
+ body:has(.phone-stock-list) footer.foot{display:none}
+ .stock-pager .stock-page-next{margin-left:auto}
+ body:has(#lv-bar:not([hidden])) .phone-stock-cta{visibility:hidden}
  /* Keep the existing scan/save handlers and validation. */
  .count-workspace .count-page-head{margin:0 0 20px}
  .count-workspace .count-page-head h1{font-size:24px}

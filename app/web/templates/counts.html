@@ -11,7 +11,7 @@
     <div class="eyebrow" style="margin-bottom:6px">{{ t('New count') }}</div>
     <p class="small mute" style="margin-top:0">{{ t('Scan a barcode, enter the counted stock, then save and scan the next product.') }}</p>
     <form novalidate method="post" action="/counts/create" class="row" style="flex-wrap:wrap"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <select name="location_id" style="flex:1;min-width:160px">{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+      <select name="location_id" aria-label="{{ t('Location') }}" style="flex:1;min-width:160px">{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
       <input type="hidden" name="mode" value="scan">
       <button>{{ t('Start today\'s count') }}</button></form>
   </div>
@@ -26,6 +26,17 @@
     </form>
     <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Counted, Note (optional), Location (optional if one is chosen above). Counts go into today\'s open count and are compared with the StoreHub stock.') }} <a href="/counts/template.csv">{{ t('Download template') }}</a></div>
 </dialog>
+<section class="phone-only count-mobile-list" aria-label="{{ t('Stock counts') }}">
+  <h2>{{ t('Stock counts') }}</h2>
+  {% for r in rows %}
+  {% set total = r.lines|length %}{% set done = r.lines|selectattr('counted_qty','ne',none)|list|length %}{% set diffs = r.lines|selectattr('variance')|list|length %}
+  <article class="count-mobile-card">
+    <div class="count-mobile-card-head"><a href="/counts/{{ r.id }}"><strong>{{ t('Count #') }}{{ r.id }}</strong></a><span class="badge {{ 'b-ok' if r.status == 'approved' else 'b-pur' if r.status == 'submitted' else 'b-warn' }}">{{ t(r.status) }}</span></div>
+    <div class="count-mobile-location">{{ r.location.name }}</div><div class="count-mobile-meta">{{ r.business_date|day }} &middot; {{ done }}/{{ total }} {{ t('items counted') }} &middot; {{ diffs }} {{ t('Differences') }}</div>
+    <div class="count-mobile-actions"><a class="btn sec sm" href="/counts/{{ r.id }}">{{ t('Open') }}</a>{% if r.status != 'approved' or can('count.approve') %}<form novalidate method="post" action="/counts/{{ r.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="sec sm" style="color:var(--bad)" data-confirm="{{ t('Delete count #{id}? Its entered quantities will be lost. This is recorded in the audit log.', id=r.id) }}">{{ t('Delete') }}</button></form>{% endif %}</div>
+  </article>
+  {% else %}<div class="count-mobile-empty">{{ t('No counts yet.') }}</div>{% endfor %}
+</section>
 <div class="tw stick1 counts-list-table"><table class="wide rcards"><tr><th scope="col">#</th><th scope="col">{{ t('Date') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Progress') }}</th><th scope="col" class="right">{{ t('Items') }}</th><th scope="col" class="right">{{ t('Differences') }}</th><th scope="col">{{ t('Status') }}</th><th></th></tr>
 {% for r in rows %}
 {% set total = r.lines|length %}{% set done = r.lines|selectattr('counted_qty','ne',none)|list|length %}{% set diffs = r.lines|selectattr('variance')|list|length %}

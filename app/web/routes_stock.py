@@ -365,10 +365,28 @@ def sales_report(loc: int = 0, c: Ctx = Depends(need("sales.view"))):
                     headers={"Content-Disposition": f'attachment; filename="{sales_report.file_name(location)}"'})
 
 
+class _Day:
+    """One date's totals added up over several stores, shaped like a SalesDay for the page."""
+    def __init__(self, day, rows):
+        self.business_date = day
+        for f in ("tx_count", "cancelled_count", "return_count", "gross_sales", "returns_total", "net_sales", "tax", "cash_sales", "other_sales"):
+            setattr(self, f, round(sum(getattr(r, f) or 0 for r in rows), 2) if f not in ("tx_count", "cancelled_count", "return_count") else sum(getattr(r, f) or 0 for r in rows))
+
+
+def _sum_days(rows) -> list:
+    by_day: dict = defaultdict(list)
+    for r in rows:
+        by_day[r.business_date].append(r)
+    return [_Day(d, by_day[d]) for d in sorted(by_day, reverse=True)]
+
+
 @router.get("/sales")
 def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: str = "", c: Ctx = Depends(need("sales.view"))):
     db = c.db
+    stores_in = [l for l in c.locations() if l.type == "store"]
+    combined = not loc and len(stores_in) > 1        # "All": every store together (the warehouse sells nothing and is not listed)
     location = _pick_loc(c, loc, prefer="store")
+    loc_ids = [l.id for l in stores_in] if combined else ([location.id] if location else [])
     today = today_local()
     end = today
     custom = days == "custom"
@@ -386,19 +404,21 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
     rows = []
     top = []
     if location:
-        rows = list(db.scalars(select(SalesDay).where(SalesDay.location_id == location.id, SalesDay.business_date >= start, SalesDay.business_date <= end).order_by(SalesDay.business_date.desc())))
+        rows = list(db.scalars(select(SalesDay).where(SalesDay.location_id.in_(loc_ids), SalesDay.business_date >= start, SalesDay.business_date <= end).order_by(SalesDay.business_date.desc())))
+        if combined:
+            rows = _sum_days(rows)
         top = list(db.execute(select(Product.name, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).join(Product, Product.id == SalesDayProduct.product_id)
-                              .where(SalesDayProduct.location_id == location.id, SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end)
+                              .where(SalesDayProduct.location_id.in_(loc_ids), SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end)
                               .group_by(Product.name).order_by(func.sum(SalesDayProduct.net_sales).desc()).limit(15)))
     if export == "csv":
         out = io.StringIO()
         w = csv.writer(out)
         w.writerow(["Location", "Date", "Net sales", "Transactions", "Cash sales", "Other payments", "Cancelled"])
         for r in sorted(rows, key=lambda r: r.business_date):
-            w.writerow([location.name if location else "", r.business_date, f"{r.net_sales:.2f}", r.tx_count, f"{r.cash_sales:.2f}",
+            w.writerow([("All stores" if combined else location.name) if location else "", r.business_date, f"{r.net_sales:.2f}", r.tx_count, f"{r.cash_sales:.2f}",
                         f"{max(r.net_sales - r.cash_sales, 0):.2f}", r.cancelled_count])
         audit.log(db, actor_type="user", actor_id=c.user.id, action="export_sales_daily", entity_type="report", entity_id="sales_daily",
-                  after={"rows": len(rows), "from": str(start), "to": str(end), "location": location.id if location else 0})
+                  after={"rows": len(rows), "from": str(start), "to": str(end), "location": 0 if combined else (location.id if location else 0)})
         db.commit()
         return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="daily-sales-{start}-to-{end}.csv"'})
     mx = max([r.net_sales for r in rows] or [1]) or 1
@@ -407,11 +427,24 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
     chart = [(r.business_date.strftime("%d %b"), r.net_sales) for r in reversed(rows)]
     compare = []
-    if location and rows:  # the window of equal length right before this one, matched day by day
-        prev = {r.business_date: r.net_sales for r in db.scalars(select(SalesDay).where(
-            SalesDay.location_id == location.id, SalesDay.business_date >= start - timedelta(days=n_days), SalesDay.business_date < start))}
+    hourly = False
+    if n_days == 1 and location and rows:   # one day is shown by hour: a single bar for a whole day says very little
+        by_hour: dict[int, float] = defaultdict(float)
+        for t_time, tx_type, total in db.execute(select(SalesTx.tx_time, SalesTx.tx_type, SalesTx.total).where(
+                SalesTx.location_id.in_(loc_ids), SalesTx.business_date == end, SalesTx.cancelled.is_(False))):
+            by_hour[to_local(t_time).hour] += -total if tx_type == "Return" else total
+        if by_hour:
+            first, last = min(min(by_hour), 6), max(by_hour)
+            if end == today:
+                last = max(last, to_local(now_utc()).hour)
+            chart = [(f"{(h % 12) or 12}{'am' if h < 12 else 'pm'}", round(by_hour.get(h, 0.0), 2)) for h in range(first, last + 1)]
+            hourly = True
+    if location and rows and not hourly:  # the window of equal length right before this one, matched day by day
+        prev: dict = defaultdict(float)
+        for r in db.scalars(select(SalesDay).where(SalesDay.location_id.in_(loc_ids), SalesDay.business_date >= start - timedelta(days=n_days), SalesDay.business_date < start)):
+            prev[r.business_date] += r.net_sales
         compare = [prev.get(r.business_date - timedelta(days=n_days), 0.0) for r in reversed(rows)] if prev else []
-    return render(c, "sales.html", chart=chart, compare=compare, rows=rows, top=top, location=location, locations=c.locations(), days=n_days, mx=mx, totals=totals, fr=fr,
+    return render(c, "sales.html", chart=chart, compare=compare, hourly=hourly, combined=combined, rows=rows, top=top, location=location, locations=c.locations(), days=n_days, mx=mx, totals=totals, fr=fr,
                   custom=custom, frm=frm, to=to, range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today.isoformat())
 
 
@@ -445,7 +478,7 @@ def _short_loc(name: str) -> str:
 
 @router.get("/sales/transactions")
 def sales_transactions(loc: int = 0, days: str = "14", frm: str = "", to: str = "", emp: str = "", q: str = "", page: int = 1,
-                       export: str = "", shift_id: int = 0, c: Ctx = Depends(need("sales.detail"))):
+                       export: str = "", shift_id: int = 0, pay: str = "", c: Ctx = Depends(need("sales.detail"))):
     """Every transaction in the period; a row opens the full receipt. loc=0 combines all locations the user may see."""
     db = c.db
     shift = None
@@ -482,26 +515,42 @@ def sales_transactions(loc: int = 0, days: str = "14", frm: str = "", to: str = 
         stmt = stmt.where(SalesTx.employee_sh_id == emp)
     if q.strip():
         stmt = stmt.where(SalesTx.invoice_no.ilike(f"%{q.strip()}%"))
+    pay = pay.strip().lower()[:40]
+    if pay == "!cash":          # any payment that is not cash (GCash, Food Panda, Grab, cards ...)
+        stmt = stmt.where(select(Payment.id).where(Payment.tx_id == SalesTx.id, func.lower(Payment.method) != "cash").exists())
+    elif pay:
+        stmt = stmt.where(select(Payment.id).where(Payment.tx_id == SalesTx.id, func.lower(Payment.method) == pay).exists())
     stmt = stmt.order_by(SalesTx.tx_time.desc())
     loc_names = {l.id: _short_loc(l.name) for l in c.locations()}
     if export == "csv":
         txs_all = list(db.scalars(stmt))
+        ids_all = [t.id for t in txs_all]
         names = _emp_names(db, {t.employee_sh_id for t in txs_all if t.employee_sh_id})
         pays = defaultdict(list)
-        for tid, m, a in db.execute(select(Payment.tx_id, Payment.method, Payment.amount)
-                                    .where(Payment.tx_id.in_([t.id for t in txs_all] or [0])).order_by(Payment.id)):
-            pays[tid].append(f"{m} {a:.2f}")
+        lines = defaultdict(list)
+        for k in range(0, len(ids_all), 500):          # in chunks, so a long period never hits the database's limit on a list of ids
+            chunk = ids_all[k:k + 500]
+            for tid, m, a in db.execute(select(Payment.tx_id, Payment.method, Payment.amount).where(Payment.tx_id.in_(chunk)).order_by(Payment.id)):
+                pays[tid].append(f"{m} {a:.2f}")
+            for ln, pname in db.execute(select(SalesLine, Product.name).outerjoin(Product, Product.id == SalesLine.product_id)
+                                        .where(SalesLine.tx_id.in_(chunk)).order_by(SalesLine.tx_id, SalesLine.line_no)):
+                lines[ln.tx_id].append((ln.qty, pname or "(unknown product)", ln.total))
+
+        def cell(v) -> str:                            # text that starts with = + - @ must not run as a formula in Excel
+            v = str(v or "")
+            return "'" + v if v.lstrip().startswith(("=", "+", "-", "@")) else v
         out = io.StringIO()
         w = csv.writer(out)
-        w.writerow(["Time", "Invoice", "Store", "Employee", "Type", "Status", "Payments", "Subtotal", "Discount", "Tax", "Total"])
+        w.writerow(["Time", "Invoice", "Store", "Employee", "Type", "Status", "Payments", "Products", "Subtotal", "Discount", "Tax", "Total"])
         for t in txs_all:
+            products = "; ".join(f"{pname} x{qty:g} ({amount:.2f})" for qty, pname, amount in lines.get(t.id, []))      # every product of the invoice in one cell: its quantity, then its total
             w.writerow([fmt_local(t.tx_time), t.invoice_no or "", loc_names.get(t.location_id, ""), names.get(t.employee_sh_id or "", ""),
-                        t.tx_type, "Cancelled" if t.cancelled else "", "; ".join(pays.get(t.id, [])), f"{t.subtotal:.2f}", f"{t.discount:.2f}", f"{t.tax:.2f}", f"{t.total:.2f}"])
+                        t.tx_type, "Cancelled" if t.cancelled else "", "; ".join(pays.get(t.id, [])), cell(products), f"{t.subtotal:.2f}", f"{t.discount:.2f}", f"{t.tax:.2f}", f"{t.total:.2f}"])
         audit.log(db, actor_type="user", actor_id=c.user.id, action="export_transactions", entity_type="report", entity_id="transactions",
                   after={"rows": len(txs_all), "days": n_days, "custom": f"{frm}..{to}" if custom else "", "location": loc, "employee": emp, "shift_id": shift_id})
         db.commit()
         fname = f"transactions-{frm}-to-{to}.csv" if custom else f"transactions-{n_days}d.csv"
-        return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+        return Response("\ufeff" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{fname}"'})
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     page = max(page, 1)
     txs = list(db.scalars(stmt.limit(PAGE).offset((page - 1) * PAGE)))
@@ -516,10 +565,30 @@ def sales_transactions(loc: int = 0, days: str = "14", frm: str = "", to: str = 
     if emp and emp not in emp_ids:
         emp_ids.append(emp)
     employees = sorted(_emp_names(db, emp_ids).items(), key=lambda kv: kv[1])
+    methods: dict[str, str] = {}      # one entry per payment method, however it is capitalised (GCASH and GCash are the same)
+    for (m,) in db.execute(select(Payment.method).join(SalesTx, SalesTx.id == Payment.tx_id).where(SalesTx.location_id.in_(ids or [0]), SalesTx.business_date >= start,
+                                                                                               SalesTx.business_date <= end).distinct()):
+        if m and m.strip().lower() != "cash":
+            methods.setdefault(m.strip().lower(), m.strip())
+    pay_options = sorted(methods.items(), key=lambda kv: kv[1].lower())
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
-    return render(c, "sales_tx.html", txs=txs, shift=shift, shift_end=shift_end, names=names, pays=pays, units=units, loc_names=loc_names, employees=employees, emp=emp, q=q,
+    return render(c, "sales_tx.html", pay=pay, pay_options=pay_options, txs=txs, shift=shift, shift_end=shift_end, names=names, pays=pays, units=units, loc_names=loc_names, employees=employees, emp=emp, q=q,
                   total=total, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, custom=custom, frm=frm, to=to, fr=fr,
                   range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today_local().isoformat())
+
+
+@router.get("/sales/tx/{txid}/panel")
+def sales_tx_panel(txid: int, c: Ctx = Depends(need("sales.detail"))):
+    """The compact receipt shown in the slide-over on the Transactions list."""
+    db = c.db
+    t = db.get(SalesTx, txid)
+    if t is None:
+        raise HTTPException(404)
+    c.check_loc(t.location_id)
+    lines = list(db.execute(select(SalesLine, Product.name).outerjoin(Product, Product.id == SalesLine.product_id).where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
+    pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
+    emp = db.scalar(select(Employee).where(Employee.storehub_id == t.employee_sh_id)) if t.employee_sh_id else None
+    return render(c, "_tx_panel.html", tx=t, lines=lines, pays=pays, emp=emp, loc=db.get(Location, t.location_id))
 
 
 @router.get("/sales/tx/{txid}")
@@ -530,7 +599,7 @@ def sales_tx_detail(txid: int, c: Ctx = Depends(need("sales.detail"))):
     if t is None:
         raise HTTPException(404)
     c.check_loc(t.location_id)
-    lines = list(db.execute(select(SalesLine, Product.name, Product.barcode)
+    lines = list(db.execute(select(SalesLine, Product.name, Product.barcode, Product.sku)
                             .outerjoin(Product, Product.id == SalesLine.product_id)
                             .where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
     pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
@@ -614,7 +683,7 @@ def sales_by_shift(loc: int = 0, days: str = "14", frm: str = "", to: str = "", 
         return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="sales-by-shift-{start}-to-{end}.csv"'})
     unread = sum(1 for r in rows if not r.detail_ok)
     return render(c, "sales_shifts.html", rows=rows, tot=tot, methods=methods, names=names, locations=[l for l in c.locations() if l.type == "store"], loc=loc,
-                  days=n_days, custom=custom, frm=frm, to=to, unread=unread,
+                  days=n_days, custom=custom, frm=frm, to=to, unread=unread, behind=sales_shifts.behind(db),
                   cashier_ids=sales_shifts.cashier_employee_ids(db, rows),
                   range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today_local().isoformat())
 
@@ -971,7 +1040,9 @@ def po_detail(po_id: int, c: Ctx = Depends(need("po.view"))):
     c.check_loc(po.location_id)
     kind = purchasing.classify_po(po, int(cfg.get(c.db, "po.stale_days")))
     from ..services import order_documents
-    return render(c, "po_detail.html", po=po, kind=kind, document=order_documents.document(c.db, po, "po"),
+    from ..models import Receiving
+    local_receiving = c.db.scalar(select(Receiving).where(Receiving.po_id == po.id).order_by(Receiving.created_at.desc(), Receiving.id.desc()))
+    return render(c, "po_detail.html", po=po, kind=kind, local_receiving=local_receiving, document=order_documents.document(c.db, po, "po"),
                   document_base=f"/purchase-orders/{po.id}", exact=order_documents.display, six=order_documents.six_decimals,
                   calculated_po=order_documents.calculate(order_documents.initial(c.db, po, "po")))
 

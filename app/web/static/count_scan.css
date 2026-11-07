@@ -141,3 +141,42 @@ dialog#counts-upload[open]::backdrop{animation:none}
 #expiry-record-message:empty{display:none}
 
 .count-lookup{position:relative;flex:1;min-width:0}#count-products{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:55;max-height:260px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh2)}#count-products [role=option]{padding:10px 12px;font-size:13px;cursor:pointer;overflow-wrap:anywhere}#count-products [aria-selected=true],#count-products [role=option]:hover{background:var(--primary-soft)}#count-products small{display:block;color:var(--mute);margin-top:3px}
+
+/* Compact count lists and scan controls on phones; desktop keeps the table. */
+@media(max-width:700px){
+ .content .counts-page-head{display:flex!important;flex-direction:row;justify-content:flex-end;align-items:center!important;margin:0 0 10px!important}
+ .counts-page-head>div{display:none}
+ .counts-page-head .counts-upload-button{width:auto!important;flex:none;margin:0;min-height:38px;padding:0 12px}
+ .counts-create{margin-bottom:20px}
+ .counts-create .card{padding:16px;border-radius:12px}
+ .counts-create .eyebrow{color:var(--ink);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none}
+ .counts-create p{font-size:12px;line-height:1.45;margin-bottom:12px}
+ .counts-create form.row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+ .counts-create form select,.counts-create form button{width:100%;min-width:0!important;min-height:44px}
+ .counts-list-table{display:none!important}
+ .count-mobile-list h2{font-size:15px;margin:0 0 10px;color:var(--ink)}
+ .count-mobile-card{padding:14px;margin:0 0 9px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+ .count-mobile-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+ .count-mobile-card-head>a{color:var(--ink);font-size:15px;text-decoration:none}
+ .count-mobile-card-head .badge{font-size:10px;white-space:normal}
+ .count-mobile-location{font-size:13px;font-weight:600;line-height:1.4;margin-top:6px;overflow-wrap:anywhere}
+ .count-mobile-meta{font-size:11px;color:var(--mute);line-height:1.5;margin-top:3px;overflow-wrap:anywhere}
+ .count-mobile-actions{display:flex;align-items:center;gap:8px;margin-top:10px}
+ .count-mobile-actions form{margin:0}.count-mobile-actions .btn,.count-mobile-actions button{min-height:36px}
+ .count-mobile-empty{padding:18px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--mute);font-size:13px}
+ .count-workspace .count-page-head{margin:0 0 16px}
+ .count-workspace .count-page-head h1{font-size:22px}
+ .count-workspace .count-page-head p span{display:inline}
+ .count-workspace .count-scan{padding:0;margin:0 0 18px;border:0;background:transparent}
+ .count-workspace .count-scan-row{display:grid;grid-template-columns:minmax(0,1fr) 44px auto;gap:6px;align-items:stretch}
+ .count-workspace .count-scan-row input,.count-workspace .count-scan-row button{min-height:44px}
+ .count-workspace .count-scan-row>button[type=submit]{grid-column:auto;padding:0 10px}
+ .count-workspace #count-entry{margin-top:16px;padding-top:14px}
+ .count-workspace #count-entry h3{font-size:18px;margin-bottom:8px}
+ .count-workspace .count-stock{margin:0;padding:12px 0;background:none;border-bottom:1px solid var(--line)}
+ .count-workspace .count-stock strong{font-size:25px;margin:0 0 0 10px;display:inline}
+ .count-workspace #count-qty{max-width:100%;height:48px;font-size:22px}
+ .count-workspace .count-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:14px}
+ .count-workspace .count-actions button{min-height:44px}
+ .count-workspace #count-review>summary{padding:14px 16px}
+}

@@ -52,3 +52,14 @@
   main:has(#product-sales-filters) .tw table td:nth-child(7),
   main:has(#product-sales-filters) .tw table td:nth-child(8){display:none!important}
 }
+
+/* Phone filters stay visible and compact while retaining the existing form. */
+@media(max-width:700px){
+ .content .filters.product-sales-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:9px;padding:12px}
+ .content .filters.product-sales-filters>div{grid-column:auto;min-width:0}
+ .content .filters.product-sales-filters .product-sales-search{grid-column:1/-1}
+ .content .product-sales-filters select,.content .product-sales-filters .drp-btn{min-height:42px;height:auto;font-size:12px}
+ .content .product-sales-filters .drp-btn{line-height:1.2}
+ .content .product-sales-filters input[name=q]{height:42px;font-size:16px}
+ .product-sales-search-row>button{min-height:42px}
+}
