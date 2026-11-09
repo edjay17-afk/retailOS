@@ -1996,5 +1996,9 @@
   "Forgot your password? Ask your manager or admin to reset it.": "忘记密码？请联系您的经理或管理员重置。",
   "Systems are syncing normally": "系统同步正常",
   "Data sync is delayed: numbers may be old": "数据同步延迟：数字可能不是最新",
-  "Try again in {n} min.": "请在 {n} 分钟后重试。"
+  "Try again in {n} min.": "请在 {n} 分钟后重试。",
+  "Create transfer sheet": "创建调拨单",
+  "Create purchase order": "创建采购订单",
+  "Create transfer sheet and purchase order": "创建调拨单和采购订单",
+  "Purchase order started": "采购订单已开始"
 }

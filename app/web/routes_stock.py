@@ -16,7 +16,7 @@ from .. import audit
 from .. import settings_service as cfg
 from ..models import (Employee, InventoryCurrent, Location, OrderBatch, Payment, Product, PurchaseOrder, Recommendation, ReplRun, SalesDay, SalesDayProduct,
                       SalesLine, SalesTx, Supplier)
-from ..services import dq, freshness, purchasing, receiving, replenishment, replenishment_sheets, transfer_sheets, transfers
+from ..services import dq, freshness, po_drafts, purchasing, receiving, replenishment, replenishment_sheets, transfer_sheets, transfers
 from ..timeutil import fmt_local, now_utc, today_local, tz, to_local
 from .deps import Ctx, need, redirect, render, parse_float
 
@@ -936,6 +936,28 @@ def replenishment_transfer_sheets(ids: list[int] = Form(default=[]), csrf: str =
     names = ", ".join(f"TS-{s.id:05d}" for s in sheets)
     target = f"/transfer-sheets/{sheets[0].id}" if len(sheets) == 1 else "/transfer-sheets"
     return redirect(target, ok=c.t("Transfer sheets created") + ": " + names)
+
+
+@router.post("/replenishment/proceed")
+def replenishment_proceed(ids: list[int] = Form(default=[]), csrf: str = Form(""), c: Ctx = Depends(need("repl.decide"))):
+    """What the warehouse has goes on transfer sheets; what it does not have goes on a purchase order to the supplier."""
+    c.check_csrf(csrf)
+    try:
+        out = replenishment_sheets.proceed(c.db, c.user, ids, c.location_ids, c.can("transfer.sheet"), c.can("po.create"))
+        c.db.commit()
+    except (replenishment.DecisionError, transfer_sheets.SheetError, po_drafts.PoError) as e:
+        c.db.rollback()
+        return redirect("/replenishment", err=c.t(str(e)))
+    sheets, draft = out["sheets"], out["draft"]
+    parts = []
+    if sheets:
+        parts.append(c.t("Transfer sheets created") + ": " + ", ".join(f"TS-{x.id:05d}" for x in sheets))
+    if draft is not None:
+        parts.append(c.t("Purchase order started") + f" ({draft.supplier.name}, {out['po_lines']} " + c.t("products") + ")")
+    if draft is not None:
+        return redirect("/purchase-orders/new", ok=" · ".join(parts))
+    target = f"/transfer-sheets/{sheets[0].id}" if len(sheets) == 1 else "/transfer-sheets"
+    return redirect(target, ok=" · ".join(parts))
 
 
 @router.post("/replenishment/bulk")

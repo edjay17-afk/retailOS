@@ -37,11 +37,11 @@
   {% if not sales_only %}<span class="rs-legend"><i class="u"></i>{{ t('Urgent (under 1 day)') }}<i class="w"></i>{{ t('Soon (1 to 3 days)') }}<i class="n"></i>{{ t('Normal') }}</span>{% endif %}
 </form>
 
-<form novalidate method="post" action="{{ '/replenishment/transfer-sheets' if can('transfer.sheet') else '/replenishment/bulk' }}" id="bulk">
+<form novalidate method="post" action="{{ '/replenishment/proceed' if (can('transfer.sheet') or can('po.create')) else '/replenishment/bulk' }}" id="bulk">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ here }}">
   <div class="rs-dock noprint" id="repl-selection" hidden>
     <div><b><span id="repl-selected-count">0</span> {{ t('selected') }}</b><small>PHP <span id="rs-selected-value">0.00</span> <span id="repl-save-hint" hidden>· {{ t('Save edited quantities before proceeding.') }}</span></small></div>
-    <button type="submit" id="repl-proceed">{{ t('Proceed to transfer sheets') if can('transfer.sheet') else t('Approve selected') }}</button>
+    <button type="submit" id="repl-proceed" data-sheet="{{ t('Create transfer sheet') }}" data-po="{{ t('Create purchase order') }}" data-both="{{ t('Create transfer sheet and purchase order') }}" data-default="{{ t('Proceed to transfer sheets') if can('transfer.sheet') else t('Approve selected') }}">{{ t('Proceed to transfer sheets') if can('transfer.sheet') else t('Approve selected') }}</button>
   </div>
 </form>
 
@@ -55,7 +55,7 @@
   </tr></thead>
   <tbody>
   {% for row in rows %}
-  <tr class="rs-row">
+  <tr class="rs-row" data-todo="{{ row.todo[0] }}">
     <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
     <td class="rs-p"><button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button><b>{{ row.p.name }}</b><button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/><path d="M10.4 10.6h2.2v6.4h1.4v1.6h-4.2V17h1.4v-4.8h-.8z" fill="currentColor"/></svg></button><small>{{ row.p.barcode or '' }}{% if row.supplier %} · {{ row.supplier.name }}{% endif %}</small>
       <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template></td>

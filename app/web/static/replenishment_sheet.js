@@ -39,6 +39,10 @@
       document.getElementById('repl-selected-count').textContent = rows;
       document.getElementById('rs-selected-value').textContent = money.format(value);
       document.getElementById('repl-proceed').disabled = !selected.length || unsaved;
+      var btn = document.getElementById('repl-proceed'), kinds = {};
+      rowChecks.forEach(function (c) { if (c.checked) { var tr = c.closest('tr'); kinds[(tr && tr.dataset.todo) || 'send'] = true; } });
+      var wantsSheet = kinds.send || kinds.both, wantsPo = kinds.order || kinds.both;
+      if (btn.dataset.sheet) btn.textContent = wantsSheet && wantsPo ? btn.dataset.both : wantsPo ? btn.dataset.po : wantsSheet ? btn.dataset.sheet : btn.dataset.default;
       document.getElementById('repl-save-hint').hidden = !unsaved;
     }
     if (all) {
