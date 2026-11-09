@@ -1,0 +1,42 @@
+/* Dark mode for the newer controls (business buttons, language switcher, period pill, replenishment sheet, transaction panel). */
+html[data-theme="dark"] .pos-source-switch button,html[data-theme="dark"] .pos-source-switch .seven-btn{color:#f1f3f7!important;background:transparent!important;border-color:#484f5b!important}
+html[data-theme="dark"] .pos-source-switch button:hover,html[data-theme="dark"] .pos-source-switch button:focus,html[data-theme="dark"] .pos-source-switch .seven-btn:hover,html[data-theme="dark"] .pos-source-switch .seven-btn:focus{background:#1a1c21!important;border-color:#f1f3f7!important;color:#f1f3f7!important}
+html[data-theme="dark"] .pos-source-switch button.is-active,html[data-theme="dark"] .pos-source-switch .seven-btn.is-active,html[data-theme="dark"] .pos-source-switch button.is-active:hover,html[data-theme="dark"] .pos-source-switch button.is-active:focus{background:#f1f3f7!important;border-color:#f1f3f7!important;color:#0b0c0f!important}
+html[data-theme="dark"] .top-lang{background:#101114!important;border:1px solid #484f5b!important}
+html[data-theme="dark"] .top-lang a,html[data-theme="dark"] .top-lang a:hover,html[data-theme="dark"] .top-lang a.on{color:#f1f3f7!important}
+html[data-theme="dark"] .top-lang a:hover{background:#1a1c21!important}html[data-theme="dark"] .top-lang a.on{background:#2a2d34!important}
+html[data-theme="dark"] .sales-seg{background:#101114!important;border-color:#484f5b}
+html[data-theme="dark"] .sales-seg>a,html[data-theme="dark"] .sales-seg>a.on,html[data-theme="dark"] .sales-seg .drp-btn,html[data-theme="dark"] .sales-seg .drp[data-on] .drp-btn{color:#f1f3f7!important}
+html[data-theme="dark"] .sales-seg>a:hover,html[data-theme="dark"] .sales-seg .drp-btn:hover{background:#1a1c21}
+html[data-theme="dark"] .sales-seg>a.on,html[data-theme="dark"] .sales-seg .drp[data-on] .drp-btn{background:#2a2d34!important}
+html[data-theme="dark"] .shifts-filters select,html[data-theme="dark"] .sales-filters select{background:#101114;color:#f1f3f7;border-color:#484f5b}
+html[data-theme="dark"] .grid>.card.stat{border-top-color:#30343c!important}
+html[data-theme="dark"] .page-head .row.noprint .btn,html[data-theme="dark"] .page-head .row.noprint button{background:#101114;color:#f1f3f7;border-color:#484f5b}
+html[data-theme="dark"] .page-head .row.noprint .btn:hover,html[data-theme="dark"] .page-head .row.noprint button:hover{background:#1a1c21}
+/* replenishment sheet */
+html[data-theme="dark"] .rs-seg{background:#101114;border-color:#484f5b}
+html[data-theme="dark"] .rs-seg a{color:#f1f3f7}
+html[data-theme="dark"] .rs-seg a.on{background:#2a2d34;color:#f1f3f7}
+html[data-theme="dark"] .rs-seg a b,html[data-theme="dark"] .rs-seg a.on b{background:#2a2d34!important;color:#f1f3f7!important}
+html[data-theme="dark"] .rs-seg a.on b{background:#484f5b!important}
+html[data-theme="dark"] .rs-tools input[type=search],html[data-theme="dark"] .rs-tools select{background:#101114;color:#f1f3f7;border-color:#484f5b}
+html[data-theme="dark"] .rs-wrap{background:#101114;border-color:#30343c}
+html[data-theme="dark"] .rs thead th{background:#101114;color:#b0b7c3;border-bottom-color:#30343c}
+html[data-theme="dark"] .rs tbody td,html[data-theme="dark"] .rs tfoot td{border-top-color:#30343c}
+html[data-theme="dark"] .rs-p small{color:#b0b7c3}
+html[data-theme="dark"] input.q,html[data-theme="dark"] .q.u,html[data-theme="dark"] .q.w,html[data-theme="dark"] .q{background:#101114;border-color:#6b7280;color:#f1f3f7}
+html[data-theme="dark"] input.q.u,html[data-theme="dark"] .q.u{border-color:#ff9898;color:#ff9898}
+html[data-theme="dark"] .q.z{background:transparent;color:#949dab;border-color:#30343c}
+html[data-theme="dark"] .q.d{background:#182942;color:#91b8ff;border-color:#182942}
+html[data-theme="dark"] .q.rv{background:#101114;color:#ff9898;border-color:#ff9898}
+html[data-theme="dark"] input.q:focus{background:#101114;color:#f1f3f7}
+html[data-theme="dark"] .need{background:#112d23;color:#65dda8}html[data-theme="dark"] .need.sup{background:#371c23;color:#ff9898}html[data-theme="dark"] .need.mix{background:#342810;color:#f3bf68}
+html[data-theme="dark"] .rs-p .rs-why{color:#f1f3f7}html[data-theme="dark"] .rs-p .rs-why:hover{color:#91b8ff}
+/* slide-over panels */
+html[data-theme="dark"] .drawer{background:#101114;border-left-color:#30343c!important}
+html[data-theme="dark"] .tx-drawer::backdrop{background:rgba(0,0,0,.45)!important}
+html[data-theme="dark"] tr.tx-on td{background:#182942}
+html[data-theme="dark"] .txp-sum .txp-total{border-top-color:#f1f3f7}
+/* date picker button and general fields on those pages */
+html[data-theme="dark"] .drp-btn{background:#101114;color:#f1f3f7;border-color:#484f5b}
+html[data-theme="dark"] .drp-pop{background:#101114;color:#f1f3f7;border-color:#484f5b}

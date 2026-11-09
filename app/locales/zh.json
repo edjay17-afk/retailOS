@@ -1987,5 +1987,14 @@
   "Bad merchandise": "报废商品",
   "Inventory log": "库存日志",
   "Upload PDFs": "上传 PDF",
-  "Bad merchandise slip": "报废商品单"
+  "Bad merchandise slip": "报废商品单",
+  "Show password": "显示密码",
+  "Hide password": "隐藏密码",
+  "Hide": "隐藏",
+  "Caps Lock is on": "大写锁定已开启",
+  "Remember my username": "记住我的用户名",
+  "Forgot your password? Ask your manager or admin to reset it.": "忘记密码？请联系您的经理或管理员重置。",
+  "Systems are syncing normally": "系统同步正常",
+  "Data sync is delayed: numbers may be old": "数据同步延迟：数字可能不是最新",
+  "Try again in {n} min.": "请在 {n} 分钟后重试。"
 }

@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/static/workspace.css?v={{ asset_v('workspace.css') }}">
 <link rel="stylesheet" href="/static/login.css?v={{ asset_v('login.css') }}">
 <link rel="stylesheet" href="/static/login_lively.css?v={{ asset_v('login_lively.css') }}">
+<link rel="stylesheet" href="/static/login_extras.css?v={{ asset_v('login_extras.css') }}">
 <link rel="stylesheet" href="/static/dark.css?v={{ asset_v('dark.css') }}">
 </head>
 <body class="login-page">
@@ -38,13 +39,16 @@
     <h1 id="login-title">{{ t('Welcome back') }}</h1>
     <p class="login-intro">{{ t('Sign in to continue.') }}</p>
     <form novalidate method="post" action="/login" class="login-form">
-      {% if err %}<div class="flash err" role="alert">{{ t(err) }}</div>{% endif %}
+      {% if err %}<div class="flash err" role="alert">{{ t(err) }}{% if lock_minutes %} <b>{{ t('Try again in {n} min.', n=lock_minutes) }}</b>{% endif %}</div>{% endif %}
       {% if ok %}<div class="flash ok" role="status">{{ t(ok) }}</div>{% endif %}
       <input type="hidden" name="next" value="{{ next or '/' }}">
       <div class="login-field"><label for="login-username">{{ t('Username') }}</label><div class="login-input"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><input id="login-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div></div>
-      <div class="login-field"><label for="login-password">{{ t('Password') }}</label><div class="login-input"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><input id="login-password" name="password" type="password" autocomplete="current-password" required></div></div>
+      <div class="login-field"><label for="login-password">{{ t('Password') }}</label><div class="login-input"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><input id="login-password" name="password" type="password" autocomplete="current-password" required><button type="button" class="login-eye" id="login-eye" aria-pressed="false" data-show="{{ t('Show') }}" data-hide="{{ t('Hide') }}" aria-label="{{ t('Show password') }}">{{ t('Show') }}</button></div><p class="login-caps" id="login-caps" role="status" hidden>{{ t('Caps Lock is on') }}</p></div>
+      <label class="login-remember"><input type="checkbox" id="login-remember"> <span>{{ t('Remember my username') }}</span></label>
       <button class="login-submit" type="submit"><span>{{ t('Sign in') }}</span><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
     </form>
+    <p class="login-help">{{ t('Forgot your password? Ask your manager or admin to reset it.') }}</p>
+    {% if sync_badge %}<p class="login-sync {{ sync_badge }}"><i aria-hidden="true"></i>{{ t('Systems are syncing normally') if sync_badge == 'ok' else t('Data sync is delayed: numbers may be old') }}</p>{% endif %}
     <div class="login-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="en" lang="en" class="{{ 'on' if lang == 'en' }}" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="zh" lang="zh" class="{{ 'on' if lang == 'zh' }}" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
   </section>
   </div>
@@ -52,4 +56,5 @@
 </main>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
 <script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
+<script src="/static/login_extras.js?v={{ asset_v('login_extras.js') }}"></script>
 </body></html>

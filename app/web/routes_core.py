@@ -32,9 +32,21 @@ def set_language(code: str, request: Request, back: str = "/"):
     return resp
 
 
+def _sync_badge(db: Session) -> str:
+    """'ok' when sales and stock are fresh, 'delayed' when they are old, '' when nothing has synced yet. Only this word is shown on the public sign-in page."""
+    from ..services import freshness
+    try:
+        rows = [f for f in freshness.freshness(db) if f["domain"] in ("sales", "inventory")]
+    except Exception:  # noqa: BLE001
+        return ""
+    if not rows or all(f["status"] == "never" for f in rows):
+        return ""
+    return "ok" if all(f["status"] == "fresh" for f in rows) else "delayed"
+
+
 @router.get("/login")
-def login_page(request: Request, next: str = "/"):
-    return render_public(request, "login.html", next=next)
+def login_page(request: Request, next: str = "/", db: Session = Depends(get_db)):
+    return render_public(request, "login.html", next=next, sync_badge=_sync_badge(db))
 
 
 @router.post("/login")
@@ -42,7 +54,8 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     user = db.scalar(select(User).where(User.username == username.strip().lower(), User.deleted_at.is_(None)))
     now = now_utc()
     if user and user.locked_until and user.locked_until > now:
-        return render_public(request, "login.html", next=next, err="Too many failed attempts. Try again in a few minutes.")
+        wait = max(1, int((user.locked_until - now).total_seconds() // 60) + 1)
+        return render_public(request, "login.html", next=next, err="Too many failed attempts. Try again in a few minutes.", lock_minutes=wait, sync_badge=_sync_badge(db))
     if not user or not user.active or not verify_password(password, user.password_hash):
         if user:
             user.failed_logins += 1
@@ -51,7 +64,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
                 user.failed_logins = 0
             audit.log(db, actor_type="human", actor_id=user.id, action="login.failed", entity_type="user", entity_id=user.id)
         db.commit()
-        return render_public(request, "login.html", next=next, err="Wrong username or password.")
+        return render_public(request, "login.html", next=next, err="Wrong username or password.", sync_badge=_sync_badge(db))
     user.failed_logins, user.locked_until = 0, None
     s = create_session(db, user)
     audit.log(db, actor_type="human", actor_id=user.id, action="login", entity_type="user", entity_id=user.id)
