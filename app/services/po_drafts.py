@@ -108,12 +108,29 @@ def tax_of(subtotal: str, rate: str) -> str:
 
 
 def summary(d: PoDraft) -> dict:
-    """lines, the subtotal (sum of the line totals), the tax on it, and the overall total = subtotal + tax. All exact."""
+    """lines, the subtotal (sum of the line totals), the tax (the rate x the subtotal, or the amount typed), the discount, and the total = subtotal + tax - discount. All exact."""
     with localcontext() as ctx:
         ctx.prec = 100
         sub = sum((Decimal(total_of(l.qty, l.price)) for l in d.lines), Decimal(0))
-        tax = Decimal(tax_of(docs.plain(sub), rate_of(d)))
-        return {"lines": len(d.lines), "subtotal": docs.plain(sub), "tax": docs.plain(tax), "total": docs.plain(sub + tax), "rate": rate_of(d)}
+        auto = Decimal(tax_of(docs.plain(sub), rate_of(d)))
+        tax = Decimal(d.tax_amount) if d.tax_amount not in (None, "") else auto
+        disc = Decimal(d.discount) if d.discount not in (None, "") else Decimal(0)
+        return {"lines": len(d.lines), "subtotal": docs.plain(sub), "tax": docs.plain(tax), "total": docs.plain(sub + tax - disc), "rate": rate_of(d),
+                "discount": docs.plain(disc), "tax_auto": docs.plain(auto), "tax_manual": d.tax_amount not in (None, "")}
+
+
+def set_totals(db: Session, user: User, d: PoDraft, discount, tax_amount) -> PoDraft:
+    """The Discount and Tax boxes of the order. An empty tax box goes back to the rate x the subtotal; the discount cannot be more than the subtotal plus tax."""
+    _draft(d)
+    disc = "" if str(discount or "").strip() == "" else _clean(discount, "discount", max_decimals=6)
+    tax = "" if str(tax_amount or "").strip() == "" else _clean(tax_amount, "tax", max_decimals=6)
+    d.discount, d.tax_amount = (disc or None), (tax or None)
+    sm = summary(d)
+    if Decimal(sm["total"]) < 0:
+        raise PoError("The discount cannot be more than the subtotal plus tax")
+    db.flush()
+    audit.log(db, actor_type="human", actor_id=user.id, action="po_draft.totals", entity_type="po_draft", entity_id=d.id, after={"discount": d.discount, "tax_amount": d.tax_amount})
+    return d
 
 
 def current(db: Session, user: User) -> PoDraft | None:
@@ -330,6 +347,10 @@ def save(db: Session, user: User, d: PoDraft) -> PoDraft:
     if not d.lines:
         raise PoError("Add at least one product before saving the order")
     d.status, d.saved_at = "saved", now_utc()
+    for l in d.lines:   # a product with no supplier yet is added to the supplier of the order it was just ordered on (never changes a supplier that is already set)
+        if l.product.supplier_id is None:
+            l.product.supplier_id, l.product.supplier_source = d.supplier_id, "po_history"
+            audit.log(db, actor_type="human", actor_id=user.id, action="product.supplier_from_po", entity_type="product", entity_id=l.product.id, after={"supplier": d.supplier.name, "order": reference(d)})
     db.flush()
     d.excel_path = write_excel(d)
     d.new_sheets = distribute_new(db, user, d)  # transient, for the confirmation message: the sheets the new products went to
@@ -350,7 +371,7 @@ def delete(db: Session, user: User, d: PoDraft) -> None:
 def document(d: PoDraft) -> dict:
     """The saved order as the print layout of a StoreHub PO (the same printout as every PO in the system)."""
     header = {k: "" for k in docs.HEADER_FIELDS}
-    header.update(reference=reference(d), supplier=d.supplier.name, to_name=d.location.name, to_address=d.location.city or "", date=to_local(d.saved_at or d.created_at).date().isoformat(), tax=summary(d)["tax"], discount="0")
+    header.update(reference=reference(d), supplier=d.supplier.name, to_name=d.location.name, to_address=d.location.city or "", date=to_local(d.saved_at or d.created_at).date().isoformat(), tax=summary(d)["tax"], discount=summary(d)["discount"])
     lines = [dict(name=l.product.name, sku=l.product.sku or "", product_id=l.product.storehub_id, serial="", unit="", quantity=l.qty, cost=l.price) for l in sorted_lines(d)]
     return docs.calculate(dict(header=header, lines=lines, revision=0, saved=True, changed=False))
 

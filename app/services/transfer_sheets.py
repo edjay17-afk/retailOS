@@ -151,6 +151,17 @@ def remove_line(db: Session, sheet: TransferSheet, line_id: int) -> None:
     db.flush()
 
 
+def release_suggestions(db: Session, sheet: TransferSheet) -> int:
+    """The Auto replenishment suggestions that became this sheet go back to waiting, as they were, when the sheet is thrown away."""
+    from ..models import Recommendation
+    n = 0
+    for r in db.scalars(select(Recommendation).where(Recommendation.transfer_sheet_id == sheet.id, Recommendation.status == "ordered")):
+        r.status, r.approved_qty, r.transfer_sheet_id = "pending", None, None
+        r.decided_by = r.decided_at = r.reason_code = r.decision_note = None
+        n += 1
+    return n
+
+
 def cancel(db: Session, user: User, sheet: TransferSheet) -> None:
     """Throw a draft away for good (not just hide it), so the sheet numbers carry on from the sheets that really exist: with none left, the next is TS-00001.
     The audit log keeps a record that it existed and what it held."""
@@ -158,6 +169,7 @@ def cancel(db: Session, user: User, sheet: TransferSheet) -> None:
     audit.log(db, actor_type="human", actor_id=user.id, action="transfer_sheet.cancel", entity_type="transfer_sheet", entity_id=sheet.id,
               before={"sheet": f"TS-{sheet.id:05d}", "target": sheet.target.name,
                       "lines": [{"barcode": line_barcode(l), "name": line_name(l), "qty": l.qty} for l in sheet.lines][:200]})
+    release_suggestions(db, sheet)
     db.delete(sheet)
     db.flush()
 
@@ -180,6 +192,7 @@ def delete(db: Session, user: User, sheet: TransferSheet) -> None:
               "lines": [{"barcode": line_barcode(l), "name": line_name(l), "qty": l.qty} for l in sheet.lines][:200]}
     sid, xl = sheet.id, (get_config().data_dir / sheet.excel_path) if sheet.excel_path else None
     audit.log(db, actor_type="human", actor_id=user.id, action="transfer_sheet.delete", entity_type="transfer_sheet", entity_id=sid, before=detail)
+    release_suggestions(db, sheet)
     db.delete(sheet)
     db.flush()
     if xl is not None and xl.parent.resolve() == (get_config().data_dir / RPA_DIR).resolve():

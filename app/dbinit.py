@@ -10,7 +10,7 @@ from .db import Base, SessionLocal, get_engine
 from .models import InspectionTemplate, SchemaVersion, TemplateItem
 from .timeutil import now_utc
 
-CURRENT_VERSION = 45
+CURRENT_VERSION = 47
 
 # (version, [sql, ...]) applied in order to databases created by an earlier version.
 MIGRATIONS: list[tuple[int, list[str]]] = [
@@ -90,6 +90,8 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
     (42, []),  # Official StoreHub Z-reading list/detail snapshots: new table only (created automatically)
     (43, []),  # StoreHub Audit Trail (every stock change with who and why): new tables only (created automatically)
     (44, []),  # 7-Eleven Inventory Logs and Bad Merchandise slips: new tables only (created automatically)
+    (47, ["ALTER TABLE location ADD COLUMN closed BOOLEAN NOT NULL DEFAULT 0"]),  # a closed store is left out of inspections and auto replenishment
+    (46, ["ALTER TABLE po_draft ADD COLUMN discount VARCHAR(40)", "ALTER TABLE po_draft ADD COLUMN tax_amount VARCHAR(40)"]),  # purchase-order drafts: discount and a typed tax amount
     (45, []),  # 7-Eleven OR Sales Monitor (units and pesos per product per day): new table only (created automatically)
 ]
 

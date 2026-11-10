@@ -16,7 +16,7 @@ from .. import audit
 from .. import settings_service as cfg
 from ..models import (Employee, InventoryCurrent, Location, OrderBatch, Payment, Product, PurchaseOrder, Recommendation, ReplRun, SalesDay, SalesDayProduct,
                       SalesLine, SalesTx, Supplier)
-from ..services import dq, freshness, po_drafts, purchasing, receiving, replenishment, replenishment_sheets, transfer_sheets, transfers
+from ..services import dq, freshness, po_drafts, purchasing, receiving, replenishment, replenishment_sheets, stock_estimate, stock_moves, transfer_sheets, transfers
 from ..timeutil import fmt_local, now_utc, today_local, tz, to_local
 from .deps import Ctx, need, redirect, render, parse_float
 
@@ -51,7 +51,7 @@ def inventory(request: Request, loc: int = 0, q: str = "", status: str = "", cat
                                                                      SalesDay.business_date < today, SalesDay.tx_count > 0)) or 0
     open_pos = purchasing.open_po_detail(db)  # every PO not yet completed or received, overdue ones flagged
     stmt = (select(InventoryCurrent, Product).join(Product, Product.id == InventoryCurrent.product_id)
-            .where(InventoryCurrent.location_id == location.id).options(selectinload(Product.supplier)))
+            .where(InventoryCurrent.location_id == location.id, Product.in_api.is_(True)).options(selectinload(Product.supplier)))   # only what StoreHub lists now
     if q:
         like = f"%{q}%"
         stmt = stmt.where(Product.name.like(like) | Product.barcode.like(like) | Product.sku.like(like))
@@ -65,11 +65,13 @@ def inventory(request: Request, loc: int = 0, q: str = "", status: str = "", cat
         stmt = stmt.where(InventoryCurrent.on_hand > 0)
     stmt = stmt.order_by(InventoryCurrent.on_hand.asc() if status == "negative" else Product.name)
     pairs = db.execute(stmt).all()
+    est_adj = stock_estimate.adjustments(db) if location.source == "storehub" else {}
     rows = []
     for inv, p in pairs:
         ads = (sold.get(p.id, 0) / days) if days else 0
         d = open_pos.get((location.id, p.id))
-        rows.append({"p": p, "on_hand": inv.on_hand, "incoming": d["qty"] if d else 0, "late": d["late_qty"] if d else 0, "pos": d["pos"] if d else [], "ads": ads,
+        a = est_adj.get((location.id, p.id)) if location.source == "storehub" else None
+        rows.append({"est": stock_estimate.estimate(inv.on_hand, a), "est_note": stock_estimate.note(a), "p": p, "on_hand": inv.on_hand, "incoming": d["qty"] if d else 0, "late": d["late_qty"] if d else 0, "pos": d["pos"] if d else [], "ads": ads,
                      "cover": (max(inv.on_hand, 0) / ads) if ads > 0 else None, "synced": inv.synced_at})
     if inc == "yes":
         rows = [r for r in rows if r["incoming"] > 0]
@@ -118,7 +120,7 @@ def _compare_rows(db, locs, q: str, category: str):
         SalesDayProduct.location_id.in_(ids), SalesDayProduct.units > 0, SalesDayProduct.business_date > today - timedelta(days=30)).distinct()).all())
     sold_anywhere = {pid for _, pid in recent}
     open_pos = purchasing.open_po_detail(db)
-    stmt = select(InventoryCurrent, Product).join(Product, Product.id == InventoryCurrent.product_id).where(InventoryCurrent.location_id.in_(ids))
+    stmt = select(InventoryCurrent, Product).join(Product, Product.id == InventoryCurrent.product_id).where(InventoryCurrent.location_id.in_(ids), Product.in_api.is_(True))   # only what StoreHub lists now
     if q.strip():
         like = f"%{q.strip()}%"
         stmt = stmt.where(Product.name.ilike(like) | Product.barcode.ilike(like) | Product.sku.ilike(like))
@@ -144,20 +146,134 @@ def _compare_rows(db, locs, q: str, category: str):
         row["cells"][loc.id] = {"qty": inv.on_hand, "level": level, "ads": ads, "cover": cover, "incoming": inc["qty"] if inc else 0}
         row["total"] += inv.on_hand
         row["alerts"] += 1 if level in LEVEL_ORDER else 0
+    # every product StoreHub lists is on the page, also one that has no stock record in these locations yet
+    sources = {(l.source, l.source_account) for l in locs}
+    extra = select(Product).where(Product.in_api.is_(True), Product.id.not_in(list(rows) or [0]))
+    if q.strip():
+        like = f"%{q.strip()}%"
+        extra = extra.where(Product.name.ilike(like) | Product.barcode.ilike(like) | Product.sku.ilike(like))
+    if category:
+        extra = extra.where(Product.category == category)
+    for p in db.scalars(extra):
+        if (p.source, p.source_account) in sources:
+            rows[p.id] = {"p": p, "cells": {}, "total": 0.0, "alerts": 0}
     return list(rows.values())
 
 
+MOVE_ROWS = 100
+
+
+@router.post("/inventory/compare/transfer")
+async def inventory_move_to_sheet(request: Request, c: Ctx = Depends(need("transfer.sheet"))):
+    """The ticked products, with the quantities shown, become lines of the transfer sheet for the store (an open draft for that store is reused)."""
+    form = await request.form()
+    c.check_csrf(str(form.get("csrf", "")))
+    try:
+        store_id = int(form.get("store_id", 0))
+        pids = list(dict.fromkeys(int(x) for x in form.getlist("ids")))
+    except ValueError:
+        raise HTTPException(400, "Bad selection")
+    store = c.db.get(Location, store_id)
+    back = f"/inventory/compare?view=move&store={store_id}"
+    if store is None or store.id not in c.location_ids or store.closed:
+        raise HTTPException(404)
+    if not pids or len(pids) > 100:
+        return redirect(back, err=c.t("Select between 1 and 100 products"))
+    try:
+        sheet = transfer_sheets.create(c.db, c.user, store.id)
+        for pid in pids:
+            p = c.db.get(Product, pid)
+            if p is None:
+                raise transfer_sheets.SheetError("Product not found")
+            transfer_sheets.add_line(c.db, sheet, p, form.get(f"q_{pid}", ""))
+        c.db.commit()
+    except transfer_sheets.SheetError as e:
+        c.db.rollback()
+        return redirect(back, err=c.t(str(e)))
+    return redirect(f"/transfer-sheets/{sheet.id}", ok=f"{c.t('Transfer sheet')} TS-{sheet.id:05d}: {len(pids)} {c.t('products')}")
+
+
 @router.get("/inventory/compare")
-def inventory_compare(q: str = "", category: str = "", attention: str = "", sort: str = "attention", page: int = 1, export: str = "", c: Ctx = Depends(need("inventory.view"))):
-    """Stock of every product in every store and the warehouse side by side."""
+def inventory_compare(q: str = "", category: str = "", attention: str = "", sort: str = "attention", page: int = 1, export: str = "", view: str = "all", store: int = 0, status: str = "", est: str = "",
+                      c: Ctx = Depends(need("inventory.view"))):
+    """Stock compare. The default is every product in every store and the warehouse side by side; view=move lists what the warehouse can send to a store."""
     db = c.db
+    if view == "move" and not export:
+        wh = transfer_sheets.warehouse(db)
+        shops = stock_moves.stores(c.locations())
+        counts = {l.id: len(stock_moves.candidates(db, wh.id, l.id)) for l in shops} if wh else {}
+        store = store if store in counts else (max(counts, key=lambda k: counts[k]) if counts else 0)
+        rows = stock_moves.candidates(db, wh.id, store, q=q) if wh and store else []
+        cur = next((l for l in shops if l.id == store), None)
+        return render(c, "stock_move.html", shops=shops, counts=counts, store=cur, rows=rows[:MOVE_ROWS], total=len(rows), q=q, wh=wh, cover=stock_moves.cover_days(db),
+                      short=stock_moves.short_count(db, store) if store else 0, can_sheet=c.can("transfer.sheet"), fr=next(f for f in freshness.freshness(db) if f["domain"] == "inventory"),
+                      cut=lambda n: n.replace("The Daily Centro - ", ""), capped=len(rows) > MOVE_ROWS)
     locs = sorted(c.locations(), key=lambda l: (l.type != "warehouse", l.name))
     rows = _compare_rows(db, locs, q, category)
+    if est:   # estimated stock: StoreHub's stock plus purchase orders and transfers that are still open, as if all of them were completed
+        adj = stock_estimate.adjustments(db)
+        by_loc = {l.id: l for l in locs}
+        for r in rows:
+            r["total"] = 0.0
+            for lid, x in r["cells"].items():
+                a = adj.get((lid, r["p"].id))
+                x["actual"], x["adj"] = x["qty"], stock_estimate.note(a)
+                x["qty"] = stock_estimate.estimate(x["qty"], a)
+                if x["qty"] < 0:
+                    x["level"] = "neg"
+                elif x["qty"] == 0:
+                    x["level"] = x["level"] if x["level"] in ("out", "zero") else "out"
+                elif by_loc[lid].type == "store" and x["ads"] > 0 and x["qty"] / x["ads"] < 3:
+                    x["level"] = "low"
+                else:
+                    x["level"] = "ok"
+                r["total"] += x["qty"]
+            r["alerts"] = sum(1 for x in r["cells"].values() if x["level"] in LEVEL_ORDER)
     if attention:
         rows = [r for r in rows if r["alerts"]]
     rows.sort(key=(lambda r: (-r["alerts"], r["p"].name.lower())) if sort != "name" else (lambda r: r["p"].name.lower()))
     summary = {"products": len(rows), "out": sum(1 for r in rows for x in r["cells"].values() if x["level"] in ("out", "neg")),
                "low": sum(1 for r in rows for x in r["cells"].values() if x["level"] == "low")}
+    # the store cards, the status chips and the "next step" of each row
+    wh = transfer_sheets.warehouse(db)
+    open_stores = stock_moves.stores(locs)
+    send_by_store = {l.id: {x["p"].id for x in stock_moves.candidates(db, wh.id, l.id)} for l in open_stores} if wh else {}
+    send_ids = set().union(*send_by_store.values()) if send_by_store else set()
+    health = {}
+    for lid, neg, zero, pos in db.execute(select(InventoryCurrent.location_id, func.sum(case((InventoryCurrent.on_hand < 0, 1), else_=0)), func.sum(case((InventoryCurrent.on_hand == 0, 1), else_=0)),
+                                                  func.sum(case((InventoryCurrent.on_hand > 0, 1), else_=0))).join(Product, Product.id == InventoryCurrent.product_id)
+                                         .where(InventoryCurrent.location_id.in_([l.id for l in locs] or [0]), Product.in_api.is_(True)).group_by(InventoryCurrent.location_id)):
+        health[lid] = {"neg": int(neg or 0), "zero": int(zero or 0), "ok": int(pos or 0)}
+    if est:   # the store cards follow the estimate too
+        health = {l.id: {"neg": 0, "zero": 0, "ok": 0} for l in locs}
+        for r in rows:
+            for lid, x in r["cells"].items():
+                health[lid]["neg" if x["qty"] < 0 else "zero" if x["qty"] == 0 else "ok"] += 1
+    for r in rows:
+        levels = [x["level"] for x in r["cells"].values()]
+        if not levels:
+            r["next"] = "none"
+            continue
+        store_neg = sum(1 for lid, x in r["cells"].items() if x["level"] == "neg" and lid in send_by_store)
+        if r["p"].id in send_ids:
+            r["next"] = "send"
+        elif levels.count("neg") >= 2:
+            r["next"] = "count"
+        elif any(v in ("out", "zero", "low") for v in levels) or levels.count("neg"):
+            r["next"] = "reorder"
+        else:
+            r["next"] = "ok"
+    chips = {"all": len(rows), "neg": sum(1 for r in rows if any(x["level"] == "neg" for x in r["cells"].values())),
+             "zero": sum(1 for r in rows if any(x["level"] in ("out", "zero") for x in r["cells"].values())),
+             "low": sum(1 for r in rows if any(x["level"] == "low" for x in r["cells"].values())), "send": sum(1 for r in rows if r["p"].id in send_ids)}
+    if status == "neg":
+        rows = [r for r in rows if any(x["level"] == "neg" for x in r["cells"].values())]
+    elif status == "zero":
+        rows = [r for r in rows if any(x["level"] in ("out", "zero") for x in r["cells"].values())]
+    elif status == "low":
+        rows = [r for r in rows if any(x["level"] == "low" for x in r["cells"].values())]
+    elif status == "send":
+        rows = [r for r in rows if r["p"].id in send_ids]
     if export == "csv":
         out = io.StringIO()
         w = csv.writer(out)
@@ -169,7 +285,8 @@ def inventory_compare(q: str = "", category: str = "", attention: str = "", sort
     cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None)).distinct().order_by(Product.category))]
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "inventory")
     return render(c, "stock_compare.html", rows=rows[(page - 1) * PAGE: page * PAGE], locs=locs, total=len(rows), page=page, q=q, category=category, attention=attention, sort=sort,
-                  cats=cats, fr=fr, summary=summary, short=lambda n: n.replace("The Daily Centro - ", "").replace("TheDailyCentro ", ""))
+                  cats=cats, fr=fr, summary=summary, short=lambda n: n.replace("The Daily Centro - ", "").replace("TheDailyCentro ", ""),
+                  status=status, est=est, chips=chips, health=health, send_counts={lid: len(v) for lid, v in send_by_store.items()}, warehouse=wh)
 
 
 # ======================================================================================= sales
@@ -785,7 +902,7 @@ def replenishment_page(request: Request, loc: int = 0, status: str = "pending", 
     if status and status != "all":
         q = q.where(Recommendation.status.in_({"decided": ("approved", "modified", "rejected", "ordered")}.get(status, (status,))))
     if supplier:
-        q = q.where(Recommendation.supplier_id == supplier)
+        q = q.where((Recommendation.supplier_id == supplier) | Recommendation.product_id.in_(select(Product.id).where(Product.supplier_id == supplier)))
     term = search.strip()
     if term:
         like = f"%{term}%"
@@ -800,11 +917,11 @@ def replenishment_page(request: Request, loc: int = 0, status: str = "pending", 
     if loc:
         counts_q = counts_q.where(Recommendation.location_id == loc)
     if supplier:
-        counts_q = counts_q.where(Recommendation.supplier_id == supplier)
+        counts_q = counts_q.where((Recommendation.supplier_id == supplier) | Recommendation.product_id.in_(select(Product.id).where(Product.supplier_id == supplier)))
     counts = dict(db.execute(counts_q.group_by(Recommendation.status)).all())
     sups = list(db.scalars(select(Supplier).order_by(Supplier.name)))
     return render(c, "replenishment.html", recs=recs, last=last, counts=counts, status=status, loc=loc, supplier=supplier, suppliers=sups, search=term,
-                  locations=[l for l in c.locations() if l.type == "store"], page=page, total=total, reasons=cfg.get(db, "repl.reason_codes"), metrics=replenishment.metrics(db),
+                  locations=[l for l in c.locations() if l.type == "store" and not l.closed], page=page, total=total, reasons=cfg.get(db, "repl.reason_codes"), metrics=replenishment.metrics(db),
                   sales_only=cfg.get(db, "repl.mode") != "stock_and_sales", cover_days=int(cfg.get(db, "repl.sales_only_cover_days")),
                   limit=float(cfg.get(db, "repl.approval_limit_manager")), conf=replenishment.confidence_label,
                   reason_labels=replenishment.REASON_LABELS, fixes=dq.FIXES)
@@ -814,23 +931,25 @@ SHEET_PAGE = 40
 
 
 @router.get("/replenishment/sheet")
-def replenishment_sheet(status: str = "pending", supplier: int = 0, search: str = "", page: int = 1, loc: int = 0, c: Ctx = Depends(need("repl.view"))):
+def replenishment_sheet(status: str = "pending", supplier: int = 0, search: str = "", page: int = 1, loc: int = 0, todo: str = "", c: Ctx = Depends(need("repl.view"))):
     """One sheet for every store: what each store should get, what the warehouse has, and what is left to order from suppliers."""
     if c.source_scope.startswith("loyverse"):
         return redirect("/replenishment/loyverse")
     db = c.db
     replenishment.ensure_current(db)
     today = today_local()
-    all_stores = sorted([l for l in c.locations() if l.type == "store"], key=lambda l: l.name)
+    all_stores = sorted([l for l in c.locations() if l.type == "store" and not l.closed], key=lambda l: l.name)
+    wh_loc = next((l for l in c.locations() if l.type == "warehouse" and l.source == "storehub" and l.monitored), None)
+    wh_view = bool(wh_loc and loc == wh_loc.id)   # the warehouse picked: what the stores need that it must order from suppliers
     stores = [l for l in all_stores if l.id == loc] or all_stores   # one store when a store is picked
-    loc = loc if any(l.id == loc for l in all_stores) else 0
+    loc = loc if wh_view or any(l.id == loc for l in all_stores) else 0
     store_ids = [l.id for l in stores] or [0]
     q = (select(Recommendation).where(Recommendation.location_id.in_(store_ids), Recommendation.business_date == today)
          .options(selectinload(Recommendation.product), selectinload(Recommendation.location), selectinload(Recommendation.supplier)))
     if status and status != "all":
         q = q.where(Recommendation.status.in_({"decided": ("approved", "modified", "rejected", "ordered")}.get(status, (status,))))
     if supplier:
-        q = q.where(Recommendation.supplier_id == supplier)
+        q = q.where((Recommendation.supplier_id == supplier) | Recommendation.product_id.in_(select(Product.id).where(Product.supplier_id == supplier)))
     term = search.strip()
     if term:
         like = f"%{term}%"
@@ -852,7 +971,7 @@ def replenishment_sheet(status: str = "pending", supplier: int = 0, search: str 
         editable = r.status == "pending" and can_decide and not r.batch_id and not r.transfer_sheet_id
         selectable = bool(can_decide and not r.batch_id and not r.transfer_sheet_id and ((can_sheet and r.source_kind == "transfer" and r.status in ("pending", "approved", "modified"))
                                                                                            or (not can_sheet and r.status == "pending")))
-        row = rows.setdefault(r.product_id, {"p": r.product, "supplier": r.supplier, "cells": {}, "need": 0.0, "unit": r.unit_cost or 0.0, "selectable": False, "review": False})
+        row = rows.setdefault(r.product_id, {"p": r.product, "supplier": r.supplier or r.product.supplier, "cells": {}, "need": 0.0, "unit": r.unit_cost or 0.0, "selectable": False, "review": False})
         row["cells"][r.location_id] = {"r": r, "qty": qty, "level": level, "editable": editable, "selectable": selectable, "review": r.status == "needs_review"}
         row["need"] += qty
         row["selectable"] = row["selectable"] or selectable
@@ -869,6 +988,11 @@ def replenishment_sheet(status: str = "pending", supplier: int = 0, search: str 
             row["todo"] = ("both", wh, need - wh)
         row["value"] = need * row["unit"]
     ordered = sorted(rows.values(), key=lambda x: (-x["value"], x["p"].name.lower()))
+    todo = todo if todo in ("send", "order", "both") else ""
+    if wh_view:   # what the warehouse must order from suppliers (a product it can only partly cover counts, for the part it lacks); "send" has nothing to show here
+        ordered = [] if todo == "send" else [x for x in ordered if x["todo"][0] in ("order", "both")]
+    elif todo:   # what to do: send from the warehouse, order from the supplier, or both
+        ordered = [x for x in ordered if x["todo"][0] == todo]
     send_value = sum(x["todo"][1] * x["unit"] for x in ordered)
     order_value = sum(x["todo"][2] * x["unit"] for x in ordered)
     col_totals = {l.id: sum(x["cells"][l.id]["qty"] for x in ordered if l.id in x["cells"]) for l in stores}
@@ -876,12 +1000,12 @@ def replenishment_sheet(status: str = "pending", supplier: int = 0, search: str 
     page = max(page, 1)
     counts_q = (select(Recommendation.status, func.count()).where(Recommendation.business_date == today, Recommendation.location_id.in_(store_ids)))
     if supplier:
-        counts_q = counts_q.where(Recommendation.supplier_id == supplier)
+        counts_q = counts_q.where((Recommendation.supplier_id == supplier) | Recommendation.product_id.in_(select(Product.id).where(Product.supplier_id == supplier)))
     counts = dict(db.execute(counts_q.group_by(Recommendation.status)).all())
     sups = list(db.scalars(select(Supplier).order_by(Supplier.name)))
     last = db.scalar(select(ReplRun).order_by(ReplRun.id.desc()).limit(1))
-    return render(c, "replenishment_sheet.html", rows=ordered[(page - 1) * SHEET_PAGE: page * SHEET_PAGE], stores=stores, all_stores=all_stores, loc=loc, counts=counts, status=status, supplier=supplier, suppliers=sups,
-                  search=term, page=page, total=total, last=last, has_wh=bool(wh_ids), sales_only=sales_only, cover_days=int(cfg.get(db, "repl.sales_only_cover_days")),
+    return render(c, "replenishment_sheet.html", rows=ordered[(page - 1) * SHEET_PAGE: page * SHEET_PAGE], stores=stores, all_stores=all_stores, wh_loc=wh_loc, wh_view=wh_view, loc=loc, counts=counts, status=status, supplier=supplier, suppliers=sups,
+                  search=term, todo=todo, page=page, total=total, last=last, has_wh=bool(wh_ids), sales_only=sales_only, cover_days=int(cfg.get(db, "repl.sales_only_cover_days")),
                   limit=float(cfg.get(db, "repl.approval_limit_manager")), kpi={"products": total, "value": sum(x["value"] for x in ordered), "send": send_value, "order": order_value},
                   col_totals=col_totals, grand=sum(x["need"] for x in ordered), short=lambda n: n.replace("The Daily Centro - ", ""), pages=SHEET_PAGE)
 

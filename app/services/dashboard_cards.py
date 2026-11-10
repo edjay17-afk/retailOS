@@ -10,7 +10,7 @@ from datetime import timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..models import (InventoryCurrent, Inspection, Issue, Product, PurchaseOrder, Recommendation, SalesDay, SalesDayProduct, SalesShift, SalesTx,
+from ..models import (InventoryCurrent, Inspection, Issue, Location, Product, PurchaseOrder, Recommendation, SalesDay, SalesDayProduct, SalesShift, SalesTx,
                       TransferSheet)
 from ..timeutil import now_utc, to_local
 from . import inspections, purchasing
@@ -40,7 +40,7 @@ def store_cards(db: Session, stores: list[dict], today, stock_health) -> list[di
         peak = max(s["series"]) if s["series"] else 0
         out.append({
             "id": lid, "name": s["name"].replace("The Daily Centro - ", ""), "today": s["today"], "yesterday": s["yesterday"], "accent": ACCENTS[n % len(ACCENTS)],
-            "has_sales": bool(any(s["series"]) or s["today"]), "top": lid == top_id and s["today"] > 0,
+            "has_sales": bool(any(s["series"]) or s["today"]), "top": lid == top_id and s["today"] > 0, "closed": bool(getattr(db.get(Location, lid), "closed", False)),
             "bars": [{"h": round(v / peak * 100, 1) if peak > 0 else 0, "label": s["labels"][i], "amount": v} for i, v in enumerate(s["series"])],
             "share": round(s["today"] / total_today * 100) if total_today > 0 else 0, "tx": tx_today.get(lid, 0),
             "register": shift.register if shift else "", "shift_open": bool(shift and shift.closed_at is None),
@@ -120,16 +120,18 @@ def overview(db: Session, cards: list[dict], stores: list[dict], today, wjobs: l
     for h in hrs:
         h["pct"] = round(h["n"] / peak * 100) if peak else 0
         h["peak"] = bool(peak and h["n"] == peak)
-    out_total = sum(c["out_of_stock"] for c in cards)
-    most = max((c["out_of_stock"] for c in cards), default=0)
+    open_cards = [c for c in cards if not c.get("closed")]   # a closed store has nothing on the shelf on purpose, so it is not "out of stock"
+    open_ids = [c["id"] for c in open_cards]
+    out_total = sum(c["out_of_stock"] for c in open_cards)
+    most = max((c["out_of_stock"] for c in open_cards), default=0)
     checks_total, checks_left = sum(c["checks_total"] for c in cards), sum(c["checks_left"] for c in cards)
     jobs = [{"key": j["key"], "n": j["n"]} for j in wjobs]
     if can("issue.view"):
         jobs.append({"key": "issues", "n": open_issues})
     return {
         "tx": tx, "avg_basket": round(total_today / tx, 2) if tx else 0, "hourly": hrs,
-        "out_total": out_total, "out_by_store": [{"name": c["name"], "n": c["out_of_stock"], "pct": round(c["out_of_stock"] / most * 100) if most else 0} for c in cards],
-        "gap": biggest_gap(db, ids, today),
+        "out_total": out_total, "out_by_store": [{"name": c["name"], "n": c["out_of_stock"], "pct": round(c["out_of_stock"] / most * 100) if most else 0} for c in open_cards],
+        "gap": biggest_gap(db, open_ids, today),
         "jobs": jobs, "jobs_total": sum(j["n"] for j in jobs),
         "checks_total": checks_total, "checks_done": checks_total - checks_left, "checks_pct": round((checks_total - checks_left) / checks_total * 100) if checks_total else 0,
         "best": best_sellers_today(db, ids, today),

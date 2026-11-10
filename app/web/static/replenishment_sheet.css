@@ -189,3 +189,50 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
 /* "Why this number" slide-over: square, full height, no dark strips. */
 .drawer{border-radius:0!important;border:0!important;border-left:1px solid var(--line)!important;box-shadow:-10px 0 30px rgba(16,24,40,.10)!important}
 .drawer::backdrop{background:rgba(16,24,40,.08)!important;backdrop-filter:none!important}
+
+/* Warehouse picked in the store filter: only the warehouse's own columns; the stores' quantities stay on the page (they are what gets ordered) but out of sight. */
+.rs.rs-wh-view th.c,.rs.rs-wh-view td.c,.rs.rs-wh-view tfoot td.c{display:none}
+
+/* Top of the page. One accent (blue) with one job each: the primary action, the tab you are on, and any filter that is narrowing the list.
+   The toolbar sits on its own white panel so it reads as one control against the grey page. */
+.rs-note{background:var(--accent-soft);border:0;border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;color:var(--ink)}
+.rs-note b{color:var(--ink)}
+@media (min-width:1001px){
+  .rs-sub-count{font-weight:700;color:var(--ink)}
+  /* actions: Refresh is the one primary button, Order lists stays quiet */
+  body .page-head .row.noprint form button{background:var(--btn);border-color:var(--btn);color:#fff}
+  body .page-head .row.noprint form button:hover{background:var(--btn-h);border-color:var(--btn-h)}
+  /* toolbar panel */
+  form.rs-tools{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px;gap:8px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .rs-seg{background:var(--surface2);border:0;border-radius:11px;padding:3px}
+  .rs-seg a{color:var(--mute);font-weight:600}
+  .rs-seg a b{background:var(--surface)!important;color:var(--mute)!important}
+  .rs-seg a.on{background:var(--btn);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.35)}
+  .rs-seg a.on b{background:rgba(255,255,255,.22)!important;color:#fff!important}
+  .rs-tools input[type=search],.rs-tools select{background-color:var(--surface2);border:1px solid transparent;color:var(--ink)}
+  .rs-tools input[type=search]:hover,.rs-tools select:hover{border-color:var(--line2)}
+  .rs-tools input[type=search]:focus,.rs-tools select:focus{outline:0;background-color:var(--surface);border-color:var(--btn);box-shadow:0 0 0 3px color-mix(in srgb,var(--btn) 18%,transparent)}
+  /* a filter that is narrowing the list turns blue, so you can see at a glance what is applied */
+  .rs-tools select:has(option:checked:not(:first-child)){background-color:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent-h)}
+}
+
+/* Selection bar: a light card that belongs to the page, instead of a dark pill. Count and total on the left, a quiet Clear, one blue action. */
+.rs-dock{background:var(--surface);color:var(--ink);border:1px solid var(--line2);border-radius:14px;padding:10px 10px 10px 18px;gap:10px;box-shadow:0 12px 32px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06)}
+.rs-dock:not([hidden]){animation:rs-dock-in .18s ease-out}
+@keyframes rs-dock-in{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+@media (prefers-reduced-motion:reduce){.rs-dock:not([hidden]){animation:none}}
+.rs-dock>div:first-child{display:flex;align-items:baseline;gap:14px;padding-right:14px}
+.rs-dock b{display:inline;font-size:15px;font-weight:700;color:var(--ink)}
+.rs-dock #repl-selected-count{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-right:6px;padding:0 8px;border-radius:8px;background:var(--accent-soft);color:var(--accent-h);font-size:14px;font-variant-numeric:tabular-nums}
+.rs-dock small{display:inline;color:var(--mute);font-size:14px;font-variant-numeric:tabular-nums}
+.rs-dock small #rs-selected-value{color:var(--ink);font-weight:700}
+.rs-dock #repl-clear{background:none;border:0;color:var(--mute);font-weight:600;font-size:14px;padding:10px 12px;border-radius:9px}
+.rs-dock #repl-clear:hover{background:var(--surface2);color:var(--ink)}
+.rs-dock #repl-proceed{background:var(--btn);color:#fff;height:42px;padding:0 20px;border-radius:10px;font-size:14.5px;font-weight:700}
+.rs-dock #repl-proceed:hover{background:var(--btn-h)}
+.rs-dock button:focus-visible{outline:2px solid var(--btn);outline-offset:2px}
+@media(max-width:700px){
+  .rs-dock>div:first-child{flex:1 1 100%;justify-content:space-between;padding-right:0}
+  .rs-dock #repl-clear{flex:1 1 auto;width:auto;background:var(--surface2)}
+  .rs-dock #repl-proceed{flex:1 1 100%}
+}

@@ -141,3 +141,90 @@ def test_the_count_can_be_downloaded_as_csv_right_after_saving(client,session,sc
     client.post("/logout",data={"csrf":csrf})
     add_user(session,"csv_other","staff",[999999]);login(client,"csv_other")
     assert client.get(url+"/counted.csv").status_code==403                        # another store cannot download it
+
+
+def test_the_last_digits_of_a_barcode_find_the_product_and_the_full_barcode_still_works(client, session, scan_setup):
+    url, csrf, pid, _ = scan_setup
+    a = Product(storehub_id="TAIL_A", name="Tail A", barcode="4800016068010", in_api=True)
+    b = Product(storehub_id="TAIL_B", name="Tail B", barcode="4800016999027", in_api=True)
+    c_ = Product(storehub_id="TAIL_C", name="Tail C", barcode="9068010999990", in_api=True)   # the digits sit in the middle, not at the end
+    d = Product(storehub_id="TAIL_D", name="Tail D", barcode="1111111068010", in_api=True)    # same last 6 digits as A
+    session.add_all([a, b, c_, d]); session.commit()
+    rows = client.get(url + "/products", params={"q": "068010"}).json()
+    assert {r["name"] for r in rows} == {"Tail A", "Tail C", "Tail D"} and rows[0]["name"] in ("Tail A", "Tail D") and rows[0]["barcode"].endswith("068010")   # ends-with first, full barcode shown
+    assert client.post(url + "/scan", data={"code": "4800016068010", "csrf": csrf}).json()["name"] == "Tail A"                                                   # the full barcode
+    assert client.post(url + "/scan", data={"code": "999027", "csrf": csrf}).json()["name"] == "Tail B"                                                          # the last 6 digits
+    assert client.post(url + "/scan", data={"code": "068010", "csrf": csrf}).status_code == 404                                                                  # two products end the same: pick from the list
+
+
+def test_a_count_makes_a_storehub_transfer_import_file_right_after_saving(client, session, scan_setup):
+    import csv, io
+    url, csrf, pid, _ = scan_setup
+    assert client.get(url + "/transfer.csv").status_code == 303                                   # nothing counted yet
+    other = Product(storehub_id="TR_OTHER", name="Counted zero", barcode="777", in_api=True)
+    session.add(other); session.commit()
+    assert client.post(url + "/scan-save", data={"product_id": pid, "counted": 7, "note": "", "csrf": csrf}).status_code == 200
+    assert client.post(url + "/scan-save", data={"product_id": other.id, "counted": 0, "note": "", "csrf": csrf}).status_code == 200
+    r = client.get(url + "/transfer.csv")
+    assert r.status_code == 200 and "StockTransfer-count-" in r.headers["content-disposition"]
+    rows = list(csv.reader(io.StringIO(r.text.lstrip("﻿"))))
+    assert rows[0] == ["Product Name", "SKU", "Product Id", "Ordered Qty", "Unit", "Serial Numbers"] and rows[1][0] == "#Optional"      # StoreHub's template header and note row
+    assert rows[2:] == [["Scan product", "", "SCAN_PRODUCT", "7", "", ""]]                                                         # only what was counted above zero
+    assert "Download StoreHub transfer CSV" in client.get(url).text
+
+
+def test_review_save_downloads_the_storehub_transfer_csv(client, session, scan_setup):
+    import csv, io
+    url, csrf, pid, _ = scan_setup
+    assert client.post(url + "/scan-save", data={"product_id": pid, "counted": 7, "note": "", "csrf": csrf}).status_code == 200
+    line_id = session.get(CycleCount, int(url.rsplit("/", 1)[1])).lines[0].id
+    r = client.post(url + "/save", data={"csrf": csrf, f"c_{line_id}": "7", f"n_{line_id}": ""}, follow_redirects=False)
+    assert r.status_code == 200 and "attachment" in r.headers["content-disposition"]
+    assert "StockTransfer-count-" in r.headers["content-disposition"]
+    rows = list(csv.reader(io.StringIO(r.text.lstrip("﻿"))))
+    assert rows[0] == ["Product Name", "SKU", "Product Id", "Ordered Qty", "Unit", "Serial Numbers"]
+    assert rows[2:] == [["Scan product", "", "SCAN_PRODUCT", "7", "", ""]]
+
+
+def test_review_actions_stay_visible_above_a_long_count(client, session, scan_setup):
+    from urllib.parse import urlsplit
+    from playwright.sync_api import sync_playwright
+    from app.models import CycleCountLine
+    url, _, _, _ = scan_setup
+    cc = session.get(CycleCount, int(url.rsplit("/", 1)[1]))
+    for i in range(30):
+        product = Product(storehub_id=f"LONG_{i}", name=f"Long count product {i}", barcode=f"LONG{i}", in_api=True)
+        session.add(product)
+        cc.lines.append(CycleCountLine(product=product, reason="uploaded", system_qty=10, counted_qty=12, variance=2))
+    session.commit()
+
+    def serve(route):
+        req = route.request
+        parsed = urlsplit(req.url)
+        response = client.request(req.method, parsed.path + ("?" + parsed.query if parsed.query else ""),
+                                  content=req.post_data_buffer,
+                                  headers={k: v for k, v in req.all_headers().items()
+                                           if k in ("content-type", "x-requested-with")})
+        route.fulfill(status=response.status_code, body=response.content,
+                      headers={k: v for k, v in response.headers.items()
+                               if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")})
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel="msedge", headless=True)
+        page = browser.new_page()
+        page.route("http://qa.test/**", serve)
+        page.route("https://**", lambda route: route.abort())
+        for width, height in ((1440, 600), (390, 700)):
+            page.set_viewport_size({"width": width, "height": height})
+            page.goto("http://qa.test" + url)
+            page.locator("#count-review").evaluate("el => { el.open = true; }")
+            toolbar = page.locator(".count-review-toolbar")
+            assert toolbar.is_visible()
+            assert page.locator('.count-review-toolbar button[type="submit"]').is_visible()
+            assert page.locator('.count-review-toolbar a[href$="/transfer.csv"]').is_visible()
+            assert toolbar.evaluate("el => getComputedStyle(el).position") == "sticky"
+            assert toolbar.bounding_box()["y"] < page.locator(".count-review-table").bounding_box()["y"]
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            box = toolbar.bounding_box()
+            assert 0 <= box["y"] < height
+        browser.close()

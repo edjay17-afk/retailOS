@@ -34,6 +34,7 @@ DEFAULTS: dict[str, tuple[Any, str]] = {
     "counts.reconcile_grace_days": (3, "Days to wait for StoreHub to show a count adjustment before flagging it for review"),
     "repl.require_case_pack": (False, "Block recommendations for products with no case pack"),
     "repl.approval_limit_manager": (20000.0, "Order value above which a store manager cannot approve (needs management)"),
+    "repl.excluded_categories": (["Food Service (Meals, Drinks & Pastries)", "Daily Cravings (Hot Meals)", "Maple & Ovens"], "Product categories that Auto replenishment leaves out (made or sold fresh in the store, not ordered from the warehouse)"),
     "repl.reason_codes": ([
         "Promotion ended", "Store closure / renovation", "Supplier constraint", "Known upcoming event",
         "Overstock concern", "Incorrect inventory", "Expected transfer", "Demand anomaly", "Other"],

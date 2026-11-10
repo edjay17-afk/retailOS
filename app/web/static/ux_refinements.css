@@ -35,3 +35,15 @@
  .rs td[data-label]:not(.rs-wh):not(.rs-need)::before{color:var(--mute)}
  .rs .repl-save-status{display:block;min-width:0}
 }
+
+/* Today: "Your work today" as a row of equal tiles instead of one tall list. */
+@media(min-width:901px){
+ .desktop-work-queue{display:flex;flex-wrap:wrap;gap:18px;margin:26px 0 0;padding:0;background:none;border:0;border-radius:0}
+ .desktop-work-queue .work-queue-head{flex:1 0 100%;margin-bottom:-6px}
+ .work-queue-head h2{font-size:16px;margin:0}
+ .desktop-work-queue>a{flex:1 1 240px;min-width:0;padding:16px 18px;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;transition:border-color .15s,box-shadow .15s}
+ .desktop-work-queue>a:hover{border-color:color-mix(in srgb,var(--btn) 45%,var(--line));box-shadow:0 6px 20px rgba(16,24,40,.06)}
+ .work-icon{border-radius:12px}
+ .work-copy strong{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.work-copy small{font-size:13px;margin-top:2px}
+ .work-link{font-size:13px}
+}

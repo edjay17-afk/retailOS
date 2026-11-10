@@ -3,7 +3,7 @@
 {% block title %}{{ t('Assistant') }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>{{ t('Assistant') }}</h1><p>{{ t('An AI analyst that reads your data, explains what matters, and proposes actions. It cannot act on its own: you decide.') }}</p></div>
+  <div><h1>{{ t('Assistant') }}</h1><p class="page-desc">{{ t('An AI analyst that reads your data, explains what matters, and proposes actions. It cannot act on its own: you decide.') }}</p></div>
   <div class="row">
     {% if can('ai.metrics') %}<a class="btn sec sm" href="/assistant/metrics">{{ t('How well is it doing?') }}</a>{% endif %}
     <span class="badge dot {{ 'b-ok' if st.available else 'b-bad' }}">{{ (t('Connected: ') ~ ('Gemini' if st.provider == 'gemini' else t('Local Ollama') if st.provider == 'ollama' else 'Claude') ~ (' (' ~ st.model ~ ')' if st.provider in ('api', 'gemini', 'ollama') else '')) if st.available else t('Not connected') }}</span>

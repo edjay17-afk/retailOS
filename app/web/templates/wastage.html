@@ -2,7 +2,7 @@
 {% block title %}{{ t('Wastage') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/wastage_lookup.css?v={{ asset_v('wastage_lookup.css') }}">
-<div class="page-head"><div><h1>{{ t('Wastage') }}</h1><p>{{ t('Record anything thrown away or lost. Every record also goes to the Wastage Record table in Lark.') }}</p></div></div>
+<div class="page-head"><div><h1>{{ t('Wastage') }}</h1><p class="page-desc">{{ t('Record anything thrown away or lost. Every record also goes to the Wastage Record table in Lark.') }}</p></div>{% if can('wastage.import') %}<form novalidate method="post" action="/wastage/import-lark" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec" type="submit">{{ t('Import from Lark') }}</button></form>{% endif %}</div>
 
 <div class="card"><div class="card-head"><h2>{{ t('Record wastage') }}</h2></div>
 <form novalidate method="post" action="/wastage/add"><input type="hidden" name="csrf" value="{{ csrf }}">

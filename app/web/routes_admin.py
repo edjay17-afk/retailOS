@@ -35,7 +35,7 @@ def settings_page(c: Ctx = Depends(need("settings.manage"))):
 
 
 @router.post("/settings/locations/{lid}")
-def location_update(lid: int, monitored: str = Form(""), type: str = Form("store"), manager: int = Form(0), lead: str = Form(""), opens: str = Form("06:00"),
+def location_update(lid: int, monitored: str = Form(""), closed: str = Form(""), type: str = Form("store"), manager: int = Form(0), lead: str = Form(""), opens: str = Form("06:00"),
                     closes: str = Form("22:00"), csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
     c.check_csrf(csrf)
     loc = c.db.get(Location, lid)
@@ -43,13 +43,14 @@ def location_update(lid: int, monitored: str = Form(""), type: str = Form("store
         raise HTTPException(404)
     if type not in ("store", "warehouse"):
         raise HTTPException(400, "Bad type")
-    before = {"monitored": loc.monitored, "type": loc.type, "manager": loc.manager_user_id, "lead": loc.lead_time_days}
+    before = {"monitored": loc.monitored, "closed": loc.closed, "type": loc.type, "manager": loc.manager_user_id, "lead": loc.lead_time_days}
     loc.monitored, loc.type, loc.manager_user_id = bool(monitored), type, manager or None
+    loc.closed = bool(closed)
     loc.lead_time_days = parse_float(lead)
     if re.fullmatch(r"\d\d:\d\d", opens) and re.fullmatch(r"\d\d:\d\d", closes):
         loc.opens_at, loc.closes_at = opens, closes
     audit.log(c.db, actor_type="human", actor_id=c.user.id, action="location.update", entity_type="location", entity_id=lid, before=before,
-              after={"monitored": loc.monitored, "type": loc.type, "manager": loc.manager_user_id, "lead": loc.lead_time_days})
+              after={"monitored": loc.monitored, "closed": loc.closed, "type": loc.type, "manager": loc.manager_user_id, "lead": loc.lead_time_days})
     return redirect("/settings", ok=f"Saved {loc.name}")
 
 

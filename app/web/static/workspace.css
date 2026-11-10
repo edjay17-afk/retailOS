@@ -759,3 +759,6 @@ html[data-theme="dark"]{--scroll-thumb:#484c52;--scroll-hover:#687587;--scroll-a
  .pos-source-toolbar{padding-bottom:8px}.pos-sync-status{font-size:10.5px}
 }
 @media(prefers-reduced-motion:reduce){.pos-source-picker button,.pos-account-switch button::after{transition:none}}
+
+/* The sentence under a page title that says what the page is for. Staff know the page they opened, so it is hidden everywhere; live facts on the same line (sync time, counts, unread) are kept outside .page-desc. */
+.page-desc{display:none!important}

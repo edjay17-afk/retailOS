@@ -32,7 +32,7 @@ def inspections_page(on: str = "", loc: int = 0, c: Ctx = Depends(need("inspecti
     if d == today_local():
         inspections.generate_tasks(c.db, d)
         c.db.flush()
-    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse"]
+    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse" and not l.closed]
     ids = [l.id for l in locations if not loc or l.id == loc]
     if loc:
         c.check_loc(loc)
@@ -46,7 +46,7 @@ def inspection_lark_reports(on: str = "", loc: int = 0, c: Ctx = Depends(need("i
     d = parse_date(on) or today_local()
     if loc:
         c.check_loc(loc)
-    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse" and (not loc or l.id == loc)]
+    locations = [l for l in c.locations() if l.name.strip().casefold() != "zenwok warehouse" and not l.closed and (not loc or l.id == loc)]
     try:
         result = lark_inspections.reports_for_day(d)
     except Exception:
@@ -303,9 +303,10 @@ def count_scan(cid: int, code: str = Form(""), product_id: int = Form(0), csrf: 
     if product_id:
         product = c.db.get(Product, product_id)
     else:
-        from ..services.product_lookup import search
+        from ..services.product_lookup import only_one, search
         matches = search(c.db, code, cc.location)
-        product = c.db.get(Product, matches[0]['id']) if len(matches) == 1 else None
+        one = only_one(matches, code)   # the full barcode, a SKU, or the last digits of a barcode
+        product = c.db.get(Product, one['id']) if one else None
     if product is None or not product.in_api:
         raise HTTPException(404, "Product not found. Scan its barcode or enter its SKU.")
     try:
@@ -365,7 +366,11 @@ async def count_save(cid: int, request: Request, c: Ctx = Depends(need("count.en
     except countsvc.CountError as e:
         c.db.rollback()
         return redirect(f"/counts/{cid}", err=str(e))
-    return redirect(f"/counts/{cid}", ok="Count submitted for approval" if form.get("submit") else "Saved")
+    if form.get("submit"):
+        return redirect(f"/counts/{cid}", ok="Count submitted for approval")
+    if any(l.counted_qty is not None and l.counted_qty > 0 for l in cc.lines):
+        return count_transfer_csv(cid, c)
+    return redirect(f"/counts/{cid}", ok="Saved")
 
 
 @router.post("/counts/{cid}/approve")
@@ -394,6 +399,23 @@ def count_delete(cid: int, csrf: str = Form(""), c: Ctx = Depends(need("count.en
         raise HTTPException(403)
     countsvc.delete(c.db, cc, c.user)
     return redirect("/counts", ok=c.t("Count deleted"))
+
+
+@router.get("/counts/{cid}/transfer.csv")
+def count_transfer_csv(cid: int, c: Ctx = Depends(need("count.enter"))):
+    """The counted products as a StoreHub stock-transfer import file: available right after Save."""
+    cc = c.db.scalar(select(CycleCount).where(CycleCount.id == cid).options(selectinload(CycleCount.lines).selectinload(countsvc.CycleCountLine.product), selectinload(CycleCount.location)))
+    if cc is None:
+        raise HTTPException(404)
+    c.check_loc(cc.location_id)
+    body = countsvc.transfer_csv(cc)
+    if body.count("\r\n") <= 2:
+        return redirect(f"/counts/{cid}", err=c.t("Nothing above zero has been counted yet."))
+    audit.log(c.db, actor_type="user", actor_id=c.user.id, action="export_count_transfer", entity_type="cycle_count", entity_id=cid, after={"status": cc.status, "lines": body.count("\r\n") - 2})
+    c.db.commit()
+    import re
+    store = re.sub(r"[^A-Za-z0-9]+", "-", cc.location.name.replace("The Daily Centro", "").strip()).strip("-") or "store"
+    return Response("\ufeff" + body, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="StockTransfer-count-{cid}-{store}-{cc.business_date}.csv"'})
 
 
 @router.get("/counts/{cid}/counted.csv")
@@ -748,7 +770,7 @@ def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, pag
             w.writerow([m.occurred_at.strftime("%Y-%m-%d %H:%M"), names.get(l.id, l.name), cell(p.name), p.barcode or "", cell(m.employee), cell(m.action), f"{m.qty_before:g}", f"{m.change:g}", f"{m.qty_after:g}"])
         audit.log(db, actor_type="user", actor_id=c.user.id, action="export_stock_changes", entity_type="report", entity_id="stock_changes", after={"rows": len(rows), "from": str(start), "to": str(end), "location": loc})
         db.commit()
-        return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-changes-{start}-to-{end}.csv"'})
+        return Response("\ufeff" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-changes-{start}-to-{end}.csv"'})
     rows, total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=HISTORY_PAGE, offset=(page - 1) * HISTORY_PAGE)
     last_ok = db.get(Setting, "stock_movements.last_ok")
     return render(c, "stock_history.html", rows=rows, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action,

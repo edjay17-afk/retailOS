@@ -165,3 +165,83 @@
 .b-job em{background:#2563eb}
 .lv-t .lv-s,.lv-s,.b-note,.b-y,.lv-sharel,.lv-hl,.lv-mini,.lv-ax{color:#475f8a}
 .hv-tip{background:#1e3a8a}.lv-big .hv-tip,.lv-herobars .hv-tip{background:#fff;color:#1e3a8a}
+
+/* ===== polish pass: same content, steadier layout. Tiles share one radius and padding, charts sit on a common baseline,
+   the two meters on a store card look different because they mean different things, and nothing pretends to be a checkbox. ===== */
+.lv-hero{gap:18px;margin-bottom:18px}
+.lv-big,.lv-t{border-radius:16px;padding:20px 22px}
+.lv-t{display:flex;flex-direction:column}
+.lv-big:after{content:none}
+.lv-big small{font-size:13.5px;font-weight:600}
+.lv-big strong{margin:8px 0 12px;line-height:1.1}
+.lv-herobars{flex:1;height:auto;min-height:84px;margin-top:18px;padding-top:0;gap:5px}
+.lv-herobars .hv-bar,.lv-hours .hv-bar,.lv-spark .hv-bar{border-radius:4px 4px 2px 2px}
+.lv-hn{margin-top:10px}
+.lv-k{font-size:13.5px}
+.lv-k i{display:none}
+.lv-v{font-size:34px;margin:8px 0 4px}
+.lv-hours{flex:1;height:auto;min-height:76px;margin:18px 0 6px;gap:5px}
+.lv-by{margin-top:14px;gap:9px}
+.lv-by u{height:6px}
+.lv-worst{margin-top:auto;padding-top:11px;border-top-style:solid}
+.lv-by+.lv-worst{margin-top:14px}
+/* jobs: the count on the left, checklist ring on the right, then plain rows */
+.lv-jr{gap:10px}
+.lv-jr .lv-v{margin-right:auto}
+.lv-jr .lv-ring{width:46px;height:46px}.lv-jr .lv-ring:before{inset:5px}.lv-jr .lv-ring b{font-size:12px}
+.lv-jr small.lv-s{max-width:64px;line-height:1.25}
+.lv-todo{margin-top:14px;gap:0}
+.lv-todo a{gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.lv-todo a:hover span{color:var(--btn)}
+.lv-todo em{width:8px;height:8px;border:0;border-radius:50%;background:var(--btn);font-size:0}
+.lv-todo em.ok{background:var(--ok);border:0}
+.lv-todo b{min-width:30px;text-align:center;background:var(--accent-soft);color:var(--accent-h);border-radius:99px;padding:1px 9px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* store cards */
+.b-stores{gap:18px}
+.lv-card{border-radius:16px;transition:border-color .15s,box-shadow .15s}
+.lv-card[data-href]:hover{border-color:color-mix(in srgb,var(--btn) 45%,var(--line));box-shadow:0 6px 20px rgba(16,24,40,.06)}
+.lv-card .lv-in{padding:20px 22px;display:flex;flex-direction:column;height:100%}
+.lv-top{min-height:46px}
+.b-big{font-size:32px;margin:12px 0 2px}
+.lv-spark{height:56px;margin:14px 0 14px;gap:5px}
+.lv-share{height:4px;margin:0 0 6px}
+.lv-sharel{margin-bottom:16px}
+.lv-health{height:8px;gap:3px;margin:0 0 8px;border-radius:0;overflow:visible}
+.lv-health i{border-radius:99px;min-width:0}
+.lv-hl{gap:16px;margin-bottom:16px}
+.lv-hl span:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#2563eb;vertical-align:1px}
+.lv-hl span:nth-child(2):before{background:#93b4f5}
+.lv-hl span:nth-child(3):before{background:var(--bad)}
+.lv-hl span:only-child:before{content:none}
+.lv-foot{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0;margin-top:auto;padding-top:14px}
+.lv-mini{min-width:0}
+.lv-mini+.lv-mini{border-left:1px solid var(--line);padding-left:16px}
+.lv-mini b{font-size:16px;font-variant-numeric:tabular-nums}
+/* a closed store: quiet, no alarm colours */
+.lv-card.shut{background:var(--surface2)!important;border-style:dashed}
+.lv-badge.shut{background:var(--surface);color:var(--mute);border:1px solid var(--line2)}
+.lv-card.shut .lv-health,.lv-card.shut .lv-hl{display:none}
+.lv-card.shut .b-big.b-none{font-size:22px;margin-top:14px}
+.lv-card.shut .lv-mini b{color:var(--mute)}
+
+/* warehouse and best sellers */
+.b-row{gap:18px}
+.b-box{border-radius:16px;padding:20px 22px}
+.b-box h2{font-size:16px;margin:0 0 8px}
+.b-job{padding:14px 0}
+.b-job em{border-radius:10px;padding:8px 16px;font-size:13.5px}
+.lv-rank{padding:10px 0;font-size:14px}
+.lv-rank+.lv-rank{border-top:1px solid var(--line)}
+.lv-rank .t{height:6px}
+.lv-rank b{font-variant-numeric:tabular-nums}
+.b-more{margin-top:26px;border-top:1px solid var(--line);padding-top:6px}
+html[data-theme="dark"] .lv-hl span:nth-child(2):before{background:#5b7fc7}
+.lv-todo a{font-size:13px;gap:8px;padding:8px 0}
+.lv-todo em:not(.ok){display:none}
+.lv-todo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lv-todo b{min-width:0;padding:1px 8px}
+.lv-foot{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1.15fr);column-gap:14px}
+.lv-mini+.lv-mini{padding-left:14px}
+.lv-foot .lv-ring.sm{width:38px;height:38px}.lv-foot .lv-ring.sm:before{inset:4px}
+.lv-mini span{white-space:nowrap}

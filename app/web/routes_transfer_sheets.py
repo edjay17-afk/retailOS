@@ -27,12 +27,19 @@ def _sheet(c: Ctx, sid: int) -> TransferSheet:
 
 
 def _lines(c: Ctx, s: TransferSheet) -> dict:
-    stock = ts.on_hand(c.db, s.source_location_id, [l.product_id for l in s.lines if l.product_id])
+    pids = [l.product_id for l in s.lines if l.product_id]
+    stock = ts.on_hand(c.db, s.source_location_id, pids)
+    dest = ts.on_hand(c.db, s.target_location_id, pids)   # what the store has now, as StoreHub's transfer page shows it
     sm = ts.summary(s)
+
+    def cost(l):
+        v = l.unit_cost if l.unit_cost is not None else (l.product.cost if l.product else None)
+        return None if v is None else round(float(v), 6)
     return {"lines": [{"id": l.id, "product_id": l.product_id, "name": ts.line_name(l), "barcode": ts.line_barcode(l), "sku": (l.product.sku or "") if l.product else "",
-                       "qty": l.qty, "on_hand": stock.get(l.product_id)}
+                       "qty": l.qty, "on_hand": stock.get(l.product_id), "dest": dest.get(l.product_id), "cost": cost(l),
+                       "subtotal": None if cost(l) is None else round(l.qty * cost(l), 2)}
                       for l in sorted(s.lines, key=lambda x: -x.id)],
-            "total_lines": sm["lines"], "total_qty": sm["qty"]}
+            "total_lines": sm["lines"], "total_qty": sm["qty"], "total_cost": round(sum(l.qty * (cost(l) or 0) for l in s.lines), 2)}
 
 
 @router.get("/transfer-sheets")

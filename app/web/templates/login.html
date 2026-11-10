@@ -47,8 +47,6 @@
       <label class="login-remember"><input type="checkbox" id="login-remember"> <span>{{ t('Remember my username') }}</span></label>
       <button class="login-submit" type="submit"><span>{{ t('Sign in') }}</span><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
     </form>
-    <p class="login-help">{{ t('Forgot your password? Ask your manager or admin to reset it.') }}</p>
-    {% if sync_badge %}<p class="login-sync {{ sync_badge }}"><i aria-hidden="true"></i>{{ t('Systems are syncing normally') if sync_badge == 'ok' else t('Data sync is delayed: numbers may be old') }}</p>{% endif %}
     <div class="login-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="en" lang="en" class="{{ 'on' if lang == 'en' }}" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ ('/login?next=' ~ ((next or '/')|urlencode))|urlencode }}" hreflang="zh" lang="zh" class="{{ 'on' if lang == 'zh' }}" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
   </section>
   </div>

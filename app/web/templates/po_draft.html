@@ -7,7 +7,7 @@
 <div class="po-page">
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>{{ t('New purchase order') }}</h1>
-    <p class="desk-only">{{ t('Choose the supplier, then add the products. Everything is delivered to the warehouse.') }}</p></div>
+    <p class="desk-only page-desc">{{ t('Choose the supplier, then add the products. Everything is delivered to the warehouse.') }}</p></div>
   <div class="row noprint">
     <a class="btn sm sec" href="/purchase-orders">{{ t('Purchase orders') }}</a>
     <button type="button" class="sm sec" data-po-toggle aria-controls="po-saved-wrap">{{ t('Saved orders') }}</button>
@@ -80,7 +80,8 @@
   <div class="empty" id="po-empty" hidden>{{ t('No products yet. Scan or type a name above.') }}</div>
   <div class="po-sums" id="po-foot" hidden>
     <div class="po-sum"><span>{{ t('Subtotal (PHP)') }}</span><b id="po-sub"></b></div>
-    <div class="po-sum"><span>{{ t('Tax') }} <span id="po-rate"></span>%</span><b id="po-tax"></b></div>
+    <div class="po-sum"><span>{{ t('Tax') }} <span id="po-rate"></span>%</span><span class="po-sum-in"><input id="po-tax-in" class="po-in" inputmode="decimal" aria-label="{{ t('Tax') }}"><button type="button" id="po-tax-auto" class="np-remove" hidden>{{ t('Auto') }}</button></span></div>
+    <div class="po-sum"><span>{{ t('Discount') }}</span><span class="po-sum-in"><input id="po-disc-in" class="po-in" inputmode="decimal" placeholder="0.00" aria-label="{{ t('Discount') }}"></span></div>
     <div class="po-sum po-sum-total"><span>{{ t('Total (PHP)') }}</span><b id="po-grand"></b></div>
   </div>
 </div>
@@ -147,6 +148,7 @@
     str:function(d){ var t=d.n.toString(); if(d.s>0){ t=t.padStart(d.s+1,'0'); t=t.slice(0,t.length-d.s)+'.'+t.slice(t.length-d.s); t=t.replace(/0+$/,'').replace(/\.$/,'') } return t; },
     mul:function(a,b){ return {n:a.n*b.n,s:a.s+b.s}; },
     add:function(a,b){ var s=Math.max(a.s,b.s); return {n:a.n*(BigInt(10)**BigInt(s-a.s))+b.n*(BigInt(10)**BigInt(s-b.s)),s:s}; },
+    neg:function(a){ return {n:-a.n,s:a.s}; },
     zero:{n:BigInt(0),s:0}
   };
   function show(str){   // 1234567.5 -> 1,234,567.50 ; more than two decimals are all kept: 3053.5714285 -> 3,053.5714285
@@ -167,13 +169,14 @@
   // ---- the order
   function grand(lines){ var t=D.zero; lines.forEach(function(l){ var x=lineTotal(l.qty,l.price); if(x) t=D.add(t,D.parse(x)) }); return D.str(t); }
   var RATE={{ data.rate|tojson }};   // tax percent, fixed for this order
+  var DISC=data.discount||'', TAXM=data.tax_manual||'';   // the Discount box and a typed tax amount (empty = rate x subtotal)
   function taxOf(sub){ var a=D.parse(sub), r=D.parse(RATE); if(!a||!r) return '0'; var m=D.mul(a,r); return D.str({n:m.n,s:m.s+2}); }   // subtotal x rate / 100, exact
   function summary(lines){
-    var sub=grand(lines), tax=taxOf(sub), g=D.str(D.add(D.parse(sub),D.parse(tax))), info=document.getElementById('po-bar-info'), save=document.getElementById('po-save'), cnt=document.getElementById('po-count');
+    var sub=grand(lines), taxA=taxOf(sub), tax=(TAXM!==''&&D.parse(TAXM))?D.str(D.parse(TAXM)):taxA, dsc=D.parse(DISC)||D.zero, gd=D.add(D.add(D.parse(sub),D.parse(tax)),D.neg(dsc)), g=gd.n<BigInt(0)?'0':D.str(gd), info=document.getElementById('po-bar-info'), save=document.getElementById('po-save'), cnt=document.getElementById('po-count');
     var s=lines.length?(lines.length+' '+(lines.length===1?PRODUCT:PRODUCTS)+' · PHP '+show(g)):'';
     if(info) info.textContent=s; if(cnt) cnt.textContent=lines.length?('· '+lines.length):'';
     if(save) save.disabled=!lines.length;
-    foot.hidden=!lines.length; document.getElementById('po-rate').textContent=RATE; document.getElementById('po-sub').textContent=lines.length?show(sub):''; document.getElementById('po-tax').textContent=lines.length?show(tax):''; document.getElementById('po-grand').textContent=lines.length?show(g):''; empty.hidden=lines.length>0;
+    foot.hidden=!lines.length; document.getElementById('po-rate').textContent=RATE; document.getElementById('po-sub').textContent=lines.length?show(sub):''; var ti=document.getElementById('po-tax-in'), di=document.getElementById('po-disc-in'), ta=document.getElementById('po-tax-auto'); if(ti&&document.activeElement!==ti) ti.value=lines.length?tax:''; if(di&&document.activeElement!==di) di.value=DISC; if(ta) ta.hidden=TAXM===''; document.getElementById('po-grand').textContent=lines.length?show(g):''; empty.hidden=lines.length>0;
   }
   function cell(cls,label){ var c=document.createElement('div'); c.className=cls; if(label){ var l=document.createElement('span'); l.className='po-lab mob-only'; l.textContent=label; c.appendChild(l) } return c; }
   function render(d){
@@ -198,6 +201,16 @@
     summary(d.lines); feedback.capture();
   }
   render(data);
+  // ---- the Tax and Discount boxes: saved when you leave the box; the total follows what is typed
+  (function(){
+    var ti=document.getElementById('po-tax-in'), di=document.getElementById('po-disc-in'), ta=document.getElementById('po-tax-auto'); if(!ti||!di) return;
+    function liveTax(){ cut6(ti); TAXM=ti.value.trim(); summary(data.lines); }
+    function liveDisc(){ cut6(di); DISC=di.value.trim(); summary(data.lines); }
+    function saveTotals(){ post('/totals',{discount:DISC,tax_amount:TAXM}).then(function(r){ if(r.ok){ DISC=r.discount||''; TAXM=r.tax_manual||''; data.discount=DISC; data.tax_manual=TAXM; msg(''); summary(data.lines) } else { msg(r.error,true); DISC=r.discount||''; TAXM=r.tax_manual||''; summary(data.lines) } }); }
+    ti.addEventListener('input',liveTax); di.addEventListener('input',liveDisc);
+    [ti,di].forEach(function(i){ i.addEventListener('change',saveTotals); i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); i.blur() } }); });
+    if(ta) ta.addEventListener('click',function(){ TAXM=''; ti.value=''; saveTotals(); });
+  })();
 
   // ---- product search: the product list lives in the browser, so a scan is answered at once
   var cat=null, byBar={}, bySku={};

@@ -228,6 +228,22 @@ def import_counts(db: Session, user: User, filename: str, data: bytes, locations
 STATUS_TEXT = {"open": "Draft, not submitted", "submitted": "Submitted, waiting for approval", "approved": "Approved"}
 
 
+def transfer_csv(cc: CycleCount) -> str:
+    """What was counted, in StoreHub's stock-transfer import layout (the same file the transfer sheets make): every counted product with a quantity above zero,
+    Ordered Qty = the counted quantity. Choose the from and to stores on StoreHub's Stock Transfer page when you import it."""
+    from . import transfer_sheets as ts
+    out = io.StringIO()
+    w = csv.writer(out, lineterminator="\r\n")
+    w.writerow(ts.IMPORT_HEADER)
+    w.writerow(ts.IMPORT_NOTES)
+    for l in sorted(cc.lines, key=lambda x: x.id):
+        p = l.product
+        if l.counted_qty is None or l.counted_qty <= 0 or p is None or p.source != "storehub":
+            continue
+        w.writerow([p.name, p.sku or "", p.storehub_id, ts._qty(l.counted_qty), "", ""])
+    return out.getvalue()
+
+
 def counted_csv(cc: CycleCount) -> str:
     """Everything counted so far, for any count and any POS, at any stage. The Status column says whether it is approved."""
     def cell(v) -> str:       # text that starts with = + - @ must not run as a formula in Excel

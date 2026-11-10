@@ -239,8 +239,11 @@ def _run_storehub(db: Session, *, force: bool = False, actor: User | None = None
 
     lookback = int(s["repl.lookback_days"])
     start, end = today - timedelta(days=lookback), today - timedelta(days=1)
-    locs = list(db.scalars(select(Location).where(Location.monitored.is_(True), Location.source == "storehub")))
+    locs = list(db.scalars(select(Location).where(Location.monitored.is_(True), Location.closed.is_(False), Location.source == "storehub")))   # a closed store is not restocked
     stores = [l for l in locs if l.type == "store"]
+    for r in db.scalars(select(Recommendation).where(Recommendation.business_date >= today, Recommendation.location.has(Location.closed.is_(True)),
+                                                     Recommendation.status.in_(("pending", "needs_review")), Recommendation.batch_id.is_(None), Recommendation.transfer_sheet_id.is_(None))):
+        db.delete(r)   # suggestions nobody has acted on for a store that has closed
     warehouses = [l for l in locs if l.type == "warehouse"]
 
     trading: dict[int, int] = {l.id: (db.scalar(select(func.count()).select_from(SalesDay).where(
@@ -265,7 +268,14 @@ def _run_storehub(db: Session, *, force: bool = False, actor: User | None = None
                 stale_po_products.add((po.location_id, ln.product_id))
     crit_loc = {e.location_id for e in db.scalars(select(DqEvent).where(
         DqEvent.severity == "critical", DqEvent.resolved_at.is_(None), DqEvent.location_id.is_not(None)))}
-    products = {p.id: p for p in db.scalars(select(Product).options(selectinload(Product.supplier))) if p.in_api and p.track_stock and p.replenish_enabled}
+    skip_cats = {str(x).strip().lower() for x in (cfg.get(db, "repl.excluded_categories") or [])}   # e.g. Food Service: not part of auto replenishment
+    products = {p.id: p for p in db.scalars(select(Product).options(selectinload(Product.supplier)))
+                if p.in_api and p.track_stock and p.replenish_enabled and (p.category or "").strip().lower() not in skip_cats}
+    if skip_cats:   # suggestions already made for those categories that nobody has acted on
+        for r in db.scalars(select(Recommendation).where(Recommendation.business_date >= today, Recommendation.status.in_(("pending", "needs_review")),
+                                                         Recommendation.batch_id.is_(None), Recommendation.transfer_sheet_id.is_(None),
+                                                         Recommendation.product.has(func.lower(func.trim(Product.category)).in_(skip_cats)))):
+            db.delete(r)
     last_cost = _last_po_price(db)
 
     existing = {(r.location_id, r.product_id): r for r in db.scalars(select(Recommendation).where(

@@ -27,19 +27,24 @@
 {% if counted_lines %}<h2 class="phone-section-title">{{ t('Recently counted') }}</h2>{% for l in (counted_lines|reverse|list)[:3] %}<div class="phone-count-recent-row"><span>{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong><svg class="i" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg></div>{% endfor %}{% endif %}
 </section>
 <details id="count-review" {{ 'open' if cc.status != 'open' }}><summary><span>{{ t('Review counts') }}</span><span class="count-review-total">{{ cc.lines|length }} {{ t('Items') }}</span></summary>
-<form novalidate method="post" action="/counts/{{ cc.id }}/save" data-guard><input type="hidden" name="csrf" value="{{ csrf }}">
-{% if cc.lines %}<div class="tw count-review-table"><table class="wide rcards"><tr><th scope="col">{{ t('Product') }}</th><th scope="col" class="right">{{ t('System') }}</th><th scope="col" class="right">{{ t('Counted') }}</th><th scope="col" class="right">{{ t('Difference') }}</th><th scope="col">{{ t('Note') }}</th></tr>
+<form id="count-review-form" novalidate method="post" action="/counts/{{ cc.id }}/save" data-guard><input type="hidden" name="csrf" value="{{ csrf }}">
+{% if cc.lines %}<div class="count-review-toolbar" aria-label="{{ t('Review counts') }}">
+  <div class="count-review-toolbar-actions">
+    {% if cc.status == 'open' %}<button type="submit">{{ t('Save') }}</button>{% endif %}
+    {% if counted_lines %}<a class="btn sec" href="/counts/{{ cc.id }}/transfer.csv" title="{{ t('Counted products in the layout StoreHub imports on its Stock Transfer page') }}">{{ t('Download StoreHub transfer CSV') }}</a><a class="btn sec" href="/counts/{{ cc.id }}/counted.csv">{{ t('Download CSV') }}</a>{% endif %}
+    {% if cc.status == 'approved' and cc.location.source == 'storehub' %}<a class="btn" href="/counts/{{ cc.id }}.csv">{{ t('Download stock take file for StoreHub') }}</a>{% endif %}
+  </div>
+  {% if counted_lines %}<span class="small mute count-review-note">{{ t('Everything counted so far.') }}{% if cc.status != 'approved' %} {{ t('Not approved yet.') }}{% endif %}</span>{% endif %}
+</div>
+<div class="tw count-review-table"><table class="wide rcards"><tr><th scope="col">{{ t('Product') }}</th><th scope="col" class="right">{{ t('System') }}</th><th scope="col" class="right">{{ t('Counted') }}</th><th scope="col" class="right">{{ t('Difference') }}</th><th scope="col">{{ t('Note') }}</th></tr>
 {% for l in cc.lines %}<tr><td>{{ l.product.name }}<div class="small mute">{{ l.product.barcode or '' }}</div></td><td class="right">{{ l.system_qty|num }}</td>
 <td class="right">{% if cc.status == 'open' %}<input type="number" step="any" min="0" name="c_{{ l.id }}" value="{{ l.counted_qty|num if l.counted_qty is not none }}" inputmode="decimal">{% else %}{{ l.counted_qty|num if l.counted_qty is not none }}{% endif %}</td>
 <td class="right"><b style="{{ 'color:var(--bad)' if l.variance }}">{{ ('%+g'|format(l.variance)) if l.variance is not none else '' }}</b></td>
 <td>{% if cc.status == 'open' %}<input name="n_{{ l.id }}" value="{{ l.note or '' }}">{% else %}{{ l.note or '' }}{% endif %}</td></tr>{% endfor %}</table></div>{% else %}<div class="count-empty"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg><strong>{{ t('No products counted yet') }}</strong><p>{{ t('Scan your first product above. Saved counts will appear here.') }}</p></div>{% endif %}
-{% if cc.status == 'open' and cc.lines %}<div class="count-review-actions"><button>{{ t('Save') }}</button></div>{% endif %}
 </form>
-{% if cc.lines|selectattr('counted_qty','ne',none)|list %}<p class="count-download"><a class="btn sec" href="/counts/{{ cc.id }}/counted.csv">{{ t('Download CSV') }}</a> <span class="small mute">{{ t('Everything counted so far.') }}{% if cc.status != 'approved' %} {{ t('Not approved yet.') }}{% endif %}</span></p>{% endif %}
 {% if cc.status == 'submitted' and can('count.approve') %}
 <form novalidate method="post" action="/counts/{{ cc.id }}/approve" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok">{{ t('Approve count') }}</button></form>{% endif %}
-{% if cc.status == 'approved' and cc.location.source == 'storehub' %}<p><a class="btn" href="/counts/{{ cc.id }}.csv">{{ t('Download stock take file for StoreHub') }}</a></p>
-<p class="small mute">{{ t('In the StoreHub back office open Stock Management, then Stock Take, then Import Items by CSV. Match the columns to the template StoreHub gives you; the first column carries the StoreHub product id. Import after closing, and choose to leave uncounted items unchanged. The next sync checks that stock changed.') }}</p>{% endif %}
+{% if cc.status == 'approved' and cc.location.source == 'storehub' %}<p class="small mute">{{ t('In the StoreHub back office open Stock Management, then Stock Take, then Import Items by CSV. Match the columns to the template StoreHub gives you; the first column carries the StoreHub product id. Import after closing, and choose to leave uncounted items unchanged. The next sync checks that stock changed.') }}</p>{% endif %}
 </details>
 </div>
 {% endblock %}

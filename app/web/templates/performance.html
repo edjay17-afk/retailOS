@@ -9,7 +9,7 @@
 <div class="perf-summary"><div class="perf-label">{{ t(label) }}</div><strong>{{ value }}</strong><span>{{ sub }}</span></div>
 {% endmacro %}
 <div class="performance-page">
-<div class="page-head"><div><div class="eyebrow">{{ company }}</div><h1>{{ t('Performance') }}</h1><p>{{ t('A clear view of stock, daily operations and data reliability.') }}</p></div></div>
+<div class="page-head"><div><div class="eyebrow">{{ company }}</div><h1>{{ t('Performance') }}</h1><p class="page-desc">{{ t('A clear view of stock, daily operations and data reliability.') }}</p></div></div>
 <form method="get" class="filters perf-filters">
   <div><label for="perf-period">{{ t('Period') }}</label><select id="perf-period" name="days" aria-controls="perf-custom">{% for d in (30, 60, 90, 180) %}<option {{ 'selected' if not custom and d == days }} value="{{ d }}">{{ d }} {{ t('days') }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
   <div id="perf-custom" class="perf-custom" {% if not custom %}hidden{% endif %}>

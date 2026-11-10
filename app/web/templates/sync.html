@@ -13,8 +13,20 @@
 
 {% if can('sync.run') %}
 <h2>{{ t('Run now') }}</h2>
-<form novalidate method="post" action="/sync/run" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
-<select name="job">{% for a in actions %}<option value="{{ a }}">{{ t(a) }}</option>{% endfor %}</select><button>{{ t('Run') }}</button></form>
+<form novalidate method="post" action="/sync/run" class="row" id="run-form" data-nobusy><input type="hidden" name="csrf" value="{{ csrf }}">
+<select name="job"><option value="all">{{ t('all') }}</option>{% for a in actions %}<option value="{{ a }}">{{ t(a) }}</option>{% endfor %}</select><button id="run-btn">{{ t('Run') }}</button></form>
+<dialog class="run-panel run-modal" id="run-panel" aria-labelledby="run-title" aria-live="polite" data-state="run">
+  <div class="run-head">
+    <span class="run-badge" id="run-badge" aria-hidden="true"><svg class="i"><use href="#i-sync"/></svg></span>
+    <div class="run-titles"><b id="run-title"></b><div class="run-sub" id="run-sub"></div></div>
+    <button type="button" class="run-x" id="run-close" aria-label="{{ t('Close') }}">&times;</button>
+  </div>
+  <div class="run-bar" aria-hidden="true"><i id="run-fill"></i></div>
+  <ol class="run-steps" id="run-steps"></ol>
+  <div class="run-foot" id="run-foot" hidden><button type="button" class="sec" id="run-reload">{{ t('Refresh the list') }}</button><button type="button" id="run-done">{{ t('Close') }}</button></div>
+</dialog>
+<link rel="stylesheet" href="/static/sync_run.css?v={{ asset_v('sync_run.css') }}">
+<script src="/static/sync_run.js?v={{ asset_v('sync_run.js') }}" data-running="{{ t('Running') }}" data-done="{{ t('Finished') }}" data-failed="{{ t('Some steps failed') }}" data-waiting="{{ t('Waiting') }}" data-completed="{{ t('Completed') }}" data-of="{{ t('of') }}" data-steps="{{ t('steps completed') }}" data-lost="{{ t('Lost contact with the server. The run may still be going: refresh the list in a minute.') }}"></script>
 {% endif %}
 
 <h2>{{ t('Recent runs') }}</h2>

@@ -249,11 +249,11 @@ def rows_sales(db):
 
 
 def rows_products(db):
-    """Fills the existing 产品总表 Product List layout: distributor, contact, category, product name."""
+    """Fills the existing 产品总表 Product List layout: distributor, contact, category, product name. Only the products StoreHub lists now: one it no longer lists is taken off."""
     from .models import Supplier
     sups = {x.id: x for x in db.scalars(select(Supplier))}
     out = []
-    for p in db.scalars(select(Product).where(Product.source == "storehub")):
+    for p in db.scalars(select(Product).where(Product.source == "storehub", Product.in_api.is_(True))):
         sp = sups.get(p.supplier_id)
         out.append((str(p.id), {"Distributor  经销商": sp.name if sp else "", "Contact No": (sp.contact if sp else None) or None, "Category 类别": p.category or None,
                                 "Product Name 产品名称": p.name}))
@@ -455,12 +455,12 @@ def setup(client: LarkClient) -> dict[str, str]:
     return ids
 
 
-def mirror(client: LarkClient | None = None, batch_size: int = 100) -> dict:
-    """Send new and changed records. Safe to run repeatedly; returns counts."""
+def mirror(client: LarkClient | None = None, batch_size: int = 100, only: set[str] | None = None) -> dict:
+    """Send new and changed records (only these tables when `only` is given). Safe to run repeatedly; returns counts."""
     client = client or LarkClient()
     if not client.configured:
         return {"enabled": False}
-    sent_new = sent_upd = errors = 0
+    sent_new = sent_upd = errors = removed = 0
     with SessionLocal() as db:
         known = {s.key.split(".", 2)[2] for s in db.scalars(select(Setting).where(Setting.key.like("lark.table.%")))}
     if any(sp.entity not in known for sp in SPECS):  # first run, or a new table was added: create what is missing, no manual step needed
@@ -472,6 +472,8 @@ def mirror(client: LarkClient | None = None, batch_size: int = 100) -> dict:
     with SessionLocal() as db:
         tables = {s.key.split(".", 2)[2]: s.value for s in db.scalars(select(Setting).where(Setting.key.like("lark.table.%")))}
         for sp in SPECS:
+            if only is not None and sp.entity not in only:
+                continue
             tid = tables.get(sp.entity)
             if not tid:
                 continue
@@ -550,11 +552,27 @@ def mirror(client: LarkClient | None = None, batch_size: int = 100) -> dict:
                     db.commit()
                     sent_upd += len(done)
                     errors += 1 if len(done) < len(chunk) else 0
+                prune = db.get(Setting, "lark.prune_products")
+                if sp.entity == "product" and prune is not None and str(prune.value).strip('"').lower() in ("1", "true", "yes", "on"):   # off until switched on: the Lark product list follows StoreHub's list: a product it no longer lists is taken off (never more than 100 at once, in case a sync went wrong)
+                    keep = {eid for eid, _ in all_rows}
+                    stale = [l for l in links.values() if l.entity_id not in keep]
+                    if 0 < len(stale) <= 100:
+                        for l in stale:
+                            try:
+                                client.batch_delete(tid, [l.lark_record_id])
+                            except LarkError as e:
+                                if "1254043" not in str(e):   # already deleted in Lark: just forget it
+                                    raise
+                            db.delete(l)
+                        db.commit()
+                        removed += len(stale)
+                    elif stale:
+                        log.warning("lark mirror product: %s products to take off is too many at once; left alone", len(stale))
             except LarkError as e:
                 db.rollback()
                 errors += 1
                 log.error("lark mirror %s failed: %s", sp.entity, e)
-    return {"enabled": True, "created": sent_new, "updated": sent_upd, "errors": errors}
+    return {"enabled": True, "created": sent_new, "updated": sent_upd, "errors": errors, "removed": removed}
 
 
 def forward_alerts(client: LarkClient | None = None, chat_id: str | None = None, limit: int = 10) -> dict:

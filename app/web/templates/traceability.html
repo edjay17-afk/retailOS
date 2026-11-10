@@ -2,7 +2,7 @@
 {% block title %}{{ t('Traceability') }}{% endblock %}
 {% block content %}
 {% macro pct(v) %}{{ ('%.0f%%'|format(v * 100)) if v is not none else '—' }}{% endmacro %}
-<div class="page-head"><div><h1>{{ t('Traceability') }}</h1><p>{{ t('Every real stock movement should leave a trace, and each trace is checked against StoreHub. — means no data yet.') }}</p></div>
+<div class="page-head"><div><h1>{{ t('Traceability') }}</h1><p class="page-desc">{{ t('Every real stock movement should leave a trace, and each trace is checked against StoreHub. — means no data yet.') }}</p></div>
 <form novalidate class="filters" method="get" style="margin:0">
   <div><label>{{ t('Period') }}</label><select name="days" onchange="this.form.submit()">{% for d in (7, 30, 90) %}<option value="{{ d }}" {{ 'selected' if days == d }}>{{ t('Last {n} days', n=d) }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Show') }}</label><select name="status" onchange="this.form.submit()"><option value="open" {{ 'selected' if status == 'open' }}>{{ t('Needs attention') }}</option><option value="all" {{ 'selected' if status == 'all' }}>{{ t('All events') }}</option></select></div>

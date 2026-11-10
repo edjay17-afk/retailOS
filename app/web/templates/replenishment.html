@@ -6,7 +6,7 @@
 {% set fqs = 'loc=' ~ loc ~ '&supplier=' ~ supplier %}
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} {{ t('/ Ordering') }}</div><h1>{{ t('Replenishment') }}</h1>
-    <details class="rep-guide" open><summary>{{ t('How it works') }}</summary><p>{{ t('Stores are topped up by transfer from the warehouse; the warehouse orders from suppliers on combined demand. Every figure is calculated by code from StoreHub data — nothing is ordered until a manager approves it.') }}</p></details></div>
+    <details class="rep-guide" open><summary>{{ t('How it works') }}</summary><p class="page-desc">{{ t('Stores are topped up by transfer from the warehouse; the warehouse orders from suppliers on combined demand. Every figure is calculated by code from StoreHub data — nothing is ordered until a manager approves it.') }}</p></details></div>
   <div class="row noprint">
     {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
     {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}

@@ -6,7 +6,7 @@
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by shift') }}</h1>
-  <p>{{ t("Each register shift as StoreHub's Shift Reports show it: when it opened and closed, the cashier, and how it was paid.") }}{% if unread %} {{ unread }} {{ t('shifts are still being read from StoreHub; their cashier and payments appear soon.') }}{% endif %}</p></div>
+  <p class="page-desc">{{ t("Each register shift as StoreHub's Shift Reports show it: when it opened and closed, the cashier, and how it was paid.") }}{% if unread %} {{ unread }} {{ t('shifts are still being read from StoreHub; their cashier and payments appear soon.') }}{% endif %}</p></div>
   <form novalidate class="filters sales-filters shifts-filters" method="get" style="margin:0">
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
   <div class="sales-seg-wrap"><div class="sales-seg">{% for d, lab in ((1, t('Today')), (7, t('7 days')), (14, t('14 days'))) %}<a class="{{ 'on' if not custom and days == d }}" href="/sales/shifts?loc={{ loc }}&days={{ d }}">{{ lab }}</a>{% endfor %}

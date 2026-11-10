@@ -44,7 +44,8 @@ def _data(d: PoDraft) -> dict:
     lines = [{"id": l.id, "product_id": l.product_id, "name": l.product.name, "barcode": l.product.barcode or "", "sku": l.product.sku or "",
               "qty": l.qty, "price": l.price, "total": pod.total_of(l.qty, l.price)} for l in sorted(d.lines, key=lambda x: -x.id)]
     sm = pod.summary(d)
-    return {"lines": lines, "total_lines": len(lines), "subtotal": sm["subtotal"], "tax": sm["tax"], "total": sm["total"], "rate": sm["rate"]}
+    return {"lines": lines, "total_lines": len(lines), "subtotal": sm["subtotal"], "tax": sm["tax"], "total": sm["total"], "rate": sm["rate"],
+            "discount": d.discount or "", "tax_manual": d.tax_amount or ""}
 
 
 @router.get(BASE)
@@ -150,6 +151,19 @@ def line(lid: int, qty: str = Form(""), price: str = Form(""), remove: str = For
             pod.remove_line(c.db, d, lid)
         else:
             pod.set_line(c.db, d, lid, qty, price)
+        c.db.commit()
+    except pod.PoError as e:
+        c.db.rollback()
+        return JSONResponse({"ok": False, "error": c.t(str(e)), **_data(_draft(c, d.id))}, status_code=400)
+    return JSONResponse({"ok": True, **_data(_draft(c, d.id))})
+
+
+@router.post(f"{BASE}/totals")
+def totals(discount: str = Form(""), tax_amount: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need(PERM))):
+    c.check_csrf(csrf)
+    d = _mine(c)
+    try:
+        pod.set_totals(c.db, c.user, d, discount, tax_amount)
         c.db.commit()
     except pod.PoError as e:
         c.db.rollback()

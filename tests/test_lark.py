@@ -47,6 +47,11 @@ class FakeLark:
                 self.records[tid][rid] = r["fields"]
                 out.append({"record_id": rid})
             return httpx.Response(200, json={"code": 0, "data": {"records": out}})
+        if path.endswith("batch_delete"):
+            tid = path.split("/tables/")[1].split("/")[0]
+            for rid in body["records"]:
+                self.records[tid].pop(rid, None)
+            return httpx.Response(200, json={"code": 0, "data": {}})
         if path.endswith("batch_update"):
             tid = path.split("/tables/")[1].split("/")[0]
             for r in body["records"]:
@@ -220,3 +225,22 @@ def test_a_row_deleted_in_lark_is_written_again_instead_of_failing_every_run(fl,
     client.http = httpx.Client(base_url=lark.HOST, transport=httpx.MockTransport(f.handler))
     out = lark.mirror(client)
     assert out["errors"] == 0 and len(f.records[staff_tid]) == 1 and "Anne" in json.dumps(list(f.records[staff_tid].values()))
+
+
+def test_a_product_storehub_no_longer_lists_is_taken_off_the_lark_product_list(fl, session):
+    from app.models import Product
+    f, client = fl
+    lark.setup(client)
+    a = Product(storehub_id="P_A", name="Still listed", in_api=True, source="storehub")
+    b = Product(storehub_id="P_B", name="Gone from StoreHub", in_api=True, source="storehub")
+    session.add_all([a, b]); session.commit()
+    out = lark.mirror(client, only={"product"})
+    tid = f.tables["产品总表 Product List"]
+    assert out["created"] == 2 and len(f.records[tid]) == 2
+    b.in_api = False; session.commit()
+    assert lark.mirror(client, only={"product"})["removed"] == 0 and len(f.records[tid]) == 2     # taking products off is switched off until someone turns it on
+    from app.models import Setting
+    session.add(Setting(key="lark.prune_products", value="true")); session.commit()
+    out = lark.mirror(client, only={"product"})
+    assert out["removed"] == 1 and len(f.records[tid]) == 1 and {v["Product Name 产品名称"] for v in f.records[tid].values()} == {"Still listed"}
+    assert lark.mirror(client, only={"product"})["removed"] == 0     # nothing more to take off

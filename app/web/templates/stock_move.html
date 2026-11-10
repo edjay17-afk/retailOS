@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Stock compare') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/stock_move.css?v={{ asset_v('stock_move.css') }}">
+<div class="page-head">
+  <div><h1>{{ t('Stock compare') }}</h1>
+    <p class="sync-note"><span class="page-desc">{{ t('What the warehouse can send to each store') }} · </span>{{ t('Stock is a read-only copy of the selected POS, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
+  <div class="row">
+    <a class="btn sec sm" href="/inventory?view=list">{{ t('List view') }}</a>
+    <a class="btn sec sm" href="/inventory/compare">{{ t('All stores table') }}</a>
+    <a class="btn sec sm" href="/inventory/compare?view=all&export=csv">{{ t('Export CSV') }}</a>
+    {% if can('count.enter') %}<a class="btn sm" href="/counts"><svg class="i"><use href="#i-scan"/></svg>{{ t('Stock counts') }}</a>{% endif %}
+  </div>
+</div>
+
+{% if not wh %}<div class="card empty">{{ t('No warehouse is set up in the system') }}</div>
+{% elif not shops %}<div class="card empty">{{ t('No open stores to compare') }}</div>
+{% else %}
+<div class="mv-tools">
+  <div class="mv-tabs" role="tablist">{% for l in shops %}<a role="tab" class="{{ 'on' if store and l.id == store.id }}" href="/inventory/compare?view=move&store={{ l.id }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ cut(l.name) }} <b>{{ counts.get(l.id, 0) }}</b></a>{% endfor %}</div>
+  <form novalidate method="get" class="mv-search"><input type="hidden" name="view" value="move"><input type="hidden" name="store" value="{{ store.id if store else 0 }}"><input type="search" name="q" value="{{ q }}" placeholder="{{ t('Search name, barcode or SKU') }}" aria-label="{{ t('Search') }}"></form>
+</div>
+
+<form novalidate method="post" action="/inventory/compare/transfer" id="mv-form" class="mv-grid">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="store_id" value="{{ store.id if store else 0 }}">
+  <div class="card mv-list">
+    <table class="mv"><thead><tr>
+      <th class="mv-cb">{% if can_sheet and rows %}<input type="checkbox" id="mv-all" aria-label="{{ t('Select all') }}">{% endif %}</th>
+      <th>{{ t('Product') }}</th><th class="r">{{ t('Warehouse has') }}</th><th class="r">{{ cut(store.name) if store else '' }} {{ t('has') }}</th><th class="r">{{ t('Sells') }}</th><th class="r">{{ t('Send') }}</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr data-pid="{{ r.p.id }}">
+        <td class="mv-cb">{% if can_sheet %}<input type="checkbox" class="mv-row" name="ids" value="{{ r.p.id }}" aria-label="{{ t('Select') }} {{ r.p.name }}">{% endif %}</td>
+        <td class="mv-p"><b>{{ r.p.name }}</b><small>{{ r.p.barcode or r.p.sku or '' }}</small></td>
+        <td class="r">{{ r.wh|num }}</td>
+        <td class="r {{ 'mv-neg' if r.store < 0 else 'mv-zero' if r.store == 0 else '' }}"><b>{{ r.store|num }}</b></td>
+        <td class="r">{{ r.ads|num(1) }}/{{ t('day') }}</td>
+        <td class="r">{% if can_sheet %}<input class="mv-q" type="number" min="1" step="1" name="q_{{ r.p.id }}" value="{{ r.send }}" data-max="{{ r.wh|int }}" aria-label="{{ t('Quantity') }}: {{ r.p.name }}">{% else %}<span class="mv-tag">{{ t('Send') }} {{ r.send }}</span>{% endif %}</td>
+      </tr>{% else %}<tr><td colspan="6"><div class="empty">{{ t('Nothing to send to this store right now.') }}</div></td></tr>{% endfor %}</tbody></table>
+    {% if capped %}<p class="small mute mv-cap">{{ t('Showing the best sellers: 100 of') }} {{ total }}. {{ t('Search to narrow the list.') }}</p>{% endif %}
+  </div>
+  <aside class="card mv-side">
+    <h3>{{ cut(store.name) if store else '' }}</h3>
+    <div class="mv-r"><span>{{ t('Products out or negative') }}</span><b>{{ short|num(0) }}</b></div>
+    <div class="mv-r"><span>{{ t('Short and selling') }}</span><b>{{ total|num(0) }}</b></div>
+    <div class="mv-r"><span>{{ t('Covers') }}</span><b>{{ cover|num(0) }} {{ t('days of sales') }}</b></div>
+    <div class="mv-r mv-sel"><span>{{ t('Selected') }}</span><b id="mv-sel">0</b></div>
+    {% if can_sheet %}<div class="mv-act"><button type="submit" id="mv-go" disabled>{{ t('Create transfer sheet') }}</button><a class="btn sec" href="/replenishment/sheet">{{ t('Auto replenishment') }}</a></div>
+    <p class="small mute">{{ t('Change a quantity before you create the sheet. The sheet opens as a draft you can still edit.') }}</p>{% endif %}
+  </aside>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/stock_move.js?v={{ asset_v('stock_move.js') }}" data-products="{{ t('products') }}" data-pcs="{{ t('pcs') }}"></script>{% endblock %}

@@ -153,3 +153,49 @@ def test_a_storehub_price_is_shown_cut_off_after_six_decimals():
     from app.web.deps import price6
     assert price6(254.4642857142857) == "254.464285" and price6(227.67857142857142) == "227.678571" and price6(189.28571428571428) == "189.285714"
     assert price6(12) == "12.00" and price6(10.125) == "10.125" and price6(1234.5) == "1,234.50" and price6(None) == ""
+
+
+def test_discount_and_a_typed_tax_change_the_total_and_reach_the_saved_order(cfg, sync, fake, session, client):
+    loc, product = _setup(sync, fake, session)
+    login(client, "po_w")
+    csrf = _start(client, session, loc)
+    r = client.post(BASE + "/add", data={"csrf": csrf, "product_id": product.id, "qty": "10", "price": "100"}).json()
+    assert r["subtotal"] == "1000" and r["tax"] == "120" and r["total"] == "1120" and r["discount"] == ""
+    r = client.post(BASE + "/totals", data={"csrf": csrf, "discount": "40", "tax_amount": ""}).json()       # StoreHub: total = subtotal + tax - discount
+    assert r["ok"] and r["discount"] == "40" and r["tax"] == "120" and r["total"] == "1080"
+    r = client.post(BASE + "/totals", data={"csrf": csrf, "discount": "40", "tax_amount": "119.50"}).json()   # a typed tax amount replaces rate x subtotal
+    assert r["ok"] and r["tax"] == "119.5" and r["total"] == "1079.5" and r["tax_manual"] == "119.5"
+    bad = client.post(BASE + "/totals", data={"csrf": csrf, "discount": "99999", "tax_amount": ""})
+    assert bad.status_code == 400 and bad.json()["discount"] == "40"                                          # too big: refused, the saved values stay
+    r = client.post(BASE + "/totals", data={"csrf": csrf, "discount": "", "tax_amount": ""}).json()
+    assert r["tax"] == "120" and r["total"] == "1120" and r["tax_manual"] == ""                               # empty boxes go back to the rate
+    client.post(BASE + "/totals", data={"csrf": csrf, "discount": "40", "tax_amount": ""})
+    save = client.post(BASE + "/save", data={"csrf": csrf})
+    assert save.status_code == 303
+    d = session.scalar(select(PoDraft))
+    assert pod.summary(d)["total"] == "1080" and pod.document(d)["total"] == "1080" and pod.document(d)["header"]["discount"] == "40"
+
+
+def test_saving_an_order_gives_a_product_without_a_supplier_that_supplier(cfg, sync, fake, session, client):
+    loc, product = _setup(sync, fake, session)
+    product.supplier_id = None; session.commit()
+    login(client, "po_w")
+    csrf = _start(client, session, loc)
+    client.post(BASE + "/add", data={"csrf": csrf, "product_id": product.id, "qty": "5", "price": "10"})
+    assert client.post(BASE + "/save", data={"csrf": csrf}).status_code == 303
+    session.expire_all()
+    p = session.get(Product, product.id)
+    sup = session.scalar(select(Supplier).where(Supplier.name == "Basic Essential Marketing Inc."))
+    assert p.supplier_id == sup.id and p.supplier_source == "po_history"
+
+
+def test_saving_an_order_never_changes_a_supplier_that_is_already_set(cfg, sync, fake, session, client):
+    loc, product = _setup(sync, fake, session)
+    other = Supplier(name="Existing Supplier", name_source="manual"); session.add(other); session.flush()
+    product.supplier_id = other.id; session.commit()
+    login(client, "po_w")
+    csrf = _start(client, session, loc)
+    client.post(BASE + "/add", data={"csrf": csrf, "product_id": product.id, "qty": "5", "price": "10"})
+    client.post(BASE + "/save", data={"csrf": csrf})
+    session.expire_all()
+    assert session.get(Product, product.id).supplier_id == other.id

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Repair queue') }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ t('Repair queue') }}</h1><p>{{ t('Suggestions the system refuses to trust. Fix the cause and the next run turns them into normal suggestions.') }}</p></div>
+<div class="page-head"><div><h1>{{ t('Repair queue') }}</h1><p class="page-desc">{{ t('Suggestions the system refuses to trust. Fix the cause and the next run turns them into normal suggestions.') }}</p></div>
   <div class="row"><a class="btn sec sm" href="/replenishment">{{ t('Back to suggestions') }}</a></div></div>
 
 <div class="grid g4" style="margin-bottom:14px">

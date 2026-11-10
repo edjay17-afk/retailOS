@@ -8,7 +8,7 @@
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 {% if shift %}{% set qs = qs ~ "&shift_id=" ~ shift.id %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Transactions') }}</h1>
-  <p>{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <p><span class="page-desc">{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }} </span>{% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}">{{ t('By employee') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
 
 {% if shift %}<div class="card" style="margin-bottom:14px"><strong>{{ shift.cashier }}</strong> &middot; {{ loc_names.get(shift.location_id, '') }}<br><span>{{ t('Opened') }}: {{ shift.opened_at.strftime('%d %b %Y %H:%M') }} &rarr; {{ t('Closed') if shift.closed_at else t('Open') }}: {{ shift_end.strftime('%d %b %Y %H:%M') }} (Asia/Manila)</span></div>{% endif %}

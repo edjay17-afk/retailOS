@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from ..models import InventoryChange, Location, Product, Setting, StockMovement, StockMovementRead, StockTransfer, StockTransferLine
+from ..models import InventoryChange, LarkLink, Location, Product, Setting, StockMovement, StockMovementRead, StockTransfer, StockTransferLine, User, WastageEntry
 from ..timeutil import now_utc, to_local, today_local
 
 log = logging.getLogger("retailos.stock_movements")
@@ -102,6 +102,31 @@ def from_transfers(db: Session, days: int = 14) -> int:
     return added
 
 
+WASTE = "wastageRecord"   # a row built from a Retail OS wastage record (typed here or copied from Lark)
+
+
+def from_wastage(db: Session) -> int:
+    """Every wastage record shows in Stock changes as a 'Wastage' row that takes its quantity off (a minus). It is a record of what staff reported; StoreHub's own stock
+    is not touched. Returns how many rows were added."""
+    have = {x for x in db.scalars(select(StockMovement.link_id).where(StockMovement.kind == WASTE))}
+    names = {u.id: (u.full_name or u.username) for u in db.scalars(select(User))}
+    from_lark = {x for x in db.scalars(select(LarkLink.entity_id).where(LarkLink.entity_type == "wastage"))}   # typed in Lark by staff: the Lark row carries no name
+    added = 0
+    for e in db.scalars(select(WastageEntry).options(selectinload(WastageEntry.location)).order_by(WastageEntry.id)):
+        link = f"W:{e.id}"
+        if link in have or e.location is None or e.location.source != "storehub":
+            continue
+        at = to_local(e.created_at).replace(second=0, microsecond=0)
+        prev = db.scalar(select(StockMovement.qty_after).where(StockMovement.location_id == e.location_id, StockMovement.product_id == e.product_id, StockMovement.occurred_at <= at)
+                         .order_by(StockMovement.occurred_at.desc(), StockMovement.id.desc()).limit(1)) or 0.0
+        db.add(StockMovement(location_id=e.location_id, product_id=e.product_id, occurred_at=at, employee=("Lark" if str(e.id) in from_lark else names.get(e.created_by, ""))[:120], action="Wastage", kind=WASTE,
+                             qty_before=prev, change=-abs(e.qty), qty_after=prev - abs(e.qty), link_id=link))
+        added += 1
+    if added:
+        db.flush()
+    return added
+
+
 def _mark(db: Session, key: str) -> None:
     row = db.get(Setting, key) or Setting(key=key, value="")
     row.value = now_utc().isoformat()
@@ -160,6 +185,7 @@ def run(db: Session, fetch=None) -> dict:
     fetch = fetch or robot.fetch_audit_trails
     _mark(db, "stock_movements.last_attempt")
     from_transfers(db)
+    from_wastage(db)
     db.commit()
     allp = pending(db)
     first = _transfer_pairs(db)

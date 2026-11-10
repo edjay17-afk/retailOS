@@ -133,7 +133,7 @@
 <script src="/static/draft_feedback.js?v={{ asset_v('draft_feedback.js') }}"></script>
 <script>
 (function(){
-  var W={stock:{{ t('Stock')|tojson }},products:{{ t('products')|tojson }},pcs:{{ t('pcs')|tojson }},remove:{{ t('Remove')|tojson }}}, DRAFT={{ 'true' if sheet.status == 'draft' else 'false' }}, data={{ data|tojson }}, app=document.getElementById('ts-app');
+  var W={stock:{{ t('Stock')|tojson }},store:{{ t('Store stock')|tojson }},cost:{{ t('Cost')|tojson }},sub:{{ t('Subtotal')|tojson }},products:{{ t('products')|tojson }},pcs:{{ t('pcs')|tojson }},remove:{{ t('Remove')|tojson }}}, DRAFT={{ 'true' if sheet.status == 'draft' else 'false' }}, data={{ data|tojson }}, app=document.getElementById('ts-app');
   var list=document.getElementById('ts-lines'), empty=document.getElementById('ts-empty'), total=document.getElementById('ts-total');
   var num=function(n){return String(Math.round(n*100)/100)};
   var feedback=null, post=function(){}, msg=function(){};
@@ -146,7 +146,9 @@
       var s=document.createElement('div'); s.className='small mute';
       s.textContent=l.barcode||l.sku||'';
       if(l.on_hand!=null){ var inl=document.createElement('span'); inl.className='ts-inl-stock'; inl.textContent=(s.textContent?' · ':'')+W.stock+' '+num(l.on_hand); s.appendChild(inl); }
-      main.appendChild(s); row.appendChild(main);
+      var det=document.createElement('div'); det.className='small mute ts-det';
+      det.textContent=[(l.dest!=null?W.store+' '+num(l.dest):''),(l.cost!=null?W.cost+' '+l.cost:''),(l.subtotal!=null?W.sub+' '+l.subtotal.toFixed(2):'')].filter(Boolean).join(' · ');
+      main.appendChild(s); if(det.textContent) main.appendChild(det); row.appendChild(main);
       var stk=document.createElement('div'); stk.className='tsl-stock desk-only'; stk.textContent=l.on_hand==null?'—':num(l.on_hand); row.appendChild(stk);
       if(DRAFT){
         var i=document.createElement('input'); i.type='number'; i.min=1; i.step=1; i.value=l.qty; i.className='tsl-qty'; i.setAttribute('inputmode','numeric'); i.setAttribute('aria-label',{{ t('Quantity')|tojson }}+' '+l.name);
@@ -160,7 +162,7 @@
     });
     if(feedback) feedback.capture();
     empty.hidden=d.lines.length>0;
-    var sum=d.lines.length?(d.lines.length+' '+W.products+' · '+num(d.lines.reduce(function(a,l){return a+l.qty},0))+' '+W.pcs):'';
+    var sum=d.lines.length?(d.lines.length+' '+W.products+' · '+num(d.lines.reduce(function(a,l){return a+l.qty},0))+' '+W.pcs+(d.total_cost?' · PHP '+d.total_cost.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}):'')):'';
     if(total) total.textContent=sum;
     var t2=document.getElementById('ts-total2'); if(t2) t2.textContent=sum?('· '+sum):'';
   }

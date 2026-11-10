@@ -53,6 +53,7 @@ PERMS: dict[str, set[str]] = {
     "product.add": {"staff", "store_manager", "warehouse", "management", "admin"},  # anyone on the floor can register a new product
     "product.push": {"warehouse", "management", "admin"},  # writing straight into StoreHub stays with HQ roles; staff lists wait for a push
     "wastage.record": {"staff", "store_manager", "warehouse", "management", "admin"},
+    "wastage.import": {"management", "admin"},
     "planogram.view": {"warehouse", "admin"},
     "sales.detail": {"warehouse", "admin"},  # transactions and sales by employee
     "compliance.view": {"store_manager", "warehouse", "management", "admin"},

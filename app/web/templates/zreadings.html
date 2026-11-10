@@ -6,7 +6,7 @@
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Z-Reading Reports') }}</h1>
-  <p>{{ t("StoreHub's official Z-reading reports, copied read-only from the back office.") }}{% if unread %} {{ unread }} {{ t('official detail reports are still waiting to be read.') }}{% endif %}</p></div>
+  <p><span class="page-desc">{{ t("StoreHub's official Z-reading reports, copied read-only from the back office.") }}</span>{% if unread %} {{ unread }} {{ t('official detail reports are still waiting to be read.') }}{% endif %}</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/zreadings/receipts?{{ qs }}">{{ t('Print slips') }}</a><a class="btn sec sm" href="/sales/zreadings?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
 
 <form novalidate class="filters" method="get" style="margin-bottom:14px">

@@ -2,7 +2,7 @@
 {% block title %}{{ t('Edit') }} {{ doc.header.reference }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/documents.css?v=20261012-4">
-<div class="page-head"><div><h1>{{ t('Edit') }} {{ doc.header.reference }}</h1><p>{{ t('Change items, add rows, then save before printing or exporting.') }}</p></div><a class="btn sec" href="{{ base }}">{{ t('Back') }}</a></div>
+<div class="page-head"><div><h1>{{ t('Edit') }} {{ doc.header.reference }}</h1><p class="page-desc">{{ t('Change items, add rows, then save before printing or exporting.') }}</p></div><a class="btn sec" href="{{ base }}">{{ t('Back') }}</a></div>
 {% if doc.changed %}<div class="flash err">{{ t('StoreHub data changed after your last edit. Review your saved items before exporting.') }}</div>{% endif %}
 <details class="document-help small"><summary>{{ t('Import and printing help') }}</summary><p>{{ t('Saved edits are used for printing and exports. Import the item CSV into StoreHub to update it.') }}</p>
 <p>{{ t('In StoreHub, open the matching document and choose Import Items by CSV. Header details such as addresses, notes, tax and discount must be entered there separately.') }}</p>

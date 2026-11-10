@@ -92,6 +92,7 @@ class Location(SourceEntity, Base):
     name: Mapped[str] = mapped_column(String(160))
     type: Mapped[str] = mapped_column(String(20), default="store")  # store | warehouse
     monitored: Mapped[bool] = mapped_column(Boolean, default=False)
+    closed: Mapped[bool] = mapped_column(Boolean, default=False)  # a store that has shut: kept for its history and for moving its stock out, but not inspected and not restocked
     city: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     manager_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
@@ -819,6 +820,8 @@ class PoDraft(Base):
     tax_rate: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # percent, exact text, fixed when the order starts (12 = 12%)
     # products quick-created in StoreHub from this order: when the order is saved, their quantity is split between the stores
     new_product_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    discount: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)  # peso amount taken off the total, exact text (like StoreHub's Discount box)
+    tax_amount: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)  # typed tax amount; empty = the rate x the subtotal
     supplier: Mapped[Supplier] = relationship()
     location: Mapped[Location] = relationship()
     creator: Mapped[Optional[User]] = relationship()

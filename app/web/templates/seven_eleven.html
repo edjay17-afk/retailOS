@@ -4,18 +4,22 @@
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
 {% set qs = 'frm=' ~ frm ~ '&to=' ~ to ~ '&q=' ~ (q|urlencode) ~ '&section=' ~ (section|urlencode) ~ '&category=' ~ (category|urlencode) %}
 <div class="page-head"><div><div class="eyebrow">{{ store or 'Philippine Seven Corporation' }}</div><h1>7-Eleven</h1>
-  <p class="sync-note">{{ t('Inventory logs (what the store received) and bad merchandise slips, read from the 7-Eleven PDFs. A PDF is saved only when its numbers add up to the totals printed on it.') }}</p></div>
+  <p class="sync-note page-desc">{{ t('Inventory logs (what the store received) and bad merchandise slips, read from the 7-Eleven PDFs. A PDF is saved only when its numbers add up to the totals printed on it.') }}</p></div>
   <div class="row">{% if can('seven.import') %}<button type="button" class="btn" data-modal="seven-upload">{{ t('Upload PDFs') }}</button>{% endif %}
     {% if tab in ('order', 'sales', 'slips', 'log') %}<a class="btn sec" href="/seven-eleven?tab={{ tab }}&{{ qs }}&only={{ only|default('') }}&export=csv">{{ t('Download CSV') }}</a>{% endif %}</div></div>
 <nav class="stock-change-tabs">
 {% for value, label in (('summary','Summary'),('order','Order suggestions'),('sales','Sales'),('slips','Bad merchandise'),('log','Inventory log')) %}<a href="/seven-eleven?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}</a>{% endfor %}
 </nav>
-{% if can('seven.import') %}<dialog id="seven-upload" class="modal" aria-labelledby="seven-upload-title">
+{% if can('seven.import') %}<dialog id="seven-upload" class="modal counts-upload" aria-labelledby="seven-upload-title">
   <div class="counts-upload-head"><h2 id="seven-upload-title">{{ t('Upload 7-Eleven PDFs') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <form novalidate method="post" action="/seven-eleven/upload" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <p class="small mute">{{ t('Choose the Inventory Log and Bad Merchandise PDFs (many at once is fine). A file that is already saved is skipped; a file whose numbers do not add up is refused.') }}</p>
-    <input type="file" name="files" accept="application/pdf,.pdf" multiple required>
-    <div class="row" style="margin-top:12px"><button class="ok" type="submit">{{ t('Upload') }}</button></div>
+    <p class="small mute">{{ t('Choose the OR Sales Monitor, Inventory Log and Bad Merchandise PDFs (many at once is fine). A file that is already saved is skipped; a file whose numbers do not add up is refused.') }}</p>
+    <input type="file" id="seven-files" name="files" accept="application/pdf,.pdf" multiple required>
+    <p class="small mute" id="seven-picked" aria-live="polite" style="margin:10px 0 0"></p>
+    <div class="row" style="margin-top:16px"><button class="ok" type="submit" id="seven-send" data-busy-text="{{ t('Uploading…') }}">{{ t('Upload') }}</button><span class="small mute" id="seven-wait" hidden>{{ t('Reading the PDFs. This can take a minute for many files; keep this page open.') }}</span></div>
+    <script>(function(){var f=document.getElementById('seven-files'),p=document.getElementById('seven-picked'),b=document.getElementById('seven-send'),w=document.getElementById('seven-wait');if(!f)return;
+      f.addEventListener('change',function(){var n=f.files.length,mb=0;for(var i=0;i<n;i++)mb+=f.files[i].size;p.textContent=n?(n+' {{ t('files') }} · '+(mb/1048576).toFixed(1)+' MB'):'';});
+      f.form.addEventListener('submit',function(){b.disabled=true;b.textContent=b.dataset.busyText;w.hidden=false;});})();</script>
   </form></dialog>{% endif %}
 
 {% if tab not in ('summary', 'order') %}

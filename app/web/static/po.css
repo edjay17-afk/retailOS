@@ -146,3 +146,6 @@
   .po-page{padding-bottom:84px}
   .np-bar .ts-bar-info{font-size:14px;font-weight:650;white-space:nowrap}
 }
+.po-sum-in{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:nowrap}
+.po-sum-in input{width:150px;text-align:right;min-height:38px}
+.po-sum-in .np-remove{white-space:nowrap}

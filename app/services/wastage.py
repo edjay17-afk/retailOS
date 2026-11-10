@@ -52,6 +52,8 @@ def add(db: Session, user: User, *, location_id: int, product: Product, qty: flo
                      supplier_name=product.supplier.name if product.supplier else "", created_by=user.id)
     db.add(e)
     db.flush()
+    from . import stock_movements
+    stock_movements.from_wastage(db)   # it shows in Stock changes as a minus
     audit.log(db, actor_type="human", actor_id=user.id, action="wastage.add", entity_type="wastage_entry", entity_id=e.id,
               after={"location_id": location_id, "product_id": product.id, "qty": qty, "reason": reason, "date": str(on)})
     return e

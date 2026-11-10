@@ -28,22 +28,38 @@
   var money = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function dirty(f) { return Number(f.elements.qty.value) !== Number(f.dataset.saved); }
   function formOf(id) { return document.getElementById('repl-quantity-' + id); }
+  // The ticked products are kept for this browser tab, so they stay ticked when you go to the next page or change a filter.
+  var KEY = 'ros-repl-sel', store = {};
+  try { var saved0 = JSON.parse(sessionStorage.getItem(KEY) || '{}'); if (saved0.t && Date.now() - saved0.t < 12 * 3600 * 1000 && saved0.rows) store = saved0.rows; } catch (e) { store = {}; }
+  function persist() { try { sessionStorage.setItem(KEY, JSON.stringify({ t: Date.now(), rows: store })); } catch (e) { /* private window: selection just stays on this page */ } }
+  function pidOf(rc) { var tr = rc.closest('tr'); return tr ? tr.dataset.pid : ''; }
+  function rowValue(tr) {
+    var v = 0;
+    tr.querySelectorAll('.rc[form="bulk"]').forEach(function (c) { var f = formOf(c.value), q = f ? Number(f.elements.qty.value) : 0; v += (q || 0) * Number(c.dataset.unit || 0); });
+    return v;
+  }
   function update() {
     var selected = recChecks.filter(function (c) { return c.checked; });
     var unsaved = selected.some(function (c) { var f = formOf(c.value); return f && (dirty(f) || f.dataset.saving === 'true'); });
-    var value = 0;
-    selected.forEach(function (c) { var f = formOf(c.value), q = f ? Number(f.elements.qty.value) : 0; value += (q || 0) * Number(c.dataset.unit || 0); });
     var rows = rowChecks.filter(function (c) { return c.checked; }).length;
+    rowChecks.forEach(function (rc) {          // this page's rows into the kept selection
+      var pid = pidOf(rc), tr = rc.closest('tr');
+      if (!pid) return;
+      if (rc.checked) store[pid] = { ids: Array.prototype.map.call(tr.querySelectorAll('.rc[form="bulk"]'), function (c) { return c.value; }), value: rowValue(tr), todo: tr.dataset.todo || 'send' };
+      else delete store[pid];
+    });
+    persist();
+    var keys = Object.keys(store), value = 0, kinds = {};
+    keys.forEach(function (k) { value += store[k].value || 0; kinds[store[k].todo || 'send'] = true; });
     if (bar) {
-      bar.hidden = selected.length === 0;
-      document.getElementById('repl-selected-count').textContent = rows;
+      bar.hidden = keys.length === 0;
+      document.getElementById('repl-selected-count').textContent = keys.length;
       document.getElementById('rs-selected-value').textContent = money.format(value);
-      document.getElementById('repl-proceed').disabled = !selected.length || unsaved;
-      var btn = document.getElementById('repl-proceed'), kinds = {};
-      rowChecks.forEach(function (c) { if (c.checked) { var tr = c.closest('tr'); kinds[(tr && tr.dataset.todo) || 'send'] = true; } });
+      var btn = document.getElementById('repl-proceed');
+      btn.disabled = !keys.length || unsaved;
+      document.getElementById('repl-save-hint').hidden = !unsaved;
       var wantsSheet = kinds.send || kinds.both, wantsPo = kinds.order || kinds.both;
       if (btn.dataset.sheet) btn.textContent = wantsSheet && wantsPo ? btn.dataset.both : wantsPo ? btn.dataset.po : wantsSheet ? btn.dataset.sheet : btn.dataset.default;
-      document.getElementById('repl-save-hint').hidden = !unsaved;
     }
     if (all) {
       all.checked = rowChecks.length > 0 && rows === rowChecks.length;
@@ -51,6 +67,10 @@
       all.disabled = !rowChecks.length;
     }
   }
+  rowChecks.forEach(function (rc) {            // ticked on an earlier page or before a filter: tick it again here
+    var pid = pidOf(rc);
+    if (pid && store[pid]) { rc.checked = true; var tr = rc.closest('tr'); tr.classList.add('picked'); tr.querySelectorAll('.rc[form="bulk"]').forEach(function (c) { c.checked = true; }); }
+  });
   rowChecks.forEach(function (rc) {
     rc.addEventListener('change', function () {
       var tr = rc.closest('tr');
@@ -60,7 +80,8 @@
     });
   });
   if (all) all.addEventListener('change', function () {
-    rowChecks.forEach(function (rc) { rc.checked = all.checked; rc.dispatchEvent(new Event('change')); });
+    var on = all.checked;   // read once: update() resets this box while the rows are being ticked
+    rowChecks.forEach(function (rc) { rc.checked = on; rc.dispatchEvent(new Event('change')); });
   });
   async function save(form) {
     if (form.dataset.saving === 'true' || !dirty(form)) return;
@@ -87,7 +108,25 @@
     form.addEventListener('change', function () { clearTimeout(timer); save(form); });
     form.addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(timer); save(form); });
   });
-  if (bulk) bulk.addEventListener('submit', function (e) { update(); if (document.getElementById('repl-proceed').disabled) e.preventDefault(); });
+  if (bulk) bulk.addEventListener('submit', function (e) {
+    update();
+    if (document.getElementById('repl-proceed').disabled) { e.preventDefault(); return; }
+    var here = {}; recChecks.forEach(function (c) { here[c.value] = true; });
+    bulk.querySelectorAll('input[data-kept]').forEach(function (n) { n.remove(); });
+    Object.keys(store).forEach(function (k) {   // products ticked on other pages go with this one
+      store[k].ids.forEach(function (id) {
+        if (here[id]) return;
+        var h = document.createElement('input'); h.type = 'hidden'; h.name = 'ids'; h.value = id; h.setAttribute('data-kept', '1'); bulk.appendChild(h);
+      });
+    });
+    store = {}; persist();
+  });
+  var clear = document.getElementById('repl-clear');
+  if (clear) clear.addEventListener('click', function () {
+    store = {};
+    rowChecks.forEach(function (rc) { rc.checked = false; rc.dispatchEvent(new Event('change')); });
+    update();
+  });
   window.addEventListener('pageshow', update);
   window.addEventListener('beforeunload', function (e) {
     if (forms.some(function (f) { return dirty(f) || f.dataset.saving === 'true'; })) { e.preventDefault(); e.returnValue = ''; }

@@ -4,7 +4,7 @@
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by employee') }}</h1>
-  <p>{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <p class="page-desc">{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}">{{ t('Transactions') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
 
 <form novalidate class="filters" method="get" style="margin-bottom:14px">

@@ -223,3 +223,13 @@ html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[dat
 @media (min-width:1001px){
   .page-head .row .btn.sm,.page-head .row button.sm{height:46px;padding:0 22px;font-size:15.5px;font-weight:700;border-radius:16px}
 }
+
+/* Top bar: the business buttons shrink and wrap instead of running under the language switcher on narrower desktops. */
+@media (min-width:1001px) and (max-width:1700px){
+  .topbar{gap:12px}
+  .topbar .top-sources{flex:1 1 auto;min-width:0}
+  .topbar .pos-source-switch{flex-wrap:wrap;row-gap:6px}
+  .topbar .pos-source-switch button,.topbar .pos-source-switch .seven-btn{min-height:42px!important;padding:0 16px!important;font-size:15px!important}
+  .topbar .header-actions{flex:none}
+  .topbar .print-report{display:none}
+}

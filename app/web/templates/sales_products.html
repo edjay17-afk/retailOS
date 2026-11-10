@@ -6,7 +6,7 @@
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&supplier=' ~ supplier %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by product') }}</h1>
-  <p>{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
+  <p class="page-desc">{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="button" data-export="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="button" data-export="detailed">{{ t('Detailed CSV') }}</button></div></div>
 
 <form id="product-sales-filters" data-mf="1" novalidate class="filters product-sales-filters" method="get" action="/sales/products">

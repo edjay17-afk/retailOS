@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from ..models import User, WastageEntry, Product
 from ..services import wastage as svc
+from ..services import wastage_lark
 from ..timeutil import today_local
 from .deps import Ctx, need, parse_date, parse_float, redirect, render
 
@@ -29,6 +30,23 @@ def wastage_page(loc: int = 0, days: int = 30, c: Ctx = Depends(need("wastage.re
     users = {u.id: (u.full_name or u.username) for u in db.scalars(select(User))}
     total_qty = db.scalar(select(func.coalesce(func.sum(WastageEntry.qty), 0)).where(WastageEntry.location_id.in_(ids), WastageEntry.entry_date >= since)) or 0
     return render(c, "wastage.html", rows=rows, users=users, locations=c.locations(), loc=loc, days=days, reasons=svc.REASONS, today=today_local(), total_qty=total_qty)
+
+
+@router.post("/wastage/import-lark")
+def wastage_import_lark(csrf: str = Form(""), c: Ctx = Depends(need("wastage.import"))):
+    """Copy what staff typed into the Lark Wastage Record table into Retail OS wastage. Reads Lark only."""
+    c.check_csrf(csrf)
+    from ..lark import LarkError
+    try:
+        out = wastage_lark.run(c.db, c.user)
+        c.db.commit()
+    except (wastage_lark.ImportError_, LarkError) as e:
+        c.db.rollback()
+        return redirect("/wastage", err=c.t(str(e)))
+    msg = f"{c.t('Imported from Lark')}: {out['added']} · {c.t('already here')}: {out['already']}"
+    if out["skipped"]:
+        msg += f" · {c.t('not imported')}: {len(out['skipped'])} (" + "; ".join(out["skipped"][:3]) + (" ..." if len(out["skipped"]) > 3 else "") + ")"
+    return redirect("/wastage", ok=msg)
 
 
 @router.get("/wastage/products")

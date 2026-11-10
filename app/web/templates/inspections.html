@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Daily work') }}</div><h1>{{ t('Inspections') }}</h1>
-    <p>{{ t('Daily checklists for the warehouse and each store. Open one to fill it in — late or missed checklists become problems.') }}</p></div>
+    <p class="page-desc">{{ t('Daily checklists for the warehouse and each store. Open one to fill it in — late or missed checklists become problems.') }}</p></div>
 </div>
 <div class="row inspection-date-nav" style="margin-bottom:10px">
   <a class="btn sec sm" href="?on={{ prev }}&loc={{ loc }}">&larr; {{ prev|day }}</a>

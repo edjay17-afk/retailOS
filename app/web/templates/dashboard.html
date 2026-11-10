@@ -65,12 +65,12 @@
 </section>
 <div class="b-stores">
   {% for s in cards %}
-  <article class="b-card lv-card{{ '' if s.has_sales else ' off' }}" data-store-id="{{ s.id }}" data-href="/sales?loc={{ s.id }}&amp;days=1" style="--accent:{{ s.accent }}">
+  <article class="b-card lv-card{{ '' if s.has_sales else ' off' }}{{ ' shut' if s.closed }}" data-store-id="{{ s.id }}" data-href="/sales?loc={{ s.id }}&amp;days=1" style="--accent:{{ s.accent }}">
     <div class="lv-edge"></div>
     <div class="lv-in">
       <div class="lv-top"><div><h2><a href="/sales?loc={{ s.id }}&amp;days=1">{{ s.name }}</a></h2>
         <p class="b-reg">{% if s.register %}{% if s.shift_open %}<span class="lv-dot"></span>{% endif %}{{ t('Register') }} {{ s.register }} · {% if s.shift_open %}{{ t('open since') }}{% else %}{{ t('closed') }}{% endif %} {{ s.shift_time.strftime('%H:%M') }}{% else %}&nbsp;{% endif %}</p></div>
-        {% if s.top %}<span class="lv-badge">★ {{ t('Top today') }}</span>{% endif %}</div>
+        {% if s.closed %}<span class="lv-badge shut">{{ t('Closed') }}</span>{% elif s.top %}<span class="lv-badge">★ {{ t('Top today') }}</span>{% endif %}</div>
       {% if s.has_sales %}
       <div class="b-big"><small>PHP</small> <span class="store-today">{{ s.today|money }}</span></div>
       <p class="b-y">{{ t('Yesterday') }} PHP <span class="store-yesterday">{{ s.yesterday|money }}</span></p>
@@ -81,8 +81,9 @@
       <div class="lv-share"><i style="width:{{ s.share }}%"></i></div>
       <div class="lv-sharel"><span>{{ s.share }}% {{ t("of today's sales") }}</span><span>{{ s.tx|num(0) }} {{ t('transactions') }}</span></div>
       {% else %}
-      <div class="b-big b-none">{{ t('No sales data') }}</div><p class="b-y">{{ t('Not available from StoreHub yet') }}</p>
-      <div class="lv-empty">{{ t('The 14-day chart appears with data') }}</div>
+      {% if s.closed %}<div class="b-big b-none">{{ t('Store closed') }}</div><p class="b-y">{{ t('No sales are expected here.') }}</p>
+      {% else %}<div class="b-big b-none">{{ t('No sales data') }}</div><p class="b-y">{{ t('Not available from StoreHub yet') }}</p>
+      <div class="lv-empty">{{ t('The 14-day chart appears with data') }}</div>{% endif %}
       {% endif %}
       {% if s.health.total %}
       <div class="lv-health" role="img" aria-label="{{ t('Stock health') }}"><i style="flex:{{ s.health.ok }};background:#16a34a"></i><i style="flex:{{ s.health.low }};background:#f59e0b"></i><i style="flex:{{ s.health.out }};background:#dc2626"></i></div>

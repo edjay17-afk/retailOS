@@ -14,7 +14,7 @@ from .. import audit, jobs
 from ..config import get_config
 from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Recommendation, SalesDay, SyncRun, User)
 from ..security import can_open, create_session, hash_password, load_session, password_problem, verify_password
-from ..services import inspections, backup, brief, dq, freshness, notifications, replenishment
+from ..services import inspections, backup, brief, dq, freshness, notifications, replenishment, run_now
 from ..timeutil import now_utc, today_local
 from .deps import COOKIE, Ctx, ctx_dep, get_db, need, redirect, render, render_public
 
@@ -324,14 +324,32 @@ def sync_page(c: Ctx = Depends(need("sync.view"))):
 
 
 @router.post("/sync/run")
-def sync_run(background: BackgroundTasks, job: str = Form(...), csrf: str = Form(""), c: Ctx = Depends(need("sync.run"))):
+def sync_run(background: BackgroundTasks, request: Request, job: str = Form(...), csrf: str = Form(""), c: Ctx = Depends(need("sync.run"))):
     c.check_csrf(csrf)
-    fn = JOB_ACTIONS.get(job)
-    if fn is None:
+    if job != "all" and job not in JOB_ACTIONS:
         raise HTTPException(400, "Unknown job")
     audit.log(c.db, actor_type="human", actor_id=c.user.id, action="sync.run_now", entity_type="job", entity_id=job)
-    background.add_task(fn)
+    c.db.commit()
+    if request.headers.get("X-Requested-With") == "fetch":   # the page shows the steps as they finish
+        token, created = run_now.start(job, {k: c.t(run_now.NAMES.get(k, k)) for k in run_now.plan(job)})
+        if created:
+            background.add_task(run_now.execute, token, JOB_ACTIONS)
+        return JSONResponse(run_now.state(token))
+    if job == "all":
+        token, created = run_now.start(job, {k: c.t(run_now.NAMES.get(k, k)) for k in run_now.plan(job)})
+        if created:
+            background.add_task(run_now.execute, token, JOB_ACTIONS)
+    else:
+        background.add_task(JOB_ACTIONS[job])
     return redirect("/sync", ok=f"Started: {job}. Refresh in a few seconds.")
+
+
+@router.get("/sync/run/{token}")
+def sync_run_state(token: str, c: Ctx = Depends(need("sync.run"))):
+    s = run_now.state(token)
+    if s is None:
+        raise HTTPException(404)
+    return JSONResponse(s)
 
 
 @router.post("/sync/backup")

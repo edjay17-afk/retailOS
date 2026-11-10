@@ -7,7 +7,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
 
 from .. import audit
-from ..models import (Inspection, InspectionResult, InspectionTemplate, Location, TemplateItem, Timesheet, User, Employee)
+from ..models import (Inspection, InspectionResult, InspectionTemplate, Issue, Location, TemplateItem, Timesheet, User, Employee)
 from ..timeutil import now_utc, tz
 from . import issues, notifications
 
@@ -20,8 +20,8 @@ DONE = ("completed", "late")  # submitted on time / submitted after the due time
 
 
 def enabled_location():
-    """Zenwok Warehouse no longer participates in inspection tasks."""
-    return func.lower(func.trim(Location.name)) != "zenwok warehouse"
+    """Zenwok Warehouse no longer participates in inspection tasks, and neither does a closed store."""
+    return (func.lower(func.trim(Location.name)) != "zenwok warehouse") & Location.closed.is_(False)
 
 
 def active_scope():
@@ -37,6 +37,11 @@ def _due_utc(d: date, hhmm: str) -> datetime:
 def generate_tasks(db: Session, d: date) -> int:
     """Create today's tasks for every monitored location. Safe to run repeatedly."""
     n = 0
+    for i in db.scalars(select(Inspection).where(Inspection.business_date >= d, Inspection.location.has(Location.closed.is_(True)),   # a store that closed: its waiting tasks go
+                                                 Inspection.status.in_(("pending", "missed")), Inspection.started_at.is_(None))):
+        for iss in db.scalars(select(Issue).where(Issue.dedupe_key == f"missed:{i.id}")):
+            iss.status = "closed"
+        db.delete(i)
     have = {(i.template_id, i.location_id) for i in db.scalars(select(Inspection).where(Inspection.business_date == d))}
     templates = list(db.scalars(select(InspectionTemplate).where(InspectionTemplate.active.is_(True))))
     for loc in db.scalars(select(Location).where(Location.monitored.is_(True), enabled_location())):

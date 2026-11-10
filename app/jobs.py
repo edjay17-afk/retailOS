@@ -21,15 +21,22 @@ _sync = SyncService()
 _scheduler: BackgroundScheduler | None = None
 
 
+LAST: dict[str, dict] = {}   # how each job ended the last time it ran in this process: {"ok": bool, "error": str}
+
+
 def _safe(name: str):
     """Decorator: a failing job must never stop the scheduler."""
     def deco(fn):
         def wrapper(*a, **kw):
             try:
-                return fn(*a, **kw)
+                out = fn(*a, **kw)
+                LAST[name] = {"ok": True, "error": ""}
+                return out
             except AuthError:
+                LAST[name] = {"ok": False, "error": "StoreHub rejected our credentials"}
                 log.error("job %s: StoreHub rejected our credentials", name)
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
+                LAST[name] = {"ok": False, "error": (str(e) or type(e).__name__)[:160]}
                 log.exception("job %s failed", name)
         wrapper.__name__ = name
         return wrapper
@@ -181,6 +188,24 @@ def mirror_lark():
         log.info("lark mirror: %s", out)
 
 
+@_safe("lark_wastage")
+def import_lark_wastage():
+    """Wastage staff type into the Lark Wastage Record table appears in Retail OS by itself. Reads Lark only; a row already copied is never copied twice."""
+    from .config import get_config
+    from .lark import LarkClient
+    from sqlalchemy import select
+    from .models import User
+    from .services import wastage_lark
+    if not LarkClient(get_config()).configured:
+        return
+    def go(db):
+        admin = db.scalar(select(User).where(User.role == "admin", User.active.is_(True), User.deleted_at.is_(None)).order_by(User.id))
+        return wastage_lark.run(db, admin, auto=True) if admin else None
+    out = _db_job(go)
+    if out and out["added"]:
+        log.info("lark wastage import: %s", {k: (v if k != "skipped" else len(v)) for k, v in out.items()})
+
+
 @_safe("daily_brief")
 def daily_brief_note():
     def f(db):
@@ -272,6 +297,7 @@ def start() -> BackgroundScheduler | None:
     s.add_job(daily_brief_note, "cron", hour=6, minute=45, id="brief")
     s.add_job(ai_brief, "cron", hour="6,16", minute=15, id="ai_brief")
     s.add_job(do_backup, "cron", hour="1,13", minute=45, id="backup")
+    s.add_job(import_lark_wastage, "interval", minutes=5, next_run_time=soon(220), id="lark_wastage")   # before the mirror, so what staff typed in Lark is already linked when the mirror runs
     s.add_job(mirror_lark, "interval", minutes=5, next_run_time=soon(240), id="lark_mirror")
     s.add_job(lark_alerts, "interval", minutes=2, next_run_time=soon(260), id="lark_alerts")
     s.add_job(import_transfer_inbox, "interval", minutes=5, next_run_time=soon(280), id="transfer_inbox")
