@@ -1,0 +1,88 @@
+/* Sales overview: one summary strip, the chart beside the top products, and the daily table at full width. */
+.sales-head .sales-sync{white-space:nowrap}
+.sales-head .sales-sync::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+.sales-info{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:8px;border:1px solid var(--line2);border-radius:50%;font-size:10px;font-weight:750;line-height:1;color:var(--mute);cursor:help;vertical-align:1px}
+.sales-info:focus-visible,.sales-page .delta:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* one Download button that opens the two files */
+.dl-menu{position:relative}
+.dl-menu>summary{list-style:none;cursor:pointer;gap:8px;display:inline-flex;align-items:center}
+.dl-menu>summary::-webkit-details-marker{display:none}
+.dl-menu .dl-caret{width:10px;height:6px;color:var(--mute);flex:none}
+.dl-menu[open] .dl-caret{transform:rotate(180deg)}
+.dl-menu .dl-list{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:290px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2)}
+.dl-menu .dl-list a{display:block;padding:9px 12px;border-radius:8px;font-size:13.5px;color:var(--ink);text-decoration:none}
+.dl-menu .dl-list a:hover,.dl-menu .dl-list a:focus-visible{background:var(--surface2)}
+.sales-page .sales-download-icon{display:none}
+
+/* summary strip */
+.sales-page .card.sales-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0;margin:0 0 14px}
+.sales-strip>div{min-width:0;padding:18px 22px;border-left:1px solid var(--sales-border)}
+.sales-strip>div:first-child{border-left:0}
+.sales-strip .label{font-size:12px;font-weight:600;color:var(--mute);line-height:1.5}
+.sales-strip .value-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin:6px 0 4px}
+.sales-strip .value{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sales-strip .sub{font-size:12px;line-height:1.5;color:var(--mute)}
+.sales-strip .sub b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.sales-page .delta{font-size:12px;font-weight:650;padding:1px 7px;border-radius:999px;white-space:nowrap;cursor:default;font-variant-numeric:tabular-nums}
+.sales-page .delta.up{color:#11703a;background:var(--ok-soft)}
+.sales-page .delta.down{color:#b42318;background:var(--bad-soft)}
+.sales-page .delta.flat{color:var(--mute);background:var(--surface2)}
+.sales-strip .paybar{height:8px;margin:8px 0 7px;border-radius:999px;background:var(--sales-secondary);overflow:hidden}
+.sales-strip .paybar i{display:block;height:100%;background:var(--chart)}
+.sales-strip .paylegend,.sales-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mute)}
+.sales-strip .paylegend span{white-space:nowrap}
+.sales-strip .paylegend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.sales-strip .paylegend i,.sales-legend i{display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:3px;background:var(--chart);vertical-align:-1px}
+.sales-strip .paylegend i.alt{background:var(--sales-secondary)}
+.sales-legend{margin-top:10px}
+.sales-legend i.dash{width:16px;height:0;border-radius:0;background:none;border-top:2px dashed var(--mute2);vertical-align:3px}
+
+/* chart beside top products */
+.sales-row{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:14px;margin-bottom:22px;align-items:stretch}
+.sales-row>.card{margin:0;min-width:0}
+.sales-row>.card:only-child{grid-column:1/-1}
+.sales-page .card-head .chips{gap:6px}
+.sales-top{display:flex;flex-direction:column}
+.sales-top .hbars{flex:1;align-content:space-between}
+.sales-top .hb{grid-template-columns:minmax(0,1fr) 64px auto;padding:5px 2px}
+.sales-top .hb-l{font-weight:600;font-size:13.5px}
+
+/* daily table */
+.sales-page .sales-h{margin:0 0 10px}
+.sales-days td.net{font-weight:700}
+.sales-days td.zero{color:var(--line2)}
+.sales-days .today-tag{margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:650;color:var(--primary);background:var(--primary-soft)}
+.sales-page .sales-days tfoot td{font-weight:700;background:var(--surface2);border-bottom:0}
+.sales-page .sales-days table tbody tr:last-child td{border-bottom:1px solid var(--sales-border)}
+
+@media(max-width:1100px){.sales-row{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){
+  .content .sales-head .sales-filters{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:center}
+  .sales-head .sales-filters>div:first-child{grid-column:1/-1}
+  .content .sales-head .sales-filters>.sales-seg-wrap{grid-column:1;width:100%;min-width:0}
+  .sales-head .sales-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:36px;width:100%;height:44px;padding:3px;gap:1px}
+  .sales-head .sales-seg>a,.sales-head .sales-seg .drp-btn{justify-content:center;min-width:0;width:100%;height:36px;padding:0 3px;font-size:12px;line-height:1;white-space:nowrap}
+  .sales-head .sales-seg .drp{display:flex;align-items:center;min-width:0;width:100%;height:36px}
+  /* The global mobile button minimum otherwise stretches Custom past the tabs. */
+  .content .sales-page .sales-head .sales-filters .sales-seg .drp .drp-btn{min-height:36px;height:36px}
+  .content .sales-head .sales-filters>.dl-pair{grid-column:2;margin:0;width:44px}
+  .sales-head .sales-filters .dl-csv{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0}
+  .sales-page .sales-download-icon{display:block;width:20px;height:20px}
+  .sales-page .sales-download-label,.sales-page .dl-csv .dl-caret{display:none}
+  .sales-page .card.sales-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sales-strip>div{padding:14px 16px;border-left:0;border-top:1px solid var(--sales-border)}
+  .sales-strip>div:first-child,.sales-strip>div:last-child{grid-column:1/-1}
+  .sales-strip>div:first-child{border-top:0}
+  .sales-strip>div:nth-child(3){border-left:1px solid var(--sales-border)}
+  .sales-strip>div:first-child .value{font-size:clamp(28px,8vw,36px)}
+  .sales-strip .value{font-size:clamp(17px,5.4vw,22px)}
+  .dl-menu .dl-list{left:auto;right:0;min-width:0;width:min(290px,calc(100vw - 32px))}
+  .sales-days table.rcards tfoot{display:block}
+  .sales-days td.zero{color:inherit}
+}
+
+html[data-theme="dark"] .sales-page .delta.up{color:var(--ok)}
+html[data-theme="dark"] .sales-page .delta.down{color:#ff8a80}
+html[data-theme="dark"] .sales-page .sales-days table th{background:var(--surface2);color:var(--mute);border-bottom-color:var(--line)}
+html[data-theme="dark"] .sales-days td.zero{color:var(--mute)}

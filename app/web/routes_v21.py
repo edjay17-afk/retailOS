@@ -1,4 +1,4 @@
-"""V2.1: the blocked-suggestion repair queue (MUST 4) and the traceability / operating metrics page (spec section 9)."""
+"""V2.1: the traceability / operating metrics page (spec section 9). The repair queue page was removed in November 2026; its calculations stay in v21_metrics."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -10,13 +10,6 @@ from ..services import inventory_events as iev, v21_metrics
 from .deps import Ctx, need, render
 
 router = APIRouter()
-
-
-@router.get("/replenishment/repairs")
-def repair_queue(c: Ctx = Depends(need("repl.view"))):
-    ids = c.location_ids or None
-    rows = v21_metrics.repair_queue(c.db, ids)
-    return render(c, "repairs.html", rows=rows, kpi=v21_metrics.repair_kpis(c.db, 28, ids), total=sum(r["value"] for r in rows))
 
 
 @router.get("/traceability")

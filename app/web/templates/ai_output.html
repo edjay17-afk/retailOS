@@ -12,7 +12,7 @@
 <div class="ai-card">
   <div class="ai-title" style="margin-bottom:8px"><span class="spk"><svg class="i" style="color:#fff"><use href="#i-sparkles"/></svg></span>{{ t('Answer') }}</div>
   {% if out.kind == 'brief' %}
-    <p style="font-weight:600">{{ out.output_json.headline }}</p>
+    <p style="font-weight:650">{{ out.output_json.headline }}</p>
     {% for it in out.output_json['items'] %}<div class="card flat" style="padding:12px 15px"><b>{{ it.title }}</b> <span class="badge {{ 'pill-hi' if it.priority == 'high' else 'pill-me' if it.priority == 'medium' else 'pill-lo' }}">{{ t(it.priority) }}</span>
       {% for st in it.statements %}{{ statement(st, 'f', facts) }}{% endfor %}{% if it.recommended_action %}<div><b>{{ t('Suggested:') }}</b> {{ it.recommended_action }}</div>{% endif %}</div>{% endfor %}
   {% else %}

@@ -4,12 +4,12 @@
 .lv-big:after{content:"";position:absolute;right:-40px;top:-40px;width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.08)}
 .lv-big small{color:#dbeafe;font-size:14px}
 .lv-big strong{display:block;font-size:34px;letter-spacing:-.03em;margin:6px 0 10px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.lv-pill{display:inline-flex;align-self:flex-start;gap:5px;background:rgba(255,255,255,.16);border-radius:99px;padding:3px 11px;font-size:13px;font-weight:600}
+.lv-pill{display:inline-flex;align-self:flex-start;gap:5px;background:rgba(255,255,255,.16);border-radius:99px;padding:3px 11px;font-size:13px;font-weight:650}
 .lv-t{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;min-width:0}
-.lv-k{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13.5px;font-weight:600}
+.lv-k{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13.5px;font-weight:650}
 .lv-k i{width:9px;height:9px;border-radius:50%;display:inline-block}
-.lv-v{font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
-.lv-v small{font-size:14px;font-weight:600;color:var(--mute);letter-spacing:0}
+.lv-v{font-size:36px;font-weight:750;letter-spacing:-.02em;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.lv-v small{font-size:14px;font-weight:650;color:var(--mute);letter-spacing:0}
 .lv-s{color:var(--mute);font-size:13px}
 .lv-hours{height:44px;margin:10px 0 4px}
 .lv-ax{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute)}
@@ -32,7 +32,7 @@
 .lv-todo a{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)!important;text-decoration:none}
 .lv-todo em{font-style:normal;width:17px;height:17px;border-radius:5px;border:2px solid #cbcfd5;flex:none;display:grid;place-items:center;font-size:11px;color:#fff}
 .lv-todo em.ok{background:var(--primary);border-color:var(--primary)}
-.lv-todo span{flex:1}.lv-todo b{color:var(--mute);font-weight:600}
+.lv-todo span{flex:1}.lv-todo b{color:var(--mute);font-weight:650}
 
 /* store cards */
 .lv-card{padding:0;overflow:hidden;position:relative}
@@ -40,7 +40,7 @@
 .lv-card.off .lv-edge{background:#c9cdc9}
 .lv-in{padding:18px 22px 20px}
 .lv-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.lv-badge{background:#fff7d6;color:#8a6100;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.lv-badge{background:#fff7d6;color:#8a6100;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:750;white-space:nowrap}
 .lv-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:7px;position:relative;vertical-align:middle}
 .lv-dot:after{content:"";position:absolute;inset:-4px;border-radius:50%;background:#16a34a;opacity:.25;animation:lv-pulse 1.8s ease-out infinite}
 @keyframes lv-pulse{0%{transform:scale(.6);opacity:.45}100%{transform:scale(1.5);opacity:0}}
@@ -64,8 +64,8 @@
 .hv-bar:focus-visible{box-shadow:0 0 0 2px var(--accent,var(--primary))}
 .hv-tip{position:absolute;z-index:6;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;padding:6px 10px;white-space:nowrap;font-size:13px;line-height:1.35;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(15,23,42,.25);animation:b-pop .14s ease-out}
 .hv-tip[hidden]{display:none}
-.hv-tip b{font-weight:600;opacity:.8;font-size:12px}
-.hv-tip span{font-weight:700;font-variant-numeric:tabular-nums}
+.hv-tip b{font-weight:650;opacity:.8;font-size:12px}
+.hv-tip span{font-weight:750;font-variant-numeric:tabular-nums}
 .lv-hours .hv-bar{background:color-mix(in srgb,var(--primary) 20%,transparent)}
 .lv-hours .hv-bar.peak{background:var(--primary)}
 
@@ -75,7 +75,7 @@
 .lv-ic.sheets{background:var(--warn-soft)}.lv-ic.recs{background:var(--info-soft)}
 .b-job{gap:14px}
 .lv-rank{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14.5px}
-.lv-rank .n{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.lv-rank .n{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:750;font-size:12px;flex:none}
 .lv-rank .nm{width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lv-rank .t{flex:1;height:8px;background:#e8efff;border-radius:99px;overflow:hidden}
 .lv-rank .t i{display:block;height:100%;background:var(--primary);border-radius:99px}
@@ -172,7 +172,7 @@
 .lv-big,.lv-t{border-radius:16px;padding:20px 22px}
 .lv-t{display:flex;flex-direction:column}
 .lv-big:after{content:none}
-.lv-big small{font-size:13.5px;font-weight:600}
+.lv-big small{font-size:13.5px;font-weight:650}
 .lv-big strong{margin:8px 0 12px;line-height:1.1}
 .lv-herobars{flex:1;height:auto;min-height:84px;margin-top:18px;padding-top:0;gap:5px}
 .lv-herobars .hv-bar,.lv-hours .hv-bar,.lv-spark .hv-bar{border-radius:4px 4px 2px 2px}
@@ -195,7 +195,7 @@
 .lv-todo a:hover span{color:var(--btn)}
 .lv-todo em{width:8px;height:8px;border:0;border-radius:50%;background:var(--btn);font-size:0}
 .lv-todo em.ok{background:var(--ok);border:0}
-.lv-todo b{min-width:30px;text-align:center;background:var(--accent-soft);color:var(--accent-h);border-radius:99px;padding:1px 9px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.lv-todo b{min-width:30px;text-align:center;background:var(--accent-soft);color:var(--accent-h);border-radius:99px;padding:1px 9px;font-size:12.5px;font-weight:750;font-variant-numeric:tabular-nums}
 
 /* store cards */
 .b-stores{gap:18px}

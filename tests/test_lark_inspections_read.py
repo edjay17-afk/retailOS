@@ -88,3 +88,31 @@ def test_zenwok_excluded_from_inspections(client, session, sync):
     page=client.get('/inspections')
     assert page.status_code==200 and 'Zenwok Warehouse' not in page.text
     assert client.get('/').status_code in (200,303,307)
+
+
+def test_background_sync_marks_checklist_without_opening_inspections(session, sync, monkeypatch):
+    """The dashboard counts a store's Lark report as done by itself: no one has to open /inspections first."""
+    from sqlalchemy import select
+    from app.models import Inspection, AuditEvent
+    from app.services import inspections, lark_inspections
+    from app.timeutil import today_local
+    sync.sync_stores()
+    day = today_local()
+    inspections.generate_tasks(session, day)
+    session.commit()
+    daily = list(session.scalars(select(Inspection).join(Inspection.template).where(Inspection.template.has(code='store_daily'))))
+    target = daily[0]
+    report = {'store': lark_inspections.store_key(target.location.name), 'id': 'auto-1', 'attachments': 2, 'time': '09:00'}
+    monkeypatch.setattr(lark_inspections, 'reports_for_day', lambda d: {'available': False, 'reports': []})
+    assert lark_inspections.sync_day(session, day) == []
+    session.refresh(target)
+    assert target.status != 'submitted'  # Lark unreachable: nothing changes
+    monkeypatch.setattr(lark_inspections, 'reports_for_day', lambda d: {'available': True, 'reports': [report]})
+    assert lark_inspections.sync_day(session, day) == [target.id]
+    session.commit()
+    session.refresh(target)
+    assert target.status == 'submitted'
+    assert all(i.status != 'submitted' for i in daily[1:] if i.location_id != target.location_id)
+    assert lark_inspections.sync_day(session, day) == []  # a second run changes nothing
+    ev = list(session.scalars(select(AuditEvent).where(AuditEvent.action == 'inspection.lark_submitted')))
+    assert len(ev) == 1 and ev[0].actor_type == 'system'

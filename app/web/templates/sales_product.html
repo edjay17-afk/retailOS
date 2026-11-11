@@ -24,7 +24,7 @@
 <div class="tw"><table><tr><th>{{ t('Store') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th class="right">{{ t('Days sold') }}</th><th class="right">{{ t('On hand') }}</th><th class="right">{{ t('Incoming') }}</th><th class="right">{{ t('Days of cover') }}</th></tr>
 {% for s in stores %}<tr><td><b>{{ s.loc.name|replace('The Daily Centro - ','') }}</b></td>
 <td class="right">{{ s.units|num(0) }}</td><td class="right"><b>{{ s.net|money }}</b></td><td class="right">{{ s.days_sold }}</td>
-<td class="right" style="{{ 'color:var(--bad);font-weight:600' if s.on_hand is not none and s.on_hand < 0 }}">{{ s.on_hand|num if s.on_hand is not none else '' }}</td>
+<td class="right" style="{{ 'color:var(--bad);font-weight:650' if s.on_hand is not none and s.on_hand < 0 }}">{{ s.on_hand|num if s.on_hand is not none else '' }}</td>
 <td class="right">{{ t('Unavailable') if p.source == 'loyverse' else s.incoming|num if s.incoming else '' }}</td>
 <td class="right">{% if s.cover is not none %}<span class="badge {{ 'b-bad' if s.cover < 3 else 'b-warn' if s.cover < 7 else 'b-ok' }}">{{ s.cover|num(1) }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
 {% if total_net %}<div class="card" style="margin-top:12px"><div class="card-head"><h2>{{ t('Share of sales by store') }}</h2></div>

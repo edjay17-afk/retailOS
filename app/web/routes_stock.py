@@ -97,7 +97,7 @@ def inventory(request: Request, loc: int = 0, q: str = "", status: str = "", cat
              "negative": sum(1 for r in rows if r["on_hand"] < 0), "zero": sum(1 for r in rows if r["on_hand"] == 0),
              "low": sum(1 for r in rows if r["cover"] is not None and r["cover"] < 3 and r["on_hand"] >= 0)}
     page = max(page, 1)
-    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None)).distinct().order_by(Product.category))]
+    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None), Product.in_api.is_(True)).distinct().order_by(Product.category))]
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "inventory")
     return render(c, "inventory.html", rows=rows[(page - 1) * PAGE: page * PAGE], location=location, locations=c.locations(), q=q, status=status,
                   category=category, inc=inc, page=page, total=total, cats=cats, fr=fr, days=days, stats=stats)
@@ -282,7 +282,7 @@ def inventory_compare(q: str = "", category: str = "", attention: str = "", sort
             w.writerow([r["p"].name, r["p"].sku or "", r["p"].barcode or "", r["p"].category or ""] + [r["cells"][l.id]["qty"] if l.id in r["cells"] else "" for l in locs] + [r["total"]])
         return Response(out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-by-store-{today_local()}.csv"'})
     page = max(page, 1)
-    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None)).distinct().order_by(Product.category))]
+    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None), Product.in_api.is_(True)).distinct().order_by(Product.category))]
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "inventory")
     return render(c, "stock_compare.html", rows=rows[(page - 1) * PAGE: page * PAGE], locs=locs, total=len(rows), page=page, q=q, category=category, attention=attention, sort=sort,
                   cats=cats, fr=fr, summary=summary, short=lambda n: n.replace("The Daily Centro - ", "").replace("TheDailyCentro ", ""),
@@ -395,7 +395,7 @@ def sales_by_product(loc: int = 0, days: str = "14", q: str = "", category: str 
                 .group_by(SalesDayProduct.product_id, SalesDayProduct.business_date)):
             by[pid][d] = u
         series = {pid: [by[pid].get(d, 0.0) for d in day_list] for pid in by}
-    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None)).distinct().order_by(Product.category))]
+    cats = [x for x in db.scalars(select(Product.category).where(Product.category.is_not(None), Product.in_api.is_(True)).distinct().order_by(Product.category))]
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
     return render(c, "sales_products.html", rows=shown, series=series, labels=[d.strftime("%a %d %b") for d in day_list], total=len(rows), total_net=total_net,
                   total_units=total_units, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, q=q, category=category,
@@ -541,6 +541,8 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
     mx = max([r.net_sales for r in rows] or [1]) or 1
     totals = {"net": sum(r.net_sales for r in rows), "tx": sum(r.tx_count for r in rows), "cash": sum(r.cash_sales for r in rows), "cancelled": sum(r.cancelled_count for r in rows)}
     totals["other"] = max(totals["net"] - totals["cash"], 0)
+    totals["tax"] = sum(r.tax or 0 for r in rows)
+    prev_totals = None   # the window of equal length right before this one; None when there is nothing to compare with
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
     chart = [(r.business_date.strftime("%d %b"), r.net_sales) for r in reversed(rows)]
     compare = []
@@ -558,10 +560,14 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
             hourly = True
     if location and rows and not hourly:  # the window of equal length right before this one, matched day by day
         prev: dict = defaultdict(float)
+        prev_tx = 0
         for r in db.scalars(select(SalesDay).where(SalesDay.location_id.in_(loc_ids), SalesDay.business_date >= start - timedelta(days=n_days), SalesDay.business_date < start)):
             prev[r.business_date] += r.net_sales
+            prev_tx += r.tx_count
+        if prev:
+            prev_totals = {"net": sum(prev.values()), "tx": prev_tx}
         compare = [prev.get(r.business_date - timedelta(days=n_days), 0.0) for r in reversed(rows)] if prev else []
-    return render(c, "sales.html", chart=chart, compare=compare, hourly=hourly, combined=combined, rows=rows, top=top, location=location, locations=c.locations(), days=n_days, mx=mx, totals=totals, fr=fr,
+    return render(c, "sales.html", chart=chart, compare=compare, hourly=hourly, combined=combined, rows=rows, top=top, location=location, locations=c.locations(), days=n_days, mx=mx, totals=totals, prev_totals=prev_totals, fr=fr,
                   custom=custom, frm=frm, to=to, range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today.isoformat())
 
 

@@ -14,7 +14,7 @@
   <p id="count-message" role="status" aria-live="polite"></p>
   <form id="count-entry" hidden data-nobusy>
     <h3 id="count-product"></h3>
-    <p class="count-stock">{{ t('POS stock') }}<strong id="count-system"></strong><span class="small mute" id="count-fresh">{{ t('Fetched now for {store}', store=cc.location.name) }}</span> <span class="small" id="count-stale" role="status" style="color:var(--bad);font-weight:600" hidden></span></p>
+    <p class="count-stock">{{ t('POS stock') }}<strong id="count-system"></strong><span class="small mute" id="count-fresh">{{ t('Fetched now for {store}', store=cc.location.name) }}</span> <span class="small" id="count-stale" role="status" style="color:var(--bad);font-weight:650" hidden></span></p>
     <label for="count-qty">{{ t('Counted') }}</label><input id="count-qty" type="number" min="0" max="100000000" step="any" inputmode="decimal" required>
     <p class="phone-only phone-count-diff" id="phone-count-diff" aria-live="polite"></p>
     <label for="count-note">{{ t('Note') }} <span class="small mute">{{ t('Add a reason if the stock differs') }}</span></label><input id="count-note" maxlength="1000">

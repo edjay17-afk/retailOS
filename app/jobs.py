@@ -81,6 +81,15 @@ def run_dq(): _db_job(lambda db: dq.run_all(db))
 def escalate(): _db_job(lambda db: (issues.escalate_overdue(db), inspections.flag_missed(db)))
 @_safe("inspection_tasks")
 def inspection_tasks(): _db_job(lambda db: inspections.generate_tasks(db, today_local()))
+@_safe("lark_inspections")
+def sync_lark_inspections():
+    """A store's Lark Daily Inspection report ticks its checklist on the dashboard by itself; nobody has to open Inspections first."""
+    from .services import lark_inspections   # reports_for_day answers "not configured" by itself
+    out = _db_job(lambda db: lark_inspections.sync_day(db, today_local()))
+    if out:
+        log.info("lark inspections: %d checklist(s) marked submitted", len(out))
+
+
 @_safe("expiry")
 def expiry_check(): _db_job(lambda db: expiry.check(db))
 @_safe("replenish")
@@ -285,6 +294,7 @@ def start() -> BackgroundScheduler | None:
     s.add_job(sync_staff, "interval", minutes=1, next_run_time=soon(30), id="staff")
     s.add_job(sync_people, "interval", minutes=1, next_run_time=soon(50), id="people")
     s.add_job(run_dq, "interval", minutes=10, next_run_time=soon(150), id="dq")
+    s.add_job(sync_lark_inspections, "interval", minutes=3, next_run_time=soon(20), id="lark_inspections")   # before escalate, so a report already sent is not flagged as missed
     s.add_job(escalate, "interval", minutes=5, next_run_time=soon(30), id="escalate")
     s.add_job(inspection_tasks, "cron", minute=5, id="inspection_tasks")
     s.add_job(inspection_tasks, "date", run_date=soon(10), id="inspection_tasks_boot")

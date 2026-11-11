@@ -30,7 +30,7 @@
   {% if brief %}
     {% if brief_notice %}<div class="small" style="color:var(--bad);margin-bottom:8px"><b>{{ t('The latest briefing attempt failed') }}</b> ({{ t(brief_notice) }}{{ t('). Showing the last good briefing from') }} {{ brief.created_at|local }} {{ t('— everything else in Retail OS works without the AI.') }}</div>{% endif %}
     {% set o = brief.output_json %}
-    <p style="font-size:16px;font-weight:600;margin:0 0 4px">{{ o.headline }}</p>
+    <p style="font-size:16px;font-weight:650;margin:0 0 4px">{{ o.headline }}</p>
     <div class="small mute">{{ t('Generated') }} {{ brief.created_at|local }} &middot; {{ brief.validation.statements - brief.validation.unsupported }} {{ t('of') }} {{ brief.validation.statements }} {{ t('statements verified against system data') }}{% if brief.validation.derived %}, {{ brief.validation.derived }} {{ t('derived') }}{% endif %}
       &middot; <a href="/assistant/output/{{ brief.id }}">{{ t('evidence and details') }}</a></div>
     {% for it in o['items'] %}

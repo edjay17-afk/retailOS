@@ -22,7 +22,7 @@
       <div><label for="count-upload-location">{{ t('Location') }}</label><select id="count-upload-location" name="location_id"><option value="0">{{ t('Location from the file') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
       <div><label for="count-upload-file">{{ t('File') }}</label><input id="count-upload-file" type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
       <div><button>{{ t('Upload') }}</button></div>
-      <div style="grid-column:1/-1"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:500;font-size:13px"><input type="checkbox" name="submit" value="1">{{ t('Send for approval right away (otherwise it stays open so you can review the differences)') }}</label></div>
+      <div style="grid-column:1/-1"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:600;font-size:13px"><input type="checkbox" name="submit" value="1">{{ t('Send for approval right away (otherwise it stays open so you can review the differences)') }}</label></div>
     </form>
     <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Counted, Note (optional), Location (optional if one is chosen above). Counts go into today\'s open count and are compared with the StoreHub stock.') }} <a href="/counts/template.csv">{{ t('Download template') }}</a></div>
 </dialog>

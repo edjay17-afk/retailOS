@@ -4,30 +4,20 @@
 .sales-page .dl-btn{border:1px solid #dbe7ff;border-radius:12px;background:var(--surface)}
 .sales-page .dl-btn:hover{background:#e8efff}
 
-.sales-page .grid.g4 .card.stat{border:1px solid #dbe7ff;border-radius:18px;box-shadow:none;padding:16px 20px}
-.sales-page .grid.g4 .card.stat .label{color:#475f8a;font-weight:600}
-.sales-page .grid.g4 .card.stat .value{font-size:30px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.sales-page .grid.g4 .card.stat .sub{color:#475f8a}
-.sales-page .grid.g4 .card.stat:first-child{background:#2563eb;border-color:#2563eb;color:#fff}
-.sales-page .grid.g4 .card.stat:first-child .label,.sales-page .grid.g4 .card.stat:first-child .sub{color:#dbeafe}
-.sales-page .grid.g4 .card.stat:first-child .value{color:#fff}
 
 .sales-page .card{border:1px solid #dbe7ff;border-radius:18px;box-shadow:none}
 .sales-page .card-head h2,.sales-page h2{font-size:16px}
-.sales-page .chip{border:1px solid #dbe7ff;border-radius:99px;background:var(--surface);color:#475f8a;font-weight:600;padding:6px 14px}
+.sales-page .chip{border:1px solid #dbe7ff;border-radius:99px;background:var(--surface);color:#475f8a;font-weight:650;padding:6px 14px}
 .sales-page .chip.on{background:#2563eb;border-color:#2563eb;color:#fff}
 
 .sales-page .tw{border:1px solid #dbe7ff;border-radius:18px;background:var(--surface);overflow:hidden}
-.sales-page .tw table th{background:#f5f8ff;color:#475f8a;font-size:12.5px;font-weight:600;border-bottom:1px solid #dbe7ff}
+.sales-page .tw table th{background:#f5f8ff;color:#475f8a;font-size:12.5px;font-weight:650;border-bottom:1px solid #dbe7ff}
 .sales-page .tw table td{border-bottom:1px solid #eef3ff}
 .sales-page .tw table tr:last-child td{border-bottom:0}
 .sales-page .tw table tbody tr:hover td,.sales-page .tw table tr[data-href]:hover td{background:#f5f8ff}
-.sales-page .tw table td a{color:#1d4ed8;font-weight:600}
-.sales-page .grid.g4 .card.stat:first-child *{color:inherit}
-.sales-page .grid.g4 .card.stat:first-child .label,.sales-page .grid.g4 .card.stat:first-child .sub,.sales-page .grid.g4 .card.stat:first-child .sub *{color:#dbeafe}
-.sales-page .grid.g4 .card.stat:first-child svg{display:none}
+.sales-page .tw table td a{color:#1d4ed8;font-weight:650}
 .sales-page .tw{overflow-x:auto}
-.sales-page .chips .chip{border:1px solid #dbe7ff!important;border-radius:99px!important;background:var(--surface)!important;color:#475f8a!important;font-weight:600;padding:6px 14px}
+.sales-page .chips .chip{border:1px solid #dbe7ff!important;border-radius:99px!important;background:var(--surface)!important;color:#475f8a!important;font-weight:650;padding:6px 14px}
 .sales-page .chips .chip.on{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important}
 
 /* compact header: title, filters and downloads share one row; the note is a small line */
@@ -49,40 +39,20 @@
   .sales-head>div:first-child{flex:1 1 100%!important}
   .sales-head .sales-filters{gap:8px}
 }
-@media(max-width:700px){
-  .sales-page>.grid.g4{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-  .sales-page>.grid.g4>.card.stat{min-width:0;padding:12px 10px;border-radius:14px}
-  .sales-page>.grid.g4>.card.stat:first-child{grid-column:1/-1;padding:16px 18px}
-  .sales-page>.grid.g4>.card.stat:nth-child(3){grid-column:span 2}
-  .sales-page>.grid.g4>.card.stat:first-child .value{font-size:clamp(28px,8vw,38px);white-space:nowrap;overflow-wrap:normal}
-  .sales-page>.grid.g4>.card.stat:not(:first-child) .value{font-size:clamp(12px,4vw,22px);letter-spacing:-.045em;white-space:nowrap;overflow-wrap:normal}
-  .sales-page>.grid.g4>.card.stat:not(:first-child) .label{font-size:11px}
-  .sales-page>.grid.g4>.card.stat:not(:first-child) .sub{font-size:10px}
-}
-@media(max-width:360px){
-  .sales-page>.grid.g4>.card.stat{padding-right:8px;padding-left:8px}
-  .sales-page>.grid.g4>.card.stat:not(:first-child) .label{font-size:9px;letter-spacing:-.04em}
-  .sales-page>.grid.g4>.card.stat:not(:first-child) .sub{font-size:9px}
-}
-@media(max-width:700px){.sales-page .tw td:nth-child(2){display:none}}   /* the tiny bar in each day card has no label on a phone */
 .zr-interim td{opacity:.62}.zr-interim td:first-child{opacity:1}
 
-/* phone: Sales keeps the total, the three small numbers and the chart; the "hover" hint cannot be used on a phone */
-@media(max-width:700px){
-  main:has(.sales-head) #sales-line+.small.mute{display:none}
-}
 
 /* Sales header: store, Today | 7 days | 14 days | Custom, Download CSV. */
 .sales-filters .sales-seg-wrap{display:flex;align-items:flex-end}
 .sales-seg{display:inline-flex;align-items:center;background:#e3ebfb;border-radius:12px;padding:4px;gap:2px;height:44px}
-.sales-seg>a,.sales-seg .drp-btn{height:36px;padding:0 16px;display:inline-flex;align-items:center;border-radius:9px;border:0;background:transparent;font-size:14px;font-weight:600;color:#4b5b82;text-decoration:none;box-shadow:none}
+.sales-seg>a,.sales-seg .drp-btn{height:36px;padding:0 16px;display:inline-flex;align-items:center;border-radius:9px;border:0;background:transparent;font-size:14px;font-weight:650;color:#4b5b82;text-decoration:none;box-shadow:none}
 .sales-seg>a:hover,.sales-seg .drp-btn:hover{color:var(--ink);background:rgba(255,255,255,.55)}
-.sales-seg>a.on,.sales-seg .drp[data-on] .drp-btn{background:#fff;color:var(--primary-h,#1d4ed8);font-weight:800;box-shadow:0 1px 3px rgba(16,26,51,.14)}
+.sales-seg>a.on,.sales-seg .drp[data-on] .drp-btn{background:#fff;color:var(--primary-h,#1d4ed8);font-weight:850;box-shadow:0 1px 3px rgba(16,26,51,.14)}
 .sales-seg .drp-btn>*{display:none}
 .sales-seg .drp-btn::after{content:var(--lbl,"Custom")}
 .sales-filters>div>label[for="sales-location"]{display:none}
 .sales-filters .dl-pair>label{display:none}
-.sales-filters .dl-csv{width:auto;padding:0 18px;height:44px;font-weight:700;font-size:14.5px}
+.sales-filters .dl-csv{width:auto;padding:0 18px;height:44px;font-weight:750;font-size:14.5px}
 .sales-seg>a{color:#4b5b82!important}.sales-seg>a.on{color:#1d4ed8!important}.sales-seg .drp[data-on] .drp-btn{color:#1d4ed8}.sales-seg .drp-btn{color:#4b5b82!important}.sales-seg .drp[data-on] .drp-btn{color:#1d4ed8!important}
 .sales-seg>a,.sales-seg>a.on,.sales-seg .drp-btn,.sales-seg .drp[data-on] .drp-btn{color:#111827!important}
 .sales-seg{background:#fff!important;border:1px solid #d6d9e6}
@@ -93,7 +63,7 @@
 @media (min-width:1001px){
   .shifts-filters{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;justify-content:space-between;align-items:flex-end}
   .shifts-filters>div>label{display:none}
-  .shifts-filters select{height:44px;border:1px solid #d6d9e6;border-radius:12px;font-weight:600;color:#111827}
+  .shifts-filters select{height:44px;border:1px solid #d6d9e6;border-radius:12px;font-weight:650;color:#111827}
   .grid>.card.stat{border-top:1px solid #e3e6ee!important}
 }
 @media (min-width:1001px){

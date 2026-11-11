@@ -1,4 +1,4 @@
-.count-scan{max-width:620px;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:20px 0}.count-scan h2{margin:0}.count-scan label{display:block;font-size:13px;margin:14px 0 6px}.count-scan input{width:100%;min-width:0;min-height:44px;font-size:16px}.count-scan-row{display:flex;gap:8px}.count-scan-row input{flex:1}.count-scan-row button{flex-shrink:0}.count-scan [hidden]{display:none!important}.count-stock{padding:12px;background:var(--surface2);border-radius:8px}.count-stock strong{font-size:24px;margin-left:10px;font-variant-numeric:tabular-nums}.count-stock span{display:block;margin-top:4px}.count-actions{display:flex;gap:10px;margin-top:18px}#count-entry{border-top:1px solid var(--line);padding-top:12px}#count-message:empty{display:none}#count-review>summary{cursor:pointer;padding:14px 0;color:var(--primary);font-weight:600}@media(max-width:600px){.count-scan{padding:16px}.count-actions button{flex:1}.count-scan-row{flex-wrap:wrap}.count-scan-row input{flex-basis:60%}}
+.count-scan{max-width:620px;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:20px 0}.count-scan h2{margin:0}.count-scan label{display:block;font-size:13px;margin:14px 0 6px}.count-scan input{width:100%;min-width:0;min-height:44px;font-size:16px}.count-scan-row{display:flex;gap:8px}.count-scan-row input{flex:1}.count-scan-row button{flex-shrink:0}.count-scan [hidden]{display:none!important}.count-stock{padding:12px;background:var(--surface2);border-radius:8px}.count-stock strong{font-size:24px;margin-left:10px;font-variant-numeric:tabular-nums}.count-stock span{display:block;margin-top:4px}.count-actions{display:flex;gap:10px;margin-top:18px}#count-entry{border-top:1px solid var(--line);padding-top:12px}#count-message:empty{display:none}#count-review>summary{cursor:pointer;padding:14px 0;color:var(--primary);font-weight:650}@media(max-width:600px){.count-scan{padding:16px}.count-actions button{flex:1}.count-scan-row{flex-wrap:wrap}.count-scan-row input{flex-basis:60%}}
 
 .count-workspace{max-width:960px;margin:0 auto}
 .count-page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:4px 0 24px}
@@ -11,14 +11,14 @@
 .count-workspace .count-scan h2{font-size:17px;letter-spacing:-.02em}
 .count-workspace .count-scan>p{margin:7px 0 20px;line-height:1.6}
 .count-workspace .count-scan-row{max-width:640px}
-.count-workspace .count-scan label{font-weight:500;color:var(--mute);font-size:12px}
+.count-workspace .count-scan label{font-weight:600;color:var(--mute);font-size:12px}
 .count-workspace .count-scan input{background:var(--bg);border-radius:8px}
 .count-workspace #count-entry{max-width:640px;margin-top:20px;padding-top:18px}
 .count-workspace #count-entry h3{font-size:17px;margin:0 0 12px}
-.count-workspace #count-qty{max-width:180px;font-size:22px;font-weight:600}
+.count-workspace #count-qty{max-width:180px;font-size:22px;font-weight:650}
 .count-workspace #count-review{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:clip}
 .count-workspace #count-review>summary{padding:18px 20px;font-size:14px;color:var(--ink)}
-.count-review-total{float:right;color:var(--mute);font-size:12px;font-weight:400}
+.count-review-total{float:right;color:var(--mute);font-size:12px;font-weight:500}
 .count-workspace #count-review>form{margin:0}
 .count-workspace #count-review .tw{border:0;border-top:1px solid var(--line);border-radius:0;margin:0;box-shadow:none}
 .count-workspace #count-review th{font-size:11px;letter-spacing:0;text-transform:none}
@@ -38,7 +38,7 @@
  .count-review-note{display:none}
 }
 .count-empty>.i{display:block;margin:0 auto 10px;width:24px;height:24px;color:var(--primary)}
-.count-empty strong{font-size:14px;font-weight:500;color:var(--ink)}
+.count-empty strong{font-size:14px;font-weight:600;color:var(--ink)}
 .count-empty p{margin:6px 0 0;font-size:12px;line-height:1.6}
 @media(max-width:600px){.count-workspace .count-scan{padding:18px}.count-page-head h1{font-size:23px}.count-page-head p{line-height:1.6}.count-page-head p span{display:block}.count-workspace #count-review>summary{padding:16px}.count-workspace .count-scan-row{flex-wrap:nowrap}.count-workspace .count-scan-row input{flex-basis:0}.count-workspace #count-review .tw{overflow-x:auto}}
 
@@ -59,7 +59,7 @@ dialog.counts-upload .small{line-height:1.6}
 .stock-change-actions{flex-wrap:wrap;margin:0 0 20px;gap:10px}
 .stock-change-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}
 .stock-change-tabs a{padding:8px 12px;border-radius:8px;color:var(--mute);font-size:12px;text-decoration:none}
-.stock-change-tabs a.active{background:var(--primary-soft);color:var(--primary);font-weight:600}
+.stock-change-tabs a.active{background:var(--primary-soft);color:var(--primary);font-weight:650}
 .stock-change-tabs a:hover{background:var(--surface2)}
 
 .stock-change-mobile-intro{display:none}
@@ -83,7 +83,7 @@ dialog.counts-upload .small{line-height:1.6}
 .stock-event-row .ev-date{grid-column:2;grid-row:1;text-align:right;color:var(--mute);font-size:10px!important}
 .stock-event-row .ev-date div{display:inline;margin-left:4px}
 .stock-event-row .ev-product{grid-column:1;grid-row:2}
-.stock-event-row .ev-product>b{font-size:14px;font-weight:600}
+.stock-event-row .ev-product>b{font-size:14px;font-weight:650}
 .stock-event-row .ev-product .small{font-size:10px;margin-top:2px}
 .stock-event-row .ev-qty{grid-column:2;grid-row:2;align-self:center;font-size:22px!important;font-variant-numeric:tabular-nums}
 .stock-event-row .ev-location{grid-column:1/-1;grid-row:3;color:var(--mute)}
@@ -99,7 +99,7 @@ dialog.counts-upload .small{line-height:1.6}
 
 @media(max-width:700px){
 .stock-change-table table.rcards td[data-label]::before{display:none}
-.stock-change-table table.rcards td.ev-date{grid-column:2;grid-row:1;font-weight:400;padding:0;border:0}
+.stock-change-table table.rcards td.ev-date{grid-column:2;grid-row:1;font-weight:500;padding:0;border:0}
 .stock-change-table table.rcards td.ev-kind{grid-column:1;grid-row:1}
 .stock-change-table table.rcards td.ev-photo{grid-column:1/-1;grid-row:6;padding:0;border:0}
 }
@@ -134,7 +134,7 @@ dialog#counts-upload[open]::backdrop{animation:none}
 .stock-event-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 12px}
 .stock-event-fields .event-location_id,.stock-event-fields .event-search,.stock-event-fields .event-supplier_id{grid-column:1/-1}
 .stock-event-form .event-field{min-width:0}
-.stock-event-form label{display:block;margin:0 0 7px;font-size:12px;font-weight:500;color:var(--mute)}
+.stock-event-form label{display:block;margin:0 0 7px;font-size:12px;font-weight:600;color:var(--mute)}
 .stock-event-form input,.stock-event-form select{width:100%;max-width:100%;min-width:0;min-height:44px;box-sizing:border-box;font-size:16px;border-radius:8px}
 .stock-event-form input[type=file]{font-size:12px;padding:8px;background:var(--surface2)}
 .stock-event-form input[type=file]::file-selector-button{border:1px solid var(--line);border-radius:5px;padding:6px 9px;margin-right:8px;background:var(--surface);color:var(--ink);font:inherit}
@@ -159,7 +159,7 @@ dialog#counts-upload[open]::backdrop{animation:none}
  .counts-page-head .counts-upload-button{width:auto!important;flex:none;margin:0;min-height:38px;padding:0 12px}
  .counts-create{margin-bottom:20px}
  .counts-create .card{padding:16px;border-radius:12px}
- .counts-create .eyebrow{color:var(--ink);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none}
+ .counts-create .eyebrow{color:var(--ink);font-size:15px;font-weight:750;letter-spacing:0;text-transform:none}
  .counts-create p{font-size:12px;line-height:1.45;margin-bottom:12px}
  .counts-create form.row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
  .counts-create form select,.counts-create form button{width:100%;min-width:0!important;min-height:44px}
@@ -169,7 +169,7 @@ dialog#counts-upload[open]::backdrop{animation:none}
  .count-mobile-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
  .count-mobile-card-head>a{color:var(--ink);font-size:15px;text-decoration:none}
  .count-mobile-card-head .badge{font-size:10px;white-space:normal}
- .count-mobile-location{font-size:13px;font-weight:600;line-height:1.4;margin-top:6px;overflow-wrap:anywhere}
+ .count-mobile-location{font-size:13px;font-weight:650;line-height:1.4;margin-top:6px;overflow-wrap:anywhere}
  .count-mobile-meta{font-size:11px;color:var(--mute);line-height:1.5;margin-top:3px;overflow-wrap:anywhere}
  .count-mobile-actions{display:flex;align-items:center;gap:8px;margin-top:10px}
  .count-mobile-actions form{margin:0}.count-mobile-actions .btn,.count-mobile-actions button{min-height:36px}

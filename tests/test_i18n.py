@@ -60,7 +60,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
     # Check page content itself, so a translated sidebar cannot satisfy this test.
     pages = {
         "/inventory?view=list": ("现有库存", "在途库存", "搜索"),
-        "/sales": ("现金销售额", "每日净销售额", "交易笔数"),
+        "/sales": ("现金占比", "每日净销售额", "交易笔数"),
         "/sales/products": ("售出数量", "全部分类", "排序方式"),
         f"/sales/product/{product.id}": ("Cola 500ml", "每日售出数量", "按门店"),
         "/replenishment?view=list": ("待审核", "为什么是这个数量", "批准"),

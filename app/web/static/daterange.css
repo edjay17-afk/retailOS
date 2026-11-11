@@ -1,6 +1,6 @@
 /* Date-range picker (Sales): a button showing the range, and a panel with two date boxes, a calendar and ready-made ranges */
 .drp{position:relative}
-.drp-btn{display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.drp-btn{display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:650;cursor:pointer;white-space:nowrap}
 .drp-btn:hover,.drp-btn:focus{background:var(--surface);color:var(--ink);border-color:var(--primary)}
 .drp-btn[aria-expanded="true"]{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
 .drp-btn svg.i{width:16px;height:16px;color:var(--mute)}
@@ -14,25 +14,25 @@
 .drp-boxes input.bad{border-color:var(--bad);background:var(--bad-soft)}
 .drp-dash{color:var(--mute)}
 .drp-head{display:flex;align-items:center;gap:6px;margin:6px 0 8px}
-.drp .drp-head select{flex:1;width:auto;height:34px;border:0;background:transparent;font:inherit;font-weight:650;color:var(--ink);cursor:pointer;min-width:0}
+.drp .drp-head select{flex:1;width:auto;height:34px;border:0;background:transparent;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;min-width:0}
 .drp-nav{width:30px;height:30px;padding:0;justify-content:center;border-radius:8px;background:var(--primary-soft);color:var(--primary);border:0;font-size:18px;line-height:1}
 .drp-nav:disabled{opacity:.35;cursor:default}
 .drp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0}
-.drp-wd{font-size:12px;font-weight:600;color:var(--mute);text-align:center;padding:6px 0}
-.drp-day{height:36px;padding:0;justify-content:center;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-weight:500;cursor:pointer}
+.drp-wd{font-size:12px;font-weight:650;color:var(--mute);text-align:center;padding:6px 0}
+.drp-day{height:36px;padding:0;justify-content:center;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
 .drp-day:hover{background:var(--primary-soft);filter:none}
 .drp-day.out{color:var(--mute2)}
 .drp-day.future,.drp-day:disabled{color:var(--mute2);opacity:.45;cursor:default;background:transparent}
 .drp-day.in{background:var(--primary-soft);color:var(--ink)}
 .drp-day.today{text-decoration:underline;text-underline-offset:4px}
-.drp-day.edge{background:var(--btn);color:#fff;font-weight:700}
+.drp-day.edge{background:var(--btn);color:#fff;font-weight:750}
 .drp-day.edge-l{border-radius:8px 0 0 8px}.drp-day.edge-r{border-radius:0 8px 8px 0}.drp-day.edge-l.edge-r{border-radius:8px}
-.drp-opt{display:flex;align-items:center;gap:10px;padding:7px 0;margin:0;cursor:pointer;font-weight:500;text-transform:none;letter-spacing:0;font-size:14.5px;color:var(--ink)}
+.drp-opt{display:flex;align-items:center;gap:10px;padding:7px 0;margin:0;cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0;font-size:14.5px;color:var(--ink)}
 .drp-opt input[type=radio]{width:17px;height:17px;margin:0;accent-color:var(--primary)}
 .drp-n{width:58px;height:34px;padding:0 8px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;text-align:center}
 .drp-gap{height:10px}
 .drp-foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
-.drp-foot button{height:38px;padding:0 20px;border-radius:9px;font-weight:650}
+.drp-foot button{height:38px;padding:0 20px;border-radius:9px;font-weight:700}
 .drp .drp-head select:first-of-type{flex:1 1 0}
 .drp .drp-head select:nth-of-type(2){flex:0 0 78px}
 /* Keep picker internals independent of the surrounding filter-form styles. */
@@ -40,9 +40,9 @@
 .drp-body{display:grid;grid-template-columns:minmax(0,1fr) 190px}
 .drp-left{min-width:0;padding:18px}
 .drp-right{min-width:0;padding:12px;background:var(--surface2);gap:3px}
-.content .filters .drp label.drp-opt{position:relative;display:flex;align-items:center;gap:8px;min-height:34px;margin:0;padding:7px 10px;border-radius:6px;font-size:12px;font-weight:500;line-height:1.4;color:var(--ink);cursor:pointer}
+.content .filters .drp label.drp-opt{position:relative;display:flex;align-items:center;gap:8px;min-height:34px;margin:0;padding:7px 10px;border-radius:6px;font-size:12px;font-weight:600;line-height:1.4;color:var(--ink);cursor:pointer}
 .drp-opt:hover{background:var(--surface)}
-.content .filters .drp label.drp-opt:has(input:checked){background:var(--primary-soft);color:var(--primary);font-weight:650}
+.content .filters .drp label.drp-opt:has(input:checked){background:var(--primary-soft);color:var(--primary);font-weight:700}
 .drp-opt:focus-within{outline:2px solid var(--primary);outline-offset:1px}
 .drp-opt input[type=radio]{position:absolute;opacity:0;width:1px;height:1px;min-height:0;pointer-events:none}
 .content .filters .drp input.drp-n{width:44px;min-width:44px;max-width:44px;height:28px;min-height:28px;padding:0 4px;flex:0 0 44px;font-size:12px}

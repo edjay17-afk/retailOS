@@ -129,7 +129,7 @@ def test_v21_pages_open_for_a_manager(sync, fake, session, client):
     seeded(sync, fake, session)
     replenishment.run(session); session.commit()
     add_user(session, "mgr21", "management"); login(client, "mgr21")
-    for url in ("/replenishment/repairs", "/traceability", "/traceability?days=7&status=all"):
+    for url in ("/traceability", "/traceability?days=7&status=all"):
         assert client.get(url).status_code == 200, url
 
 

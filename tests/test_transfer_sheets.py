@@ -198,8 +198,6 @@ def test_breadcrumbs_lead_back_up_so_the_browser_back_button_is_not_needed(cfg, 
     sid = client.post("/transfer-sheets/new", data={"csrf": csrf, "target_id": str(_store(session).id)}).headers["location"].rsplit("/", 1)[1]
     links, text = trail(f"/transfer-sheets/{sid}")
     assert links == ["/", "/transfer-sheets"] and text.endswith("Transfer sheet > TS-%05d" % int(sid))  # Today > Transfer sheet > TS-00001
-    links, text = trail("/replenishment/repairs")
-    assert links == ["/"] and text.endswith("Repair queue")  # the longest sidebar entry wins over /replenishment
     links, text = trail("/replenishment/batches")
     assert links == ["/", "/replenishment"] and text.endswith("> Batches")
 

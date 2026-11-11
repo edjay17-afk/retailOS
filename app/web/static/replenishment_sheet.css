@@ -8,33 +8,33 @@
 .rs-tools input[type=search]{flex:1;min-width:220px;height:40px;padding:0 14px;border:1px solid #dbe7ff;border-radius:12px;background:var(--surface)}
 .rs-tools select{height:40px;border:1px solid #dbe7ff;border-radius:12px;background:var(--surface);padding:0 12px}
 .rs-seg{display:inline-flex;border:1px solid #dbe7ff;border-radius:12px;overflow:hidden;background:var(--surface)}
-.rs-seg a{padding:9px 15px;font-weight:600;font-size:14px;color:#475f8a;display:flex;gap:7px;align-items:center;text-decoration:none}
+.rs-seg a{padding:9px 15px;font-weight:650;font-size:14px;color:#475f8a;display:flex;gap:7px;align-items:center;text-decoration:none}
 .rs-seg a b{background:#e8efff;color:#1d4ed8;border-radius:99px;font-size:12px;padding:1px 8px}
 .rs-seg a.on{background:#2563eb;color:#fff}.rs-seg a.on b{background:rgba(255,255,255,.25);color:#fff}
 .rs-legend{margin-left:auto;display:flex;align-items:center;gap:6px;color:#475f8a;font-size:13px}.rs-legend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-left:10px}
 .rs-legend .u{background:#fde4e4}.rs-legend .w{background:#bcd1fb}.rs-legend .n{background:#fff;border:1px solid #dbe7ff}
 .rs-wrap{overflow-x:auto;background:var(--surface);border:1px solid #dbe7ff;border-radius:16px}
 .rs{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.rs th{background:#f5f8ff;color:#475f8a;font-size:12.5px;font-weight:600;text-align:left;padding:11px 12px;border-bottom:1px solid #dbe7ff;white-space:nowrap}
+.rs th{background:#f5f8ff;color:#475f8a;font-size:12.5px;font-weight:650;text-align:left;padding:11px 12px;border-bottom:1px solid #dbe7ff;white-space:nowrap}
 .rs th.r,.rs td.r{text-align:right}.rs th.c,.rs td.c{text-align:center}
 .rs td{padding:10px 12px;border-bottom:1px solid #eef3ff;font-size:14.5px;vertical-align:middle}
 .rs tbody tr:last-child td{border-bottom:0}
 .rs tr.picked td{background:#f5f8ff}
 .rs .rs-cb{width:34px;padding-right:0}
 .rs .rs-p{min-width:230px}.rs .rs-p b{display:block}.rs .rs-p small{display:block;color:#475f8a;font-size:12.5px}
-.rs .rs-why{font-size:12.5px;font-weight:600;color:#1d4ed8}
-.rs .rs-wh{font-weight:700}.rs .rs-wh.short{color:#c62828}
-.rs tfoot td{background:#f5f8ff;font-weight:700;border-top:1px solid #dbe7ff}
-.rs tfoot small{font-weight:500;color:#475f8a}
+.rs .rs-why{font-size:12.5px;font-weight:650;color:#1d4ed8}
+.rs .rs-wh{font-weight:750}.rs .rs-wh.short{color:#c62828}
+.rs tfoot td{background:#f5f8ff;font-weight:750;border-top:1px solid #dbe7ff}
+.rs tfoot small{font-weight:600;color:#475f8a}
 /* the quantity cells */
-.q{display:inline-grid;place-items:center;min-width:62px;height:36px;padding:0 8px;border-radius:10px;font-weight:700;font-size:15px;border:1px solid #dbe7ff;background:#fff;color:#111827;text-align:center;font-variant-numeric:tabular-nums}
+.q{display:inline-grid;place-items:center;min-width:62px;height:36px;padding:0 8px;border-radius:10px;font-weight:750;font-size:15px;border:1px solid #dbe7ff;background:#fff;color:#111827;text-align:center;font-variant-numeric:tabular-nums}
 input.q{width:72px;-moz-appearance:textfield;appearance:textfield}
 input.q::-webkit-outer-spin-button,input.q::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .q.u{background:#fde4e4;border-color:#f5c2c2;color:#c62828}
 .q.w{background:#bcd1fb;border-color:#bcd1fb;color:#1d4ed8}
-.q.z{border-style:dashed;color:#8aa0cc;font-weight:500;background:transparent}
+.q.z{border-style:dashed;color:#8aa0cc;font-weight:600;background:transparent}
 .q.rv{border-style:dashed;border-color:#c62828;color:#c62828;background:#fff}
-.q.d{background:#e8efff;color:#1d4ed8;gap:6px;grid-auto-flow:column}.q.d em{font-style:normal;font-size:11px;font-weight:600}
+.q.d{background:#e8efff;color:#1d4ed8;gap:6px;grid-auto-flow:column}.q.d em{font-style:normal;font-size:11px;font-weight:650}
 input.q:focus{outline:2px solid #2563eb;outline-offset:1px;background:#fff;color:#111827}
 input.q.busy{opacity:.6}
 input.q.ok{box-shadow:0 0 0 2px #2563eb55}
@@ -42,22 +42,22 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
 .repl-quantity{margin:0;display:inline-block}
 .repl-quantity .repl-save-status{display:block;font-size:11.5px;color:#c62828;min-height:0}
 .repl-quantity .repl-save-status:empty{display:none}
-.need{display:inline-block;border-radius:99px;padding:3px 11px;font-size:12.5px;font-weight:700;background:#e8efff;color:#1d4ed8;white-space:nowrap}
+.need{display:inline-block;border-radius:99px;padding:3px 11px;font-size:12.5px;font-weight:750;background:#e8efff;color:#1d4ed8;white-space:nowrap}
 .need.sup{background:#fde4e4;color:#c62828}
 .rs-foot{margin:10px 2px}
 /* the bar that appears when rows are ticked */
 .rs-dock{position:fixed;left:50%;bottom:22px;transform:translateX(-30%);background:#111827;color:#fff;border-radius:18px;padding:12px 14px 12px 22px;display:flex;align-items:center;gap:22px;box-shadow:0 18px 44px rgba(15,23,42,.35);z-index:70;white-space:nowrap}
 .rs-dock[hidden]{display:none}
 .rs-dock b{font-size:17px;display:block}.rs-dock small{color:#bfd0f5;font-size:12.5px}
-.rs-dock button{background:#2563eb;color:#fff;border:0;border-radius:12px;padding:10px 20px;font-weight:700}
+.rs-dock button{background:#2563eb;color:#fff;border:0;border-radius:12px;padding:10px 20px;font-weight:750}
 .rs-dock button:disabled{opacity:.5}
 @media(max-width:900px){.rs-dock{left:12px;right:12px;transform:none;flex-wrap:wrap;white-space:normal;justify-content:space-between}.rs-legend{margin-left:0}}
 .repl-quantity button[hidden]{display:none!important}
 .page-head button.ok{background:#2563eb;color:#fff}
 
 /* "Why this number" opens the side drawer on the same page */
-.rs-why{display:inline-block;margin-top:2px;padding:0;border:0;background:none;color:#1d4ed8;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.rs-all{display:inline-flex;align-items:center;gap:8px;margin:0;font-weight:600;cursor:pointer}.rs-all span{display:none}
+.rs-why{display:inline-block;margin-top:2px;padding:0;border:0;background:none;color:#1d4ed8;font-size:12.5px;font-weight:650;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rs-all{display:inline-flex;align-items:center;gap:8px;margin:0;font-weight:650;cursor:pointer}.rs-all span{display:none}
 .rs-ex-h{font-size:15px;margin:18px 0 6px;padding-top:12px;border-top:1px solid #dbe7ff}.rs-ex-h:first-child{margin-top:0;padding-top:0;border:0}
 
 /* ===== phones: each product is a card ===== */
@@ -80,7 +80,7 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
   .rs td.rs-p{order:1;flex:1 1 calc(100% - 40px);min-width:0}
   .rs td.rs-p b{font-size:16px}
   .rs td[data-label]{order:2;flex:1 1 28%;min-width:84px;text-align:left}
-  .rs td[data-label]::before{content:attr(data-label);display:block;font-size:11.5px;font-weight:600;color:#475f8a;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rs td[data-label]::before{content:attr(data-label);display:block;font-size:11.5px;font-weight:650;color:#475f8a;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rs td.rs-wh{order:5;flex:1 1 45%}.rs td.rs-need{order:6;flex:1 1 45%}
   .rs td.rs-wh,.rs td.rs-need{background:#f5f8ff!important;border-radius:10px;padding:8px 10px}
   .rs td.rs-todo{order:7;flex:1 1 100%;padding-top:4px}
@@ -150,11 +150,11 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
   .rs-tools{flex-wrap:nowrap;gap:12px;margin:0 0 16px}
   .rs-seg{background:#fff;border:1px solid #d6d9e6;border-radius:12px;padding:4px;gap:2px;overflow:visible}
   .rs-seg a{color:#111827;border-radius:9px;padding:7px 14px;flex-direction:column;gap:0;line-height:1.2}
-  .rs-seg a.on{background:#eceef3;color:#111827;font-weight:800}.rs-seg a b{background:none;color:inherit;padding:0;font-size:13px}.rs-seg a.on b{background:none;color:inherit}
+  .rs-seg a.on{background:#eceef3;color:#111827;font-weight:850}.rs-seg a b{background:none;color:inherit;padding:0;font-size:13px}.rs-seg a.on b{background:none;color:inherit}
   .rs-tools input[type=search]{height:46px;border:1px solid #d6d9e6;border-radius:12px}
-  .rs-tools select{height:46px;border:1px solid #d6d9e6;border-radius:12px;font-weight:600;color:#111827}
+  .rs-tools select{height:46px;border:1px solid #d6d9e6;border-radius:12px;font-weight:650;color:#111827}
   .rs-wrap{background:#fff;border:1px solid #e3e6ee;border-radius:20px;overflow:hidden}
-  .rs thead th{background:#fff;color:#374151;font-weight:600;text-transform:none;letter-spacing:0;font-size:13px;border-bottom:1px solid #e3e6ee}
+  .rs thead th{background:#fff;color:#374151;font-weight:650;text-transform:none;letter-spacing:0;font-size:13px;border-bottom:1px solid #e3e6ee}
   .rs tbody td{padding-top:12px;padding-bottom:12px;border-top:1px solid #eceef3}
   .rs-p b{font-size:15px}
 }
@@ -181,7 +181,7 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
 }
 @media (min-width:1001px){
   .page-head .row.noprint form[action="/replenishment/batches/create"],.page-head .row.noprint a[href="/replenishment?view=list"]{display:none!important}
-  .page-head .row.noprint .btn,.page-head .row.noprint button{background:#fff;color:#111827;border:1px solid #d6d9e6;border-radius:12px;height:44px;padding:0 20px;font-weight:700;font-size:15px;box-shadow:none}
+  .page-head .row.noprint .btn,.page-head .row.noprint button{background:#fff;color:#111827;border:1px solid #d6d9e6;border-radius:12px;height:44px;padding:0 20px;font-weight:750;font-size:15px;box-shadow:none}
   .page-head .row.noprint svg{display:none}
   .page-head .row.noprint .btn:hover,.page-head .row.noprint button:hover{background:#f3f4f7;filter:none}
 }
@@ -198,14 +198,14 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
 .rs-note{background:var(--accent-soft);border:0;border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;color:var(--ink)}
 .rs-note b{color:var(--ink)}
 @media (min-width:1001px){
-  .rs-sub-count{font-weight:700;color:var(--ink)}
+  .rs-sub-count{font-weight:750;color:var(--ink)}
   /* actions: Refresh is the one primary button, Order lists stays quiet */
   body .page-head .row.noprint form button{background:var(--btn);border-color:var(--btn);color:#fff}
   body .page-head .row.noprint form button:hover{background:var(--btn-h);border-color:var(--btn-h)}
   /* toolbar panel */
   form.rs-tools{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px;gap:8px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
   .rs-seg{background:var(--surface2);border:0;border-radius:11px;padding:3px}
-  .rs-seg a{color:var(--mute);font-weight:600}
+  .rs-seg a{color:var(--mute);font-weight:650}
   .rs-seg a b{background:var(--surface)!important;color:var(--mute)!important}
   .rs-seg a.on{background:var(--btn);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.35)}
   .rs-seg a.on b{background:rgba(255,255,255,.22)!important;color:#fff!important}
@@ -222,17 +222,53 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
 @keyframes rs-dock-in{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
 @media (prefers-reduced-motion:reduce){.rs-dock:not([hidden]){animation:none}}
 .rs-dock>div:first-child{display:flex;align-items:baseline;gap:14px;padding-right:14px}
-.rs-dock b{display:inline;font-size:15px;font-weight:700;color:var(--ink)}
+.rs-dock b{display:inline;font-size:15px;font-weight:750;color:var(--ink)}
 .rs-dock #repl-selected-count{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-right:6px;padding:0 8px;border-radius:8px;background:var(--accent-soft);color:var(--accent-h);font-size:14px;font-variant-numeric:tabular-nums}
 .rs-dock small{display:inline;color:var(--mute);font-size:14px;font-variant-numeric:tabular-nums}
-.rs-dock small #rs-selected-value{color:var(--ink);font-weight:700}
-.rs-dock #repl-clear{background:none;border:0;color:var(--mute);font-weight:600;font-size:14px;padding:10px 12px;border-radius:9px}
+.rs-dock small #rs-selected-value{color:var(--ink);font-weight:750}
+.rs-dock #repl-clear{background:none;border:0;color:var(--mute);font-weight:650;font-size:14px;padding:10px 12px;border-radius:9px}
 .rs-dock #repl-clear:hover{background:var(--surface2);color:var(--ink)}
-.rs-dock #repl-proceed{background:var(--btn);color:#fff;height:42px;padding:0 20px;border-radius:10px;font-size:14.5px;font-weight:700}
+.rs-dock #repl-proceed{background:var(--btn);color:#fff;height:42px;padding:0 20px;border-radius:10px;font-size:14.5px;font-weight:750}
 .rs-dock #repl-proceed:hover{background:var(--btn-h)}
 .rs-dock button:focus-visible{outline:2px solid var(--btn);outline-offset:2px}
 @media(max-width:700px){
   .rs-dock>div:first-child{flex:1 1 100%;justify-content:space-between;padding-right:0}
   .rs-dock #repl-clear{flex:1 1 auto;width:auto;background:var(--surface2)}
   .rs-dock #repl-proceed{flex:1 1 100%}
+}
+
+/* Phone, simpler: the list starts on the first screen. Totals are one line, the filters fold behind one button,
+   each product shows what to do before it is opened, and stores that need nothing are left out of the opened card. */
+.rs-filter-toggle{display:none}
+@media(max-width:700px){
+  .page-head .row form.rs-create-idle{display:none}                      /* nothing approved yet: nothing to create */
+  .page-head .row form.rs-create button{min-height:44px;background:var(--surface);color:var(--primary);border:1px solid var(--line2);box-shadow:none}
+  .rs-kpis{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;margin:0 0 12px}
+  .rs-kpi{display:block;padding:0;border:0;background:none;box-shadow:none;border-radius:0;min-width:0}
+  .rs-kpi b{display:inline;font-size:15px;font-weight:750}
+  .rs-kpi small{display:inline;margin-left:5px;font-size:13px;color:var(--mute)}
+  .rs-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .rs-tools .rs-seg{flex:1 1 100%}
+  .rs-tools input[type=search]{flex:1 1 0;width:auto;min-width:0;margin-top:0;height:44px}
+  .rs-filter-toggle{display:inline-flex;align-items:center;gap:7px;flex:none;height:44px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:650}
+  .rs-filter-toggle .i{width:16px;height:16px}
+  .rs-filter-toggle b{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--primary);color:#fff;font-size:11px}
+  .rs-tools select.rs-store,.rs-tools select[name=todo]{display:none;flex:1 1 calc(50% - 4px);width:auto;min-width:0;margin-top:0;height:44px}
+  .rs-tools.rs-filters-open select.rs-store,.rs-tools.rs-filters-open select[name=todo]{display:block}
+  .rs thead{margin-bottom:4px}
+  /* the row: name, then what to do; Review opens the stores */
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-todo,
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row:not(.rs-expanded) td.rs-todo{display:block!important;order:2;flex:1 1 100%;padding:0 0 0 38px}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-todo .need{display:inline-block;font-size:12.5px;padding:2px 10px}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row:not(.rs-expanded) td.rs-p small{display:none}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row{gap:6px 10px}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row.rs-expanded td.c:has(>.q.z){display:none!important}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-p .rs-why{vertical-align:middle;margin:0 0 0 6px}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-p b{display:inline}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-p small{display:block;margin-top:3px}
+}
+@media(max-width:700px){
+  .page-head:has(form.rs-create-idle){margin-bottom:0}
+  .page-head:has(form.rs-create-idle) .row{display:none}
+  .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-p small{margin-top:0}
 }

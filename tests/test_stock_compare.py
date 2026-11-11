@@ -200,5 +200,9 @@ def test_estimated_stock_counts_open_transfers_as_if_completed(client, sync, fak
     assert stock_estimate.estimate(5.0, adj[(shop.id, prod.id)]) == 19.0
     page = client.get("/inventory/compare?est=1").text
     assert "Estimated = StoreHub stock" in page and "transfers in" in page
+    shop.closed = True; session.commit()                               # a closed store gets nothing more: its estimate stays at its own stock
+    shut = stock_estimate.adjustments(session)
+    assert (shop.id, prod.id) not in shut and stock_estimate.estimate(0.0, shut.get((shop.id, prod.id))) == 0.0
+    assert shut[(wh.id, prod.id)]["out"] == 10.0                        # the sender's side is unchanged
     assert "Estimated = StoreHub stock" not in client.get("/inventory/compare").text
     assert client.get(f"/inventory?view=list&loc={shop.id}").status_code == 200

@@ -26,7 +26,7 @@ def suppliers(db: Session) -> list[str]:
 
 
 def categories(db: Session) -> list[str]:
-    return [r[0] for r in db.execute(select(Product.category).where(Product.category.is_not(None), Product.category != "")
+    return [r[0] for r in db.execute(select(Product.category).where(Product.category.is_not(None), Product.category != "", Product.in_api.is_(True))
                                      .group_by(Product.category).order_by(Product.category)).all()]
 
 

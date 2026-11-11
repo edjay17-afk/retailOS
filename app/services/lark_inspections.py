@@ -73,7 +73,7 @@ def reports_for_day(day):
         client.http.close()
 
 
-def mark_submitted(db, day, reports_by_location, actor_id):
+def mark_submitted(db, day, reports_by_location, actor_id, actor_type="human"):
     """Persist external submission evidence without inventing checklist outcomes."""
     from sqlalchemy import select
     from ..models import Inspection, InspectionTemplate
@@ -91,10 +91,32 @@ def mark_submitted(db, day, reports_by_location, actor_id):
         previous = inspection.status
         inspection.status = "submitted"
         # Lark's date field identifies the report day, not a reliable submission timestamp.
-        audit.log(db, actor_type="human", actor_id=actor_id, action="inspection.lark_submitted",
+        audit.log(db, actor_type=actor_type, actor_id=actor_id, action="inspection.lark_submitted",
                   entity_type="inspection", entity_id=inspection.id,
                   before={"status": previous}, after={"status": "submitted", "report_date": str(day),
                   "report_ids": [r["id"] for r in matches[inspection.location_id]], "verified_at": now_utc().isoformat()})
         changed.append(inspection.id)
     db.flush()
     return changed
+
+
+def sync_day(db, day):
+    """Match today's Lark Daily Inspection reports to the store checklists without anyone opening the Inspections page.
+    Returns the ids of the checklists that became "submitted". Reads Lark only; a failed read changes nothing."""
+    from sqlalchemy import select
+    from ..models import Location
+    from . import inspections
+    result = reports_for_day(day)
+    if not result.get("available") or not result.get("reports"):
+        return []
+    inspections.generate_tasks(db, day)   # the checklist rows must exist before a report can be matched to one
+    db.flush()
+    by_store = {}
+    for r in result["reports"]:
+        by_store.setdefault(r["store"], []).append(r)
+    grouped = {}
+    for loc in db.scalars(select(Location).where(Location.monitored.is_(True), inspections.enabled_location())):
+        rows = by_store.get(store_key(loc.name))
+        if rows:
+            grouped[str(loc.id)] = rows
+    return mark_submitted(db, day, grouped, None, actor_type="system")

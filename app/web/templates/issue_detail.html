@@ -10,7 +10,7 @@
     <div><span class="mute">{{ t('Location') }}</span><br>{{ i.location.name if i.location else '-' }}</div>
     <div><span class="mute">{{ t('Owner') }}</span><br>{{ (i.owner.full_name or i.owner.username) if i.owner else t('unassigned') }}</div>
     <div><span class="mute">{{ t('Opened') }}</span><br>{{ i.created_at|local }}</div>
-    <div><span class="mute">{{ t('Due') }}</span><br><span style="{{ 'color:var(--bad);font-weight:600' if i.status != 'closed' and i.due_at < now }}">{{ i.due_at|local }}</span></div>
+    <div><span class="mute">{{ t('Due') }}</span><br><span style="{{ 'color:var(--bad);font-weight:650' if i.status != 'closed' and i.due_at < now }}">{{ i.due_at|local }}</span></div>
   </div>
   {% if i.product %}<p class="small">{{ t('Product:') }} {{ i.product.name }}</p>{% endif %}
   {% if i.description %}<p style="white-space:pre-line">{{ i.description }}</p>{% endif %}

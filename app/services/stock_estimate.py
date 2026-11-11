@@ -1,12 +1,13 @@
 """Estimated stock, only inside Retail OS: StoreHub's stock plus everything on the way, as if every open purchase order and transfer were completed.
 estimated = on hand + still to arrive on open purchase orders + transfers not yet completed (added where they go; taken off where they leave, unless already shipped).
+A closed store gets no adjustment: nothing more arrives there or leaves from there, so its estimate stays at its own stock.
 StoreHub is never changed."""
 from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from ..models import StockTransfer
+from ..models import Location, StockTransfer
 from . import purchasing
 
 OPEN_TRANSFER = ("Created", "Shipped")   # not Completed, not Cancelled
@@ -15,6 +16,7 @@ OPEN_TRANSFER = ("Created", "Shipped")   # not Completed, not Cancelled
 def adjustments(db: Session) -> dict[tuple[int, int], dict]:
     """(location id, product id) -> {"po": still to arrive on open purchase orders, "in": arriving by transfer, "out": leaving by transfer (a shipped one has already left)}."""
     out: dict[tuple[int, int], dict] = {}
+    closed = set(db.scalars(select(Location.id).where(Location.closed.is_(True))))
 
     def slot(lid: int, pid: int) -> dict:
         return out.setdefault((lid, pid), {"po": 0.0, "in": 0.0, "out": 0.0})
@@ -29,7 +31,7 @@ def adjustments(db: Session) -> dict[tuple[int, int], dict]:
                 slot(t.target_location_id, l.product_id)["in"] += l.quantity
             if t.source_location_id and t.status == "Created":      # StoreHub takes the stock off the sender when it ships, not before
                 slot(t.source_location_id, l.product_id)["out"] += l.quantity
-    return out
+    return {k: v for k, v in out.items() if k[0] not in closed}
 
 
 def estimate(on_hand: float, a: dict | None) -> float:

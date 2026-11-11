@@ -93,6 +93,9 @@ copied automatically every 5 minutes. It is one-way and idempotent; Lark is stor
 
 ## Develop and test
 
+See the [state-machine inventory](docs/state-machines.md) for workflow ownership,
+transition boundaries, known risks, and a repeatable source-evidence scan.
+
 ```
 .venv\Scripts\python -m pytest tests -q        (106 tests: formulas, sync, idempotency, permissions, workflows, AI grounding and policy gate, migrations, Lark mirror)
 ```

@@ -5,13 +5,13 @@
 .sc-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:12px 0 16px;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--mute)}
 .sc-metric{position:relative;display:grid;grid-template-columns:1fr;gap:4px;padding:16px 20px;min-width:0}
 .sc-metric+.sc-metric:before{content:"";position:absolute;top:16px;bottom:16px;left:0;width:1px;background:var(--line)}
-.sc-metric span{font-size:12px;font-weight:500}.sc-metric b{font-size:24px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}.sc-metric small{font-size:10px;color:var(--mute)}
+.sc-metric span{font-size:12px;font-weight:600}.sc-metric b{font-size:24px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}.sc-metric small{font-size:10px;color:var(--mute)}
 .sc-metric-alert span:before,.sc-metric-low span:before{content:"";display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:var(--bad)}
 .sc-metric-low span:before{background:var(--warn)}
 .sc-filters{gap:8px 10px;margin:0 0 18px}
 .sc-filters input[type=search],.sc-filters select{height:42px;min-width:0;border-color:var(--line);border-radius:8px;color:var(--ink);background:var(--surface)}
 .sc-filters input[type=search]{flex:1 1 240px}.sc-filters select{flex:0 1 auto}
-.sc-check{color:var(--ink);font-size:12px;font-weight:500}
+.sc-check{color:var(--ink);font-size:12px;font-weight:600}
 .sc-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px}
 .sc-section-heading h2{font-size:17px;margin:0;color:var(--ink)}
 .sc-legend{gap:6px;color:var(--mute);font-size:11px}.sc-legend i{width:9px;height:9px;border-radius:50%;margin-left:9px}
@@ -42,7 +42,7 @@ html[data-theme="dark"] #lv-bar{background:var(--surface);color:var(--ink);borde
  .phone-stock-copy small{font-size:11px}.phone-stock-copy .phone-stock-bad{color:var(--bad)}
  .phone-stock-qty{flex:none;min-width:54px;max-width:104px;font-size:20px;line-height:1.2}
  .phone-stock-qty.phone-qty-bad{color:var(--bad)}
- .lv-mobile-qty{width:76px;max-width:100%;min-height:40px;text-align:right;font-size:16px;font-weight:700;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink)}
+ .lv-mobile-qty{width:76px;max-width:100%;min-height:40px;text-align:right;font-size:16px;font-weight:750;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink)}
  .lv-mobile-qty.chg{border-color:var(--warn);background:var(--warn-soft)}.lv-mobile-qty.bad{border-color:var(--bad);background:var(--bad-soft)}
  #lv-bar:not([hidden]){left:10px;right:10px;bottom:calc(var(--mtab) + 8px);transform:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;border-color:var(--line);background:var(--surface);color:var(--ink)}
  #lv-bar input{grid-column:1/-1;min-width:0;width:100%}

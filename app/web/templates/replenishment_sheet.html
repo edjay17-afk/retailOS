@@ -9,7 +9,7 @@
     <p class="sync-note"><span class="rs-sub-count">{{ kpi.products|num(0) }} {{ t('products need stock') }}</span><span class="page-desc">{{ t('One sheet for every store: what each store needs, what the warehouse can send, and what to order from suppliers.') }}</span></p></div>
   <div class="row noprint">
     {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
-    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
+    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0" class="rs-create{{ '' if (counts.get('approved', 0) + counts.get('modified', 0)) else ' rs-create-idle' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
     <a class="btn sec" href="/replenishment/batches"><svg class="i"><use href="#i-file"/></svg>{{ t('Order batches') }}</a>
     <a class="btn sec" href="/replenishment?view=list">{{ t('List view') }}</a>
   </div>
@@ -25,12 +25,13 @@
 </div>
 {% if last %}<p class="small {{ 'mute' if last.status == 'ok' else '' }}" {% if last.status != 'ok' %}style="color:var(--bad)"{% endif %}>{{ t('Last run') }} {{ last.run_at|local }} ({{ t(last.status) }}){% if last.note %}: {{ t(last.note) }}{% endif %}</p>{% endif %}
 
-<form novalidate class="rs-tools" method="get">
+<form novalidate class="rs-tools{{ ' rs-filters-open' if loc or todo }}" method="get">
   <span class="rs-seg">
     {% for v, l, n in (('pending', 'Ready to review', counts.get('pending', 0)), ('needs_review', 'Needs review', counts.get('needs_review', 0)), ('decided', 'Decided', counts.get('approved', 0) + counts.get('modified', 0)), ('all', 'All', none)) %}<a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&todo={{ todo }}&search={{ search|urlencode }}"><span class="rs-label-full">{{ t(l) }}</span><span class="rs-label-mobile">{{ t({'pending':'Ready','needs_review':'Needs review','decided':'Decided','all':'All'}[v]) }}</span>{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>{% endfor %}
   </span>
   <input type="hidden" name="status" value="{{ status }}">
   <input type="search" name="search" value="{{ search }}" placeholder="{{ t('Product name or barcode') }}" aria-label="{{ t('Search') }}">
+  <button type="button" class="rs-filter-toggle sec" aria-expanded="{{ 'true' if loc or todo else 'false' }}"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg>{{ t('Filter') }}{% if loc or todo %}<b>{{ (1 if loc else 0) + (1 if todo else 0) }}</b>{% endif %}</button>
   <select name="loc" class="rs-store" onchange="this.form.submit()" aria-label="{{ t('Store') }}"><option value="0">{{ t('All stores') }}</option>{% for l in all_stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ short(l.name) }}</option>{% endfor %}{% if wh_loc %}<option value="{{ wh_loc.id }}" {{ 'selected' if wh_view }}>{{ wh_loc.name }}</option>{% endif %}</select>
   <select name="todo" onchange="this.form.submit()" aria-label="{{ t('What to do') }}"><option value="">{{ t('What to do') }}: {{ t('All') }}</option><option value="send" {{ 'selected' if todo == 'send' }}>{{ t('Send to stores') }}</option><option value="order" {{ 'selected' if todo == 'order' }}>{{ t('Order from supplier') }}</option><option value="both" {{ 'selected' if todo == 'both' }}>{{ t('Send and order') }}</option></select>
   <select name="supplier" onchange="this.form.submit()" aria-label="{{ t('Supplier') }}"><option value="0">{{ t('All suppliers') }}</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if supplier == s.id }}>{{ s.name }}</option>{% endfor %}</select>

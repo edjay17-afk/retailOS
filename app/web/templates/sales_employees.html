@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Sales by employee') }}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="/static/sales_employee_filters.css?v={{ asset_v('sales_employee_filters.css') }}">
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 <div class="page-head"><div><h1>{{ t('Sales by employee') }}</h1>
   <p class="page-desc">{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
   <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}">{{ t('Transactions') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
 
-<form novalidate class="filters" method="get" style="margin-bottom:14px">
+<form novalidate class="filters employee-sales-filters" method="get">
   <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
   <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, label in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t(label) }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
   <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">

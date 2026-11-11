@@ -364,7 +364,7 @@ def test_filtered_csv_export_all_pages_and_scope(sync, fake, session, client):
     session.commit()
     login(client, 'csv_admin')
     def download(params):
-        response = client.get('/stock-transfers', params={**params, 'export': 'csv'})
+        response = client.get('/stock-transfers', params={'history': 1, **params, 'export': 'csv'})
         assert response.status_code == 200
         assert 'attachment' in response.headers['content-disposition']
         assert response.content.startswith(b'\xef\xbb\xbf')
@@ -417,3 +417,25 @@ def test_import_modal_responsive(sync, fake, session, client):
             page.locator('#transfer-import [data-modal-close]').click()
             assert not page.locator('#transfer-import').is_visible()
         browser.close()
+
+
+def test_latest_export_excludes_old_records_but_keeps_unchanged(sync, fake, session, client):
+    seeded(sync, fake, session)
+    admin = add_user(session, 'snapshot_admin', 'admin')
+    ids = list(session.scalars(select(InventoryCurrent.location_id).distinct()))
+    for reference in ('STOLD', 'STCURRENT'):
+        src = import_source(session, admin, export(reference=reference))
+        svc.apply(session, src, admin, ids)
+    repeat = import_source(session, admin, export(reference='STCURRENT'))
+    assert svc.apply(session, repeat, admin, ids)['unchanged'] == 1
+    session.commit()
+    login(client, 'snapshot_admin')
+    page = client.get('/stock-transfers?history=0&status=Created')
+    assert page.status_code == 200
+    assert 'STCURRENT' in page.text and 'STOLD' not in page.text
+    assert 'Latest StoreHub export only' in page.text
+    rows = list(csv.DictReader(io.StringIO(client.get('/stock-transfers?history=0&export=csv').content.decode('utf-8-sig'))))
+    assert [r['Transfer ID'] for r in rows] == ['STCURRENT']
+    history = client.get('/stock-transfers?status=Created').text
+    assert 'STOLD' in history and 'STCURRENT' in history
+    assert session.scalar(select(StockTransfer.status).where(StockTransfer.reference == 'STOLD')) == 'Created'

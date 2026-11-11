@@ -36,8 +36,16 @@ def visible(c):
 
 
 @router.get("/stock-transfers")
-def transfer_list(q: str = "", status: str = "", loc: int = 0, page: int = 1, export: str = "", c: Ctx = Depends(need("transfer.view"))):
+def transfer_list(q: str = "", status: str = "", loc: int = 0, page: int = 1, export: str = "", history: bool = True, c: Ctx = Depends(need("transfer.view"))):
     scope = visible(c)
+    # Match the actual latest export, not last_import_id (unchanged rows retain
+    # their older import ID). Missing records remain accessible in history.
+    latest = c.db.scalar(select(StockTransferImport).where(
+        StockTransferImport.imported_at.is_not(None)).order_by(
+        StockTransferImport.imported_at.desc(), StockTransferImport.id.desc()).limit(1))
+    if not history and latest:
+        references = [g["reference"] for g in stock_transfers.parse(latest.raw_csv)]
+        scope = scope & StockTransfer.reference.in_(references)
     stmt = select(StockTransfer).where(scope)
     if status:
         if status not in stock_transfers.STATUSES:
@@ -70,11 +78,14 @@ def transfer_list(q: str = "", status: str = "", loc: int = 0, page: int = 1, ex
     page = min(max(page, 1), max(1, (total + PAGE - 1) // PAGE))
     rows = list(c.db.scalars(stmt.order_by(StockTransfer.created_sh.desc(), StockTransfer.id.desc()).offset((page-1)*PAGE).limit(PAGE)
                             .options(selectinload(StockTransfer.lines), selectinload(StockTransfer.last_import))))
-    counts = dict(c.db.execute(select(StockTransfer.status, func.count()).where(scope).group_by(StockTransfer.status)).all())
+    count_stmt = select(StockTransfer.status, func.count()).where(scope)
+    if loc:
+        count_stmt = count_stmt.where(or_(StockTransfer.source_location_id == loc, StockTransfer.target_location_id == loc))
+    counts = dict(c.db.execute(count_stmt.group_by(StockTransfer.status)).all())
     receipts = {r.transfer_id: r for r in c.db.scalars(select(StockTransferReceipt).where(StockTransferReceipt.transfer_id.in_([t.id for t in rows] or [0])))}
     last_import = transfer_inbox.last_import_at(c.db)
     return render(c, "stock_transfers.html", rows=rows, q=q, status=status, loc=loc, page=page, total=total, per=PAGE,
-                  locations=c.locations(), statuses=stock_transfers.STATUSES, counts=counts, receipts=receipts,
+                  locations=c.locations(), statuses=stock_transfers.STATUSES, counts=counts, receipts=receipts, history=history,
                   last_import=last_import, import_stale=bool(last_import and now_utc() - last_import > timedelta(hours=float(cfg.get(c.db, "transfers.stale_hours")))))
 
 

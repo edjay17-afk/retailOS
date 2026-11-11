@@ -10,11 +10,11 @@
  .mtabs{padding-top:7px;background:var(--bg);box-shadow:none}
  .mtabs .mt{gap:4px;min-height:52px;font-size:11px}
  .mtabs .mt .i{width:22px;height:22px}
- .phone-section-title{font-size:17px;margin:22px 0 8px;font-weight:700}
+ .phone-section-title{font-size:17px;margin:22px 0 8px;font-weight:750}
  .phone-actions a{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:66px}
  .phone-actions a>.i{width:24px;height:24px;color:var(--primary);flex:none}
- .phone-actions a>span{flex:1;min-width:0;font-weight:600}
- .phone-actions small{display:block;color:var(--mute);font-size:12px;font-weight:400;margin-top:4px}
+ .phone-actions a>span{flex:1;min-width:0;font-weight:650}
+ .phone-actions small{display:block;color:var(--mute);font-size:12px;font-weight:500;margin-top:4px}
  .phone-actions a>b{color:var(--mute);font-size:22px}
  .phone-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 24px}
  .phone-quick .btn{min-height:46px;font-size:13px;text-align:center}
@@ -61,11 +61,11 @@
  .phone-stock-chips a.on{color:var(--primary-ink);background:var(--btn);border-color:var(--btn)}
  .phone-stock-row{display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
  .phone-stock-icon{display:grid;place-items:center;flex:none;width:42px;height:44px;border-radius:10px;background:var(--primary-soft);color:var(--primary)}
- .phone-stock-copy{flex:1;min-width:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
- .phone-stock-copy small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:4px}
+ .phone-stock-copy{flex:1;min-width:0;font-size:14px;font-weight:650;overflow-wrap:anywhere}
+ .phone-stock-copy small{display:block;color:var(--mute);font-size:11px;font-weight:500;margin-top:4px}
  .phone-stock-copy em{font-size:10px;font-style:normal;color:var(--warn);display:block;margin-top:4px}
- .phone-stock-qty{font-size:22px;font-weight:700;text-align:right;max-width:100px;overflow-wrap:anywhere}
- .phone-stock-qty small{display:block;font-size:10px;font-weight:400;color:var(--mute)}
+ .phone-stock-qty{font-size:22px;font-weight:750;text-align:right;max-width:100px;overflow-wrap:anywhere}
+ .phone-stock-qty small{display:block;font-size:10px;font-weight:500;color:var(--mute)}
  .phone-stock-cta{position:fixed;left:0;right:0;bottom:var(--mtab);z-index:50;padding:10px 18px;background:var(--bg)}
  .phone-stock-cta .btn{width:100%;min-height:48px}
  main:has(.phone-stock-list) .stock-pager{display:flex;gap:10px;margin:14px 0 80px}

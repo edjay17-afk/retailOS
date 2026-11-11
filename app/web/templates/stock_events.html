@@ -24,7 +24,7 @@
     <div><label for="stock-upload-file">{{ t('File') }}</label><input id="stock-upload-file" type="file" name="file" accept=".csv,.xlsx,.xlsm" required></div>
     <div><button>{{ t('Upload') }}</button></div>
     <div><label for="stock-upload-kind">{{ t('Type') }}</label><select id="stock-upload-kind" name="kind"><option value="">{{ t('Type from the file') }}</option><option value="write_off">{{ t('Write-off') }}</option><option value="unplanned_receipt">{{ t('Unplanned receipt') }}</option></select></div>
-    <div style="grid-column:span 2;align-self:end"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:500;font-size:13px"><input type="checkbox" name="in_storehub" value="1">{{ t('These are already entered in StoreHub (no to-do to key them in)') }}</label></div>
+    <div style="grid-column:span 2;align-self:end"><label style="display:inline-flex;gap:8px;align-items:center;margin:0;font-weight:600;font-size:13px"><input type="checkbox" name="in_storehub" value="1">{{ t('These are already entered in StoreHub (no to-do to key them in)') }}</label></div>
   </form>
   <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Type (write-off or unplanned receipt), Reason (optional), Note (optional), Location (optional if one is chosen above), Supplier (optional, for receipts). The same line uploaded twice on one day is recorded once.') }} <a href="/stock-events/template.csv">{{ t('Download template') }}</a></div>
 </dialog>

@@ -24,6 +24,12 @@
     });
     setPhoneRow(phoneRows[0]);
   }
+  // phone: the store and "what to do" filters stay folded behind one Filter button
+  var filterToggle = document.querySelector('.rs-filter-toggle');
+  if (filterToggle) filterToggle.addEventListener('click', function () {
+    var open = filterToggle.form.classList.toggle('rs-filters-open');
+    filterToggle.setAttribute('aria-expanded', String(open));
+  });
 
   var money = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function dirty(f) { return Number(f.elements.qty.value) !== Number(f.dataset.saved); }

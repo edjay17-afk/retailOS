@@ -63,11 +63,11 @@
       {% set links = g[title] %}
       {% set state = namespace(active=false, n=0) %}
       {% for url, label, icon, tag in links %}{% if active_nav_url == url %}{% set state.active = true %}{% endif %}{% if tag and tag|string|int(0) > 0 %}{% set state.n = state.n + tag|string|int %}{% endif %}{% endfor %}
-      {% if title in ('Today', 'Store operations') %}
+      {% if title in ('Today', 'Store operations') or links|length == 1 %}{# a group with a single page is a plain link: there is nothing to open #}
       <div class="nav-group nav-home flat {{ 'current-group' if state.active else '' }}" data-group="{{ title }}"><div class="ng-links">
       {% for url, label, icon, tag in links %}
         {% set active = active_nav_url == url %}
-        <a class="nl {{ 'on' if active else '' }}" href="{{ url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><span class="ic-tile" data-c="{{ tile.get(url, 'green') }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg></span><span class="nav-label">{{ t(label) }}</span>{% if tag %}<em class="tag">{{ tag }}</em>{% endif %}</a>
+        <a class="nl {{ 'on' if active else '' }}" href="{{ url }}" title="{{ t(label) }}" aria-label="{{ t(label) }}" {% if active %}aria-current="page"{% endif %}><span class="ic-tile" data-c="{{ tile.get(url, tile.get(title, 'green')) }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg></span><span class="nav-label">{{ t(label) }}</span>{% if tag %}<em class="tag">{{ tag }}</em>{% endif %}</a>
       {% endfor %}
       </div></div>
       {% else %}
@@ -88,9 +88,12 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="sf-me"><span class="sf-av" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}</span>
-        <span class="sf-t"><b>{{ user.full_name or user.username }}</b><small>{{ t(ROLE_LABELS[user.role]) }} · <span class="sidebar-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a> <a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></span></small></span>
-        <form novalidate method="post" action="/logout" class="sidebar-signout-form"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sidebar-signout" title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i" aria-hidden="true"><use href="#i-logout"/></svg><span>{{ t('Sign out') }}</span></button></form>
+      <div class="sf-card">
+        <div class="sf-me"><span class="sf-av" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}<i class="sf-dot"></i></span>
+          <span class="sf-t"><b>{{ user.full_name or user.username }}</b>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<small>{{ t(ROLE_LABELS[user.role]) }}</small>{% endif %}</span>
+          <form novalidate method="post" action="/logout" class="sidebar-signout-form"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sidebar-signout" title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i" aria-hidden="true"><use href="#i-logout"/></svg><span>{{ t('Sign out') }}</span></button></form>
+        </div>
+        <div class="sidebar-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
       </div>
     </div>
   </aside>

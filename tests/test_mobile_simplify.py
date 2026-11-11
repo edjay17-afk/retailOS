@@ -43,13 +43,13 @@ def test_mobile_simplification_and_desktop_isolation(sync, fake, session, client
             assert not page.locator(".sales-head h1").is_visible()
             assert page.evaluate(
                 """() => {
-                  const grid = document.querySelector('.sales-page>.grid.g4').getBoundingClientRect();
-                  const main = document.querySelector('.sales-page>.grid.g4>.card.stat:first-child').getBoundingClientRect();
-                  return Math.abs(grid.width - main.width) < 2;
+                  const grid = document.querySelector('.sales-page>.sales-strip').getBoundingClientRect();
+                  const main = document.querySelector('.sales-page>.sales-strip>div:first-child').getBoundingClientRect();
+                  return Math.abs(grid.width - main.width) < 4;  // the strip's own border
                 }"""
             )
             assert page.evaluate(
-                """() => [...document.querySelectorAll('.sales-page .stat .value')].every(el =>
+                """() => [...document.querySelectorAll('.sales-page .sales-strip .value')].every(el =>
                   getComputedStyle(el).whiteSpace === 'nowrap' && el.scrollWidth <= el.clientWidth + 1
                 )"""
             )

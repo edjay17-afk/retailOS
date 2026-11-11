@@ -2,15 +2,15 @@
 .tx-drawer .drawer-body{padding:8px 24px 28px}
 tr.tx-on td{background:#eef4ff}
 .txp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0 18px;border-bottom:1px solid var(--line)}
-.txp-when{font-size:13px;color:var(--mute)}.txp-inv{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:2px 0}.txp-meta{font-size:13.5px;color:var(--mute)}
+.txp-when{font-size:13px;color:var(--mute)}.txp-inv{font-size:24px;font-weight:850;letter-spacing:-.02em;margin:2px 0}.txp-meta{font-size:13.5px;color:var(--mute)}
 .txp-items{padding:6px 0}
 .txp-line{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
 .txp-line b{display:block;font-size:15.5px}.txp-line span{display:block;font-size:13px;color:var(--mute);margin-top:2px}
 .txp-line .txp-amt{font-size:16px;white-space:nowrap}
 .txp-sum{margin:14px 0 0}.txp-sum div{display:flex;justify-content:space-between;padding:6px 0;font-size:14.5px;color:var(--mute)}.txp-sum dt,.txp-sum dd{margin:0}
-.txp-sum .txp-total{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:22px;font-weight:800;color:var(--ink)}
+.txp-sum .txp-total{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:22px;font-weight:850;color:var(--ink)}
 .txp-pay{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 20px}
-.txp-full{font-size:14px;font-weight:700}
+.txp-full{font-size:14px;font-weight:750}
 .tx-drawer{border-radius:0!important;border:0!important;border-left:1px solid var(--line)!important;box-shadow:-10px 0 30px rgba(16,24,40,.10)!important}
 .tx-drawer::backdrop{background:rgba(16,24,40,.08)!important;backdrop-filter:none!important}
 .tx-drawer::backdrop{background:rgba(255,255,255,.35)!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important}

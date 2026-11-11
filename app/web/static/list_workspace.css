@@ -12,7 +12,7 @@
 .content > .page-head p{max-width:72ch;line-height:1.6}
 .content .filters{display:flex;flex-wrap:wrap;padding:16px;margin:16px 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);gap:12px;align-items:flex-end}
 .content .filters input:not([type=checkbox]):not([type=radio]),.content .filters select{max-width:100%}
-.content .filters label{display:block;font-weight:600;color:var(--ink)}
+.content .filters label{display:block;font-weight:650;color:var(--ink)}
 .active-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .filter-token{display:inline-flex;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface2);color:var(--ink);font-size:12px;overflow-wrap:anywhere;max-width:100%}
 .sync-note{color:var(--mute)}
@@ -46,7 +46,7 @@
 .permit-add-card form{margin:0}
 .permit-add-fields{display:grid;grid-template-columns:minmax(200px,2fr) minmax(140px,1fr) minmax(140px,1fr) minmax(180px,1.5fr) minmax(120px,1fr) auto;gap:12px;align-items:end}
 .permit-add-fields>div{min-width:0}
-.permit-add-fields label{display:block;margin:0 0 7px;font-size:12px;font-weight:500;color:var(--mute)}
+.permit-add-fields label{display:block;margin:0 0 7px;font-size:12px;font-weight:600;color:var(--mute)}
 .permit-add-fields input,.permit-add-fields select{width:100%;min-width:0;max-width:100%;height:40px;box-sizing:border-box;font-size:13px;border-radius:8px}
 .permit-add-fields button{height:40px;min-width:72px;padding:0 20px;border-radius:8px}
 @media(max-width:1200px){.permit-add-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.permit-add-fields button{width:100%}}

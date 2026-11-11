@@ -2071,5 +2071,10 @@
   "Estimated stock": "预估库存",
   "Estimated": "预估",
   "Estimated = StoreHub stock + open purchase orders + transfers not yet completed, as if all of them finished. Only in Retail OS; StoreHub is not changed.": "预估 = StoreHub 库存 + 未完成的采购订单 + 未完成的调拨，假设全部完成。仅在 Retail OS 内，不会更改 StoreHub。",
-  "Estimated = stock + open purchase orders + transfers not yet completed, as if all of them finished. Only in Retail OS.": "预估 = 库存 + 未完成的采购订单 + 未完成的调拨，假设全部完成。仅在 Retail OS 内。"
+  "Estimated = stock + open purchase orders + transfers not yet completed, as if all of them finished. Only in Retail OS.": "预估 = 库存 + 未完成的采购订单 + 未完成的调拨，假设全部完成。仅在 Retail OS 内。",
+  "Against the previous period": "与上一期间相比",
+  "Philippine business days; cancelled sales excluded, returns subtracted.": "按菲律宾营业日统计，排除已取消销售并扣除退货。",
+  "Cash share": "现金占比",
+  "This period": "本期",
+  "Previous period": "上一期间"
 }

@@ -20,7 +20,7 @@ dialog[data-state="run"] .run-badge .i{animation:runspin 1.2s linear infinite}
 .run-steps li{display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:12px}
 .run-steps li.run{background:var(--primary-soft)}
 .run-steps li.bad{background:#fdf0f0}
-.run-steps .ic{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line2);font-size:13px;font-weight:800;color:#fff}
+.run-steps .ic{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line2);font-size:13px;font-weight:850;color:#fff}
 .run-steps .ok .ic{background:#16a34a;border-color:#16a34a}
 .run-steps .bad .ic{background:#dc2626;border-color:#dc2626}
 .run-steps .run .ic{border-color:var(--primary);border-top-color:transparent;animation:runspin .8s linear infinite}
