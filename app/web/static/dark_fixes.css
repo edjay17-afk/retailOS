@@ -1,10 +1,4 @@
 /* Dark mode for the newer controls (business buttons, language switcher, period pill, replenishment sheet, transaction panel). */
-html[data-theme="dark"] .pos-source-switch button,html[data-theme="dark"] .pos-source-switch .seven-btn{color:#f1f3f7!important;background:transparent!important;border-color:#484f5b!important}
-html[data-theme="dark"] .pos-source-switch button:hover,html[data-theme="dark"] .pos-source-switch button:focus,html[data-theme="dark"] .pos-source-switch .seven-btn:hover,html[data-theme="dark"] .pos-source-switch .seven-btn:focus{background:#1a1c21!important;border-color:#f1f3f7!important;color:#f1f3f7!important}
-html[data-theme="dark"] .pos-source-switch button.is-active,html[data-theme="dark"] .pos-source-switch .seven-btn.is-active,html[data-theme="dark"] .pos-source-switch button.is-active:hover,html[data-theme="dark"] .pos-source-switch button.is-active:focus{background:#f1f3f7!important;border-color:#f1f3f7!important;color:#0b0c0f!important}
-html[data-theme="dark"] .top-lang{background:#101114!important;border:1px solid #484f5b!important}
-html[data-theme="dark"] .top-lang a,html[data-theme="dark"] .top-lang a:hover,html[data-theme="dark"] .top-lang a.on{color:#f1f3f7!important}
-html[data-theme="dark"] .top-lang a:hover{background:#1a1c21!important}html[data-theme="dark"] .top-lang a.on{background:#2a2d34!important}
 html[data-theme="dark"] .sales-seg{background:#101114!important;border-color:#484f5b}
 html[data-theme="dark"] .sales-seg>a,html[data-theme="dark"] .sales-seg>a.on,html[data-theme="dark"] .sales-seg .drp-btn,html[data-theme="dark"] .sales-seg .drp[data-on] .drp-btn{color:#f1f3f7!important}
 html[data-theme="dark"] .sales-seg>a:hover,html[data-theme="dark"] .sales-seg .drp-btn:hover{background:#1a1c21}

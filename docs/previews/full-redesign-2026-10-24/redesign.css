@@ -1,0 +1,228 @@
+/* Ops Console — full redesign overlay for RetailOS.
+   Injected at runtime only (Playwright add_style_tag). No repo files changed.
+   Brand accent stays the current forest green #12332a so structure, not palette, is judged. */
+
+:root{
+  --oc-bg:#f6f7f6;
+  --oc-surface:#ffffff;
+  --oc-line:#e3e6e3;
+  --oc-line2:#d3d8d3;
+  --oc-ink:#141f19;
+  --oc-mute:#66716b;
+  --oc-mute2:#97a09a;
+  --oc-brand:#12332a;
+  --oc-brand-h:#1c4a3d;
+  --oc-brand-soft:#e8eee4;
+  --oc-ok:#15803d;--oc-warn:#b45309;--oc-bad:#c81e1e;
+  --oc-r:14px;
+}
+html.oc{--accent:#12332a;--accent-h:#1c4a3d;--accent-soft:#e8eee4;
+  --btn:#12332a;--btn-h:#1c4a3d;--chart:#12332a;--ai:#12332a;--ai-soft:#e8eee4}
+
+/* ---------- shell: icon rail (+ active-section panel) replaces the sidebar ---------- */
+html.oc:not([data-theme="dark"]) body{background:var(--oc-bg)}
+html.oc .app{grid-template-columns:76px minmax(0,1fr)}
+html.oc.oc-has-panel .app{grid-template-columns:76px 212px minmax(0,1fr)}
+html.oc #sidebar,html.oc .scrim,html.oc .menu-btn,html.oc .rail-toggle{display:none!important}
+html.oc .main{border-left:0}
+
+.oc-panel{position:sticky;top:0;height:100vh;overflow-y:auto;background:#fcfcfb;
+  border-right:1px solid var(--oc-line);padding:18px 10px;z-index:65}
+.oc-panel-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--oc-mute2);padding:4px 10px 10px}
+.oc-panel a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;
+  font-size:13px;font-weight:550;color:#3d4a43;white-space:nowrap}
+.oc-panel a:hover{background:#eff2ef;text-decoration:none}
+.oc-panel a.on{background:var(--oc-brand-soft);color:var(--oc-brand);font-weight:700}
+.oc-panel a .tag{margin-left:auto;font-size:10px;font-weight:700;background:var(--oc-brand);color:#fff;border-radius:99px;padding:1px 7px}
+@media(max-width:1000px){
+  html.oc.oc-has-panel .app{grid-template-columns:76px minmax(0,1fr)}
+  html.oc .oc-panel{display:none}
+}
+
+.oc-rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 12px;background:var(--oc-surface);border-right:1px solid var(--oc-line);z-index:70}
+.oc-logo{display:block;width:40px;height:40px;border-radius:11px;overflow:hidden;margin:0 0 14px;flex:none}
+.oc-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.oc-rail nav{display:flex;flex-direction:column;align-items:center;gap:2px;overflow:visible;flex:none}
+.oc-item{position:relative;width:48px;height:46px;border-radius:12px;display:grid;place-items:center;
+  color:var(--oc-mute);cursor:pointer;background:none;border:0;padding:0}
+.oc-item svg{width:20px;height:20px;stroke-width:1.8}
+.oc-item:hover{background:#eff2ef;color:var(--oc-ink)}
+.oc-item.active{background:var(--oc-brand-soft);color:var(--oc-brand)}
+.oc-item.active::before{content:"";position:absolute;left:-14px;top:11px;bottom:11px;width:3px;border-radius:3px;background:var(--oc-brand)}
+.oc-fly{position:absolute;left:60px;top:-6px;min-width:208px;background:var(--oc-surface);
+  border:1px solid var(--oc-line);border-radius:12px;box-shadow:0 16px 40px rgba(18,27,22,.14);
+  padding:6px;display:none;z-index:80;text-align:left}
+.oc-item:hover .oc-fly,.oc-item.pinned .oc-fly{display:block}
+.oc-fly-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--oc-mute2);padding:9px 10px 5px}
+.oc-fly a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;color:#3d4a43;font-weight:550;white-space:nowrap}
+.oc-fly a:hover{background:#eff2ef;text-decoration:none}
+.oc-fly a.on{color:var(--oc-brand);font-weight:700;background:var(--oc-brand-soft)}
+.oc-fly a .tag{margin-left:auto}
+.oc-rail .oc-spacer{flex:1}
+.oc-rbot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.oc-rbot .oc-item{width:42px;height:40px;border-radius:10px}
+.oc-rbot .oc-item svg{width:18px;height:18px}
+.oc-lang{min-width:42px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:700;
+  color:var(--oc-mute);background:#eff2ef;letter-spacing:.03em}
+.oc-avatar{width:32px;height:32px;border-radius:50%;background:var(--oc-brand);color:#fff;display:grid;place-items:center;
+  font-weight:700;font-size:12px;margin-top:6px}
+
+/* ---------- topbar: slimmer, quieter ---------- */
+html.oc .topbar{min-height:58px;padding:10px 28px;background:color-mix(in srgb,var(--oc-bg) 86%,transparent);
+  border-bottom:1px solid var(--oc-line);backdrop-filter:blur(10px)}
+html.oc .workspace-title{font-size:16px;font-weight:650}
+html.oc .topbar .sidebar-search{display:flex;align-items:center;gap:8px;margin:0 4px 0 16px;padding:0 12px;
+  height:36px;min-height:36px;width:min(300px,26vw);background:var(--oc-surface);
+  border:1px solid var(--oc-line);border-radius:9px}
+html.oc .search{border-radius:9px;min-height:36px;background:var(--oc-surface);border-color:var(--oc-line)}
+html.oc .topbar .iconbtn{border-radius:9px;border-color:var(--oc-line);width:36px;height:36px}
+html.oc .topbar .me{border:1px solid var(--oc-line);border-radius:9px;background:var(--oc-surface)}
+html.oc .date-label{border-radius:9px;box-shadow:none}
+
+/* ---------- content header ---------- */
+html.oc .content{padding:26px 32px 110px;max-width:1440px}
+html.oc .page-head h1,html.oc .dashboard-head h1{font-size:27px;font-weight:700;letter-spacing:-.025em}
+html.oc .page-head p,html.oc .dashboard-head p{font-size:13px;color:var(--oc-mute)}
+html.oc .eyebrow{color:var(--oc-mute2)}
+
+/* ---------- surfaces: flat white cards ---------- */
+html.oc .card,html.oc .tw,html.oc .overview-panel,html.oc .overview-side .card,html.oc .assistant-summary,
+html.oc .toolbar,html.oc .statcard,html.oc .overview-metric,html.oc .exp-tool,html.oc .ucard,
+html.oc .confirm-dialog,html.oc dialog.modal{
+  background:var(--oc-surface);border:1px solid var(--oc-line);border-radius:var(--oc-r);box-shadow:none}
+html.oc .card{padding:24px}
+html.oc .card-head h2,html.oc .section-head h2{font-size:16px;font-weight:700;letter-spacing:-.015em}
+
+/* ---------- unified stat band ---------- */
+html.oc .statgrid,html.oc .grid.g4:has(>.card.stat),html.oc .grid.g3:has(>.card.stat),html.oc .grid.g2:has(>.card.stat){
+  display:flex;gap:0;background:var(--oc-surface);border:1px solid var(--oc-line);border-radius:var(--oc-r);
+  box-shadow:none;padding:0;overflow:hidden}
+html.oc .statcard,html.oc .grid>.card.stat{
+  flex:1;min-width:0;border:0;border-left:1px solid var(--oc-line);border-radius:0;box-shadow:none;
+  background:transparent;padding:18px 22px}
+html.oc .statcard:first-child,html.oc .grid>.card.stat:first-child{border-left:0}
+html.oc .statcard .tile{display:none}
+html.oc .statcard .v{font-size:28px;font-weight:650;letter-spacing:-.02em}
+html.oc .statcard .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--oc-mute2);font-weight:650}
+html.oc .grid>.card.stat{border-top:0!important}
+html.oc .grid>.card.stat .stat{display:block}
+html.oc .stat .value{font-size:28px;font-weight:650;letter-spacing:-.02em}
+html.oc .stat .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--oc-mute2);font-weight:650}
+
+/* overview metric tiles -> flat band too */
+html.oc .overview-metrics{display:flex;gap:0;background:var(--oc-surface);border:1px solid var(--oc-line);
+  border-radius:var(--oc-r);box-shadow:none;overflow:hidden;margin:20px 0}
+html.oc .overview-metric{flex:1;min-width:0;border:0;border-left:1px solid var(--oc-line);border-radius:0;
+  box-shadow:none;background:transparent;border-top:0;padding:18px 22px}
+html.oc .overview-metric:first-child{border-left:0}
+html.oc .overview-metric:hover{transform:none;border-color:transparent}
+html.oc .overview-metric .metric-label .i{display:none}
+html.oc .overview-metric .metric-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--oc-mute2);font-weight:650}
+html.oc .overview-metric strong{font-size:28px;font-weight:650;letter-spacing:-.02em}
+/* dashboard KPI cards use kpi-* classes */
+html.oc .kpi-icon{display:none}
+html.oc .kpi-heading{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--oc-mute2);font-weight:650}
+html.oc .kpi-value{font-size:28px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+html.oc .kpi-footer{border-top:1px solid var(--oc-line);margin-top:10px;padding-top:10px;font-size:12px}
+
+/* ---------- buttons: solid primary, ghost secondary, console radius ---------- */
+html:not([data-theme="dark"]).oc .btn,html:not([data-theme="dark"]).oc button,
+html:not([data-theme="dark"]).oc .btn.ok,html:not([data-theme="dark"]).oc button.ok{border-radius:10px}
+html:not([data-theme="dark"]).oc .btn:not(.sec):not(.ghost):not(.danger){background:var(--oc-brand);border-color:var(--oc-brand);color:#fff;border-radius:10px}
+html:not([data-theme="dark"]).oc .btn:not(.sec):not(.ghost):not(.danger):hover{background:var(--oc-brand-h)}
+html:not([data-theme="dark"]).oc .btn.ok,html:not([data-theme="dark"]).oc button.ok{background:var(--oc-brand);color:#fff;border-radius:10px}
+html:not([data-theme="dark"]).oc .btn.ok:hover,html:not([data-theme="dark"]).oc button.ok:hover{background:var(--oc-brand-h)}
+html:not([data-theme="dark"]).oc .btn.sec{background:var(--oc-surface);border:1px solid var(--oc-line2);color:var(--oc-ink);box-shadow:none;border-radius:10px}
+html:not([data-theme="dark"]).oc .btn.sec:hover{border-color:var(--oc-brand);color:var(--oc-brand);background:var(--oc-surface)}
+html:not([data-theme="dark"]).oc .seg button.on,html:not([data-theme="dark"]).oc .pills .on{background:var(--oc-brand);color:#fff}
+html.oc .btn.ai,html.oc button.ai{background:var(--oc-brand)}
+html.oc .btn.ai:hover,html.oc button.ai:hover{background:var(--oc-brand-h)}
+html.oc .pos-source-switch button.is-active{background:var(--oc-brand);box-shadow:none}
+
+/* ---------- filter toolbar ---------- */
+html.oc .filters,html.oc .toolbar{background:var(--oc-surface);border:1px solid var(--oc-line);
+  border-radius:var(--oc-r);box-shadow:none;padding:12px 16px}
+html.oc .filters label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--oc-mute2);font-weight:650}
+html.oc input,html.oc select,html.oc textarea{border-color:var(--oc-line2);border-radius:9px}
+html.oc input:focus,html.oc select:focus,html.oc textarea:focus{border-color:var(--oc-brand);box-shadow:0 0 0 3px rgba(18,51,42,.14)}
+
+/* ---------- tables ---------- */
+html.oc th{background:var(--oc-surface);color:var(--oc-mute2);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;padding:11px 16px;border-bottom:1px solid var(--oc-line)}
+html.oc td{padding:12px 16px;font-size:13.5px;border-top:1px solid var(--oc-line)}
+html.oc tbody tr:hover td,html.oc .tw tr:hover td{background:#f4f6f4}
+html.oc .tw th{border-bottom:1px solid var(--oc-line)}
+html.oc .stick1 th:first-child{background:var(--oc-surface)}
+
+/* ---------- status: dot + label pills ---------- */
+html.oc .badge{position:relative;background:transparent;border:0;color:var(--oc-mute);
+  font-weight:550;padding:3px 6px 3px 16px;font-size:12px}
+html.oc .badge::before{content:"";position:absolute;left:4px;top:50%;transform:translateY(-50%);
+  width:7px;height:7px;border-radius:50%;background:var(--oc-mute2)}
+html.oc .badge.b-ok{color:var(--oc-ok)}html.oc .badge.b-ok::before{background:var(--oc-ok)}
+html.oc .badge.b-warn{color:var(--oc-warn)}html.oc .badge.b-warn::before{background:var(--oc-warn)}
+html.oc .badge.b-bad{color:var(--oc-bad)}html.oc .badge.b-bad::before{background:var(--oc-bad)}
+html.oc .badge.b-pur,html.oc .badge.b-blue{color:var(--oc-brand)}html.oc .badge.b-pur::before,html.oc .badge.b-blue::before{background:var(--oc-brand)}
+html.oc .delta.up{background:transparent;color:var(--oc-ok)}
+html.oc .delta.down{background:transparent;color:var(--oc-bad)}
+html.oc .delta.flat{background:transparent;color:var(--oc-mute)}
+
+/* ---------- tabs / chips ---------- */
+html.oc .tabs{background:var(--oc-surface);border:1px solid var(--oc-line);border-radius:10px}
+html.oc .tabs a.on{background:var(--oc-brand-soft);color:var(--oc-brand);box-shadow:none}
+html.oc .chip{border-radius:9px}
+html.oc .chip.on{background:var(--oc-brand-soft);color:var(--oc-brand);border-color:var(--oc-brand)}
+
+/* ---------- typography details ---------- */
+html.oc h1,html.oc h2,html.oc h3{letter-spacing:-.02em}
+html.oc td.right,html.oc .stat .value,html.oc .tw td,html.oc .hero-number{font-variant-numeric:tabular-nums}
+html.oc .hero-number{font-weight:650}
+html.oc .overview-panel .section-head{margin-bottom:14px}
+
+/* ---------- misc cleanup ---------- */
+html.oc .chat-fab{border-radius:12px;background:var(--oc-brand);box-shadow:0 8px 20px rgba(18,27,22,.2)}
+html.oc .rail-assistant,html.oc .assistant-cta{display:none}
+html.oc .freshness-strip .badge{padding-left:16px}
+html.oc .bar i,html.oc .meter i{background:var(--oc-brand);border-radius:99px}
+html.oc .completion-track span{background:var(--oc-brand)}
+html.oc .block-bar{border-radius:3px 3px 0 0}
+html.oc .sidebar-language:before{display:none}
+
+/* ---------- mobile: top app bar + bottom tab bar ---------- */
+.oc-tabs{display:none}
+@media(max-width:700px){
+  html.oc .app,html.oc.oc-has-panel .app{grid-template-columns:minmax(0,1fr)}
+  html.oc .oc-rail{display:none}
+  html.oc .topbar .sidebar-search{display:none}
+  html.oc .workspace-title{display:block!important;order:-1;flex:1 1 auto}
+  html.oc .statcard .v,html.oc .overview-metric strong,html.oc .kpi-value{font-size:22px}
+  html.oc .statcard,html.oc .overview-metric{padding:14px 16px}
+  html.oc .topbar{position:sticky;top:0;min-height:56px;padding:10px 14px;flex-wrap:nowrap;background:var(--oc-surface);border-bottom:1px solid var(--oc-line)}
+  html.oc .workspace-title{font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  html.oc .topbar .search{display:none}
+  html.oc .topbar .me{display:none}
+  html.oc .content{padding:14px 12px 100px}
+  html.oc .card{padding:16px;border-radius:12px}
+  html.oc .statgrid,html.oc .overview-metrics{flex-wrap:wrap}
+  html.oc .statcard,html.oc .overview-metric{flex:1 1 44%;border-top:1px solid var(--oc-line)}
+  html.oc .statcard:nth-child(-n+2),html.oc .overview-metric:nth-child(-n+2){border-top:0}
+  html.oc .statcard:nth-child(odd),html.oc .overview-metric:nth-child(odd){border-left:0}
+  .oc-tabs{position:fixed;left:0;right:0;bottom:0;z-index:95;display:flex;background:var(--oc-surface);
+    border-top:1px solid var(--oc-line);padding-bottom:env(safe-area-inset-bottom)}
+  .oc-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:8px 0 9px;font-size:10px;font-weight:600;color:var(--oc-mute);text-decoration:none}
+  .oc-tabs a svg{width:21px;height:21px;stroke-width:1.8}
+  .oc-tabs a.on{color:var(--oc-brand)}
+  .oc-tabs a.on svg{stroke-width:2.1}
+  .oc-more{position:fixed;left:0;right:0;bottom:60px;z-index:94;max-height:60vh;overflow:auto;background:var(--oc-surface);
+    border-top:1px solid var(--oc-line);border-radius:16px 16px 0 0;box-shadow:0 -12px 32px rgba(18,27,22,.14);
+    padding:10px 14px 14px;display:none}
+  .oc-more.open{display:block}
+  .oc-more .oc-fly-t{padding:10px 6px 3px}
+  .oc-more a{display:block;padding:10px 8px;font-size:14.5px;font-weight:550;color:var(--oc-ink);border-radius:9px}
+  .oc-more a:hover{background:#f0f3f0;text-decoration:none}
+  .oc-more a.on{color:var(--oc-brand);font-weight:700}
+  html.oc .chat-fab{bottom:calc(76px + env(safe-area-inset-bottom));right:14px}
+}

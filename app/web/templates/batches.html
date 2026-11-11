@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Order batches') }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ t('Order batches') }}</h1><p>{{ t('StoreHub cannot receive orders through its API. Download the list, enter the order or warehouse transfer in the StoreHub back office, then record it here. Transfers are then dispatched by the warehouse and counted by the store.') }}</p></div>
+<div class="page-head"><div><h1>{{ t('Order batches') }}</h1><p class="page-desc">{{ t('StoreHub cannot receive orders through its API. Download the list, enter the order or warehouse transfer in the StoreHub back office, then record it here. Transfers are then dispatched by the warehouse and counted by the store.') }}</p></div>
 <a class="btn sec" href="/replenishment">{{ t('Back to suggestions') }}</a></div>
 {% for b in batches %}
 <div class="card">

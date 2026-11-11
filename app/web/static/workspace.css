@@ -736,10 +736,6 @@ html[data-theme="dark"]{--scroll-thumb:#484c52;--scroll-hover:#687587;--scroll-a
 /* Source switch and account navigation share one compact toolbar. */
 .pos-source-toolbar{margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:10px}
 .pos-source-picker{display:flex;align-items:center;gap:8px 22px;flex-wrap:wrap;margin:0;font-size:12px}
-.pos-source-switch{display:inline-flex;flex-shrink:0;gap:3px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);max-width:100%}
-.pos-source-switch button{border:0;background:transparent;color:var(--mute);box-shadow:none;border-radius:999px;padding:8px 18px;min-height:34px;font-size:12px;font-weight:700;line-height:1.3;transition:background .18s ease,color .18s ease}
-.pos-source-switch button:hover{color:var(--ink);background:var(--surface2)}
-.pos-source-switch button.is-active{background:#2563eb;color:#fff;box-shadow:0 2px 4px #2563eb1a}
 .pos-account-switch{display:flex;gap:4px 16px;flex-wrap:wrap;min-width:0;max-width:100%;align-items:center}
 .pos-account-switch button{position:relative;background:transparent;border:0;color:var(--mute);box-shadow:none;border-radius:0;padding:10px 2px;min-height:38px;font-size:12px;font-weight:620;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .18s ease}
 .pos-account-switch button::after{content:"";position:absolute;bottom:0;left:2px;right:2px;height:3px;border-radius:3px;background:transparent;transition:background .18s ease}
@@ -752,9 +748,8 @@ html[data-theme="dark"]{--scroll-thumb:#484c52;--scroll-hover:#687587;--scroll-a
 .pos-sync-item>.i{width:12px;height:12px;flex-shrink:0;align-self:flex-start;margin-top:3px;opacity:.65}
 .pos-sync-item b{font-weight:620}.pos-sync-separator{opacity:.55}
 .pos-sync-item.has-error{color:var(--bad)}
-[data-theme=dark] .pos-source-switch{background:#101113}
 @media(max-width:600px){
- .pos-source-picker{gap:6px}.pos-source-switch button{padding:9px 18px;min-height:38px}
+ .pos-source-picker{gap:6px}
  .pos-account-switch{width:100%;gap:2px 14px}.pos-account-switch button{max-width:100%;min-height:40px}
  .pos-source-toolbar{padding-bottom:8px}.pos-sync-status{font-size:10.5px}
 }

@@ -2,11 +2,11 @@
 {% block title %}{{ t('Stock events') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
-{% set qs = 'tab=history&loc=' ~ loc ~ '&q=' ~ (q|urlencode) ~ '&action=' ~ (action|urlencode) ~ '&frm=' ~ frm ~ '&to=' ~ to %}
+{% set qs = 'tab=history&loc=' ~ loc ~ '&q=' ~ (q|urlencode) ~ '&action=' ~ (action|urlencode) ~ '&frm=' ~ frm ~ '&to=' ~ to ~ ('&unchanged=1' if unchanged else '') %}
 <div class="page-head counts-page-head stock-change-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
     <p class="small mute" style="margin:2px 0 0">{% if last_ok %}{{ t('Last read') }} {{ last_ok|local('%d %b %H:%M') }}{% endif %}{% if waiting %}{{ ' · ' if last_ok }}{{ waiting }} {{ t('products still being read') }}{% endif %}</p>
-    <details class="small mute" style="margin-top:4px"><summary style="cursor:pointer">{{ t('About this page') }}</summary>
+    <details class="small mute page-desc" style="margin-top:4px"><summary style="cursor:pointer">{{ t('About this page') }}</summary>
       <p class="stock-change-intro" style="margin:6px 0">{{ t('Every physical change to stock is recorded here: who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p>
       <p style="margin:6px 0">{{ t("Below is StoreHub's own record of every stock change: sales, receiving, stock takes, transfers and adjustments, with who made each one. It is read from the StoreHub back office (Audit Trail) and never changed from here.") }}</p></details></div>
   <div class="row stock-change-actions">
@@ -28,6 +28,7 @@
   <div><label for="sh-action">{{ t('Action') }}</label><select id="sh-action" name="action" onchange="this.form.submit()"><option value="">{{ t('All actions') }}</option>{% for a in actions %}<option value="{{ a }}" {{ 'selected' if a == action }}>{{ a }}</option>{% endfor %}</select></div>
   <div><label for="sh-frm">{{ t('From') }}</label><input id="sh-frm" type="date" name="frm" value="{{ frm }}"></div>
   <div><label for="sh-to">{{ t('To') }}</label><input id="sh-to" type="date" name="to" value="{{ to }}"></div>
+  <div><label>&nbsp;</label><label class="check" style="display:flex;align-items:center;gap:6px;min-height:40px;font-weight:600"><input type="checkbox" name="unchanged" value="1" {{ 'checked' if unchanged }} onchange="this.form.submit()"> {{ t('Show updates with no change') }}</label></div>
   <div><label>&nbsp;</label><button class="sm">{{ t('Apply') }}</button></div>
 </form>
 

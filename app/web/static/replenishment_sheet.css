@@ -272,3 +272,13 @@ input.q.bad{border-color:#c62828;box-shadow:0 0 0 2px #c6282833}
   .page-head:has(form.rs-create-idle) .row{display:none}
   .rs-wrap.rs-phone-enhanced .rs tbody tr.rs-row td.rs-p small{margin-top:0}
 }
+
+/* Desktop filter bar: the dropdowns share the row and shrink (long supplier names are cut with "...") instead of pushing past the right edge; on narrower computers the row wraps. */
+@media (min-width:1001px){
+  form.rs-tools{min-width:0;max-width:100%;box-sizing:border-box;flex-wrap:wrap}
+  .rs-tools .rs-seg{flex:none}
+  .rs-tools input[type=search]{flex:1 1 200px;min-width:140px}
+  .rs-tools select{flex:0 1 170px;min-width:120px;max-width:100%;text-overflow:ellipsis;white-space:nowrap}
+  .rs-tools select[name=supplier]{flex:0 1 240px}
+}
+@media (min-width:1300px){form.rs-tools{flex-wrap:nowrap}}

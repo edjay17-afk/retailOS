@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from .. import audit, jobs
 from ..config import get_config
-from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Recommendation, SalesDay, SyncRun, User)
+from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Payment, Recommendation, SalesDay, SalesLine, SalesTx, SyncRun, User)
 from ..security import can_open, create_session, hash_password, load_session, password_problem, verify_password
 from ..services import inspections, backup, brief, dq, freshness, notifications, replenishment, run_now
 from ..timeutil import now_utc, today_local
@@ -213,8 +213,9 @@ def data_warning(c: Ctx = Depends(ctx_dep())):
 
 
 @router.get("/dashboard/store-sales")
-def dashboard_store_sales(c: Ctx = Depends(need("sales.view"))):
-    """Read the latest local sales snapshot without starting a sync or replenishment run."""
+def dashboard_store_sales(after: int | None = None, c: Ctx = Depends(need("sales.view"))):
+    """Read the latest local sales snapshot without starting a sync or replenishment run.
+    `latest_tx` is the newest sale of today; when the page passes `after` (the latest_tx it saw before) the sales recorded since then come back in `new_sales`."""
     today = today_local()
     yesterday = today - timedelta(days=1)
     locations = [l for l in c.locations() if l.type == "store"]
@@ -222,7 +223,22 @@ def dashboard_store_sales(c: Ctx = Depends(need("sales.view"))):
                                               SalesDay.business_date.in_([today, yesterday])))
     amounts = {(r.location_id, r.business_date): r.net_sales for r in rows}
     stores = [{"id": l.id, "today": amounts.get((l.id, today), 0), "yesterday": amounts.get((l.id, yesterday), 0)} for l in locations]
-    return JSONResponse({"day": today.isoformat(), "stores": stores,
+    sale = (SalesTx.location_id.in_([l.id for l in locations] or [0]), SalesTx.business_date == today, SalesTx.cancelled.is_(False), SalesTx.tx_type == "Sale")
+    latest_tx = c.db.scalar(select(func.max(SalesTx.id)).where(*sale)) or 0
+    names = {l.id: l.name.replace("The Daily Centro - ", "") for l in locations}
+    new_sales = []
+    if after is not None and latest_tx > after:
+        found = c.db.execute(select(SalesTx.id, SalesTx.location_id, SalesTx.total).where(*sale, SalesTx.id > after).order_by(SalesTx.id).limit(50)).all()
+        ids = [i for i, _lid, _total in found]
+        units = dict(c.db.execute(select(SalesLine.tx_id, func.sum(SalesLine.qty)).where(SalesLine.tx_id.in_(ids)).group_by(SalesLine.tx_id)).all())
+        paid: dict[int, dict[str, float]] = {}
+        for tx_id, method, amount in c.db.execute(select(Payment.tx_id, Payment.method, Payment.amount).where(Payment.tx_id.in_(ids))):
+            key = {"gcash": "GCash"}.get((method or "").strip().casefold(), (method or "").strip() or "Other")
+            paid.setdefault(tx_id, {})[key] = paid.get(tx_id, {}).get(key, 0.0) + (amount or 0.0)
+        new_sales = [{"id": i, "store": names.get(lid, ""), "total": total, "items": round(units.get(i) or 0, 2),
+                      "pay": "" if not paid.get(i) else (max(paid[i], key=paid[i].get) if len(paid[i]) == 1 else "Split")}
+                     for i, lid, total in found]
+    return JSONResponse({"day": today.isoformat(), "stores": stores, "latest_tx": latest_tx, "new_sales": new_sales, "can_open": c.can("sales.detail"),
                          "today": sum(s["today"] for s in stores), "yesterday": sum(s["yesterday"] for s in stores)},
                         headers={"Cache-Control": "no-store"})
 

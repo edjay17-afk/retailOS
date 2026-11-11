@@ -1,0 +1,242 @@
+{
+  "selected": "2026-10",
+  "current": {
+    "ym": "2026-10",
+    "days": 31,
+    "units": 53206.0,
+    "sales": 2586199.0,
+    "BAD MERCHANDISE|retail": -24706.0,
+    "BAD MERCHANDISE|cost": -16345.31,
+    "DIRECT TO STORE DELIVERY|retail": 276603.0,
+    "DIRECT TO STORE DELIVERY|cost": 204109.83,
+    "KITCHEN TRANSFER|retail": 50292.0,
+    "KITCHEN TRANSFER|cost": 29963.920000000002,
+    "PRICE CHANGE|retail": 1156.0,
+    "PRICE CHANGE|cost": 0,
+    "WAREHOUSE TRANSFER|retail": 321758.5,
+    "WAREHOUSE TRANSFER|cost": 261590.79,
+    "logged_days": 31,
+    "count": 55,
+    "cost": -16345.31,
+    "retail": -24706.0,
+    "received_cost": 495664.54,
+    "received_retail": 648653.5,
+    "bad_cost": -16345.31,
+    "bad_retail": -24706.0,
+    "delta": -2.9377098327305564
+  },
+  "months": [
+    {
+      "ym": "2026-10",
+      "days": 31,
+      "units": 53206.0,
+      "sales": 2586199.0,
+      "BAD MERCHANDISE|retail": -24706.0,
+      "BAD MERCHANDISE|cost": -16345.31,
+      "DIRECT TO STORE DELIVERY|retail": 276603.0,
+      "DIRECT TO STORE DELIVERY|cost": 204109.83,
+      "KITCHEN TRANSFER|retail": 50292.0,
+      "KITCHEN TRANSFER|cost": 29963.920000000002,
+      "PRICE CHANGE|retail": 1156.0,
+      "PRICE CHANGE|cost": 0,
+      "WAREHOUSE TRANSFER|retail": 321758.5,
+      "WAREHOUSE TRANSFER|cost": 261590.79,
+      "logged_days": 31,
+      "count": 55,
+      "cost": -16345.31,
+      "retail": -24706.0,
+      "received_cost": 495664.54,
+      "received_retail": 648653.5,
+      "bad_cost": -16345.31,
+      "bad_retail": -24706.0,
+      "delta": -2.9377098327305564
+    },
+    {
+      "ym": "2026-09",
+      "days": 30,
+      "units": 52663.0,
+      "sales": 2664473.5,
+      "logged_days": 0,
+      "count": 0,
+      "cost": 0,
+      "retail": 0
+    },
+    {
+      "ym": "2026-08",
+      "days": 31,
+      "units": 48977.0,
+      "sales": 2258211.5,
+      "BAD MERCHANDISE|retail": -24160.0,
+      "BAD MERCHANDISE|cost": -16374.73,
+      "DIRECT TO STORE DELIVERY|retail": 261694.0,
+      "DIRECT TO STORE DELIVERY|cost": 193404.16,
+      "KITCHEN TRANSFER|retail": 45194.0,
+      "KITCHEN TRANSFER|cost": 27140.22,
+      "PRICE CHANGE|retail": 1836.0,
+      "PRICE CHANGE|cost": 0,
+      "WAREHOUSE TRANSFER|retail": 364870.0,
+      "WAREHOUSE TRANSFER|cost": 256870.68,
+      "logged_days": 31,
+      "count": 0,
+      "cost": 0,
+      "retail": 0
+    },
+    {
+      "ym": "2026-07",
+      "days": 31,
+      "units": 46889.0,
+      "sales": 2214637.0,
+      "logged_days": 0,
+      "count": 0,
+      "cost": 0,
+      "retail": 0
+    },
+    {
+      "ym": "2026-06",
+      "days": 30,
+      "units": 48289.0,
+      "sales": 2184529.5,
+      "logged_days": 0,
+      "count": 0,
+      "cost": 0,
+      "retail": 0
+    },
+    {
+      "ym": "2026-05",
+      "days": 31,
+      "units": 43759.0,
+      "sales": 2043239.25,
+      "logged_days": 0,
+      "count": 0,
+      "cost": 0,
+      "retail": 0
+    }
+  ],
+  "daily": [
+    {
+      "day": 1,
+      "sales": 79627.75
+    },
+    {
+      "day": 2,
+      "sales": 79924.5
+    },
+    {
+      "day": 3,
+      "sales": 72529.0
+    },
+    {
+      "day": 4,
+      "sales": 66137.0
+    },
+    {
+      "day": 5,
+      "sales": 90951.5
+    },
+    {
+      "day": 6,
+      "sales": 77791.0
+    },
+    {
+      "day": 7,
+      "sales": 68135.25
+    },
+    {
+      "day": 8,
+      "sales": 78982.0
+    },
+    {
+      "day": 9,
+      "sales": 78595.5
+    },
+    {
+      "day": 10,
+      "sales": 79598.25
+    },
+    {
+      "day": 11,
+      "sales": 78256.25
+    },
+    {
+      "day": 12,
+      "sales": 56654.5
+    },
+    {
+      "day": 13,
+      "sales": 74337.75
+    },
+    {
+      "day": 14,
+      "sales": 56673.75
+    },
+    {
+      "day": 15,
+      "sales": 71239.0
+    },
+    {
+      "day": 16,
+      "sales": 106392.0
+    },
+    {
+      "day": 17,
+      "sales": 102243.75
+    },
+    {
+      "day": 18,
+      "sales": 98028.5
+    },
+    {
+      "day": 19,
+      "sales": 78947.25
+    },
+    {
+      "day": 20,
+      "sales": 79081.5
+    },
+    {
+      "day": 21,
+      "sales": 91214.75
+    },
+    {
+      "day": 22,
+      "sales": 102280.5
+    },
+    {
+      "day": 23,
+      "sales": 88253.0
+    },
+    {
+      "day": 24,
+      "sales": 86437.0
+    },
+    {
+      "day": 25,
+      "sales": 107131.25
+    },
+    {
+      "day": 26,
+      "sales": 88219.0
+    },
+    {
+      "day": 27,
+      "sales": 97235.75
+    },
+    {
+      "day": 28,
+      "sales": 82614.75
+    },
+    {
+      "day": 29,
+      "sales": 89867.75
+    },
+    {
+      "day": 30,
+      "sales": 100084.75
+    },
+    {
+      "day": 31,
+      "sales": 78734.5
+    }
+  ],
+  "store": "Poblacion Pardo 2"
+}

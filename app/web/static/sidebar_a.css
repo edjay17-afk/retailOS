@@ -47,9 +47,9 @@ html[data-theme=dark] #sidebar #sidebar-nav .current-group>.ng{background:rgba(2
 #sidebar #sidebar-nav a.nl.on .tag{background:rgba(255,255,255,.25);color:#fff}
 #sidebar #sidebar-nav a.nl.on:before{display:none}
 
-/* bottom: one account card - who you are, sign out, and a two-way language switch */
+/* bottom: one account card - who you are and sign out (the language switch is in the top bar) */
 #sidebar .sidebar-footer{display:block;margin-top:12px;padding:0;border-top:0}
-#sidebar .sf-card{display:flex;flex-direction:column;gap:10px;padding:10px;border:1px solid var(--line);border-radius:18px;background:var(--surface2)}
+#sidebar .sf-card{display:flex;flex-direction:column;padding:10px;border:1px solid var(--line);border-radius:18px;background:var(--surface2)}
 #sidebar .sf-me{display:flex;align-items:center;gap:11px}
 #sidebar .sf-av{position:relative;width:40px;height:40px;border-radius:13px;background:#2563eb;color:#fff;display:grid;place-items:center;font-size:16px;font-weight:750;flex:none}
 #sidebar .sf-dot{position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:50%;background:#16a34a;border:2px solid var(--surface2)}
@@ -60,25 +60,14 @@ html[data-theme=dark] #sidebar #sidebar-nav .current-group>.ng{background:rgba(2
 #sidebar .sidebar-footer .sidebar-signout{display:grid;place-items:center;width:38px;height:38px;min-height:38px;padding:0;border:1px solid var(--line2);border-radius:12px;background:var(--surface);color:var(--mute);box-shadow:none;transition:background .15s,color .15s,border-color .15s,transform .12s}
 #sidebar .sidebar-footer .sidebar-signout:hover{background:#fef2f2;color:var(--bad);border-color:#fecaca}
 #sidebar .sidebar-footer .sidebar-signout:active{transform:scale(.94)}
-#sidebar .sidebar-footer .sidebar-signout:focus-visible,#sidebar .sidebar-language a:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+#sidebar .sidebar-footer .sidebar-signout:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
 #sidebar .sidebar-signout .i{width:17px;height:17px;transition:transform .15s}
 #sidebar .sidebar-signout:hover .i{transform:translateX(2px)}
 #sidebar .sidebar-signout span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-/* language: a full-width two-way switch; the white thumb slides (sidebar.css) */
-#sidebar .sidebar-language{padding:3px;gap:2px;border:1px solid var(--line);border-radius:12px;background:#eceff6}
-#sidebar .sidebar-language:before{left:3px;top:3px;bottom:3px;width:calc((100% - 8px)/2);border-radius:9px;box-shadow:0 1px 2px rgba(15,23,42,.12),0 0 0 1px rgba(15,23,42,.04)}
-#sidebar .sidebar-language:has(a[hreflang=zh].on):before,#sidebar .sidebar-language[data-target=zh]:before{transform:translateX(calc(100% + 2px))}
-#sidebar .sidebar-language a,#sidebar .sidebar-language a:hover,#sidebar .sidebar-language a.on{min-height:32px;padding:0 10px;border-radius:9px;font-size:13px;font-weight:650;color:#475569}
-#sidebar .sidebar-language a:hover{color:var(--ink)}
-#sidebar .sidebar-language a.on{color:#1d4ed8;font-weight:750}
 html[data-theme=dark] #sidebar .sf-card{background:rgba(255,255,255,.04);border-color:var(--line)}
 html[data-theme=dark] #sidebar .sf-dot{border-color:#14151a}
 html[data-theme=dark] #sidebar .sidebar-footer .sidebar-signout{background:rgba(255,255,255,.05);border-color:var(--line2);color:#a9bcd7}
 html[data-theme=dark] #sidebar .sidebar-footer .sidebar-signout:hover{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.35);color:#fca5a5}
-html[data-theme=dark] #sidebar .sidebar-language{background:rgba(255,255,255,.06);border-color:var(--line)}
-html[data-theme=dark] #sidebar .sidebar-language:before{background:#243751;box-shadow:none}
-html[data-theme=dark] #sidebar .sidebar-language a{color:#a9b6c9}
-html[data-theme=dark] #sidebar .sidebar-language a.on{color:#e0eaff}
 @media(prefers-reduced-motion:reduce){#sidebar .sidebar-signout,#sidebar .sidebar-signout .i{transition:none}}
 #sidebar #sidebar-nav .ng-chev{display:none!important}
 #sidebar #sidebar-nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:6px}
@@ -103,16 +92,9 @@ html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #side
 #sidebar #sidebar-nav a.nl.on .ic-tile,#sidebar #sidebar-nav a.nl.on .ic-tile[data-c]{background:rgba(255,255,255,.2);color:#fff}
 html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #sidebar #sidebar-nav .ic-tile[data-c]{background:transparent;color:#e5e7eb}
 
-/* ===== Daily Centro / Commissary switch: two plain tabs on a line, the chosen one underlined in blue ===== */
+/* ===== Business switch toolbar (the switch itself is styled at the end of this file) ===== */
 .pos-source-toolbar{margin:0 0 18px!important;padding:0!important;border-bottom:1px solid #dbe7ff!important}
 .pos-source-picker{gap:0 28px}
-.pos-source-switch,.pos-source-switch[data-x]{display:inline-flex;gap:26px;padding:0!important;border:0!important;border-radius:0!important;background:none!important}
-.pos-source-switch button{min-height:0!important;padding:8px 2px 12px!important;margin-bottom:-1px;border:0;border-bottom:3px solid transparent;border-radius:0!important;background:none!important;color:#475f8a!important;font-size:15px!important;font-weight:650;box-shadow:none!important;transition:color .15s,border-color .15s}
-.pos-source-switch button:hover{color:#111827!important;background:none!important}
-.pos-source-switch button.is-active{color:#1d4ed8!important;border-bottom-color:#2563eb;background:none!important;box-shadow:none!important}
-[data-theme=dark] .pos-source-switch{background:none!important}
-[data-theme=dark] .pos-source-switch button{color:#9db4e0!important}
-[data-theme=dark] .pos-source-switch button.is-active{color:#8fb3ff!important;border-bottom-color:#8fb3ff}
 
 /* date (or other note) on the right of the source tabs */
 .pos-source-toolbar{display:flex!important;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
@@ -157,44 +139,12 @@ html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #side
 /* the numbers in the sidebar: yellow, not italic */
 html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[data-theme=dark] #sidebar #sidebar-nav .tag,html[data-theme=dark] #sidebar #sidebar-nav a.nl.on .tag{background:#facc15;color:#3b2e00;font-style:normal;font-weight:750}
 
-/* the language switch in the top bar: big enough to see at a glance */
-.top-lang{display:inline-flex;align-items:center;gap:4px;padding:4px;border:2px solid #2563eb;border-radius:12px;background:#fff;flex:none}
-.top-lang a{display:flex;align-items:center;justify-content:center;min-height:34px;padding:0 16px;border-radius:8px;font-size:15px;font-weight:750;color:#1d4ed8;text-decoration:none;white-space:nowrap}
-.top-lang a:hover{background:#e8efff}
-.top-lang a.on{background:#2563eb;color:#fff}
-[data-theme=dark] .top-lang{background:#111a33;border-color:#3b82f6}
-[data-theme=dark] .top-lang a{color:#bcd2ff}[data-theme=dark] .top-lang a:hover{background:#17265a}
-[data-theme=dark] .top-lang a.on{background:#3b82f6;color:#fff}
-@media(max-width:700px){.top-lang{display:none}}
-/* calmer: still easy to read, no heavy outline */
-.top-lang{padding:3px;gap:2px;border:1px solid #dbe7ff;border-radius:10px;background:#f5f8ff}
-.top-lang a{min-height:30px;padding:0 12px;border-radius:7px;font-size:13.5px;font-weight:650;color:#475f8a}
-.top-lang a.on{background:#fff;color:#1d4ed8;box-shadow:0 1px 3px rgba(37,99,235,.18)}
-[data-theme=dark] .top-lang{background:#111a33;border-color:#27355f}
-[data-theme=dark] .top-lang a{color:#9fb3da}[data-theme=dark] .top-lang a.on{background:#1f3a7a;color:#fff;box-shadow:none}
 
-/* account switch as buttons (computers): each account is its own button, the open one is solid blue */
 @media(min-width:701px){
   .pos-source-toolbar{border-bottom:0!important;margin-bottom:16px!important}
-  .pos-source-switch,.pos-source-switch[data-x]{gap:10px}
-  .pos-source-switch button{padding:10px 20px!important;margin:0;min-height:42px!important;border:1.5px solid #bcd0f7!important;border-radius:12px!important;background:#fff!important;color:#1d4ed8!important;font-size:14.5px!important;font-weight:700;box-shadow:none}
-  .pos-source-switch button:hover{background:#e8efff!important;border-color:#2563eb!important;color:#1d4ed8!important}
-  .pos-source-switch button.is-active{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important;box-shadow:0 4px 12px rgba(37,99,235,.28)!important}
-  [data-theme=dark] .pos-source-switch button{background:#111a33!important;border-color:#27355f!important;color:#bcd2ff!important}
-  [data-theme=dark] .pos-source-switch button:hover{background:#17265a!important;border-color:#3b82f6!important}
-  [data-theme=dark] .pos-source-switch button.is-active{background:#3b82f6!important;border-color:#3b82f6!important;color:#fff!important}
 }
 
 
-/* the 7-Eleven button sits with the account buttons and looks the same */
-@media(min-width:701px){
-  .pos-source-switch a.seven-btn{display:inline-flex;align-items:center;padding:10px 20px;min-height:42px;border:1.5px solid #bcd0f7;border-radius:12px;background:#fff;color:#1d4ed8;font-size:14.5px;font-weight:700;text-decoration:none;box-shadow:none}
-  .pos-source-switch a.seven-btn:hover{background:#e8efff;border-color:#2563eb}
-  .pos-source-switch a.seven-btn.is-active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.28)}
-  [data-theme=dark] .pos-source-switch a.seven-btn{background:#111a33;border-color:#27355f;color:#bcd2ff}
-  [data-theme=dark] .pos-source-switch a.seven-btn:hover{background:#17265a;border-color:#3b82f6}
-  [data-theme=dark] .pos-source-switch a.seven-btn.is-active{background:#3b82f6;border-color:#3b82f6;color:#fff}
-}
 
 /* Desktop: the business buttons (Daily Centro, Steamy Co. ...) sit in the top bar; the breadcrumb sits under it where the buttons used to be. */
 .top-sources,.crumbs-row{display:none}
@@ -203,7 +153,6 @@ html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[dat
   .topbar .top-sources{display:flex;align-items:center;min-width:0}
   .topbar .top-sources form{margin:0}
   .topbar .top-sources .pos-source-mobile{display:none}
-  .topbar .top-sources .pos-source-switch{display:inline-flex;gap:8px;border:0!important}
   .crumbs-row{display:block;margin:0 0 14px;overflow:visible}
   .crumbs-row>span{font-size:17px;font-weight:700}
   .pos-source-toolbar .pos-source-picker,.pos-source-toolbar .pos-source-mobile{display:none!important}
@@ -221,17 +170,7 @@ html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[dat
   .pos-source-toolbar{margin-bottom:14px!important;min-height:44px}
 }
 
-/* Business buttons: black text; the selected one is black with white text. */
-.pos-source-switch button,.pos-source-switch .seven-btn{color:#111827!important}
-.pos-source-switch button:hover,.pos-source-switch button:focus,.pos-source-switch .seven-btn:hover,.pos-source-switch .seven-btn:focus{background:#eef0f4!important;border-color:#111827!important;color:#111827!important;outline:none}
-.pos-source-switch button.is-active,.pos-source-switch .seven-btn.is-active,.pos-source-switch button.is-active:hover,.pos-source-switch button.is-active:focus{background:#111827!important;border-color:#111827!important;color:#fff!important;box-shadow:none!important}
 
-/* Language switcher: black text. */
-.top-lang a,.top-lang a.on,.top-lang a:hover{color:#111827!important}
-.top-lang a.on{font-weight:850}
-.top-lang{background:#fff!important;border:1px solid #d6d9e6!important}
-.top-lang a:hover{background:#f3f4f7!important}
-.top-lang a.on{background:#eceef3!important}
 
 /* Buttons in the page header: bigger and rounder. */
 @media (min-width:1001px){
@@ -242,8 +181,48 @@ html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[dat
 @media (min-width:1001px) and (max-width:1700px){
   .topbar{gap:12px}
   .topbar .top-sources{flex:1 1 auto;min-width:0}
-  .topbar .pos-source-switch{flex-wrap:wrap;row-gap:6px}
-  .topbar .pos-source-switch button,.topbar .pos-source-switch .seven-btn{min-height:42px!important;padding:0 16px!important;font-size:15px!important}
   .topbar .header-actions{flex:none}
   .topbar .print-report{display:none}
 }
+
+/* ===== Language switch (top bar): a compact two-way switch the same height as the other header buttons; a white thumb slides to the chosen language ===== */
+.top-lang{position:relative;isolation:isolate;display:inline-grid;grid-template-columns:1fr 1fr;align-items:center;flex:none;box-sizing:border-box;height:38px;padding:2px;border:1px solid var(--line);border-radius:11px;background:var(--surface2)}
+.top-lang:before{content:"";position:absolute;z-index:-1;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/2);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.05);transition:transform .22s cubic-bezier(.22,.7,.25,1)}
+.top-lang:has(a[hreflang=zh].on):before,.top-lang[data-target=zh]:before{transform:translateX(100%)}
+.top-lang[data-target=en]:before{transform:none}
+.top-lang a{display:grid;place-items:center;min-width:46px;height:32px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--mute);text-decoration:none;white-space:nowrap;transition:color .15s}
+.top-lang a:hover{color:var(--ink)}
+.top-lang a.on{color:var(--ink);font-weight:800}
+.top-lang a:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+html[data-theme=dark] .top-lang{background:rgba(255,255,255,.06);border-color:var(--line2)}
+html[data-theme=dark] .top-lang:before{background:#2b2f38;box-shadow:none}
+html[data-theme=dark] .top-lang a{color:#a9b0bd}html[data-theme=dark] .top-lang a:hover,html[data-theme=dark] .top-lang a.on{color:#f1f3f7}
+@media(prefers-reduced-motion:reduce){.top-lang:before{transition:none}}
+@media(max-width:700px){.top-lang{display:none}}   /* phones switch language from the More menu */
+
+/* ===== Business switch (top bar, and the toolbar on tablets): one grey track, a white thumb that slides to the chosen business (source_switch.js) ===== */
+.pos-source-switch{position:relative;isolation:isolate;display:inline-flex;align-items:center;flex-wrap:nowrap;flex-shrink:1;min-width:0;max-width:100%;box-sizing:border-box;height:42px;gap:0;padding:3px;border:1px solid var(--line);border-radius:13px;background:var(--surface2);overflow-x:auto;scrollbar-width:none}
+.pos-source-switch::-webkit-scrollbar{display:none}
+.pos-source-switch button,.pos-source-switch a.seven-btn{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:34px;min-height:0;margin:0;padding:0 15px;border:0;border-radius:10px;background:transparent;box-shadow:none;color:var(--mute);font:inherit;font-size:14px;font-weight:700;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;transition:color .15s}
+.pos-source-switch button:hover,.pos-source-switch a.seven-btn:hover{color:var(--ink);background:transparent}
+.pos-source-switch button:focus-visible,.pos-source-switch a.seven-btn:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pos-source-switch .is-active,.pos-source-switch .is-active:hover{color:var(--ink);font-weight:800}
+/* without JavaScript the chosen one carries its own white background */
+.pos-source-switch:not(.has-thumb) .is-active{background:var(--surface);box-shadow:0 1px 3px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.04)}
+.pos-source-switch.has-thumb:before{content:"";position:absolute;z-index:0;top:3px;bottom:3px;left:0;width:var(--thumb-w,0);transform:translateX(var(--thumb-x,0));border-radius:10px;background:var(--surface);box-shadow:0 1px 3px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.04);transition:transform .26s cubic-bezier(.22,.7,.25,1),width .26s cubic-bezier(.22,.7,.25,1)}
+.pos-source-switch.no-anim:before{transition:none}
+html[data-theme=dark] .pos-source-switch{background:rgba(255,255,255,.06);border-color:var(--line2)}
+html[data-theme=dark] .pos-source-switch button,html[data-theme=dark] .pos-source-switch a.seven-btn{color:#a9b0bd}
+html[data-theme=dark] .pos-source-switch button:hover,html[data-theme=dark] .pos-source-switch a.seven-btn:hover,html[data-theme=dark] .pos-source-switch .is-active,html[data-theme=dark] .pos-source-switch .is-active:hover{color:#f1f3f7}
+html[data-theme=dark] .pos-source-switch.has-thumb:before,html[data-theme=dark] .pos-source-switch:not(.has-thumb) .is-active{background:#2b2f38;box-shadow:none}
+@media(prefers-reduced-motion:reduce){.pos-source-switch.has-thumb:before{transition:none}}
+/* the top bar: let the switch take the room it needs and shrink (it scrolls sideways) before it would run under the other buttons */
+@media (min-width:1001px){.topbar .top-sources{flex:1 1 auto;min-width:0}.topbar .top-sources form{min-width:0;max-width:100%}.topbar .top-sources .pos-source-picker{flex-wrap:nowrap;min-width:0}}
+
+/* The top bar lines up with the page: its left edge (the business switch) starts where the page content starts, its right edge where the content ends.
+   The content is centred up to 1500px wide (workspace.css), so on wide screens the bar gets the same side space. */
+@media (min-width:1001px){
+  :root{--page-pad:28px}
+  .topbar{padding-left:max(var(--page-pad),calc((100% - 1500px)/2 + var(--page-pad)));padding-right:max(var(--page-pad),calc((100% - 1500px)/2 + var(--page-pad)))}
+}
+@media (min-width:1001px) and (max-width:1250px){:root{--page-pad:22px}}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Ops Console redesign preview (2026-10-24)</title>
+<style>
+  :root{--line:#e3e6e3;--ink:#141f19;--mute:#66716b;--brand:#12332a;--soft:#e8eee4}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f6f7f6;color:var(--ink);font:15px/1.55 "Inter","Segoe UI",system-ui,sans-serif}
+  header{padding:36px 40px 8px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+  header p{margin:0;color:var(--mute);max-width:70ch}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+  .legend a{font-size:12.5px;font-weight:600;color:var(--brand);background:#fff;border:1px solid var(--line);
+    border-radius:99px;padding:5px 13px;text-decoration:none}
+  .legend a:hover{background:var(--soft)}
+  section{padding:22px 40px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  figure a{display:block}
+  img{display:block;width:100%;height:auto;border-bottom:1px solid var(--line)}
+  figcaption{padding:9px 14px;font-size:12.5px;color:var(--mute)}
+  figcaption b{color:var(--ink);font-weight:650}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ops Console — full redesign concept</h1>
+  <p>Runtime overlay mockups (<code>redesign.css</code> + <code>redesign.js</code>, topnav variant in
+  <code>topnav.css</code>) injected on the live app — no source changes. 76px icon rail with a persistent
+  active-section panel, unified stat band, flat tables, console toolbar filters. Brand stays the current
+  forest green so the structure is what is being judged.</p>
+  <div class="legend">
+    <a href="#compare">Rail vs topnav</a><a href="#mobile">Mobile</a><a href="#pages">All pages</a>
+  </div>
+</header>
+
+<section id="compare">
+  <h2>Navigation comparison — icon rail vs top bar</h2>
+  <div class="grid" id="g-compare"></div>
+</section>
+
+<section id="mobile">
+  <h2>Mobile (390×844) — top app bar + bottom tab bar</h2>
+  <div class="grid" id="g-mobile"></div>
+</section>
+
+<section id="pages">
+  <h2>Every page (1440×900)</h2>
+  <div class="grid" id="g-pages"></div>
+</section>
+
+<script src="shots.js"></script>
+<script>
+const CAPTIONS = {
+  "topnav-dashboard": "Dashboard — topnav variant",
+  "topnav-inventory": "Stock — topnav variant",
+  "dashboard": "Dashboard — rail + unified stat band",
+  "inventory": "Stock — rail + Inventory section panel",
+  "replenishment": "Auto replenishment — console toolbar + stat band",
+};
+const GROUPS = { compare: [], mobile: [], pages: [] };
+SHOTS.forEach(name => {
+  const item = { name, cap: CAPTIONS[name] || name.replace(/-/g, " ") };
+  if (name.startsWith("topnav-") || name === "dashboard" || name === "inventory" && false) GROUPS.compare.push(item);
+  if (name.endsWith("-mobile")) GROUPS.mobile.push(item);
+  else GROUPS.pages.push(item);
+});
+GROUPS.compare = SHOTS.filter(n => n.startsWith("topnav-"))
+  .map(n => ({ name: n, cap: CAPTIONS[n] || n }));
+// put the rail versions of the two comparison pages beside the topnav ones
+GROUPS.compare = [
+  { name: "dashboard", cap: "Dashboard — icon rail (proposed)" },
+  ...GROUPS.compare.filter(x => x.name === "topnav-dashboard"),
+  { name: "inventory", cap: "Stock — icon rail (proposed)" },
+  ...GROUPS.compare.filter(x => x.name === "topnav-inventory"),
+];
+function render(id, items) {
+  const g = document.getElementById(id);
+  items.forEach(({ name, cap }) => {
+    const f = document.createElement("figure");
+    f.innerHTML = `<a href="${name}.png" target="_blank" rel="noopener"><img loading="lazy" src="${name}.png" alt="${cap}"></a><figcaption><b>${cap}</b></figcaption>`;
+    g.appendChild(f);
+  });
+}
+render("g-compare", GROUPS.compare);
+render("g-mobile", GROUPS.mobile);
+render("g-pages", GROUPS.pages);
+</script>
+</body>
+</html>

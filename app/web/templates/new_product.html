@@ -6,7 +6,7 @@
 <div class="np-page np-entry">
 <div class="page-head desk-only">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>{{ t('New product') }}</h1>
-    <p>{{ t('Scan each new product, add its name, supplier, category and quantity. Add as many as you need, then save to get the Excel file.') }}</p></div>
+    <p class="page-desc">{{ t('Scan each new product, add its name, supplier, category and quantity. Add as many as you need, then save to get the Excel file.') }}</p></div>
   <div class="row noprint"><button type="button" class="sm sec" data-np-toggle aria-controls="np-saved-wrap">{{ t('Saved lists') }}</button><form novalidate method="post" action="/new-product/discard" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" id="np-discard" data-confirm="{{ t('Discard this list?') }}"{% if not data.lines %} hidden{% endif %}>{{ t('Discard') }}</button></form></div>
 </div>
 <div class="ts-head mob-only"><h1>{{ t('New product') }}</h1><div class="row noprint"><button type="button" class="sm sec" data-np-toggle aria-controls="np-saved-wrap">{{ t('Saved lists') }}</button><form novalidate method="post" action="/new-product/discard" class="noprint" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" id="np-discard" data-confirm="{{ t('Discard this list?') }}"{% if not data.lines %} hidden{% endif %}>{{ t('Discard') }}</button></form></div></div>

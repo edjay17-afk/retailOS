@@ -81,3 +81,17 @@ def test_transfers_show_as_stock_changes_straight_away_and_the_audit_trail_row_r
     stock_movements.apply(session, (loc.id, prod.id), [_row(at, "Adolfo", "Stock Transfer Received", 2, 12, 14, link="T9")], now_utc()); session.commit()
     rows = session.scalars(select(StockMovement).where(StockMovement.action == "Stock Transfer Received")).all()
     assert len(rows) == 1 and rows[0].qty_after == 14 and rows[0].kind != stock_movements.DIRECT
+
+
+def test_updates_that_changed_nothing_are_hidden_unless_asked_for(client, sync, fake, session):
+    """StoreHub writes an Update line for every store when a product is saved; the ones where the quantity did not move are noise."""
+    loc, prod = _setup(sync, fake, session)
+    at = now_utc().strftime("%Y-%m-%d %H:%M")
+    stock_movements.run(session, fetch=lambda pairs, s, e: {pairs[0]: [_row(at, "Quiet Editor", "Update", 0, 0, 0, link="U0"), _row(at, "Real Editor", "Update", 0, 36, 36, link="U1")]})
+    add_user(session, "hist_admin2", "admin"); login(client, "hist_admin2")
+    page = client.get("/stock-events?tab=history").text
+    assert "Real Editor" in page and "Quiet Editor" not in page
+    assert "Quiet Editor" in client.get("/stock-events?tab=history&unchanged=1").text
+    csv = client.get("/stock-events?tab=history&export=csv").text
+    assert "Real Editor" in csv and "Quiet Editor" not in csv
+    assert "Quiet Editor" in client.get("/stock-events?tab=history&export=csv&unchanged=1").text

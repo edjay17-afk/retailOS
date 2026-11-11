@@ -1,0 +1,27 @@
+/* Ops Console — topnav variant: horizontal navigation bar instead of the icon rail.
+   Same content styling as redesign.css; only the navigation pattern differs. */
+
+html.oc-topnav-mode .app{grid-template-columns:minmax(0,1fr)}
+html.oc-topnav-mode #sidebar,html.oc-topnav-mode .scrim,html.oc-topnav-mode .menu-btn{display:none!important}
+html.oc-topnav-mode .main{border-left:0}
+
+.oc-topnav{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:2px;
+  background:var(--oc-surface);border-bottom:1px solid var(--oc-line);padding:0 24px;height:56px}
+.oc-tn-brand{display:flex;align-items:center;gap:9px;margin-right:18px;text-decoration:none}
+.oc-tn-brand img{width:30px;height:30px;border-radius:8px}
+.oc-tn-brand span{font-weight:700;font-size:14.5px;color:var(--oc-ink);letter-spacing:-.01em}
+.oc-tn-item{position:relative;display:flex}
+.oc-tn-item>a{display:flex;align-items:center;height:56px;padding:0 13px;font-size:13px;font-weight:550;
+  color:var(--oc-mute);text-decoration:none;border-bottom:2px solid transparent}
+.oc-tn-item>a:hover{color:var(--oc-ink);text-decoration:none}
+.oc-tn-item.active>a{color:var(--oc-brand);font-weight:700;border-bottom-color:var(--oc-brand)}
+.oc-tn-drop{position:absolute;top:calc(100% + 1px);left:0;min-width:200px;background:var(--oc-surface);
+  border:1px solid var(--oc-line);border-radius:12px;box-shadow:0 16px 40px rgba(18,27,22,.14);
+  padding:6px;display:none;z-index:70}
+.oc-tn-item:hover .oc-tn-drop{display:block}
+.oc-tn-drop a{display:flex;padding:8px 10px;border-radius:8px;font-size:13px;color:#3d4a43;font-weight:550;white-space:nowrap}
+.oc-tn-drop a:hover{background:#eff2ef;text-decoration:none}
+.oc-tn-drop a.on{color:var(--oc-brand);font-weight:700;background:var(--oc-brand-soft)}
+
+/* the old topbar slides under the nav bar */
+html.oc-topnav-mode .topbar{position:static;border-bottom:1px solid var(--oc-line);background:var(--oc-bg)}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Assistant metrics') }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ t('Is the assistant helping?') }}</h1><p>{{ t('Measured over the last 60 days. The aim is better operations, not more messages.') }}</p></div><a class="btn sec" href="/assistant">{{ t('Back') }}</a></div>
+<div class="page-head"><div><h1>{{ t('Is the assistant helping?') }}</h1><p class="page-desc">{{ t('Measured over the last 60 days. The aim is better operations, not more messages.') }}</p></div><a class="btn sec" href="/assistant">{{ t('Back') }}</a></div>
 <div class="grid g4" style="margin-bottom:14px">
   <div class="card stat"><div><div class="label">{{ t('Answers given') }}</div><div class="value">{{ m.answers }}</div><div class="sub">{{ m.failed_answers }} {{ t('failed') }}</div></div></div>
   <div class="card stat"><div><div class="label">{{ t('Rated useful') }}</div><div class="value">{{ m.usefulness|pct if m.usefulness is not none else '-' }}</div><div class="sub">{{ m.rated }} {{ t('rated') }}</div></div></div>

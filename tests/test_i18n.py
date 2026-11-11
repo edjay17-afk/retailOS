@@ -213,4 +213,4 @@ def test_new_navigation_and_employee_translations(client, session):
     topbar=text.split('<header class="topbar">')[1].split('</header>')[0]
     assert '/logout' not in topbar and 'class="top-lang"' in topbar   # the language switch sits in the top bar (large, easy to find); sign out stays in the sidebar
     footer=text.split('<div class="sidebar-footer">')[1].split('</aside>')[0]
-    assert '/logout' in footer and 'sidebar-language' in footer
+    assert '/logout' in footer and 'sidebar-language' not in footer   # the language switch lives in the top bar only

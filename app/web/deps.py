@@ -205,6 +205,18 @@ def localized_day(context, day):
 templates.env.filters.update(ago=localized_ago, day=localized_day)
 from . import charts  # noqa: E402
 
+def short_source(name):
+    """The name shown on the business switch: no "Loyverse / " prefix, normal capitals, and a trailing "Fast Food Chain" dropped (PUBLICO FAST FOOD CHAIN -> Publico). The full name stays in the tooltip."""
+    n = (name or "").replace("Loyverse / ", "").strip()
+    if n.isupper():
+        n = n.title()
+    for tail in (" fast food chain", " food chain"):
+        if n.lower().endswith(tail) and len(n) > len(tail) + 1:
+            n = n[:-len(tail)].rstrip()
+    return n
+
+
+templates.env.filters["short_source"] = short_source
 templates.env.filters["zip"] = lambda a, b: list(zip(a, b))
 
 

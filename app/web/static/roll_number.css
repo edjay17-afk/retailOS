@@ -1,0 +1,8 @@
+/* Rolling numbers (roll_number.js): a window one line high, a column of digits behind it. */
+.rn{display:inline-flex;vertical-align:top;height:1.2em;line-height:1.2;overflow:hidden;font-variant-numeric:tabular-nums}
+.rn-col{display:block;height:1.2em;overflow:hidden}
+.rn-strip{display:flex;flex-direction:column;transition:transform .9s cubic-bezier(.16,.84,.24,1);will-change:transform}
+.rn-strip>span{display:block;height:1.2em;line-height:1.2}
+.rn-sep{display:block;height:1.2em;line-height:1.2}
+.rn-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.rn-strip{transition:none}}

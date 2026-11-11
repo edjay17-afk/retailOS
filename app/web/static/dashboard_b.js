@@ -28,20 +28,10 @@
     strip.addEventListener('mouseleave', hide);
   });
 
-  // 2) one count-up when the page opens; the last frame is always the exact text the server sent
-  if (still) return;
-  var money = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // 2) when the page opens the digits roll up from zero (roll_number.js); later sales roll in the same way (dashboard_live.js)
   document.querySelectorAll('#live-sales-today, .store-today').forEach(function (el) {
-    var exact = el.textContent, to = Number(exact.replace(/,/g, ''));
-    if (!isFinite(to) || to <= 0) return;
-    var t0 = null, dur = 700;
-    function step(t) {
-      if (t0 === null) t0 = t;
-      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-      if (el.textContent !== exact || k >= 1) { if (k >= 1 && el.textContent !== exact && !el.dataset.live) el.textContent = exact; }
-      if (!el.dataset.live) el.textContent = k < 1 ? money.format(to * e) : exact;
-      if (k < 1 && !el.dataset.live) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
+    var exact = el.textContent.trim(), to = Number(exact.replace(/,/g, ''));
+    if (!isFinite(to)) return;
+    if (window.RollNumber) window.RollNumber.set(el, exact, { fromZero: true });
   });
 })();

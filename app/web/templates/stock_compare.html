@@ -22,7 +22,7 @@
 {% set base = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&est=' ~ est %}
 <div class="page-head stock-compare-head">
   <div><h1>{{ t('Stock compare') }}</h1>
-    <p class="sync-note">{{ t('Every store side by side') }} · {{ t('Stock is a read-only copy of the selected POS, synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
+    <p class="sync-note"><span class="page-desc">{{ t('Every store side by side') }} · </span>{{ t('Synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
   <div class="row">
     <a class="btn sec" href="/inventory/compare?view=move">{{ t('Move from warehouse') }}</a>
     <a class="btn sec" href="/inventory?view=list">{{ t('List view') }}</a>

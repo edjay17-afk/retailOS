@@ -7,12 +7,12 @@
     return !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && !link.target && !link.hasAttribute('download');
   }
   document.addEventListener('click', function (e) {
-    var link = e.target.closest('#sidebar-nav a.nl, .sidebar-language a');
+    var link = e.target.closest('#sidebar-nav a.nl, .sidebar-language a, .top-lang a');
     if (!link || !plainClick(e, link) || reduce.matches) return;
     if (window.innerWidth > 1000 && link.closest('.nav-group:not(.nav-home) .ng-links')) return;   // pages in the side panel just open; the panel closes with the page
     var url = new URL(link.href, location.href);
     if (url.origin !== location.origin) return;
-    var language = link.closest('.sidebar-language');
+    var language = link.closest('.sidebar-language, .top-lang');
     if (language && link.classList.contains('on')) return;
     if (!language && url.href === location.href) return;
     if (pending) { e.preventDefault(); return; }

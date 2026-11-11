@@ -1,0 +1,304 @@
+{
+ "page": "docs/design-review/seven-taste/index.html",
+ "partial": false,
+ "results": [
+  {
+   "w": 1440,
+   "rows": [
+    {
+     "name": "host CPU load (before/after)",
+     "value": "17/20 %",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "total transfer",
+     "value": "67.4 KiB",
+     "verdict": "PASS",
+     "note": "html 8K  css 6.7K  js 5.4K  font 38.8K  img 0.5K  other 8K"
+    },
+    {
+     "name": "requests",
+     "value": 8,
+     "verdict": "PASS",
+     "note": "8 by load"
+    },
+    {
+     "name": "images bytes",
+     "value": "0.5 KiB",
+     "verdict": "PASS",
+     "note": "1 files"
+    },
+    {
+     "name": "largest image",
+     "value": "0.5 KiB",
+     "verdict": "PASS",
+     "note": "assets/retailos-mark.svg"
+    },
+    {
+     "name": "JS parsed",
+     "value": "14.1 KiB",
+     "verdict": "PASS",
+     "note": "1 files, 5.4K gz"
+    },
+    {
+     "name": "CSS",
+     "value": "6.7 KiB",
+     "verdict": "PASS",
+     "note": "2 files"
+    },
+    {
+     "name": "font families",
+     "value": 1,
+     "verdict": "PASS",
+     "note": "Manrope"
+    },
+    {
+     "name": "font files",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "38.8K"
+    },
+    {
+     "name": "font bytes",
+     "value": "38.8 KiB",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "images without width+height",
+     "value": 1,
+     "verdict": "WARN",
+     "note": "retailos-mark.svg"
+    },
+    {
+     "name": "below-fold images not lazy",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "oversized images (natural > 2.2x shown)",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at load",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at bottom",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL peak live",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "0 contexts made in all"
+    },
+    {
+     "name": "long tasks",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "runs 1, , max 0ms"
+    },
+    {
+     "name": "blocking time",
+     "value": "0 ms",
+     "verdict": "PASS",
+     "note": "runs 1,  ms; at load 0ms"
+    },
+    {
+     "name": "FCP (CPU, relative)",
+     "value": "440 ms",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "LCP (CPU, relative)",
+     "value": "440 ms",
+     "verdict": "PASS",
+     "note": "div.amount"
+    },
+    {
+     "name": "layout shift",
+     "value": "0.001",
+     "verdict": "PASS",
+     "note": "at load 0.001"
+    },
+    {
+     "name": "modules loaded, never mounted",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "broken requests",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "page height",
+     "value": "1.3 screens",
+     "verdict": "PASS",
+     "note": "DOM 410 nodes"
+    }
+   ]
+  },
+  {
+   "w": 390,
+   "rows": [
+    {
+     "name": "host CPU load (before/after)",
+     "value": "17/20 %",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "total transfer",
+     "value": "67.1 KiB",
+     "verdict": "PASS",
+     "note": "html 8K  css 6.4K  js 5.4K  font 38.8K  img 0.5K  other 8K"
+    },
+    {
+     "name": "requests",
+     "value": 8,
+     "verdict": "PASS",
+     "note": "7 by load"
+    },
+    {
+     "name": "images bytes",
+     "value": "0.5 KiB",
+     "verdict": "PASS",
+     "note": "1 files"
+    },
+    {
+     "name": "largest image",
+     "value": "0.5 KiB",
+     "verdict": "PASS",
+     "note": "assets/retailos-mark.svg"
+    },
+    {
+     "name": "JS parsed",
+     "value": "14.1 KiB",
+     "verdict": "PASS",
+     "note": "1 files, 5.4K gz"
+    },
+    {
+     "name": "CSS",
+     "value": "6.4 KiB",
+     "verdict": "PASS",
+     "note": "2 files"
+    },
+    {
+     "name": "font families",
+     "value": 1,
+     "verdict": "PASS",
+     "note": "Manrope"
+    },
+    {
+     "name": "font files",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "38.8K"
+    },
+    {
+     "name": "font bytes",
+     "value": "38.8 KiB",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "images without width+height",
+     "value": 1,
+     "verdict": "WARN",
+     "note": "retailos-mark.svg"
+    },
+    {
+     "name": "below-fold images not lazy",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "oversized images (natural > 2.2x shown)",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at load",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at bottom",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL peak live",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "0 contexts made in all"
+    },
+    {
+     "name": "long tasks",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "runs 1, , max 0ms"
+    },
+    {
+     "name": "blocking time",
+     "value": "0 ms",
+     "verdict": "PASS",
+     "note": "runs 1,  ms; at load 0ms"
+    },
+    {
+     "name": "FCP (CPU, relative)",
+     "value": "188 ms",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "LCP (CPU, relative)",
+     "value": "188 ms",
+     "verdict": "PASS",
+     "note": "div.amount"
+    },
+    {
+     "name": "layout shift",
+     "value": "0.000",
+     "verdict": "PASS",
+     "note": "at load 0.000"
+    },
+    {
+     "name": "modules loaded, never mounted",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "broken requests",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "page height",
+     "value": "1.6 screens",
+     "verdict": "PASS",
+     "note": "DOM 410 nodes"
+    }
+   ]
+  }
+ ]
+}

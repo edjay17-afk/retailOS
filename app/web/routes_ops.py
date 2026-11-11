@@ -460,10 +460,10 @@ HISTORY_PAGE = 100
 
 
 @router.get("/stock-events")
-def stock_events_page(tab: str = "history", loc: int = 0, q: str = "", action: str = "", frm: str = "", to: str = "", page: int = 1, export: str = "", c: Ctx = Depends(need("count.enter"))):
+def stock_events_page(tab: str = "history", loc: int = 0, q: str = "", action: str = "", frm: str = "", to: str = "", page: int = 1, export: str = "", unchanged: str = "", c: Ctx = Depends(need("count.enter"))):
     db = c.db
     if tab == "history":
-        return _stock_history(c, loc, q, action, frm, to, page, export)
+        return _stock_history(c, loc, q, action, frm, to, page, export, unchanged == "1")
     ids = c.location_ids or [0]
     q = select(StockEvent).where(StockEvent.location_id.in_(ids)).options(selectinload(StockEvent.product), selectinload(StockEvent.location))
     if tab in stockevents.KINDS:
@@ -741,7 +741,7 @@ def _iso(value):
         return None
 
 
-def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, page: int, export: str):
+def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, page: int, export: str, show_unchanged: bool = False):
     """Every stock change StoreHub's back-office Audit Trail has recorded (read only), newest first."""
     import csv
     import io
@@ -762,7 +762,7 @@ def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, pag
     names = {l.id: l.name.replace("The Daily Centro - ", "") for l in stores}
     page = max(page, 1)
     if export == "csv":
-        rows, _total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=50000, offset=0)
+        rows, _total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=50000, offset=0, hide_unchanged=not show_unchanged)
         out = io.StringIO(); w = csv.writer(out)
         w.writerow(["Time", "Store", "Product", "Barcode", "Employee", "Action", "Qty before", "Change", "Qty after"])
         for m, p, l in rows:
@@ -771,7 +771,7 @@ def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, pag
         audit.log(db, actor_type="user", actor_id=c.user.id, action="export_stock_changes", entity_type="report", entity_id="stock_changes", after={"rows": len(rows), "from": str(start), "to": str(end), "location": loc})
         db.commit()
         return Response("\ufeff" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-changes-{start}-to-{end}.csv"'})
-    rows, total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=HISTORY_PAGE, offset=(page - 1) * HISTORY_PAGE)
+    rows, total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=HISTORY_PAGE, offset=(page - 1) * HISTORY_PAGE, hide_unchanged=not show_unchanged)
     last_ok = db.get(Setting, "stock_movements.last_ok")
-    return render(c, "stock_history.html", rows=rows, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action,
+    return render(c, "stock_history.html", rows=rows, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action, unchanged=show_unchanged,
                   actions=sm.actions(db, ids), frm=start.isoformat(), to=end.isoformat(), waiting=len(sm.pending(db)), last_ok=_iso(last_ok.value if last_ok else None), tab="history")

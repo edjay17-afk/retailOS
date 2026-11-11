@@ -37,7 +37,7 @@
         <div id="pos-source" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
           {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' and not on_seven }}" aria-pressed="{{ 'true' if source_scope == 'storehub' and not on_seven else 'false' }}">{{ t('Daily Centro') }}</button>{% endif %}
           {% for value,label in source_options if value.startswith('loyverse:') %}
-          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
+          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|short_source }}</button>
           {% endfor %}
           {% if can('seven.view') %}<a class="seven-btn {{ 'is-active' if on_seven }}" href="/seven-eleven" {% if on_seven %}aria-current="page"{% endif %}>7-Eleven</a>{% endif %}
         </div>
@@ -93,7 +93,6 @@
           <span class="sf-t"><b>{{ user.full_name or user.username }}</b>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<small>{{ t(ROLE_LABELS[user.role]) }}</small>{% endif %}</span>
           <form novalidate method="post" action="/logout" class="sidebar-signout-form"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sidebar-signout" title="{{ t('Sign out') }}" aria-label="{{ t('Sign out') }}"><svg class="i" aria-hidden="true"><use href="#i-logout"/></svg><span>{{ t('Sign out') }}</span></button></form>
         </div>
-        <div class="sidebar-language" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
       </div>
     </div>
   </aside>
@@ -106,7 +105,7 @@
       {% if source_options and source_options|length > 1 %}<div class="top-sources no-print">{{ source_switch_html|safe }}</div>{% endif %}
       <span class="grow"></span>
       <div class="header-actions">
-      <div class="top-lang" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>English</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
+      <div class="top-lang" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" title="English" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" title="中文" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
       <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false"><svg class="i"><use href="#i-moon"/></svg></button>
       <button type="button" class="btn ghost print-report hide-m" data-print><svg class="i"><use href="#i-file"/></svg>{{ t('Print report') }}</button>
       <a class="iconbtn" href="/notifications" title="{{ t('Notifications') }}" aria-label="{{ t('Notifications') }}"><svg class="i"><use href="#i-bell"/></svg>{% if unread %}<b>{{ unread if unread < 100 else '99+' }}</b>{% endif %}</a>
@@ -134,7 +133,7 @@
         <div id="pos-source-bar" class="pos-source-switch" role="group" aria-label="{{ t('Sales source') }}">
           {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<button type="submit" name="scope" value="storehub" class="{{ 'is-active' if source_scope == 'storehub' and not on_seven }}" aria-pressed="{{ 'true' if source_scope == 'storehub' and not on_seven else 'false' }}">{{ t('Daily Centro') }}</button>{% endif %}
           {% for value,label in source_options if value.startswith('loyverse:') %}
-          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|replace('Loyverse / ', '') }}</button>
+          <button type="submit" name="scope" value="{{ value }}" class="{{ 'is-active' if source_scope == value and not on_seven }}" aria-pressed="{{ 'true' if source_scope == value and not on_seven else 'false' }}" title="{{ label|replace('Loyverse / ', '') }}">{{ label|short_source }}</button>
           {% endfor %}
           {% if can('seven.view') %}<a class="seven-btn {{ 'is-active' if on_seven }}" href="/seven-eleven" {% if on_seven %}aria-current="page"{% endif %}>7-Eleven</a>{% endif %}
         </div>
@@ -143,7 +142,7 @@
         <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ '/' if on_seven else request.url.path ~ '?' ~ request.url.query }}">
         <select name="scope" aria-label="{{ t('Sales source') }}" onchange="if (this.value === '__seven') { location.href = '/seven-eleven'; } else { this.form.submit(); }">
           {% if source_options|selectattr(0, 'equalto', 'storehub')|list %}<option value="storehub" {{ 'selected' if source_scope == 'storehub' }}>{{ t('Daily Centro') }}</option>{% endif %}
-          {% for value,label in source_options if value.startswith('loyverse:') %}<option value="{{ value }}" {{ 'selected' if source_scope == value and not on_seven }}>{{ label|replace('Loyverse / ', '') }}</option>{% endfor %}
+          {% for value,label in source_options if value.startswith('loyverse:') %}<option value="{{ value }}" {{ 'selected' if source_scope == value and not on_seven }}>{{ label|short_source }}</option>{% endfor %}
           {% if can('seven.view') %}<option value="__seven" {{ 'selected' if on_seven }}>7-Eleven</option>{% endif %}
         </select>
       </form>
@@ -205,6 +204,7 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 <script src="/static/crumbs.js?v={{ asset_v('crumbs.js') }}"></script>
 <script src="/static/data_warning.js?v={{ asset_v('data_warning.js') }}"></script>
 <script src="/static/navigation_motion.js?v={{ asset_v('navigation_motion.js') }}"></script>
+<script src="/static/source_switch.js?v={{ asset_v('source_switch.js') }}"></script>
 <script src="/static/sidebar_fly.js?v={{ asset_v('sidebar_fly.js') }}"></script>
 <script src="/static/mobile.js?v={{ asset_v('mobile.js') }}"></script>
 <script src="/static/phone_app.js?v={{ asset_v('phone_app.js') }}"></script>

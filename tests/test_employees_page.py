@@ -117,14 +117,13 @@ def test_navigation_highlight_and_language_motion(client, session):
         assert page.locator('[data-group="Inventory"].fly-open').count()==0
         assert page.locator('.navigation-moving-highlight').count()==0
         assert round(page.locator('#sidebar').bounding_box()['width'])==276
-        page.locator('.sidebar-language a[hreflang="zh"]').click()
-        assert page.locator('.sidebar-language').get_attribute('data-target')=='zh'
-        page.clock.run_for(250)
+        assert page.locator('#sidebar .sidebar-language').count()==0                  # the language switch is in the top bar only
+        page.locator('.top-lang a[hreflang="zh"]').click()
         page.wait_for_function("() => document.documentElement.lang === 'zh'")
-        assert page.locator('.sidebar-language a[hreflang="zh"]').get_attribute('aria-current')=='true'
+        assert page.locator('.top-lang a[hreflang="zh"]').get_attribute('aria-current')=='true'
         assert round(page.locator('#sidebar').bounding_box()['width'])==276
         page.emulate_media(reduced_motion="reduce")
-        page.locator('.sidebar-language a[hreflang="en"]').click()
+        page.locator('.top-lang a[hreflang="en"]').click()
         page.wait_for_function("() => document.documentElement.lang === 'en'")
         browser.close()
 

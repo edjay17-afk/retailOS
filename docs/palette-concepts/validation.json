@@ -1,0 +1,110 @@
+[
+  {
+    "theme": "navy",
+    "page": "dashboard",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "navy",
+    "page": "replenishment",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "navy",
+    "page": "purchase-order",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "navy",
+    "page": "dashboard",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "navy",
+    "page": "replenishment",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "navy",
+    "page": "purchase-order",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "dashboard",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "replenishment",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "purchase-order",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "dashboard",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "replenishment",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "charcoal",
+    "page": "purchase-order",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "dashboard",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "replenishment",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "purchase-order",
+    "device": "desktop",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "dashboard",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "replenishment",
+    "device": "mobile",
+    "overflow": false
+  },
+  {
+    "theme": "indigo",
+    "page": "purchase-order",
+    "device": "mobile",
+    "overflow": false
+  }
+]

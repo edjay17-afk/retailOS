@@ -33,7 +33,6 @@ html[data-theme="dark"] #sidebar #sidebar-nav .nav-group:not(.nav-home) a.nl.on{
 html[data-theme="dark"] #sidebar #sidebar-nav a.nl.on .ic-tile,
 html[data-theme="dark"] #sidebar #sidebar-nav a.nl.on .tag{color:#fff;background:#ffffff1f}
 html[data-theme="dark"] .pos-source-toolbar{border-bottom-color:var(--line)!important}
-html[data-theme="dark"] .pos-source-switch button:hover,
 html[data-theme="dark"] .pos-account-switch button.is-active{color:var(--primary)!important}
 html[data-theme="dark"] .pos-account-switch button.is-active::after{background:var(--primary)!important}
 html[data-theme="dark"] .date-chip .i{color:var(--primary)}

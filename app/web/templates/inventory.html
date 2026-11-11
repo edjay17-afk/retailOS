@@ -8,7 +8,7 @@
 {% set base_qs = 'loc=' ~ location.id ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&inc=' ~ inc %}
 <div class="page-head">
   <div><div class="eyebrow">{{ company }} / {{ location.name }}</div><h1>{{ t('Inventory') }}</h1>
-    <p class="sync-note">{% if lv_edit %}{{ t('Stock from Loyverse, synced') }}{% else %}{{ t('Stock is a read-only copy of the selected POS, synced') }}{% endif %} <strong>{{ fr.last_success|ago }}</strong></p></div>
+    <p class="sync-note">{% if lv_edit %}{{ t('Stock from Loyverse, synced') }}{% else %}{{ t('Synced') }}{% endif %} <strong>{{ fr.last_success|ago }}</strong></p></div>
   <div class="row">
     {% if locations|length > 1 %}<a class="btn sec" href="/inventory/compare">{{ t('Compare stores') }}</a>{% endif %}
     {% if can('count.enter') %}<a class="btn" href="/stock-events/new?kind=write_off&location_id={{ location.id }}"><svg class="i"><use href="#i-camera"/></svg>{{ t('Record stock event') }}</a>{% endif %}

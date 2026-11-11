@@ -1,0 +1,1849 @@
+{
+  "screens": [
+    {
+      "title": "Today | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 1271,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory 1414",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 436
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 477
+        },
+        {
+          "label": "Auto replenishment 96",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 518
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 592
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 633
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 674
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "Bantayan",
+          "width": 61,
+          "height": 17,
+          "x": 18,
+          "y": 855
+        },
+        {
+          "label": "Getafe",
+          "width": 43,
+          "height": 17,
+          "x": 18,
+          "y": 932
+        },
+        {
+          "label": "Tabunoc",
+          "width": 57,
+          "height": 17,
+          "x": 18,
+          "y": 1008
+        },
+        {
+          "label": "A",
+          "width": 278,
+          "height": 34,
+          "x": 31,
+          "y": 2001
+        },
+        {
+          "label": "Open: 59 problems need attention",
+          "width": 28,
+          "height": 28,
+          "x": 331,
+          "y": 3389
+        },
+        {
+          "label": "Open: 1474 items have stock below zero",
+          "width": 28,
+          "height": 28,
+          "x": 331,
+          "y": 3508
+        },
+        {
+          "label": "Open: 96 order suggestions are ready. 236 need checking.",
+          "width": 28,
+          "height": 28,
+          "x": 331,
+          "y": 3656
+        },
+        {
+          "label": "Open: 19 open purchase orders are overdue",
+          "width": 28,
+          "height": 28,
+          "x": 331,
+          "y": 3824
+        },
+        {
+          "label": "Open: 2 checklist(s) still to do today",
+          "width": 28,
+          "height": 28,
+          "x": 331,
+          "y": 3972
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nAll stores, net sales today\nPHP 4,219.00\nYesterday PHP\n26,884.00\nLast 14 complete days · PHP 280,149.55\nOrders to review\n96\nOpen issues\n64\nYour next actions\nInspections\n›\nStock counts\n›\nAuto replenishment\n96 Items\n›\nScan product\nNew transfer\nSales by store\nBantayan\nPHP 816.00\n\nYesterday PHP 7,020.00\n\nGetafe\nPHP 3,403.00\n\nYesterday PHP 19,864.00\n\nTabunoc\nPHP 0.00\n\nYesterday PHP 0.00\n\nToday so",
+      "name": "01-dashboard",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "title": "Stock | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 5251,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Stock",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 437
+        },
+        {
+          "label": "Stock counts",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 472
+        },
+        {
+          "label": "Stock changes",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 507
+        },
+        {
+          "label": "Wastage",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 542
+        },
+        {
+          "label": "Expiry dates",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 577
+        },
+        {
+          "label": "Traceability",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 612
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 654
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 695
+        },
+        {
+          "label": "Auto replenishment 96",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 736
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 810
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 851
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 892
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "Zenwok Warehouse The Daily Centro - Bantayan The Daily Centro - Getafe The Daily Centro - ",
+          "width": 354,
+          "height": 38,
+          "x": 18,
+          "y": 167
+        },
+        {
+          "label": "Apply",
+          "width": 172,
+          "height": 38,
+          "x": 18,
+          "y": 269
+        },
+        {
+          "label": "More filters",
+          "width": 172,
+          "height": 38,
+          "x": 200,
+          "y": 269
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nStock\nZenwok Warehouse\nThe Daily Centro - Bantayan\nThe Daily Centro - Getafe\nThe Daily Centro - Tabunoc\nApply\nMore filters\nAbout inventory\nAll\nLow stock\nZero stock\nNegative stock\n1 Liter Bottle Deposit\nZero stock\n0\nStock now\n1238-31 JD-100 disposable glove 100's\n6945971305553\nZero stock\n0\nStock now\n1340 Hand Towel\n100098209736\nZero stock\n0\nStock now\n1398-68 5858/8270 Eraser\n100026161784\n120\n",
+      "name": "02-inventory",
+      "path": "/inventory?view=list",
+      "status": 200
+    },
+    {
+      "title": "Sales | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 4279,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory 1414",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 436
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 477
+        },
+        {
+          "label": "Auto replenishment 96",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 518
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 592
+        },
+        {
+          "label": "Sales",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 634
+        },
+        {
+          "label": "Sales by product",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 669
+        },
+        {
+          "label": "Transactions",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 704
+        },
+        {
+          "label": "Sales by employee",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 739
+        },
+        {
+          "label": "Sales by shift",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 774
+        },
+        {
+          "label": "Z-Reading Reports",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 809
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 851
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 892
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "Zenwok Warehouse The Daily Centro - Bantayan The Daily Centro - Getafe The Daily Centro - ",
+          "width": 354,
+          "height": 42,
+          "x": 18,
+          "y": 154
+        },
+        {
+          "label": "14 Oct 2026 – 27 Oct 2026",
+          "width": 234,
+          "height": 42,
+          "x": 18,
+          "y": 213
+        },
+        {
+          "label": "Download Excel: the whole sales history of this store",
+          "width": 38,
+          "height": 38,
+          "x": 268,
+          "y": 218
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nSales\nLocation\nZenwok Warehouse\nThe Daily Centro - Bantayan\nThe Daily Centro - Getafe\nThe Daily Centro - Tabunoc\nPeriod\n14 Oct 2026 – 27 Oct 2026\n \nNet sales (14 days)\n140,693.00\nAvg / day: 10,049.50\nTransactions\n1,409\navg basket 99.85\nCash sales\n140,693.00\n100% of sales\nCancelled\n0\nNet sales per day\nBars\nLine\n0\n5k\n10k\n15k\n20k\n14 Oct\n16 Oct\n18 Oct\n20 Oct\n22 Oct\n24 Oct\n26 Oct\naverage ₱10,049.",
+      "name": "03-sales",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "title": "Inspections | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 1109,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory 1414",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 436
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 477
+        },
+        {
+          "label": "Auto replenishment 96",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 518
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 592
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 633
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 674
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "← Mon 26 Oct",
+          "width": 115,
+          "height": 34,
+          "x": 18,
+          "y": 168
+        },
+        {
+          "label": "Wed 28 Oct →",
+          "width": 116,
+          "height": 34,
+          "x": 18,
+          "y": 214
+        },
+        {
+          "label": "All locations The Daily Centro - Bantayan The Daily Centro - Getafe The Daily Centro - Tab",
+          "width": 262,
+          "height": 42,
+          "x": 18,
+          "y": 260
+        },
+        {
+          "label": "Check Lark",
+          "width": 107,
+          "height": 38,
+          "x": 237,
+          "y": 314
+        },
+        {
+          "label": "Open",
+          "width": 332,
+          "height": 35,
+          "x": 29,
+          "y": 518
+        },
+        {
+          "label": "Add photos / video",
+          "width": 332,
+          "height": 35,
+          "x": 29,
+          "y": 775
+        },
+        {
+          "label": "Open",
+          "width": 332,
+          "height": 35,
+          "x": 29,
+          "y": 979
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nInspections\n← Mon 26 Oct\nTue 27 Oct (today)\nWed 28 Oct →\nAll locations\nThe Daily Centro - Bantayan\nThe Daily Centro - Getafe\nThe Daily Centro - Tabunoc\nChecking Lark reports for this date...\nCheck Lark\nDaily store check\nThe Daily Centro - Bantayan\n12:00 PM\nwaiting\nChecking...\nOpen\nDaily store check\nThe Daily Centro - Getafe\n12:00 PM\nsubmitted\nSubmitted via Lark; results not reviewed.\nCheckin",
+      "name": "04-inspections",
+      "path": "/inspections",
+      "status": 200
+    },
+    {
+      "title": "Auto replenishment | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 21456,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory 1414",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 436
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 477
+        },
+        {
+          "label": "Auto replenishment",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 518
+        },
+        {
+          "label": "Auto replenishment",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 560
+        },
+        {
+          "label": "Repair queue",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 595
+        },
+        {
+          "label": "Loyverse",
+          "width": 204,
+          "height": 34,
+          "x": -224,
+          "y": 630
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 698
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 739
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 780
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "Refresh",
+          "width": 99,
+          "height": 38,
+          "x": 18,
+          "y": 190
+        },
+        {
+          "label": "Create lists from approved orders",
+          "width": 274,
+          "height": 38,
+          "x": 18,
+          "y": 236
+        },
+        {
+          "label": "Order lists",
+          "width": 127,
+          "height": 36,
+          "x": 125,
+          "y": 191
+        },
+        {
+          "label": "Order sheet",
+          "width": 111,
+          "height": 36,
+          "x": 261,
+          "y": 191
+        },
+        {
+          "label": "Ready to check Needs checking Decided All",
+          "width": 133,
+          "height": 38,
+          "x": 230,
+          "y": 634
+        },
+        {
+          "label": "All The Daily Centro - Bantayan The Daily Centro - Getafe The Daily Centro - Tabunoc",
+          "width": 202,
+          "height": 38,
+          "x": 161,
+          "y": 699
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nAuto replenishment\nHow it works\nRefresh\nCreate lists from approved orders\nOrder lists\nOrder sheet\nBased on sales only for now.\n96\nReady to check\n236\nCheck data before ordering\n0\nApproved — needs an order list\n-\nApproved without changes (60 days)\n\nLast run 2026-10-27 10:07 (ok)\n\nSearch\nFilters\nShow\nReady to check\nNeeds checking\nDecided\nAll\nLocation\nAll\nThe Daily Centro - Bantayan\nThe Daily Ce",
+      "name": "05-replenishment",
+      "path": "/replenishment?view=list",
+      "status": 200
+    },
+    {
+      "title": "Assistant | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 11529,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Problems",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 240
+        },
+        {
+          "label": "Permits",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 281
+        },
+        {
+          "label": "Planogram",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 322
+        },
+        {
+          "label": "Inventory 1414",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 436
+        },
+        {
+          "label": "Purchasing 22",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 477
+        },
+        {
+          "label": "Auto replenishment 96",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 518
+        },
+        {
+          "label": "Sales",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 592
+        },
+        {
+          "label": "Team",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 633
+        },
+        {
+          "label": "Settings",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 674
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -161,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -137,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "Steamy Co.",
+          "width": 87,
+          "height": 43,
+          "x": 137,
+          "y": 72
+        },
+        {
+          "label": "PUBLICO FAST FOOD CHAIN",
+          "width": 210,
+          "height": 43,
+          "x": 251,
+          "y": 72
+        },
+        {
+          "label": "SipStop",
+          "width": 60,
+          "height": 43,
+          "x": 487,
+          "y": 72
+        },
+        {
+          "label": "Saved conversations",
+          "width": 44,
+          "height": 34,
+          "x": 270,
+          "y": 197
+        },
+        {
+          "label": "Start over",
+          "width": 44,
+          "height": 34,
+          "x": 315,
+          "y": 197
+        },
+        {
+          "label": "on",
+          "width": 17,
+          "height": 14,
+          "x": 33,
+          "y": 266
+        },
+        {
+          "label": "What first today?",
+          "width": 156,
+          "height": 38,
+          "x": 35,
+          "y": 614
+        },
+        {
+          "label": "Likely to run out",
+          "width": 156,
+          "height": 38,
+          "x": 199,
+          "y": 614
+        },
+        {
+          "label": "Send",
+          "width": 34,
+          "height": 34,
+          "x": 313,
+          "y": 758
+        },
+        {
+          "label": "Refresh briefing",
+          "width": 139,
+          "height": 38,
+          "x": 212,
+          "y": 916
+        },
+        {
+          "label": "supporting details",
+          "width": 291,
+          "height": 34,
+          "x": 39,
+          "y": 1114
+        },
+        {
+          "label": "Open",
+          "width": 63,
+          "height": 34,
+          "x": 57,
+          "y": 1262
+        }
+      ],
+      "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nAssistant\nHow well is it doing?\nConnected: Claude\n1 / 60 requests today\nRetail OS\nAI\nYour stores. Your data.\nUse page context\nYour accessible stores\nWhat can I help you with?\n\nExplore sales, check stock, and plan your next step. Answers backed by your store data.\n\nWhat first today?\nLikely to run out\nPOs to chase\nStore sales vs usual\nDaily briefing\nRefresh briefing\n\nSix items need attention t",
+      "name": "06-assistant",
+      "path": "/assistant",
+      "status": 200
+    }
+  ],
+  "staffScreens": [
+    {
+      "title": "Today | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 1832,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inventory 527",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 272
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 313
+        },
+        {
+          "label": "Purchasing",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 354
+        },
+        {
+          "label": "Auto replenishment",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -171,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -147,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "View all →",
+          "width": 60,
+          "height": 19,
+          "x": 291,
+          "y": 674
+        },
+        {
+          "label": "View all →",
+          "width": 60,
+          "height": 19,
+          "x": 291,
+          "y": 874
+        },
+        {
+          "label": "What first today?",
+          "width": 139,
+          "height": 38,
+          "x": 38,
+          "y": 1598
+        },
+        {
+          "label": "Likely to run out",
+          "width": 132,
+          "height": 38,
+          "x": 185,
+          "y": 1598
+        },
+        {
+          "label": "POs to chase",
+          "width": 112,
+          "height": 38,
+          "x": 38,
+          "y": 1644
+        },
+        {
+          "label": "Open assistant",
+          "width": 314,
+          "height": 22,
+          "x": 38,
+          "y": 1696
+        }
+      ],
+      "mainStart": "Daily Centro\nGETAFE · TUE 27 OCT\n\nAll checklists are done. Great work today.\n\nAll done\n100%\n1 / 1 done\nInspections\nStock counts\nAuto replenishment\nStock changes\nStock\nAssistant\nStock health\nView all →\n10%\nhealthy\nIn stock\n56\nRunning low\n0\nOut of stock\n527\nToday's checklists\nView all →\nSubmitted\n1\n\nAll scheduled checklists are complete.\n\nAuto replenishment\nOpen →\n0\nwaiting for your review\nCheck each suggestion, then approve, change or reject it.\nN",
+      "name": "08-staff-dashboard",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "title": "Inspections | Retail OS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "horizontalOverflow": false,
+      "pageHeight": 844,
+      "smallTargets": [
+        {
+          "label": "Skip to content",
+          "width": 135,
+          "height": 42,
+          "x": 12,
+          "y": -56
+        },
+        {
+          "label": "Today",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 125
+        },
+        {
+          "label": "Inspections",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 199
+        },
+        {
+          "label": "Inventory 527",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 272
+        },
+        {
+          "label": "Transfers",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 313
+        },
+        {
+          "label": "Purchasing",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 354
+        },
+        {
+          "label": "Auto replenishment",
+          "width": 241,
+          "height": 40,
+          "x": -261,
+          "y": 395
+        },
+        {
+          "label": "English",
+          "width": 21,
+          "height": 15,
+          "x": -171,
+          "y": 810
+        },
+        {
+          "label": "Chinese",
+          "width": 29,
+          "height": 15,
+          "x": -147,
+          "y": 810
+        },
+        {
+          "label": "Sign out",
+          "width": 36,
+          "height": 36,
+          "x": -60,
+          "y": 791
+        },
+        {
+          "label": "Retail OS home",
+          "width": 40,
+          "height": 44,
+          "x": 16,
+          "y": 6
+        },
+        {
+          "label": "Daily Centro",
+          "width": 93,
+          "height": 43,
+          "x": 18,
+          "y": 72
+        },
+        {
+          "label": "← Mon 26 Oct",
+          "width": 115,
+          "height": 34,
+          "x": 18,
+          "y": 168
+        },
+        {
+          "label": "Wed 28 Oct →",
+          "width": 116,
+          "height": 34,
+          "x": 18,
+          "y": 214
+        },
+        {
+          "label": "Check Lark",
+          "width": 107,
+          "height": 38,
+          "x": 18,
+          "y": 309
+        },
+        {
+          "label": "View Lark report - 08:15",
+          "width": 119,
+          "height": 36,
+          "x": 29,
+          "y": 530
+        },
+        {
+          "label": "Add photos / video",
+          "width": 332,
+          "height": 35,
+          "x": 29,
+          "y": 605
+        }
+      ],
+      "mainStart": "Daily Centro\nInspections\n← Mon 26 Oct\nTue 27 Oct (today)\nWed 28 Oct →\nLark checked at 10:07 - Philippine time. Matched daily inspections are marked Submitted.\nCheck Lark\nDaily store check\nThe Daily Centro - Getafe\n12:00 PM\nSubmitted\nSubmitted via Lark; results not reviewed.\nView Lark report - 08:15\n21 attachments\nAdd photos / video",
+      "name": "09-staff-inspections",
+      "path": "/inspections",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "moreSheet": {
+    "title": "Today | Retail OS",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "horizontalOverflow": false,
+    "pageHeight": 1271,
+    "smallTargets": [
+      {
+        "label": "Skip to content",
+        "width": 135,
+        "height": 42,
+        "x": 12,
+        "y": -56
+      },
+      {
+        "label": "Today",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 125
+      },
+      {
+        "label": "Problems",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 199
+      },
+      {
+        "label": "Inspections",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 240
+      },
+      {
+        "label": "Permits",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 281
+      },
+      {
+        "label": "Planogram",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 322
+      },
+      {
+        "label": "Inventory 1414",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 395
+      },
+      {
+        "label": "Transfers",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 436
+      },
+      {
+        "label": "Purchasing 22",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 477
+      },
+      {
+        "label": "Auto replenishment 96",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 518
+      },
+      {
+        "label": "Sales",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 592
+      },
+      {
+        "label": "Team",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 633
+      },
+      {
+        "label": "Settings",
+        "width": 241,
+        "height": 40,
+        "x": -261,
+        "y": 674
+      },
+      {
+        "label": "English",
+        "width": 21,
+        "height": 15,
+        "x": -161,
+        "y": 810
+      },
+      {
+        "label": "Chinese",
+        "width": 29,
+        "height": 15,
+        "x": -137,
+        "y": 810
+      },
+      {
+        "label": "Sign out",
+        "width": 36,
+        "height": 36,
+        "x": -60,
+        "y": 791
+      },
+      {
+        "label": "Retail OS home",
+        "width": 40,
+        "height": 44,
+        "x": 16,
+        "y": 6
+      },
+      {
+        "label": "Daily Centro",
+        "width": 93,
+        "height": 43,
+        "x": 18,
+        "y": 72
+      },
+      {
+        "label": "Steamy Co.",
+        "width": 87,
+        "height": 43,
+        "x": 137,
+        "y": 72
+      },
+      {
+        "label": "PUBLICO FAST FOOD CHAIN",
+        "width": 210,
+        "height": 43,
+        "x": 251,
+        "y": 72
+      },
+      {
+        "label": "SipStop",
+        "width": 60,
+        "height": 43,
+        "x": 487,
+        "y": 72
+      },
+      {
+        "label": "Bantayan",
+        "width": 61,
+        "height": 17,
+        "x": 18,
+        "y": 855
+      },
+      {
+        "label": "Getafe",
+        "width": 43,
+        "height": 17,
+        "x": 18,
+        "y": 932
+      },
+      {
+        "label": "Tabunoc",
+        "width": 57,
+        "height": 17,
+        "x": 18,
+        "y": 1008
+      },
+      {
+        "label": "A",
+        "width": 278,
+        "height": 34,
+        "x": 31,
+        "y": 2001
+      },
+      {
+        "label": "Open: 59 problems need attention",
+        "width": 28,
+        "height": 28,
+        "x": 331,
+        "y": 3389
+      },
+      {
+        "label": "Open: 1474 items have stock below zero",
+        "width": 28,
+        "height": 28,
+        "x": 331,
+        "y": 3508
+      },
+      {
+        "label": "Open: 96 order suggestions are ready. 236 need checking.",
+        "width": 28,
+        "height": 28,
+        "x": 331,
+        "y": 3656
+      },
+      {
+        "label": "Open: 19 open purchase orders are overdue",
+        "width": 28,
+        "height": 28,
+        "x": 331,
+        "y": 3824
+      },
+      {
+        "label": "Open: 2 checklist(s) still to do today",
+        "width": 28,
+        "height": 28,
+        "x": 331,
+        "y": 3972
+      }
+    ],
+    "mainStart": "Daily Centro\nSteamy Co.\nPUBLICO FAST FOOD CHAIN\nSipStop\nAll stores, net sales today\nPHP 4,219.00\nYesterday PHP\n26,884.00\nLast 14 complete days · PHP 280,149.55\nOrders to review\n96\nOpen issues\n64\nYour next actions\nInspections\n›\nStock counts\n›\nAuto replenishment\n96 Items\n›\nScan product\nNew transfer\nSales by store\nBantayan\nPHP 816.00\n\nYesterday PHP 7,020.00\n\nGetafe\nPHP 3,403.00\n\nYesterday PHP 19,864.00\n\nTabunoc\nPHP 0.00\n\nYesterday PHP 0.00\n\nToday so"
+  }
+}

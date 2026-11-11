@@ -2,7 +2,7 @@
 {% block title %}{{ t('Data quality') }}{% endblock %}
 {% block content %}
 <h1>{{ t('Data quality') }}</h1>
-<p class="mute">{{ t('Findings the system detected in the data. Each one clears by itself when the data is fixed in StoreHub.') }}</p>
+<p class="mute page-desc">{{ t('Findings the system detected in the data. Each one clears by itself when the data is fixed in StoreHub.') }}</p>
 <div class="tabs"><a href="/data-quality" class="{{ '' if rule else 'on' }}">{{ t('All (') }}{{ counts.values()|sum }})</a>
 {% for r, n in counts.items()|sort %}<a href="/data-quality?rule={{ r }}" class="{{ 'on' if rule == r else '' }}">{{ t(labels.get(r, r)) }} ({{ n }})</a>{% endfor %}</div>
 <form novalidate class="filters" method="get"><input type="hidden" name="rule" value="{{ rule }}">

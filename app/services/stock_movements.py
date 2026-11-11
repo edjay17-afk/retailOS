@@ -215,7 +215,8 @@ def run(db: Session, fetch=None) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------ reading them back
-def movements(db: Session, loc_ids: list[int], *, start=None, end=None, product_id: int | None = None, search: str = "", action: str = "", limit: int = 100, offset: int = 0):
+def movements(db: Session, loc_ids: list[int], *, start=None, end=None, product_id: int | None = None, search: str = "", action: str = "", limit: int = 100, offset: int = 0, hide_unchanged: bool = False):
+    """hide_unchanged: leave out lines where the quantity did not move (StoreHub writes one for every store when a product is saved)."""
     q = select(StockMovement, Product, Location).join(Product, Product.id == StockMovement.product_id).join(Location, Location.id == StockMovement.location_id)\
         .where(StockMovement.location_id.in_(loc_ids or [0]))
     if start:
@@ -229,6 +230,8 @@ def movements(db: Session, loc_ids: list[int], *, start=None, end=None, product_
         q = q.where(Product.name.ilike(like) | Product.barcode.ilike(like) | Product.sku.ilike(like))
     if action:
         q = q.where(StockMovement.action == action)
+    if hide_unchanged:
+        q = q.where(StockMovement.change != 0)
     total = db.scalar(select(func.count()).select_from(q.subquery())) or 0
     rows = db.execute(q.order_by(StockMovement.occurred_at.desc(), StockMovement.id.desc()).limit(limit).offset(offset)).all()
     return rows, total

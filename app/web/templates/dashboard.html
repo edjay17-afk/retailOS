@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Today') }}{% endblock %}
-{% block page_styles %}<link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}">{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/roll_number.css?v={{ asset_v('roll_number.css') }}"><link rel="stylesheet" href="/static/sale_toast.css?v={{ asset_v('sale_toast.css') }}"><link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}">{% endblock %}
 {% block source_aside %}<span class="date-chip" aria-label="{{ brief.date|day }}"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>{{ brief.date|day }}</span>{% endblock %}
 {% block content %}
 {% set completed = insp.get('completed', 0) + insp.get('late', 0) + insp.get('submitted', 0) %}
@@ -209,4 +209,4 @@
 </details>
 {% endblock %}
 
-{% block scripts %}<script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script><script src="/static/dashboard_refresh.js?v={{ asset_v('dashboard_refresh.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/roll_number.js?v={{ asset_v('roll_number.js') }}"></script><script src="/static/sale_toast.js?v={{ asset_v('sale_toast.js') }}"></script><script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script><script src="/static/dashboard_refresh.js?v={{ asset_v('dashboard_refresh.js') }}"></script>{% endblock %}
