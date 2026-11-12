@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Count #') }}{{ cc.id }}{% endblock %}
 {% block content %}
-<div class="count-workspace">
-<header class="count-page-head"><div><div class="eyebrow">{{ t('Stock counts') }}</div><h1>{{ t('Count #') }}{{ cc.id }}</h1><p>{{ cc.location.name }} <span>&middot; {{ cc.business_date|day }}</span></p></div><span class="badge {{ 'b-ok' if cc.status == 'approved' else '' }}">{{ t(cc.status) }}</span></header>
+{% set counted_lines = cc.lines|selectattr('counted_qty','ne',none)|list %}
+{% set diff_lines = cc.lines|selectattr('variance')|list %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<link rel="stylesheet" href="/static/count_detail.css?v={{ asset_v('count_detail.css') }}">
+<div class="count-workspace cd">
+<header class="count-page-head"><div><div class="eyebrow">{{ t('Stock counts') }}</div><h1>{{ t('Count #') }}{{ cc.id }}</h1><p><b>{{ cc.location.name }}</b> <span>&middot; {{ cc.business_date|day }}</span></p></div><span class="badge dot {{ 'b-ok' if cc.status == 'approved' else 'b-pur' if cc.status == 'submitted' else 'b-warn' }}">{{ t(cc.status) }}</span></header>
+<div class="cd-grid">
+<div class="cd-main">
 {% if cc.status == 'open' %}
 <section class="count-scan" id="count-scan" data-url="/counts/{{ cc.id }}" data-csrf="{{ csrf }}">
   <h2>{{ t('Scan and count') }}</h2><p class="small mute">{{ t('Scan a product, enter what you counted, then save and scan the next one.') }}</p>
@@ -15,15 +20,17 @@
   <form id="count-entry" hidden data-nobusy>
     <h3 id="count-product"></h3>
     <p class="count-stock">{{ t('POS stock') }}<strong id="count-system"></strong><span class="small mute" id="count-fresh">{{ t('Fetched now for {store}', store=cc.location.name) }}</span> <span class="small" id="count-stale" role="status" style="color:var(--bad);font-weight:650" hidden></span></p>
-    <label for="count-qty">{{ t('Counted') }}</label><input id="count-qty" type="number" min="0" max="100000000" step="any" inputmode="decimal" required>
-    <p class="phone-only phone-count-diff" id="phone-count-diff" aria-live="polite"></p>
-    <label for="count-note">{{ t('Note') }} <span class="small mute">{{ t('Add a reason if the stock differs') }}</span></label><input id="count-note" maxlength="1000">
+    <div class="cd-fields">
+      <div class="cd-field"><label for="count-qty">{{ t('Counted') }}</label><input id="count-qty" type="number" min="0" max="100000000" step="any" inputmode="decimal" required>
+        <p class="phone-only phone-count-diff" id="phone-count-diff" aria-live="polite"></p>
+        <p class="cd-diff" id="count-diff" aria-live="polite"></p></div>
+      <div class="cd-field"><label for="count-note">{{ t('Note') }} <span class="small mute">{{ t('Add a reason if the stock differs') }}</span></label><input id="count-note" maxlength="1000"></div>
+    </div>
     <div class="count-actions"><button type="submit"><span class="phone-count-desktop-label">{{ t('Save & next') }}</span><span class="phone-only">{{ t('Save & scan next') }}</span></button><button type="button" class="sec" id="count-cancel">{{ t('Cancel') }}</button></div>
   </form>
 </section>
 {% endif %}
 <section id="phone-count-recent" class="phone-only">
-{% set counted_lines = cc.lines|selectattr('counted_qty','ne',none)|list %}
 {% if counted_lines %}<h2 class="phone-section-title">{{ t('Recently counted') }}</h2>{% for l in (counted_lines|reverse|list)[:3] %}<div class="phone-count-recent-row"><span>{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong><svg class="i" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg></div>{% endfor %}{% endif %}
 </section>
 <details id="count-review" {{ 'open' if cc.status != 'open' }}><summary><span>{{ t('Review counts') }}</span><span class="count-review-total">{{ cc.lines|length }} {{ t('Items') }}</span></summary>
@@ -46,6 +53,20 @@
 <form novalidate method="post" action="/counts/{{ cc.id }}/approve" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok">{{ t('Approve count') }}</button></form>{% endif %}
 {% if cc.status == 'approved' and cc.location.source == 'storehub' %}<p class="small mute">{{ t('In the StoreHub back office open Stock Management, then Stock Take, then Import Items by CSV. Match the columns to the template StoreHub gives you; the first column carries the StoreHub product id. Import after closing, and choose to leave uncounted items unchanged. The next sync checks that stock changed.') }}</p>{% endif %}
 </details>
+</div>
+<aside class="cd-side" id="count-summary" aria-label="{{ t('Stock counts') }}">
+  <div class="cd-card cd-stats">
+    <div class="cd-stat"><b>{{ counted_lines|length }}</b><span>{{ t('Counted') }}</span></div>
+    <div class="cd-stat {{ 'warn' if diff_lines }}"><b>{{ diff_lines|length }}</b><span>{{ t('Differences') }}</span></div>
+    {% if cc.lines|length > counted_lines|length %}<div class="cd-bar" role="img" aria-label="{{ counted_lines|length }} {{ t('of') }} {{ cc.lines|length }}"><i style="width:{{ (counted_lines|length / cc.lines|length * 100)|round(1) }}%"></i></div><div class="cd-bar-note">{{ counted_lines|length }} {{ t('of') }} {{ cc.lines|length }} {{ t('items counted') }}</div>{% endif %}
+  </div>
+  <div class="cd-card cd-recent">
+    <h3>{{ t('Recently counted') }}</h3>
+    {% for l in (counted_lines|reverse|list)[:6] %}<div class="cd-recent-row"><span>{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong>{% if l.variance %}<em class="cd-chip">{{ '%+g'|format(l.variance) }}</em>{% else %}<svg class="i cd-ok" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg>{% endif %}</div>
+    {% else %}<p class="small mute">{{ t('No products counted yet') }}</p>{% endfor %}
+  </div>
+</aside>
+</div>
 </div>
 {% endblock %}
 

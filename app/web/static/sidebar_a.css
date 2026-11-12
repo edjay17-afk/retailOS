@@ -211,6 +211,9 @@ html[data-theme=dark] .top-lang a{color:#a9b0bd}html[data-theme=dark] .top-lang 
 .pos-source-switch:not(.has-thumb) .is-active{background:var(--surface);box-shadow:0 1px 3px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.04)}
 .pos-source-switch.has-thumb:before{content:"";position:absolute;z-index:0;top:3px;bottom:3px;left:0;width:var(--thumb-w,0);transform:translateX(var(--thumb-x,0));border-radius:10px;background:var(--surface);box-shadow:0 1px 3px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.04);transition:transform .26s cubic-bezier(.22,.7,.25,1),width .26s cubic-bezier(.22,.7,.25,1)}
 .pos-source-switch.no-anim:before{transition:none}
+/* switching business: the sliding thumb is the feedback - no spinner after the name, and the buttons do not fade while the next page loads */
+.pos-source-switch button.btn-busy::after{content:none;display:none}
+.pos-source-switch button:disabled{opacity:1;cursor:progress}
 html[data-theme=dark] .pos-source-switch{background:rgba(255,255,255,.06);border-color:var(--line2)}
 html[data-theme=dark] .pos-source-switch button,html[data-theme=dark] .pos-source-switch a.seven-btn{color:#a9b0bd}
 html[data-theme=dark] .pos-source-switch button:hover,html[data-theme=dark] .pos-source-switch a.seven-btn:hover,html[data-theme=dark] .pos-source-switch .is-active,html[data-theme=dark] .pos-source-switch .is-active:hover{color:#f1f3f7}

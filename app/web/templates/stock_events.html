@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% from "_stock_head.html" import stock_head, day_head with context %}
 {% block title %}{{ t('Stock events') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<link rel="stylesheet" href="/static/stock_events_page.css?v={{ asset_v('stock_events_page.css') }}">
 <div class="page-head counts-page-head stock-change-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
     <p class="stock-change-intro page-desc">{{ t('Every physical change to stock is recorded here: who, why, how much, with a photo. The same change must also be keyed into the StoreHub back office; an event shows Verified once a sync sees the stock move there.') }}</p><p class="stock-change-mobile-intro">{{ t('Record stock received or written off.') }}</p></div>
@@ -17,6 +19,25 @@
 <a href="/stock-events?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}</a>
 {% endfor %}
 </nav>
+
+{{ stock_head(tab, counts=counts, total=total) }}
+<p class="se-desk se-lead">{{ t('Every physical change to stock, with who, why, how much and a photo. Key each one into StoreHub too; it shows Verified once a sync sees the stock move.') }}</p>
+
+<section class="se-desk se-cards" aria-label="{{ t('Record') }}">
+  <a class="se-card" href="/stock-events/new?kind=write_off">
+    <span class="se-card-top"><span class="se-card-icon out"><svg class="i" aria-hidden="true"><use href="#i-minus"/></svg></span><span><b>{{ t('Record a write-off') }}</b><small>{{ t('Spoiled, expired, damaged or lost stock') }}</small></span></span>
+    <span class="se-card-btn primary">{{ t('Record') }}</span>
+  </a>
+  <a class="se-card" href="/stock-events/new?kind=unplanned_receipt">
+    <span class="se-card-top"><span class="se-card-icon in"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span><span><b>{{ t('Record an unplanned receipt') }}</b><small>{{ t('Stock that arrived without a purchase order') }}</small></span></span>
+    <span class="se-card-btn">{{ t('Record') }}</span>
+  </a>
+  <div class="se-card se-waiting {{ 'clear' if not waiting }}">
+    <span class="se-card-label"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>{{ t('Waiting for StoreHub') }}</span>
+    <span class="se-waiting-n"><b>{{ waiting }}</b><small>{{ verified }} {{ t('Verified')|lower }}</small></span>
+  </div>
+</section>
+
 <dialog id="counts-upload" class="modal counts-upload" aria-labelledby="stock-upload-title">
   <div class="counts-upload-head"><h2 id="stock-upload-title">{{ t('Upload a CSV or Excel file') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <form novalidate method="post" action="/stock-events/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
@@ -28,6 +49,23 @@
   </form>
   <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Qty, Type (write-off or unplanned receipt), Reason (optional), Note (optional), Location (optional if one is chosen above), Supplier (optional, for receipts). The same line uploaded twice on one day is recorded once.') }} <a href="/stock-events/template.csv">{{ t('Download template') }}</a></div>
 </dialog>
+
+<section class="se-desk se-feed" aria-label="{{ t('Stock events') }}">
+  {% for g in groups %}
+  <div class="se-day">{{ day_head(g) }}</div>
+  {% for e in g.rows %}{% set out = e.kind == 'write_off' %}
+  <div class="se-row">
+    <span class="se-circle {{ 'out' if out else 'in' }}" title="{{ t('Write-off') if out else t('Unplanned receipt') }}">{{ '−' if out else '+' }}{{ e.qty|num }}</span>
+    <div class="se-prod"><b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<small>{{ e.product.barcode }}</small>{% endif %}</div>
+    <span class="se-store">{{ e.location.name|replace('The Daily Centro - ', '') if e.location else '' }}</span>
+    <div class="se-why"><span class="se-tag {{ 'out' if out else 'in' }}">{{ t(e.reason) }}</span>{% if e.note %}<small>{{ e.note }}</small>{% endif %}</div>
+    <div class="se-when"><b>{{ e.created_at|local('%H:%M') }}</b><small>{{ t('By') }} {{ users.get(e.created_by, '') }}</small></div>
+    <div class="se-photo">{% if e.photo_path %}<a href="/uploads/{{ e.photo_path }}" target="_blank" rel="noopener" aria-label="{{ t('photo') }}"><img src="/uploads/{{ e.photo_path }}" alt="" loading="lazy"></a>{% endif %}</div>
+    <span class="se-status {{ 'ok' if e.verified_at else 'wait' }}"><svg class="i" aria-hidden="true"><use href="#i-{{ 'check' if e.verified_at else 'clock' }}"/></svg>{{ t('Verified') if e.verified_at else t('Waiting for StoreHub') }}</span>
+  </div>
+  {% endfor %}
+  {% else %}<div class="se-empty">{{ t('No stock events recorded yet.') }}</div>{% endfor %}
+</section>
 
 <div class="tw stick1 stock-change-table"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Kind') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('Photo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('By') }}</th></tr>
 {% for e in rows %}<tr class="stock-event-row"><td class="small nowrap ev-date">{{ e.created_at|local('%d %b') }}<div class="mute">{{ e.created_at|local('%H:%M') }}</div></td>

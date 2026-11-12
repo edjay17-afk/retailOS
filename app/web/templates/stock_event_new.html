@@ -2,21 +2,55 @@
 {% block title %}{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
-<div class="stock-event-editor">
-<h1>{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}</h1>
-<p class="small mute page-desc">{{ t('This records what physically happened. Enter the matching stock adjustment in the original POS; this form does not change POS stock.') }}</p>
-<div class="card stock-event-form">
-<form novalidate method="post" action="/stock-events/new" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
-<div class="stock-event-fields">
-<div class="event-field event-location_id"><label for="event-location_id">{{ t('Location') }}</label><select id="event-location_id" name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
-<div class="event-field event-search"><label for="event-search">{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div id="event-search" class="event-selected-product">{{ product.name }}</div>
-{% else %}<input id="event-search" name="search" placeholder="{{ t('Scan barcode or type product name') }}" required>{% endif %}</div>
-<div class="event-field event-qty"><label for="event-qty">{{ t('Qty') }}</label><input id="event-qty" name="qty" inputmode="decimal" required></div>
-<div class="event-field event-reason"><label for="event-reason">{{ t('Reason') }}</label><select id="event-reason" name="reason">{% for r in reasons %}<option value="{{ r }}">{{ t(r) }}</option>{% endfor %}</select></div>
-{% if kind == 'unplanned_receipt' %}<div class="event-field event-supplier_id"><label for="event-supplier_id">{{ t('Supplier') }}</label><select id="event-supplier_id" name="supplier_id"><option value="0">{{ t('Unknown') }}</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
+<link rel="stylesheet" href="/static/stock_events_page.css?v={{ asset_v('stock_events_page.css') }}">
+<link rel="stylesheet" href="/static/stock_event_form.css?v={{ asset_v('stock_event_form.css') }}">
+<div class="stock-event-editor sef" data-kind="{{ kind }}">
+<header class="sef-head">
+  <div class="eyebrow">{{ t('Stock events') }}</div>
+  <h1>{{ t('Record a write-off') if kind == 'write_off' else t('Record an unplanned receipt') }}</h1>
+  <p class="small mute page-desc">{{ t('This records what physically happened. Enter the matching stock adjustment in the original POS; this form does not change POS stock.') }}</p>
+</header>
+<div class="sef-grid">
+<form novalidate method="post" action="/stock-events/new" enctype="multipart/form-data" class="sef-card sef-form"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+  <div class="sef-kinds" role="group" aria-label="{{ t('Type') }}">
+    <a href="/stock-events/new?kind=write_off{{ '&location_id=%d' % location_id if location_id }}" class="sef-kind out {{ 'on' if kind == 'write_off' }}" {{ 'aria-current=page' if kind == 'write_off' }}><span><svg class="i" aria-hidden="true"><use href="#i-minus"/></svg></span><b>{{ t('Write-off') }}</b></a>
+    <a href="/stock-events/new?kind=unplanned_receipt{{ '&location_id=%d' % location_id if location_id }}" class="sef-kind in {{ 'on' if kind == 'unplanned_receipt' }}" {{ 'aria-current=page' if kind == 'unplanned_receipt' }}><span><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span><b>{{ t('Unplanned receipt') }}</b></a>
+  </div>
+  <div class="sef-row2">
+    <div class="sef-field event-location_id"><label for="event-location_id">{{ t('Location') }}</label><select id="event-location_id" name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
+    <div class="sef-field event-search"><label for="event-search">{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div id="event-search" class="sef-picked">{{ product.name }}{% if product.barcode %}<small>{{ product.barcode }}</small>{% endif %}</div>
+    {% else %}<input id="event-search" name="search" class="sef-search" placeholder="{{ t('Scan barcode or type product name') }}" required>{% endif %}</div>
+  </div>
+  <div class="sef-row2 sef-qtyrow">
+    <div class="sef-field event-qty"><label for="event-qty">{{ t('Qty') }}</label><input id="event-qty" name="qty" class="sef-qty" inputmode="decimal" required autocomplete="off"></div>
+    <div class="sef-field"><label for="event-note">{{ t('Note') }}</label><input id="event-note" name="note" class="sef-note" maxlength="300"></div>
+  </div>
+  {% if kind == 'unplanned_receipt' %}<div class="sef-field event-supplier_id"><label for="event-supplier_id">{{ t('Supplier') }}</label><select id="event-supplier_id" name="supplier_id"><option value="0">{{ t('Unknown') }}</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
+  <fieldset class="sef-field event-reason"><legend>{{ t('Reason') }}</legend>
+    <div class="sef-reasons">{% for r in reasons %}<label class="sef-reason"><input type="radio" name="reason" value="{{ r }}" {{ 'checked' if loop.first }}><span>{{ t(r) }}</span></label>{% endfor %}</div>
+  </fieldset>
+  <div class="sef-field"><label for="event-photo">{{ t('Photo (optional evidence)') }}</label>
+    <label class="sef-drop" for="event-photo"><span class="sef-drop-icon"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg></span><span class="sef-drop-text"><b id="sef-file-name">{{ t('Add a photo') }}</b><small>{{ t('Take one now or choose a file') }}</small></span></label>
+    <input id="event-photo" class="sef-file" type="file" name="photo" accept="image/jpeg,image/png,image/webp"></div>
+  <div class="stock-event-form-actions sef-actions"><button>{{ t('Record') }}</button> <a class="btn sec" href="/stock-events">{{ t('Cancel') }}</a></div>
+</form>
+<aside class="sef-side" aria-label="{{ t('How it will look') }}">
+  <div class="sef-card sef-preview">
+    <h2>{{ t('How it will look') }}</h2>
+    <div class="sef-prev-row"><span class="sef-prev-circle {{ 'out' if kind == 'write_off' else 'in' }}" id="sef-prev-qty">{{ '−' if kind == 'write_off' else '+' }}0</span>
+      <div><b id="sef-prev-product">{{ product.name if product else t('Product') }}</b><small id="sef-prev-meta"></small></div></div>
+    <span class="se-status wait"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>{{ t('Waiting for StoreHub') }}</span>
+  </div>
+  <div class="sef-card sef-steps">
+    <h2>{{ t('What happens next') }}</h2>
+    <ol>
+      <li><i>1</i><div><b>{{ t('Saved here') }}</b><span>{{ t('With who, when, how much and your photo.') }}</span></div></li>
+      <li><i>2</i><div><b>{{ t('Key it into StoreHub') }}</b><span>{{ t('The same change must be entered in the StoreHub back office.') }}</span></div></li>
+      <li class="ok"><i>3</i><div><b>{{ t('Marked Verified') }}</b><span>{{ t('Once a sync sees the stock move in StoreHub.') }}</span></div></li>
+    </ol>
+  </div>
+</aside>
 </div>
-<div class="event-field"><label for="event-note">{{ t('Note') }}</label><input id="event-note" name="note" style="width:100%" maxlength="300"></div>
-<div class="event-field"><label for="event-photo">{{ t('Photo (optional evidence)') }}</label><input id="event-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp"></div>
-<div class="stock-event-form-actions"><button>{{ t('Record') }}</button> <a class="btn sec sm" href="/stock-events">{{ t('Cancel') }}</a></div></form></div>
 </div>
 {% endblock %}
+{% block scripts %}<script src="/static/stock_event_form.js?v={{ asset_v('stock_event_form.js') }}"></script>{% endblock %}

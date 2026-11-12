@@ -695,7 +695,27 @@ def sales_transactions(loc: int = 0, days: str = "14", frm: str = "", to: str = 
             methods.setdefault(m.strip().lower(), m.strip())
     pay_options = sorted(methods.items(), key=lambda kv: kv[1].lower())
     fr = next(f for f in freshness.freshness(db) if f["domain"] == "sales")
-    return render(c, "sales_tx.html", pay=pay, pay_options=pay_options, txs=txs, shift=shift, shift_end=shift_end, names=names, pays=pays, units=units, loc_names=loc_names, employees=employees, emp=emp, q=q,
+    # figures for everything the filters match (not just this page): sales net of returns, how many, the average basket and the cash share
+    base = stmt.order_by(None)
+    signed = case((SalesTx.tx_type == "Return", -SalesTx.total), else_=SalesTx.total)
+    live = SalesTx.cancelled.is_(False)
+    net, live_n = db.execute(base.with_only_columns(func.coalesce(func.sum(signed), 0.0), func.count()).where(live)).one()
+    sale_sum, sale_n = db.execute(base.with_only_columns(func.coalesce(func.sum(SalesTx.total), 0.0), func.count()).where(live, SalesTx.tx_type != "Return")).one()
+    returned_n = db.scalar(base.with_only_columns(func.count()).where(live, SalesTx.tx_type == "Return")) or 0
+    cancelled_n = db.scalar(base.with_only_columns(func.count()).where(SalesTx.cancelled.is_(True))) or 0
+    sale_ids = base.with_only_columns(SalesTx.id).where(live, SalesTx.tx_type != "Return")
+    cash_amt, paid_amt = db.execute(select(func.coalesce(func.sum(case((func.lower(Payment.method) == "cash", Payment.amount), else_=0.0)), 0.0), func.coalesce(func.sum(Payment.amount), 0.0))
+                                    .where(Payment.tx_id.in_(sale_ids))).one()
+    summary = {"net": net, "count": live_n, "avg": (sale_sum / sale_n) if sale_n else 0.0, "cash_pct": round(cash_amt / paid_amt * 100) if paid_amt else 0, "returned": returned_n, "cancelled": cancelled_n}
+    day_net = {d: (n, k) for d, n, k in db.execute(base.with_only_columns(SalesTx.business_date, func.coalesce(func.sum(signed), 0.0), func.count()).where(live).group_by(SalesTx.business_date))}
+    today = today_local()
+    groups: list[dict] = []   # the page is shown a day at a time, newest first
+    for t in txs:
+        if not groups or groups[-1]["date"] != t.business_date:
+            n, k = day_net.get(t.business_date, (0.0, 0))
+            groups.append({"date": t.business_date, "rows": [], "net": n, "count": k, "rel": "Today" if t.business_date == today else "Yesterday" if t.business_date == today - timedelta(days=1) else ""})
+        groups[-1]["rows"].append(t)
+    return render(c, "sales_tx.html", summary=summary, groups=groups, today=today, pay=pay, pay_options=pay_options, txs=txs, shift=shift, shift_end=shift_end, names=names, pays=pays, units=units, loc_names=loc_names, employees=employees, emp=emp, q=q,
                   total=total, page=page, per=PAGE, offset=(page - 1) * PAGE, locations=c.locations(), loc=loc, days=n_days, custom=custom, frm=frm, to=to, fr=fr,
                   range_from=start.isoformat(), range_to=end.isoformat(), today_iso=today_local().isoformat())
 
@@ -711,7 +731,7 @@ def sales_tx_panel(txid: int, c: Ctx = Depends(need("sales.detail"))):
     lines = list(db.execute(select(SalesLine, Product.name).outerjoin(Product, Product.id == SalesLine.product_id).where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
     pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
     emp = db.scalar(select(Employee).where(Employee.storehub_id == t.employee_sh_id)) if t.employee_sh_id else None
-    return render(c, "_tx_panel.html", tx=t, lines=lines, pays=pays, emp=emp, loc=db.get(Location, t.location_id))
+    return render(c, "_tx_panel.html", tx=t, lines=lines, pays=pays, emp=emp, loc=db.get(Location, t.location_id), units=sum(l[0].qty or 0 for l in lines))
 
 
 @router.get("/sales/tx/{txid}")
@@ -727,8 +747,15 @@ def sales_tx_detail(txid: int, c: Ctx = Depends(need("sales.detail"))):
                             .where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
     pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
     emp = db.scalar(select(Employee).where(Employee.storehub_id == t.employee_sh_id)) if t.employee_sh_id else None
+    # the sale just before and just after this one among the stores this person may see, and (for a return) the sale it came from
+    mine = [l.id for l in c.locations()] or [0]
+    newer_id = db.scalar(select(SalesTx.id).where(SalesTx.location_id.in_(mine), (SalesTx.tx_time > t.tx_time) | ((SalesTx.tx_time == t.tx_time) & (SalesTx.id > t.id)))
+                         .order_by(SalesTx.tx_time.asc(), SalesTx.id.asc()).limit(1))
+    older_id = db.scalar(select(SalesTx.id).where(SalesTx.location_id.in_(mine), (SalesTx.tx_time < t.tx_time) | ((SalesTx.tx_time == t.tx_time) & (SalesTx.id < t.id)))
+                         .order_by(SalesTx.tx_time.desc(), SalesTx.id.desc()).limit(1))
+    orig_id = db.scalar(select(SalesTx.id).where(SalesTx.invoice_no == t.sale_invoice_no, SalesTx.location_id == t.location_id, SalesTx.id != t.id).limit(1)) if t.sale_invoice_no else None
     return render(c, "sales_tx_detail.html", tx=t, lines=lines, pays=pays, emp=emp, loc=db.get(Location, t.location_id),
-                  has_disc=any(l[0].discount for l in lines))
+                  has_disc=any(l[0].discount for l in lines), units=sum(l[0].qty or 0 for l in lines), newer_id=newer_id, older_id=older_id, orig_id=orig_id)
 
 
 @router.get("/sales/employees")
@@ -1169,9 +1196,12 @@ def purchase_orders(view: str = "open", loc: int = 0, page: int = 1, c: Ctx = De
         q = q.where(PurchaseOrder.location_id == loc)
     pos = list(db.scalars(q))
     now = now_utc()
+    today = today_local()
     rows = []
+    kinds = []
     for po in pos:
         kind = purchasing.classify_po(po, stale_days, now)
+        kinds.append((po, kind))
         if view == "open" and kind not in ("incoming", "stale"):
             continue
         if view == "closed" and kind not in ("closed", "deleted"):
@@ -1179,8 +1209,22 @@ def purchase_orders(view: str = "open", loc: int = 0, page: int = 1, c: Ctx = De
         rows.append((po, kind, sum(max(0, l.ordered_qty - l.received_qty) for l in po.lines)))
     total = len(rows)
     page = max(page, 1)
-    return render(c, "purchase_orders.html", rows=rows[(page - 1) * PAGE: page * PAGE], view=view, loc=loc, locations=c.locations(), page=page, total=total,
-                  stale_days=stale_days)
+    page_rows = rows[(page - 1) * PAGE: page * PAGE]
+
+    def days_to(po):   # whole days from today to the expected date (negative: late)
+        return (to_local(po.expected_at).date() - today).days if po.expected_at else None
+    # the page is shown in groups: what needs attention first, then what is on the way, then what is closed
+    groups = []
+    for key, which in (("stale", ("stale",)), ("incoming", ("incoming",)), ("closed", ("closed", "deleted"))):
+        items = [(po, kind, remaining, days_to(po)) for po, kind, remaining in page_rows if kind in which]
+        if items:
+            groups.append({"key": key, "rows": items})
+    on_way = [po for po, kind in kinds if kind == "incoming"]
+    summary = {"value": sum(po.total or 0 for po in on_way), "incoming": len(on_way), "stale": sum(1 for _po, kind in kinds if kind == "stale"),
+               "due_soon": sum(1 for po in on_way if (days_to(po) is not None and days_to(po) <= 3)),
+               "open": sum(1 for _po, kind in kinds if kind in ("incoming", "stale")), "closed": sum(1 for _po, kind in kinds if kind in ("closed", "deleted")), "all": len(kinds)}
+    return render(c, "purchase_orders.html", rows=page_rows, view=view, loc=loc, locations=c.locations(), page=page, total=total,
+                  stale_days=stale_days, groups=groups, summary=summary)
 
 
 @router.get("/purchase-orders/{po_id}")
@@ -1194,7 +1238,9 @@ def po_detail(po_id: int, c: Ctx = Depends(need("po.view"))):
     from ..services import order_documents
     from ..models import Receiving
     local_receiving = c.db.scalar(select(Receiving).where(Receiving.po_id == po.id).order_by(Receiving.created_at.desc(), Receiving.id.desc()))
-    return render(c, "po_detail.html", po=po, kind=kind, local_receiving=local_receiving, document=order_documents.document(c.db, po, "po"),
+    got_any = any(l.received_present and l.received_qty for l in po.lines)
+    return render(c, "po_detail.html", po=po, kind=kind, local_receiving=local_receiving, got_any=got_any, units=sum(l.ordered_qty or 0 for l in po.lines),
+                  days_left=((to_local(po.expected_at).date() - today_local()).days if po.expected_at else None), document=order_documents.document(c.db, po, "po"),
                   document_base=f"/purchase-orders/{po.id}", exact=order_documents.display, six=order_documents.six_decimals,
                   calculated_po=order_documents.calculate(order_documents.initial(c.db, po, "po")))
 

@@ -61,7 +61,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
     pages = {
         "/inventory?view=list": ("现有库存", "在途库存", "搜索"),
         "/sales": ("现金占比", "每日净销售额", "交易笔数"),
-        "/sales/products": ("售出数量", "全部分类", "排序方式"),
+        "/sales/products": ("售出数量", "全部", "排序方式"),
         f"/sales/product/{product.id}": ("Cola 500ml", "每日售出数量", "按门店"),
         "/replenishment?view=list": ("待审核", "为什么是这个数量", "批准"),
         "/replenishment/batches": ("订货批次", "返回建议"),
@@ -119,7 +119,7 @@ def test_translated_forms_keep_server_values_and_save_successfully(client, sessi
     assert re.search(r'<option[^>]*value="store"[^>]*>门店</option>', html)
     assert re.search(r'<option[^>]*value="warehouse"[^>]*>仓库</option>', html)
     assert '<option value="staff">员工</option>' in client.get("/users").text
-    assert '<option value="damaged">损坏</option>' in client.get("/stock-events/new").text
+    assert __import__("re").search(r'name="reason" value="damaged"[^>]*><span>损坏</span>', client.get("/stock-events/new").text)
     assert 'value="equipment">设备</option>' in client.get("/issues/new").text
     loc = session.scalar(select(Location).where(Location.type == "store"))
     result = client.post(f"/settings/locations/{loc.id}", data={
@@ -211,6 +211,6 @@ def test_new_navigation_and_employee_translations(client, session):
     assert 'Example Person' in text
     assert '/lang/en?back=/employees%3Fq%3DExample' in text
     topbar=text.split('<header class="topbar">')[1].split('</header>')[0]
-    assert '/logout' not in topbar and 'class="top-lang"' in topbar   # the language switch sits in the top bar (large, easy to find); sign out stays in the sidebar
+    assert 'class="top-lang"' in topbar and topbar.count('/logout') == 1 and 'account-signout' in topbar   # the language switch sits in the top bar; sign out is in the account menu there and in the sidebar
     footer=text.split('<div class="sidebar-footer">')[1].split('</aside>')[0]
     assert '/logout' in footer and 'sidebar-language' not in footer   # the language switch lives in the top bar only

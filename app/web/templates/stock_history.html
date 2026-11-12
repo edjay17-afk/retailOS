@@ -1,8 +1,11 @@
 {% extends "base.html" %}
+{% from "_stock_head.html" import stock_head, day_head with context %}
 {% block title %}{{ t('Stock events') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<link rel="stylesheet" href="/static/stock_events_page.css?v={{ asset_v('stock_events_page.css') }}">
 {% set qs = 'tab=history&loc=' ~ loc ~ '&q=' ~ (q|urlencode) ~ '&action=' ~ (action|urlencode) ~ '&frm=' ~ frm ~ '&to=' ~ to ~ ('&unchanged=1' if unchanged else '') %}
+{% macro kind(a) %}{% set l = (a or '')|lower %}{{ 'sale' if 'sale' in l else 'recv' if 'receiv' in l else 'take' if 'take' in l else 'xfer' if 'transfer' in l else 'adj' if 'adjust' in l else 'none' }}{% endmacro %}
 <div class="page-head counts-page-head stock-change-head">
   <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Stock events') }}</h1>
     <p class="small mute" style="margin:2px 0 0">{% if last_ok %}{{ t('Last read') }} {{ last_ok|local('%d %b %H:%M') }}{% endif %}{% if waiting %}{{ ' · ' if last_ok }}{{ waiting }} {{ t('products still being read') }}{% endif %}</p>
@@ -21,7 +24,49 @@
 {% endfor %}
 </nav>
 
-<form novalidate class="filters" method="get" action="/stock-events" style="margin-bottom:14px">
+{{ stock_head('history', export_url='/stock-events?' ~ qs ~ '&export=csv') }}
+
+<section class="se-desk se-summary" aria-label="{{ t('Stock events') }}">
+  <div class="se-figures">
+    <div><span>{{ t('changes')|capitalize }}</span><b>{{ total|num }}</b><small>{{ frm }} – {{ to }}</small></div>
+    <div><span><i class="dot in"></i>{{ t('Units in') }}</span><b class="in">+{{ units_in|num }}</b></div>
+    <div><span><i class="dot out"></i>{{ t('Units out') }}</span><b class="out">−{{ units_out|num }}</b></div>
+  </div>
+  <div class="se-read">
+    <b><i class="se-pulse {{ 'wait' if waiting or not last_ok }}"></i>{% if last_ok %}{{ t('Last read') }} {{ last_ok|local('%d %b, %H:%M') }}{% else %}{{ t('Not read yet') }}{% endif %}</b>
+    {% if waiting %}<span>{{ waiting }} {{ t('products still being read') }}</span>{% endif %}
+    <small>{{ t('Read only. StoreHub is never changed from here.') }}</small>
+  </div>
+</section>
+
+<form novalidate class="se-desk se-filters" method="get" action="/stock-events">
+  <input type="hidden" name="tab" value="history">
+  <label class="se-search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="sh-q-desk" type="search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}" aria-label="{{ t('Search') }}"></label>
+  <label class="se-chip"><span>{{ t('Store') }}</span><b>{{ names[loc] if loc and loc in names else t('All stores') }}</b><select name="loc" aria-label="{{ t('Store') }}" onchange="this.form.submit()"><option value="0">{{ t('All stores') }}</option>{% for l in stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ names[l.id] }}</option>{% endfor %}</select></label>
+  <label class="se-chip"><span>{{ t('Action') }}</span><b>{{ action or t('All actions') }}</b><select name="action" aria-label="{{ t('Action') }}" onchange="this.form.submit()"><option value="">{{ t('All actions') }}</option>{% for a in actions %}<option value="{{ a }}" {{ 'selected' if a == action }}>{{ a }}</option>{% endfor %}</select></label>
+  <label class="se-date"><span>{{ t('From') }}</span><input type="date" name="frm" value="{{ frm }}" onchange="this.form.submit()"></label>
+  <label class="se-date"><span>{{ t('To') }}</span><input type="date" name="to" value="{{ to }}" onchange="this.form.submit()"></label>
+  <label class="se-switch"><input type="checkbox" name="unchanged" value="1" {{ 'checked' if unchanged }} onchange="this.form.submit()"><i aria-hidden="true"></i>{{ t('Show updates with no change') }}</label>
+</form>
+
+<section class="se-desk se-feed se-hist" aria-label="{{ t('Stock events') }}">
+  <div class="se-cols"><span>{{ t('When') }}</span><span>{{ t('Product') }}</span><span>{{ t('Store') }}</span><span>{{ t('Action') }}</span><span>{{ t('Employee') }}</span><span class="right">{{ t('Before') }} → {{ t('After') }}</span></div>
+  {% for g in groups %}
+  <div class="se-day">{{ day_head(g) }}<span class="se-day-tot"><i class="in">+{{ g['in']|num }}</i><i class="out">−{{ g.out|num }}</i></span></div>
+  {% for m, p, l in g.rows %}
+  <div class="se-row se-hrow">
+    <span class="se-time">{{ m.occurred_at.strftime('%H:%M') }}</span>
+    <div class="se-prod"><b>{{ p.name }}</b>{% if p.barcode %}<small>{{ p.barcode }}</small>{% endif %}</div>
+    <span class="se-store">{{ names.get(l.id, l.name) }}</span>
+    <span class="se-act {{ kind(m.action) }}"><i></i>{{ m.action or '—' }}</span>
+    <span class="se-emp"><i>{{ (m.employee or '?')[:1]|upper }}</i><em>{{ m.employee or '—' }}</em></span>
+    <span class="se-move"><span class="was">{{ m.qty_before|num }}</span><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg><b>{{ m.qty_after|num }}</b><span class="se-delta {{ 'in' if m.change > 0 else 'out' if m.change < 0 else '' }}">{{ '+' if m.change > 0 }}{{ m.change|num }}</span></span>
+  </div>
+  {% endfor %}
+  {% else %}<div class="se-empty">{% if waiting %}{{ t('Reading StoreHub now. The first changes appear within a few minutes.') }}{% else %}{{ t('No stock changes in this period.') }}{% endif %}</div>{% endfor %}
+</section>
+
+<form novalidate class="filters se-phone-filters" method="get" action="/stock-events" style="margin-bottom:14px">
   <input type="hidden" name="tab" value="history">
   <div><label for="sh-loc">{{ t('Store') }}</label><select id="sh-loc" name="loc" onchange="this.form.submit()"><option value="0">{{ t('All stores') }}</option>{% for l in stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ names[l.id] }}</option>{% endfor %}</select></div>
   <div style="flex:1;min-width:200px"><label for="sh-q">{{ t('Search') }}</label><input id="sh-q" type="search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}"></div>
@@ -32,7 +77,7 @@
   <div><label>&nbsp;</label><button class="sm">{{ t('Apply') }}</button></div>
 </form>
 
-<div class="tw stick1"><table class="wide">
+<div class="tw stick1 se-phone-table"><table class="wide">
   <tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Employee') }}</th><th scope="col">{{ t('Action') }}</th>
     <th scope="col" class="right">{{ t('Before') }}</th><th scope="col" class="right">{{ t('Change') }}</th><th scope="col" class="right">{{ t('After') }}</th></tr>
   {% for m, p, l in rows %}<tr>

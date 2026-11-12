@@ -1,16 +1,22 @@
+{% set state = 'cancelled' if tx.cancelled else ('return' if tx.tx_type == 'Return' else 'sale') %}
+{% macro pay_kind(m) %}{% set l = (m or '')|lower %}{{ 'cash' if l == 'cash' else 'gcash' if 'gcash' in l else 'card' if ('card' in l or 'visa' in l or 'master' in l or 'debit' in l or 'credit' in l) else 'other' }}{% endmacro %}
 <div class="txp">
-  <div class="txp-top"><div><div class="txp-when">{{ tx.tx_time|local('%d %b %Y') }} · {{ tx.tx_time|clock }}</div><div class="txp-inv">{{ tx.invoice_no or '—' }}</div>
-    <div class="txp-meta">{{ loc.name if loc else '' }}{% if emp %} · {{ emp.name }}{% endif %}{% if tx.terminal is not none %} · {{ t('Register') }} {{ tx.terminal }}{% endif %}</div></div>
-    <span class="badge {{ 'b-bad' if tx.cancelled else ('b-warn' if tx.tx_type == 'Return' else 'b-ok') }}">{{ t('Cancelled') if tx.cancelled else t(tx.tx_type or 'Sale') }}</span></div>
+  <div class="txp-top">
+    <span class="rc-state {{ state }}"><i></i>{{ t('Cancelled') if tx.cancelled else t(tx.tx_type or 'Sale') }}</span>
+    <div class="txp-inv">{{ tx.invoice_no or '—' }}</div>
+    <div class="txp-meta">{{ tx.tx_time|local('%d %b %Y') }} &middot; {{ tx.tx_time|clock }}<br>{{ loc.name if loc else '' }}{% if emp %} &middot; {{ emp.name }}{% endif %}{% if tx.terminal is not none %} &middot; {{ t('Register') }} {{ tx.terminal }}{% endif %}</div>
+  </div>
   <div class="txp-items">
-    {% for line in lines %}{% set l = line[0] %}<div class="txp-line"><div><b>{{ line[1] or l.product_sh_id or l.item_type }}</b><span>{{ l.qty|num(0) if l.qty == l.qty|round(0) else l.qty|num(2) }} × {{ l.unit_price|money if l.unit_price is not none else '—' }}{% if l.discount %} · {{ t('Discount') }} {{ l.discount|money }}{% endif %}</span></div><b class="txp-amt">{{ l.total|money }}</b></div>
+    <div class="txp-items-head"><b>{{ t('Items') }}</b><span>{{ units|num(2) }} {{ t('items') }}</span></div>
+    {% for line in lines %}{% set l = line[0] %}<div class="txp-line"><span class="txp-q">{{ l.qty|num(0) if l.qty == l.qty|round(0) else l.qty|num(2) }}&times;</span><div><b>{{ line[1] or l.product_sh_id or l.item_type }}</b><span>{{ l.unit_price|money if l.unit_price is not none else '—' }} {{ t('each') }}{% if l.discount %} <em>&middot; {{ t('Discount') }} &minus;{{ l.discount|money }}</em>{% endif %}</span></div><b class="txp-amt">{{ l.total|money }}</b></div>
     {% else %}<p class="mute">{{ t('No line items were synced for this transaction.') }}</p>{% endfor %}
   </div>
   <dl class="txp-sum">
-    {% if tx.discount %}<div><dt>{{ t('Total discount') }}</dt><dd>{{ tx.discount|money }}</dd></div>{% endif %}
+    <div><dt>{{ t('Subtotal') }}</dt><dd>{{ tx.subtotal|money }}</dd></div>
+    {% if tx.discount %}<div><dt>{{ t('Total discount') }}</dt><dd class="neg">&minus;{{ tx.discount|money }}</dd></div>{% endif %}
     <div><dt>{{ t('Tax') }}</dt><dd>{{ tx.tax|money }}</dd></div>
-    <div class="txp-total"><dt>{{ t('Total') }}</dt><dd>{{ tx.total|money }}</dd></div>
+    <div class="txp-total"><dt>{{ t('Total') }}</dt><dd class="{{ 'strike' if tx.cancelled }}">{{ tx.total|money }}</dd></div>
+    {% for method, amount in pays %}<div class="txp-paidrow"><dt><i class="{{ pay_kind(method) }}"></i>{{ method }}</dt><dd>{{ amount|money }}</dd></div>{% else %}<div class="txp-paidrow"><dt>{{ t('No payment lines synced.') }}</dt></div>{% endfor %}
   </dl>
-  <div class="txp-pay">{% for method, amount in pays %}<span class="tag">{{ method }} · {{ amount|money }}</span>{% else %}<span class="mute">{{ t('No payment lines synced.') }}</span>{% endfor %}</div>
-  <a class="txp-full" href="/sales/tx/{{ tx.id }}">{{ t('Open full details') }} →</a>
+  <a class="txp-full" href="/sales/tx/{{ tx.id }}">{{ t('Open full details') }}<svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></a>
 </div>

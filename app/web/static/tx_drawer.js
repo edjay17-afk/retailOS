@@ -39,11 +39,13 @@
   }
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var tr = e.target.closest && e.target.closest('tr[data-href^="/sales/tx/"]');
-    if (!tr || e.target.closest('a,button,input,select,label')) return;
+    var tr = e.target.closest && e.target.closest('[data-href^="/sales/tx/"]');   // a table row, or a row of the transaction list
+    if (!tr) return;
+    var hit = e.target.closest('a,button,input,select,label');
+    if (hit && hit !== tr) return;
     e.preventDefault(); e.stopImmediatePropagation();
     var cells = tr.querySelectorAll('td');
-    open(tr.getAttribute('data-href'), cells[1] ? cells[1].textContent.trim() : '');
+    open(tr.getAttribute('data-href'), tr.hasAttribute('data-invoice') ? tr.getAttribute('data-invoice') : (cells[1] ? cells[1].textContent.trim() : ''));
     tr.classList.add('tx-on'); [].forEach.call(document.querySelectorAll('tr.tx-on'), function (o) { if (o !== tr) o.classList.remove('tx-on'); });
   }, true);
 })();

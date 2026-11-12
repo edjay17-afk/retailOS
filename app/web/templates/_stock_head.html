@@ -1,0 +1,25 @@
+{# The desktop header and tabs shared by the two stock event pages. A phone keeps the header and tabs each page already has (stock_events.html, stock_history.html). #}
+{% macro stock_head(tab, export_url='', counts=none, total=0) %}
+<div class="se-desk se-head">
+  <div class="se-hero">
+    <div class="eyebrow">{% if lang == 'zh' %}{{ today.year }}年{{ today.month }}月{{ today.day }}日{% else %}{{ today.strftime('%A') }}, {{ today.day }} {{ today.strftime('%B') }}{% endif %} · {{ company }} / {{ t('Stock accuracy') }}</div>
+    <h1>{{ t('Stock events') }}</h1>
+  </div>
+  <div class="se-head-actions">
+    {% if tab == 'history' %}
+    <a class="se-pill" href="{{ export_url }}"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>{{ t('Download CSV') }}</a>
+    <a class="se-pill out" href="/stock-events/new?kind=write_off">{{ t('Record a write-off') }}</a>
+    <a class="se-pill in" href="/stock-events/new?kind=unplanned_receipt">{{ t('Record an unplanned receipt') }}</a>
+    {% else %}
+    <button type="button" class="se-pill" data-modal="counts-upload"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>{{ t('Upload') }} CSV</button>
+    {% endif %}
+  </div>
+</div>
+<nav class="se-desk se-tabs" aria-label="{{ t('Type') }}">
+{% for value, label in (('history','StoreHub history'),('all','Recorded by people'),('write_off','Write-offs'),('unplanned_receipt','Unplanned receipts')) %}
+<a href="/stock-events?tab={{ value }}" class="{{ 'active' if tab == value }}" {{ 'aria-current=page' if tab == value }}>{{ t(label) }}{% if counts is not none and value != 'history' %}<span class="se-count">{{ total if value == 'all' else counts.get(value, 0) }}</span>{% endif %}</a>
+{% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro day_head(g) %}<b>{% if g.rel %}{{ t(g.rel) }}{% elif lang != 'zh' %}{{ g.date.strftime('%A') }}{% endif %}</b><span>{% if lang == 'zh' %}{{ g.date.month }}月{{ g.date.day }}日{% else %}{{ g.date.day }} {{ g.date.strftime('%b') }}{% endif %} · {{ g.rows|length }} {{ t('change') if g.rows|length == 1 else t('changes') }}</span>{% endmacro %}

@@ -2,39 +2,61 @@
 {% block title %}{{ t('PO #') }}{{ po.sh_po_id }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/po_detail.css?v={{ asset_v('po_detail.css') }}">
+{% set counted = local_receiving is not none and local_receiving.status != 'open' %}
 <div class="po-detail-page">
-<div class="page-head po-detail-head"><div><div class="eyebrow">{{ t('Purchase orders') }}</div><h1>{{ t('PO #') }}{{ po.sh_po_id }} <span class="badge {{ 'b-ok' if kind == 'incoming' else 'b-warn' if kind == 'stale' else '' }}">{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}</span></h1></div>
-{% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ t('Record delivery count') }}</button></form>{% endif %}</div>
-<section class="delivery-progress" aria-label="{{ t('Delivery progress') }}"><h2>{{ t('Delivery progress') }}</h2><div class="delivery-steps">
-<div><span class="delivery-number">1</span><span><b>{{ t('Ordered') }}</b><small>{{ t('StoreHub no longer returns this PO (it was deleted there).') if po.missing_from_api else t('Recorded in StoreHub') }} · {{ t(po.status) }}</small></span></div>
-<div><span class="delivery-number">2</span><span><b>{{ t('Counted locally') }}</b><small>{% if local_receiving %}{{ t(local_receiving.status) }}{% else %}{{ t('No local count yet') }}{% endif %}</small>{% if local_receiving and can('receiving.count') %}<a href="/receiving/{{ local_receiving.id }}">{{ t('Open count') }}</a>{% endif %}</span></div>
-<div><span class="delivery-number">3</span><span><b>{{ t('Received in StoreHub') }}</b><small>{% if po.lines|selectattr('received_present')|selectattr('received_qty')|list %}{{ t('Received quantities recorded') }}{% else %}{{ t('No received quantity reported') }}{% endif %}</small></span></div>
-</div><p>{{ t('A local count does not receive the PO in StoreHub.') }}</p></section>
-<div class="po-overview">
-<section class="po-detail-info" aria-label="{{ t('Order details') }}"><dl class="po-meta">
-<div><dt>{{ t('Supplier') }}</dt><dd>{{ po.supplier.name if po.supplier else '-' }}</dd></div>
-<div><dt>{{ t('Deliver to') }}</dt><dd>{{ po.location.name if po.location else '-' }}</dd></div>
-<div><dt>{{ t('Created') }}</dt><dd>{{ po.created_sh|local }}</dd></div>
-<div><dt>{{ t('Expected') }}</dt><dd>{{ po.expected_at|local('%Y-%m-%d') if po.expected_at else '-' }}</dd></div>
-</dl>
-{% if po.notes %}<p class="small">{{ t('Notes:') }} {{ po.notes }}</p>{% endif %}
-{% if kind == 'stale' %}<div class="flash err" style="margin-top:10px">{{ t('This PO is far past its expected date, so its quantities are not counted as incoming. If the goods arrived, receive the PO in StoreHub. If not, cancel it.') }}</div>{% endif %}
-{% if po.missing_from_api %}<div class="flash err" style="margin-top:10px">{{ t('StoreHub no longer returns this PO (it was deleted there).') }}</div>{% endif %}
-</section>
-<aside class="po-amounts" aria-labelledby="po-totals-title"><h2 id="po-totals-title">{{ t('Calculated totals') }} <span>PHP</span></h2><dl>
-<div><dt>{{ t('Subtotal') }}</dt><dd>{{ six(calculated_po.subtotal) }}</dd></div>
-<div><dt>{{ t('Tax') }}</dt><dd>{{ po.tax|money }}</dd></div>
-<div><dt>{{ t('Discount') }}</dt><dd>{{ six(calculated_po.header.discount) }}</dd></div>
-<div class="po-grand-total"><dt>{{ t('Total') }}</dt><dd>{{ six(calculated_po.total) }}</dd></div>
-</dl><p>{{ t('Calculated from ordered quantities and unit costs, plus tax minus discount.') }}</p></aside>
+<a class="po-back" href="/purchase-orders"><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>{{ t('Back to purchase orders') }}</a>
+
+<div class="po-detail-head">
+  <div class="po-head-main">
+    <div class="po-kicker">{{ t('Purchase orders') }}</div>
+    <h1>{{ t('PO #') }}{{ po.sh_po_id }} <span class="po-pill {{ kind }}"><i></i>{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}</span></h1>
+    <p>{{ po.supplier.name if po.supplier else '—' }} &rarr; {{ po.location.name|replace('The Daily Centro - ', '') if po.location else '—' }}{% if po.expected_at %} &middot; {{ t('Expected') }} {{ po.expected_at|local('%d %b %Y') }}{% if days_left is not none and kind in ('incoming', 'stale') %} ({% if days_left == 0 %}{{ t('Due today') }}{% elif days_left == 1 %}{{ t('Due tomorrow') }}{% elif days_left > 1 %}{{ t('Due in {n} days', n=days_left) }}{% else %}{{ t('{n} days late', n=-days_left) }}{% endif %}){% endif %}{% endif %}</p>
+  </div>
+  {% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="po-go"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg>{{ t('Record delivery count') }}</button></form>{% endif %}
 </div>
-<section class="po-order-items"><h2>{{ t('Order items') }}</h2>
-{% with kind='po' %}{% include '_order_document_actions.html' %}{% endwith %}
-{% if document.saved %}<h2>{{ t('Original StoreHub items and receiving') }}</h2>{% endif %}
-<div class="tw"><table><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Ordered') }}</th><th class="right">{{ t('Received (StoreHub)') }}</th><th class="right">{{ t('Supplier price') }}</th><th class="right">{{ t('Line total') }}</th></tr>
-{% for l in po.lines %}<tr><td>{{ l.product.name if l.product else l.product_sh_id }}</td><td class="right">{{ l.ordered_qty|num }}</td>
-<td class="right">{% if l.received_present %}{{ l.received_qty|num }}{% else %}<span class="mute">{{ t('none') }}</span>{% endif %}{% if l.received_present and l.received_qty < l.ordered_qty and po.status == 'completed' %} <span class="badge b-warn">{{ t('short') }}</span>{% endif %}</td>
-<td class="right">{{ (l.price_exact or l.supplier_price)|price6 if l.supplier_price is not none else '' }}</td><td class="right">{{ six(calculated_po.lines[loop.index0].amount) }}</td></tr>{% endfor %}</table></div>
+
+{% if kind == 'stale' %}<div class="po-notice"><span><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></span><div><b>{{ t('This PO is far past its expected date') }}</b><p>{{ t('This PO is far past its expected date, so its quantities are not counted as incoming. If the goods arrived, receive the PO in StoreHub. If not, cancel it.') }}</p></div></div>{% endif %}
+{% if po.missing_from_api %}<div class="po-notice bad"><span><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></span><div><p>{{ t('StoreHub no longer returns this PO (it was deleted there).') }}</p></div></div>{% endif %}
+
+<section class="delivery-progress" aria-label="{{ t('Delivery progress') }}">
+  <h2 class="po-sr">{{ t('Delivery progress') }}</h2>
+  <div class="delivery-steps">
+    <div class="step done"><span class="delivery-number"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span><b>{{ t('Ordered') }}</b><small>{{ t('StoreHub no longer returns this PO (it was deleted there).') if po.missing_from_api else t('Recorded in StoreHub') }} &middot; {{ t(po.status) }}</small></span></div>
+    <div class="step {{ 'done' if counted else 'now' if local_receiving else '' }}"><span class="delivery-number">{% if counted %}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>{% else %}2{% endif %}</span><span><b>{{ t('Counted locally') }}</b><small>{% if local_receiving %}{{ t(local_receiving.status) }}{% else %}{{ t('No local count yet') }}{% endif %}</small>{% if local_receiving and can('receiving.count') %}<a href="/receiving/{{ local_receiving.id }}">{{ t('Open count') }}</a>{% endif %}</span></div>
+    <div class="step {{ 'done' if got_any else '' }}"><span class="delivery-number">{% if got_any %}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>{% else %}3{% endif %}</span><span><b>{{ t('Received in StoreHub') }}</b><small>{% if got_any %}{{ t('Received quantities recorded') }}{% else %}{{ t('No received quantity reported') }}{% endif %}</small></span></div>
+  </div>
+  <p>{{ t('A local count does not receive the PO in StoreHub.') }}</p>
 </section>
+
+<div class="po-grid">
+  <section class="po-order-items" aria-label="{{ t('Order items') }}">
+    <div class="po-card-head"><h2>{{ t('Order items') }}</h2><span>{{ po.lines|length }} {{ t('Product')|lower }}{{ 's' if po.lines|length != 1 and lang != 'zh' }} &middot; {{ units|num }} {{ t('Ordered')|lower }}</span></div>
+    <div class="po-docs">{% with kind='po' %}{% include '_order_document_actions.html' %}{% endwith %}</div>
+    {% if document.saved %}<h2 class="po-saved-h">{{ t('Original StoreHub items and receiving') }}</h2>{% endif %}
+    <div class="tw"><table><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Ordered') }}</th><th class="right">{{ t('Received (StoreHub)') }}</th><th class="right">{{ t('Supplier price') }}</th><th class="right">{{ t('Line total') }}</th></tr>
+    {% for l in po.lines %}<tr><td>{{ l.product.name if l.product else l.product_sh_id }}</td><td class="right"><span class="po-qty">{{ l.ordered_qty|num }}</span></td>
+    <td class="right">{% if l.received_present %}{% if l.received_qty < l.ordered_qty and po.status == 'completed' %}<span class="po-short">{{ t('short') }}</span> {% endif %}<b>{{ l.received_qty|num }}</b>{% else %}<span class="mute">{{ t('none') }}</span>{% endif %}</td>
+    <td class="right po-price">{{ (l.price_exact or l.supplier_price)|price6 if l.supplier_price is not none else '' }}</td><td class="right"><b>{{ six(calculated_po.lines[loop.index0].amount) }}</b></td></tr>{% endfor %}</table></div>
+    <aside class="po-amounts" aria-labelledby="po-totals-title"><h2 id="po-totals-title">{{ t('Calculated totals') }} <span>PHP</span></h2><dl>
+    <div><dt>{{ t('Subtotal') }}</dt><dd>{{ six(calculated_po.subtotal) }}</dd></div>
+    <div><dt>{{ t('Tax') }}</dt><dd>{{ po.tax|money }}</dd></div>
+    <div><dt>{{ t('Discount') }}</dt><dd>{{ six(calculated_po.header.discount) }}</dd></div>
+    <div class="po-grand-total"><dt>{{ t('Total') }}</dt><dd>{{ six(calculated_po.total) }}</dd></div>
+    </dl><p>{{ t('Calculated from ordered quantities and unit costs, plus tax minus discount.') }}</p></aside>
+  </section>
+
+  <aside class="po-side">
+    <section class="po-detail-info" aria-label="{{ t('Order details') }}">
+      <h2>{{ t('Order details') }}</h2>
+      <dl class="po-meta">
+        <div><dt>{{ t('Supplier') }}</dt><dd>{{ po.supplier.name if po.supplier else '-' }}</dd></div>
+        <div><dt>{{ t('Deliver to') }}</dt><dd>{{ po.location.name if po.location else '-' }}</dd></div>
+        <div><dt>{{ t('Created') }}</dt><dd>{{ po.created_sh|local }}</dd></div>
+        <div><dt>{{ t('Expected') }}</dt><dd class="{{ 'late' if kind == 'stale' }}">{{ po.expected_at|local('%Y-%m-%d') if po.expected_at else '-' }}</dd></div>
+      </dl>
+    </section>
+    {% if po.notes %}<section class="po-notes"><h2>{{ t('Notes:') }}</h2><p>{{ po.notes }}</p></section>{% endif %}
+  </aside>
+</div>
 </div>
 {% endblock %}

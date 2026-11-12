@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..models import InventoryChange, LarkLink, Location, Product, Setting, StockMovement, StockMovementRead, StockTransfer, StockTransferLine, User, WastageEntry
@@ -235,6 +235,39 @@ def movements(db: Session, loc_ids: list[int], *, start=None, end=None, product_
     total = db.scalar(select(func.count()).select_from(q.subquery())) or 0
     rows = db.execute(q.order_by(StockMovement.occurred_at.desc(), StockMovement.id.desc()).limit(limit).offset(offset)).all()
     return rows, total
+
+
+def _filtered(q, loc_ids, *, start=None, end=None, search="", action="", hide_unchanged=False):
+    q = q.join(Product, Product.id == StockMovement.product_id).where(StockMovement.location_id.in_(loc_ids or [0]))
+    if start:
+        q = q.where(StockMovement.occurred_at >= datetime.combine(start, datetime.min.time()))
+    if end:
+        q = q.where(StockMovement.occurred_at < datetime.combine(end + timedelta(days=1), datetime.min.time()))
+    if search.strip():
+        like = f"%{search.strip()[:100]}%"
+        q = q.where(Product.name.ilike(like) | Product.barcode.ilike(like) | Product.sku.ilike(like))
+    if action:
+        q = q.where(StockMovement.action == action)
+    if hide_unchanged:
+        q = q.where(StockMovement.change != 0)
+    return q
+
+
+def totals(db: Session, loc_ids: list[int], **filters) -> tuple[float, float]:
+    """Units that came in and units that went out over everything the filters match (not just one page): (in, out), both positive."""
+    gain = func.coalesce(func.sum(case((StockMovement.change > 0, StockMovement.change), else_=0.0)), 0.0)
+    loss = func.coalesce(func.sum(case((StockMovement.change < 0, -StockMovement.change), else_=0.0)), 0.0)
+    got_in, got_out = db.execute(_filtered(select(gain, loss).select_from(StockMovement), loc_ids, **filters)).one()
+    return float(got_in or 0), float(got_out or 0)
+
+
+def day_totals(db: Session, loc_ids: list[int], **filters) -> dict[str, tuple[float, float]]:
+    """Per day (YYYY-MM-DD) units in and out over everything the filters match, for the day headings on a page that may cut a day in two."""
+    day = func.date(StockMovement.occurred_at)
+    gain = func.coalesce(func.sum(case((StockMovement.change > 0, StockMovement.change), else_=0.0)), 0.0)
+    loss = func.coalesce(func.sum(case((StockMovement.change < 0, -StockMovement.change), else_=0.0)), 0.0)
+    q = _filtered(select(day, gain, loss).select_from(StockMovement), loc_ids, **filters).group_by(day)
+    return {str(d): (float(a or 0), float(b or 0)) for d, a, b in db.execute(q)}
 
 
 def actions(db: Session, loc_ids: list[int]) -> list[str]:

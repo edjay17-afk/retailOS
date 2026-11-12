@@ -19,7 +19,7 @@ from ..services import expiry as expirysvc
 from ..services import compliance as compsvc
 from ..services import freshness, inspections, issues, receiving, performance
 from ..services import stock_events as stockevents
-from ..timeutil import now_utc, today_local
+from ..timeutil import now_utc, to_local, today_local
 from .deps import Ctx, need, parse_date, parse_float, redirect, render, save_upload
 
 router = APIRouter()
@@ -231,7 +231,19 @@ async def issue_act(iid: int, request: Request, c: Ctx = Depends(need("issue.upd
 def counts_page(c: Ctx = Depends(need("count.enter"))):
     rows = list(c.db.scalars(select(CycleCount).where(CycleCount.location_id.in_(c.location_ids or [0])).options(selectinload(CycleCount.location), selectinload(CycleCount.lines))
                              .order_by(CycleCount.id.desc()).limit(30)))
-    return render(c, "counts.html", rows=rows, locations=c.locations())
+    today = today_local()
+    stats = {r.id: {"done": sum(1 for l in r.lines if l.counted_qty is not None), "total": len(r.lines), "diffs": sum(1 for l in r.lines if l.variance)} for r in rows}
+    for s in stats.values():
+        s["pct"] = round(s["done"] / s["total"] * 100) if s["total"] else 0
+    # one card per store for today: its open count if there is one, otherwise the latest count it already sent
+    current: dict[int, CycleCount] = {}
+    for r in rows:
+        if r.business_date == today and (r.location_id not in current or (current[r.location_id].status != "open" and r.status == "open")):
+            current[r.location_id] = r
+    locations = c.locations()
+    tiles = [{"loc": l, "name": l.name.replace("The Daily Centro - ", ""), "count": current.get(l.id)} for l in locations]
+    shown = {t["count"].id for t in tiles if t["count"]}
+    return render(c, "counts.html", rows=rows, locations=locations, stats=stats, tiles=tiles, earlier=[r for r in rows if r.id not in shown], today=today)
 
 
 def _import_message(c, what: str, r: dict, extra: str = "") -> tuple[str, bool]:
@@ -474,7 +486,16 @@ def stock_events_page(tab: str = "history", loc: int = 0, q: str = "", action: s
     counts = {k: n for k, n in db.execute(select(StockEvent.kind, func.count()).where(StockEvent.location_id.in_(ids)).group_by(StockEvent.kind))}
     verified = db.scalar(select(func.count()).select_from(StockEvent).where(StockEvent.location_id.in_(ids), StockEvent.verified_at.isnot(None))) or 0
     users = {u.id: (u.full_name or u.username) for u in db.scalars(select(User))}
-    return render(c, "stock_events.html", rows=rows, tab=tab, counts=counts, verified=verified, users=users, locations=c.locations())
+    today = today_local()
+    groups: list[dict] = []   # the list is shown a day at a time, newest first
+    for e in rows:
+        d = to_local(e.created_at).date()
+        if not groups or groups[-1]["date"] != d:
+            groups.append({"date": d, "rows": [], "rel": "Today" if d == today else "Yesterday" if d == today - timedelta(days=1) else ""})
+        groups[-1]["rows"].append(e)
+    total = sum(counts.values())
+    return render(c, "stock_events.html", rows=rows, tab=tab, counts=counts, verified=verified, waiting=max(total - verified, 0), total=total, groups=groups, today=today,
+                  users=users, locations=c.locations())
 
 
 @router.get("/stock-events/template.csv")
@@ -773,5 +794,15 @@ def _stock_history(c: Ctx, loc: int, q: str, action: str, frm: str, to: str, pag
         return Response("\ufeff" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="stock-changes-{start}-to-{end}.csv"'})
     rows, total = sm.movements(db, ids, start=start, end=end, search=q, action=action, limit=HISTORY_PAGE, offset=(page - 1) * HISTORY_PAGE, hide_unchanged=not show_unchanged)
     last_ok = db.get(Setting, "stock_movements.last_ok")
-    return render(c, "stock_history.html", rows=rows, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action, unchanged=show_unchanged,
+    scope = dict(start=start, end=end, search=q, action=action, hide_unchanged=not show_unchanged)
+    units_in, units_out = sm.totals(db, ids, **scope)
+    per_day = sm.day_totals(db, ids, **scope)
+    groups: list[dict] = []   # the page is shown a day at a time, newest first
+    for row in rows:
+        d = row[0].occurred_at.date()
+        if not groups or groups[-1]["date"] != d:
+            got_in, got_out = per_day.get(d.isoformat(), (0.0, 0.0))
+            groups.append({"date": d, "rows": [], "in": got_in, "out": got_out, "rel": "Today" if d == today else "Yesterday" if d == today - timedelta(days=1) else ""})
+        groups[-1]["rows"].append(row)
+    return render(c, "stock_history.html", rows=rows, groups=groups, units_in=units_in, units_out=units_out, today=today, total=total, page=page, pages=max(1, (total + HISTORY_PAGE - 1) // HISTORY_PAGE), stores=stores, names=names, loc=loc, q=q, action=action, unchanged=show_unchanged,
                   actions=sm.actions(db, ids), frm=start.isoformat(), to=end.isoformat(), waiting=len(sm.pending(db)), last_ok=_iso(last_ok.value if last_ok else None), tab="history")

@@ -1,16 +1,32 @@
-.tx-drawer{width:min(460px,96vw)!important}
-.tx-drawer .drawer-body{padding:8px 24px 28px}
+.tx-drawer{width:min(480px,96vw)!important}
+.tx-drawer .drawer-head{justify-content:flex-end;border-bottom:0}
+.tx-drawer .drawer-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tx-drawer .drawer-body{padding:0 26px 28px}
 tr.tx-on td{background:#eef4ff}
-.txp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0 18px;border-bottom:1px solid var(--line)}
-.txp-when{font-size:13px;color:var(--mute)}.txp-inv{font-size:24px;font-weight:850;letter-spacing:-.02em;margin:2px 0}.txp-meta{font-size:13.5px;color:var(--mute)}
-.txp-items{padding:6px 0}
-.txp-line{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
-.txp-line b{display:block;font-size:15.5px}.txp-line span{display:block;font-size:13px;color:var(--mute);margin-top:2px}
-.txp-line .txp-amt{font-size:16px;white-space:nowrap}
-.txp-sum{margin:14px 0 0}.txp-sum div{display:flex;justify-content:space-between;padding:6px 0;font-size:14.5px;color:var(--mute)}.txp-sum dt,.txp-sum dd{margin:0}
-.txp-sum .txp-total{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:22px;font-weight:850;color:var(--ink)}
-.txp-pay{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 20px}
-.txp-full{font-size:14px;font-weight:750}
+.txp-top{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:0 0 18px}
+.txp-inv{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.txp-meta{font-size:13.5px;line-height:1.5;color:var(--mute)}
+.txp-items{padding:4px 0 0}
+.txp-items-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:6px}
+.txp-items-head b{font-size:15px}.txp-items-head span{font-size:12.5px;color:var(--mute)}
+.txp-line{display:grid;grid-template-columns:34px minmax(0,1fr) auto;column-gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.txp-q{width:34px;height:34px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.txp-line b{display:block;font-size:14.5px}
+.txp-line div span{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.txp-line em{font-style:normal;color:var(--bad)}
+.txp-line .txp-amt{font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.txp-sum{margin:14px 0 0;font-variant-numeric:tabular-nums}
+.txp-sum div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;color:var(--mute)}
+.txp-sum dt,.txp-sum dd{margin:0}
+.txp-sum dd{color:var(--ink);font-weight:650}.txp-sum dd.neg{color:var(--bad)}
+.txp-sum .txp-paidrow{padding:5px 0}
+.txp-sum .txp-paidrow dt{display:flex;align-items:center;gap:8px;font-weight:600}
+.txp-sum .txp-paidrow i{flex:none;width:9px;height:9px;border-radius:50%;background:#94a3b8}
+.txp-sum .txp-paidrow i.cash{background:var(--ok)}.txp-sum .txp-paidrow i.gcash{background:#2563eb}.txp-sum .txp-paidrow i.card{background:#7c3aed}
+.txp-sum .txp-total{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:22px;font-weight:800;color:var(--ink)}
+.txp-full{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;margin-top:18px;border:1px solid var(--line2);border-radius:13px;background:var(--surface);color:var(--ink);font-size:14.5px;font-weight:700;text-decoration:none}
+.txp-full:hover{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.txp-full .i{width:15px;height:15px;transform:rotate(-90deg)}
 .tx-drawer{border-radius:0!important;border:0!important;border-left:1px solid var(--line)!important;box-shadow:-10px 0 30px rgba(16,24,40,.10)!important}
 .tx-drawer::backdrop{background:rgba(16,24,40,.08)!important;backdrop-filter:none!important}
 .tx-drawer::backdrop{background:rgba(255,255,255,.35)!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important}

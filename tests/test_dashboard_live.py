@@ -146,6 +146,30 @@ def test_a_sale_notice_appears_at_the_top_centre(sync,fake,session,client):
         browser.close()
 
 
+def test_a_sale_notice_also_appears_on_other_pages(sync,fake,session,client):
+    sales=[{'id':9,'store':'Getafe','total':120.05,'items':3,'pay':'Cash'}]
+    sync_playwright,serve,state=_notice_page(client,session,sync,fake,'toast_elsewhere','admin',sales)
+    with sync_playwright() as pw:
+        browser=pw.chromium.launch(channel='msedge',headless=True)
+        page=browser.new_page(viewport={'width':1440,'height':900});page.route('http://qa.test/**',serve);page.route('https://**',lambda r:r.abort())
+        page.clock.install()
+        page.goto('http://qa.test/issues')
+        page.wait_for_function("()=>window.SaleToast")
+        page.clock.run_for(100)
+        assert page.locator('.sale-toast').count()==0                # the first read only learns where things stand
+        page.clock.fast_forward(31000)
+        page.wait_for_selector('.sale-toast')
+        assert 'Getafe' in page.locator('.sale-toast').first.text_content() and page.url=='http://qa.test/issues'
+        browser.close()
+
+
+def test_no_sale_notice_script_without_permission_to_see_sales(sync,fake,session,client):
+    seeded(sync,fake,session)
+    add_user(session,'toast_staff','staff');login(client,'toast_staff')
+    html=client.get('/inventory').text if client.get('/inventory').status_code==200 else client.get('/').text
+    assert 'sale_toast.js' not in html and 'data-sale-alerts' not in html
+
+
 def test_clicking_a_sale_notice_opens_that_transaction(sync,fake,session,client):
     sales=[{'id':9,'store':'Getafe','total':120.05,'items':3,'pay':'Cash'}]
     sync_playwright,serve,state=_notice_page(client,session,sync,fake,'toast_click','admin',sales)
@@ -223,4 +247,25 @@ def test_the_top_bar_lines_up_with_the_page_content(sync,fake,session,client):
               const cs=getComputedStyle(c),ts=getComputedStyle(t),r=c.getBoundingClientRect();
               return [r.left-m.left+parseFloat(cs.paddingLeft),parseFloat(ts.paddingLeft),m.right-r.right+parseFloat(cs.paddingRight),parseFloat(ts.paddingRight)]}""")
             assert abs(got[0]-got[1])<1.5 and abs(got[2]-got[3])<1.5,(width,got)
+        browser.close()
+
+
+def test_switching_business_shows_no_spinner_beside_the_name(sync,fake,session,client):
+    """The sliding thumb is the feedback: a pressed business button gets no spinner after its name and does not fade."""
+    from playwright.sync_api import sync_playwright
+    from urllib.parse import urlsplit
+    seeded(sync,fake,session)
+    add_user(session,'spin_admin','admin');login(client,'spin_admin')
+    def serve(route):
+        u=urlsplit(route.request.url)
+        r=client.get(u.path)
+        route.fulfill(status=r.status_code,body=r.content,headers={k:v for k,v in r.headers.items() if k.lower() not in ('content-length','content-encoding','transfer-encoding')})
+    with sync_playwright() as pw:
+        browser=pw.chromium.launch(channel='msedge',headless=True)
+        page=browser.new_page(viewport={'width':1440,'height':900});page.route('http://qa.test/**',serve);page.route('https://**',lambda r:r.abort())
+        page.goto('http://qa.test/')
+        page.evaluate("""()=>{const b=document.createElement('button');b.className='btn-busy';b.disabled=true;b.textContent='Steamy Co.';
+          const box=document.createElement('div');box.className='pos-source-switch';box.id='probe';box.appendChild(b);document.body.appendChild(box)}""")
+        got=page.evaluate("()=>{const b=document.querySelector('#probe button');return [getComputedStyle(b,'::after').content,getComputedStyle(b).opacity]}")
+        assert got[0] in ('none','normal') and got[1]=='1',got
         browser.close()

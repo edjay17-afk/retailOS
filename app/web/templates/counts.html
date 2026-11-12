@@ -2,10 +2,33 @@
 {% block title %}{{ t('Counts') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/count_scan.css?v={{ asset_v('count_scan.css') }}">
+<link rel="stylesheet" href="/static/counts_page.css?v={{ asset_v('counts_page.css') }}">
+{% macro short(name) %}{{ name|replace('The Daily Centro - ', '') }}{% endmacro %}
+{% macro status_badge(status) %}<span class="badge dot {{ 'b-ok' if status == 'approved' else 'b-pur' if status == 'submitted' else 'b-warn' }}">{{ t(status) }}</span>{% endmacro %}
+{% macro delete_button(r) %}{% if r.status != 'approved' or can('count.approve') %}<form novalidate method="post" action="/counts/{{ r.id }}/delete" class="cr-delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="cr-trash" aria-label="{{ t('Delete') }} {{ t('Count #') }}{{ r.id }}" title="{{ t('Delete') }}" data-confirm="{{ t('Delete count #{id}? Its entered quantities will be lost. This is recorded in the audit log.', id=r.id) }}"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg></button></form>{% else %}<span class="cr-delete"></span>{% endif %}{% endmacro %}
+{% macro earlier_row(r) %}{% set s = stats[r.id] %}
+<div class="cr-row">
+  <a class="cr-main" href="/counts/{{ r.id }}">
+    <span class="cr-date"><b>{{ r.business_date.day }}</b><small>{% if lang == 'zh' %}{{ r.business_date.month }}月{% else %}{{ r.business_date.strftime('%b') }}{% endif %}</small></span>
+    <span class="cr-store"><b>{{ short(r.location.name) }}</b><small>{{ t('Count #') }}{{ r.id }}</small></span>
+    <span class="cr-items">{{ s.total }} {{ t('Items')|lower }}</span>
+    <span class="cr-diff {{ 'has' if s.diffs }}">{% if s.diffs %}{{ s.diffs }} {{ t('Differences')|lower }}{% else %}{{ t('No differences') }}{% endif %}</span>
+    {{ status_badge(r.status) }}
+    <svg class="i cr-go" aria-hidden="true"><use href="#i-chevron"/></svg>
+  </a>
+  {{ delete_button(r) }}
+</div>
+{% endmacro %}
+
 <div class="page-head counts-page-head">
-  <div><div class="eyebrow">{{ company }} / {{ t('Stock accuracy') }}</div><h1>{{ t('Cycle counts') }}</h1></div>
+  <div class="count-hero">
+    <div class="eyebrow">{% if lang == 'zh' %}{{ today.year }}年{{ today.month }}月{{ today.day }}日{% else %}{{ today.strftime('%A') }}, {{ today.day }} {{ today.strftime('%B') }}{% endif %} · {{ company }} / {{ t('Stock accuracy') }}</div>
+    <h1>{{ t('Cycle counts') }}</h1>
+    <p>{{ t('Scan a barcode, enter the counted stock, then save and scan the next product.') }}</p>
+  </div>
   <button type="button" class="sec sm counts-upload-button" data-modal="counts-upload">{{ t('Upload') }} CSV</button>
 </div>
+
 <div class="counts-create">
   <div class="card" style="margin:0">
     <div class="eyebrow" style="margin-bottom:6px">{{ t('New count') }}</div>
@@ -16,6 +39,7 @@
       <button>{{ t('Start today\'s count') }}</button></form>
   </div>
 </div>
+
 <dialog id="counts-upload" class="modal counts-upload" aria-labelledby="counts-upload-title">
   <div class="counts-upload-head"><h2 id="counts-upload-title">{{ t('Upload a CSV or Excel file') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
     <form novalidate method="post" action="/counts/import" enctype="multipart/form-data" class="ffi ffi-upload"><input type="hidden" name="csrf" value="{{ csrf }}">
@@ -26,6 +50,37 @@
     </form>
     <div class="small mute" style="margin-top:8px">{{ t('Columns: Product (barcode, SKU or name), Counted, Note (optional), Location (optional if one is chosen above). Counts go into today\'s open count and are compared with the StoreHub stock.') }} <a href="/counts/template.csv">{{ t('Download template') }}</a></div>
 </dialog>
+
+<section class="count-desk count-stores" aria-label="{{ t('New count') }}">
+  {% for tile in tiles %}
+  {% set r = tile.count %}{% set s = stats[r.id] if r else none %}
+  {% set state = 'none' if not r else r.status %}
+  <article class="count-tile" data-state="{{ state }}">
+    <div class="ct-top">
+      <div class="ct-ring" role="img" aria-label="{{ s.done if s else 0 }} {{ t('items counted') }}">
+        <svg viewBox="0 0 104 104" aria-hidden="true"><circle class="ct-track" cx="52" cy="52" r="44" pathLength="100"/>{% if s and s.pct %}<circle class="ct-fill" cx="52" cy="52" r="44" pathLength="100" stroke-dasharray="{{ s.pct }} 100"/>{% endif %}</svg>
+        <b>{{ s.done if s else 0 }}<small>{{ t('Items')|lower }}</small></b>
+      </div>
+      {% if r %}{{ status_badge(r.status) }}{% else %}<span class="badge dot">{{ t('Not started') }}</span>{% endif %}
+    </div>
+    <div class="ct-name"><h3>{{ tile.name }}</h3>
+      <p>{% if not r %}{{ t('No count started today') }}{% elif r.status == 'open' %}{% if s.total > s.done %}{{ s.done }} {{ t('of') }} {{ s.total }}{% else %}{{ s.done }}{% endif %} {{ t('items counted') }}{% else %}{{ s.total }} {{ t('Items')|lower }} · {{ s.diffs }} {{ t('Differences')|lower }}{% endif %}</p></div>
+    {% if state in ('none', 'open') %}
+    <form novalidate method="post" action="/counts/create"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="location_id" value="{{ tile.loc.id }}"><input type="hidden" name="mode" value="scan">
+      <button class="ct-btn primary">{{ t("Start today's count") if state == 'none' else t('Continue') }}<svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></button></form>
+    {% else %}
+    <a class="ct-btn" href="/counts/{{ r.id }}">{{ t('Review') if state == 'submitted' else t('View') }}<svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+
+<section class="count-desk count-earlier" aria-labelledby="count-earlier-title">
+  <div class="cr-head"><h2 id="count-earlier-title">{{ t('Earlier counts') }}</h2></div>
+  {% for r in earlier[:8] %}{{ earlier_row(r) }}{% else %}<div class="count-empty-list">{{ t('No counts yet.') }}</div>{% endfor %}
+  {% if earlier|length > 8 %}<details class="cr-more"><summary>{{ t('Show older counts') }} ({{ earlier|length - 8 }})</summary>{% for r in earlier[8:] %}{{ earlier_row(r) }}{% endfor %}</details>{% endif %}
+</section>
+
 <section class="phone-only count-mobile-list" aria-label="{{ t('Stock counts') }}">
   <h2>{{ t('Stock counts') }}</h2>
   {% for r in rows %}
@@ -37,15 +92,4 @@
   </article>
   {% else %}<div class="count-mobile-empty">{{ t('No counts yet.') }}</div>{% endfor %}
 </section>
-<div class="tw stick1 counts-list-table"><table class="wide rcards"><tr><th scope="col">#</th><th scope="col">{{ t('Date') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Progress') }}</th><th scope="col" class="right">{{ t('Items') }}</th><th scope="col" class="right">{{ t('Differences') }}</th><th scope="col">{{ t('Status') }}</th><th></th></tr>
-{% for r in rows %}
-{% set total = r.lines|length %}{% set done = r.lines|selectattr('counted_qty','ne',none)|list|length %}{% set diffs = r.lines|selectattr('variance')|list|length %}
-<tr><td class="mute">#{{ r.id }}</td><td class="small nowrap">{{ r.business_date|day }}</td><td>{{ r.location.name }}</td>
-<td><span class="covercell" data-tip="{{ done }} {{ t('of') }} {{ total }} {{ t('items counted') }}"><span class="coverbar {{ 'crit' if done == 0 else 'risk' if done < total }}"><i style="width:{{ (done / total * 100)|round(1) if total else 0 }}%"></i></span><b>{{ done }}/{{ total }}</b></span></td>
-<td class="right">{{ total }}</td>
-<td class="right">{% if diffs %}<span class="badge b-bad dot">{{ diffs }}</span>{% else %}<span class="small mute">0</span>{% endif %}</td>
-<td><span class="badge dot {{ 'b-ok' if r.status == 'approved' else 'b-pur' if r.status == 'submitted' else 'b-warn' }}">{{ t(r.status) }}</span></td>
-<td><div class="row"><a class="btn sm sec" href="/counts/{{ r.id }}">{{ t('Open') }}</a>
-{% if r.status != 'approved' or can('count.approve') %}<form novalidate method="post" action="/counts/{{ r.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="sec sm" style="color:var(--bad)" data-confirm="{{ t('Delete count #{id}? Its entered quantities will be lost. This is recorded in the audit log.', id=r.id) }}">{{ t('Delete') }}</button></form>{% endif %}</div></td></tr>
-{% else %}<tr><td colspan="8"><div class="empty">{{ t('No counts yet.') }}</div></td></tr>{% endfor %}</table></div>
 {% endblock %}

@@ -48,13 +48,12 @@ def test_transaction_details_show_synced_amounts_on_desktop_and_mobile(client, s
                 assert page.locator('.receipt-mobile-line').get_by_text('Tax: 12.33').is_visible()
                 page.locator('.receipt-mobile-line summary').click()
             else:
-                assert page.locator('.receipt-sku').is_visible()
-            assert page.locator('.receipt-subtotal').inner_text() == '102.67'
-            assert page.locator('.receipt-tax').inner_text() == '12.33'
+                assert page.locator('.receipt-product small').inner_text() == '12345 \u00b7 SKU-123'    # barcode and SKU sit under the name
+            assert page.locator('.rc-totals').get_by_text('102.67').is_visible() and page.locator('.rc-totals').get_by_text('12.33').is_visible()
             assert page.locator('.receipt-line-total').inner_text() == '115.00'
             assert page.locator('.receipt-summary').get_by_text('Cash').is_visible()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-            assert page.locator('.receipt-summary').bounding_box()['y'] > page.locator('.receipt-table').bounding_box()['y']
+            assert page.locator('.rc-totals').bounding_box()['y'] > page.locator('.receipt-table').bounding_box()['y']
             if width in (390, 1440):
                 page.screenshot(path=str(tmp_path / f'transaction-{width}.png'))
         browser.close()

@@ -23,9 +23,11 @@
 <link rel="stylesheet" href="/static/account_menu.css?v={{ asset_v('account_menu.css') }}">
 <link rel="stylesheet" href="/static/ux_refinements.css?v={{ asset_v('ux_refinements.css') }}">
 <link rel="stylesheet" href="/static/dark_fixes.css?v={{ asset_v('dark_fixes.css') }}">
+<link rel="stylesheet" href="/static/custom_select.css?v={{ asset_v('custom_select.css') }}">
+{% if can('sales.view') %}<link rel="stylesheet" href="/static/sale_toast.css?v={{ asset_v('sale_toast.css') }}">{% endif %}
 {% block page_styles %}{% endblock %}
 </head>
-<body class="rail-expanded has-mtabs">
+<body class="rail-expanded has-mtabs"{% if can('sales.view') %} data-sale-alerts{% endif %}>
 <script>(function(){try{document.body.classList.add('rail-expanded')}catch(e){/* Keep the default expanded layout. */}})();</script>
 <a class="skip-link" href="#main-content">{{ t('Skip to content') }}</a>
 {% include "_icons.html" %}
@@ -107,7 +109,6 @@
       <div class="header-actions">
       <div class="top-lang" role="group" aria-label="{{ t('Language') }}"><a href="/lang/en?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'en' }}" hreflang="en" lang="en" title="English" aria-label="English" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a><a href="/lang/zh?back={{ request.url.path|urlencode }}{{ ('?' ~ request.url.query)|urlencode if request.url.query else '' }}" class="{{ 'on' if lang == 'zh' }}" hreflang="zh" lang="zh" title="中文" aria-label="Chinese" {% if lang == 'zh' %}aria-current="true"{% endif %}>&#20013;&#25991;</a></div>
       <button type="button" class="iconbtn" id="theme-toggle" title="{{ t('Dark mode') }}" aria-label="{{ t('Toggle dark mode') }}" aria-pressed="false"><svg class="i"><use href="#i-moon"/></svg></button>
-      <button type="button" class="btn ghost print-report hide-m" data-print><svg class="i"><use href="#i-file"/></svg>{{ t('Print report') }}</button>
       <a class="iconbtn" href="/notifications" title="{{ t('Notifications') }}" aria-label="{{ t('Notifications') }}"><svg class="i"><use href="#i-bell"/></svg>{% if unread %}<b>{{ unread if unread < 100 else '99+' }}</b>{% endif %}</a>
       <details class="account-dropdown" id="account-dropdown">
       <summary class="me header-account" title="{{ t('Settings') }}"><span class="avatar" aria-hidden="true">{{ (user.full_name or user.username)[:1]|upper }}{{ ((user.full_name or '').split(' ')[1:2] or [''])[0][:1]|upper }}</span><span class="account-copy"><span class="n">{{ user.full_name or user.username }}</span>{% if (user.full_name or user.username)|lower != t(ROLE_LABELS[user.role])|lower %}<span class="r">{{ t(ROLE_LABELS[user.role]) }}</span>{% endif %}</span><svg class="i account-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
@@ -115,6 +116,7 @@
         <div class="account-menu-title">{{ t('Settings') }}</div>
         {% for title, links in nav_groups %}{% if title == 'Settings' %}{% for url, label, icon, tag in links %}<a href="{{ url }}"><svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"/></svg><span>{{ t(label) }}</span></a>{% endfor %}{% endif %}{% endfor %}
         <a class="account-password" href="/password"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><span>{{ t('Change password') }}</span></a>
+        <form novalidate method="post" action="/logout" class="account-signout-form"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit" class="account-signout"><svg class="i" aria-hidden="true"><use href="#i-logout"/></svg><span>{{ t('Sign out') }}</span></button></form>
       </nav>
       </details>
       </div>
@@ -211,6 +213,8 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
 <script src="/static/assistant_chat.js?v={{ asset_v('assistant_chat.js') }}"></script>
 <script src="/static/tabs.js?v={{ asset_v('tabs.js') }}"></script>
 <script src="/static/account_menu.js?v={{ asset_v('account_menu.js') }}"></script>
+<script src="/static/custom_select.js?v={{ asset_v('custom_select.js') }}"></script>
+{% if can('sales.view') %}<script src="/static/sale_toast.js?v={{ asset_v('sale_toast.js') }}"></script>{% endif %}
 
 {% block scripts %}{% endblock %}
 </body>
