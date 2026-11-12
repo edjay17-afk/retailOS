@@ -15,8 +15,10 @@ def test_live_sales_scope_and_updates(sync,fake,session,client):
     if row is None:
         row=SalesDay(location_id=store.id,business_date=today_local(),net_sales=0)
         session.add(row)
-    row.net_sales=1234.56;session.commit()
-    assert client.get('/dashboard/store-sales').json()['today']==1234.56
+    row.net_sales=1234.56;row.tx_count=4;session.commit()
+    got=client.get('/dashboard/store-sales').json()
+    assert got['today']==1234.56
+    assert got['tx']==4 and got['stores'][0]['tx']==4 and got['avg_basket']==308.64
     add_user(session,'no_sales','staff',[store.id]);login(client,'no_sales')
     assert client.get('/dashboard/store-sales').status_code==403
 

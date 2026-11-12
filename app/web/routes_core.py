@@ -221,8 +221,12 @@ def dashboard_store_sales(after: int | None = None, c: Ctx = Depends(need("sales
     locations = [l for l in c.locations() if l.type == "store"]
     rows = c.db.scalars(select(SalesDay).where(SalesDay.location_id.in_([l.id for l in locations] or [0]),
                                               SalesDay.business_date.in_([today, yesterday])))
+    rows = list(rows)
     amounts = {(r.location_id, r.business_date): r.net_sales for r in rows}
-    stores = [{"id": l.id, "today": amounts.get((l.id, today), 0), "yesterday": amounts.get((l.id, yesterday), 0)} for l in locations]
+    counts = {r.location_id: r.tx_count or 0 for r in rows if r.business_date == today}
+    stores = [{"id": l.id, "today": amounts.get((l.id, today), 0), "yesterday": amounts.get((l.id, yesterday), 0), "tx": counts.get(l.id, 0)} for l in locations]
+    tx_total = sum(s["tx"] for s in stores)
+    sales_total = sum(s["today"] for s in stores)
     sale = (SalesTx.location_id.in_([l.id for l in locations] or [0]), SalesTx.business_date == today, SalesTx.cancelled.is_(False), SalesTx.tx_type == "Sale")
     latest_tx = c.db.scalar(select(func.max(SalesTx.id)).where(*sale)) or 0
     names = {l.id: l.name.replace("The Daily Centro - ", "") for l in locations}
@@ -239,7 +243,8 @@ def dashboard_store_sales(after: int | None = None, c: Ctx = Depends(need("sales
                       "pay": "" if not paid.get(i) else (max(paid[i], key=paid[i].get) if len(paid[i]) == 1 else "Split")}
                      for i, lid, total in found]
     return JSONResponse({"day": today.isoformat(), "stores": stores, "latest_tx": latest_tx, "new_sales": new_sales, "can_open": c.can("sales.detail"),
-                         "today": sum(s["today"] for s in stores), "yesterday": sum(s["yesterday"] for s in stores)},
+                         "today": sales_total, "yesterday": sum(s["yesterday"] for s in stores),
+                         "tx": tx_total, "avg_basket": round(sales_total / tx_total, 2) if tx_total else 0},
                         headers={"Cache-Control": "no-store"})
 
 

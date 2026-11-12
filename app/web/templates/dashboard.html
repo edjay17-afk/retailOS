@@ -26,8 +26,8 @@
 
   <section class="lv-t">
     <div class="lv-k"><i style="background:var(--primary)"></i>{{ t('Transactions today') }}</div>
-    <div class="lv-v">{{ stat.tx|num(0) }}</div>
-    <div class="lv-s">{{ t('Average basket') }} PHP {{ stat.avg_basket|money }}</div>
+    <div class="lv-v" id="live-tx-today">{{ stat.tx|num(0) }}</div>
+    <div class="lv-s">{{ t('Average basket') }} PHP <span id="live-avg-basket">{{ stat.avg_basket|money }}</span></div>
     {% if stat.hourly %}
     <div class="hv lv-hours" data-prefix="" data-suffix=" {{ t('transactions') }}" role="group" aria-label="{{ t('Transactions per hour today') }}">
       {% for h in stat.hourly %}<span class="hv-bar{{ ' peak' if h.peak else '' }}" tabindex="0" role="img" style="--h:{{ h.pct }}%;--i:{{ loop.index0 }}" data-label="{{ h.label }}" data-amount="{{ h.n }}" aria-label="{{ h.label }}: {{ h.n }} {{ t('transactions') }}"></span>{% endfor %}
@@ -79,7 +79,7 @@
         <div class="hv-tip" hidden><b></b><span></span></div>
       </div>
       <div class="lv-share"><i style="width:{{ s.share }}%"></i></div>
-      <div class="lv-sharel"><span>{{ s.share }}% {{ t("of today's sales") }}</span><span>{{ s.tx|num(0) }} {{ t('transactions') }}</span></div>
+      <div class="lv-sharel"><span>{{ s.share }}% {{ t("of today's sales") }}</span><span><span class="store-tx">{{ s.tx|num(0) }}</span> {{ t('transactions') }}</span></div>
       {% else %}
       {% if s.closed %}<div class="b-big b-none">{{ t('Store closed') }}</div><p class="b-y">{{ t('No sales are expected here.') }}</p>
       {% else %}<div class="b-big b-none">{{ t('No sales data') }}</div><p class="b-y">{{ t('Not available from StoreHub yet') }}</p>
