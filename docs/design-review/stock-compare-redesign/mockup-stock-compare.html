@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Stock Compare Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --blue-ring: #bfdbfe;
+    --red: #dc2626;
+    --red-ink: #b91c1c;
+    --red-soft: #fef2f2;
+    --green: #16a34a;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sh: 0 1px 2px rgba(15,23,42,.05);
+    --sh-lg: 0 18px 42px rgba(15,23,42,.14);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --surface3: #1e293b;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --line2: #334155;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.15);
+    --blue-ring: rgba(59,130,246,.35);
+    --red: #f87171;
+    --red-ink: #fca5a5;
+    --red-soft: rgba(248,113,113,.14);
+    --green: #22c55e;
+    --sh: 0 1px 3px rgba(0,0,0,.35);
+    --sh-lg: 0 22px 48px rgba(0,0,0,.6);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Preview Studio Bar */
+  .studio {
+    position: sticky; top: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 10px 24px; background: var(--ink); color: #fff; font-size: 12px;
+  }
+  html[data-theme="dark"] .studio { background: #06080d; border-bottom: 1px solid var(--line); }
+  .studio-l { display: flex; align-items: center; gap: 10px; }
+  .studio-badge { background: var(--blue); color: #fff; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: .04em; }
+  .studio-r { display: flex; align-items: center; gap: 8px; }
+  .st-btn {
+    border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff;
+    font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 7px; cursor: pointer;
+  }
+  .st-btn.on { background: #fff; color: #0f172a; border-color: #fff; font-weight: 700; }
+
+  /* App Shell */
+  .app { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: calc(100vh - 42px); }
+  @media (max-width: 1024px) { .app { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+  /* Sidebar (Context) */
+  .sidebar {
+    background: var(--surface); border-right: 1px solid var(--line);
+    padding: 18px 12px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .sb-brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 18px; }
+  .sb-mark { width: 38px; height: 38px; border-radius: 11px; background: var(--blue); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+  .sb-brand b { display: block; font-size: 16px; font-weight: 780; letter-spacing: -0.02em; }
+  .sb-brand small { display: block; font-size: 11.5px; color: var(--mute); margin-top: 2px; }
+  .sb-sec { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mute2); padding: 12px 10px 4px; }
+  .sb-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px;
+    font-size: 13.5px; font-weight: 600; color: var(--ink2); text-decoration: none;
+  }
+  .sb-row.on { background: var(--blue); color: #fff; font-weight: 700; }
+  .sb-cnt { margin-left: auto; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; background: var(--surface3); color: var(--mute); }
+  .sb-row.on .sb-cnt { background: rgba(255,255,255,.22); color: #fff; }
+
+  /* Main Area */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    height: 60px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .pos-sw { display: inline-flex; padding: 3px; border-radius: 11px; background: var(--surface2); border: 1px solid var(--line); gap: 2px; }
+  .pos-sw span { font-size: 13px; font-weight: 650; padding: 6px 13px; border-radius: 8px; color: var(--mute); }
+  .pos-sw span.on { background: var(--surface); color: var(--ink); font-weight: 750; box-shadow: var(--sh); }
+  .tb-actions { display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 650; color: var(--ink2); }
+  .tb-av { width: 28px; height: 28px; border-radius: 99px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 750; }
+
+  .content { max-width: 1480px; width: 100%; margin: 0 auto; padding: 20px 28px 64px; }
+
+  /* =========================================================
+     1. PAGE HEADER + INLINE MODE SWITCH
+     ========================================================= */
+  .sc-head {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .sc-head-l h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.12; }
+  .sc-sub {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 5px; font-size: 12.5px; color: var(--mute);
+  }
+  .sc-sync-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 9px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 11.5px; font-weight: 600; color: var(--ink2);
+  }
+  .sc-sync-pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  .sc-head-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sc-mode-seg {
+    display: inline-flex; align-items: center; padding: 3px; height: 36px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; gap: 2px;
+  }
+  .sc-mode-seg button {
+    height: 28px; padding: 0 11px; border: 0; border-radius: 7px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 12px; font-weight: 650;
+    cursor: pointer; white-space: nowrap;
+  }
+  .sc-mode-seg button.on {
+    background: var(--blue-soft); color: var(--blue-ink); font-weight: 750;
+  }
+  .sc-btn {
+    height: 36px; padding: 0 12px; border-radius: 9px;
+    border: 1px solid var(--line2); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: 12.5px; font-weight: 650; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .sc-btn:hover { background: var(--surface2); }
+  .sc-btn.pri { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .sc-btn.pri:hover { opacity: .94; }
+
+  .est-banner {
+    display: none; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 12px; padding: 9px 14px; border-radius: 10px;
+    background: var(--blue-soft); border: 1px solid var(--blue-ring);
+    color: var(--blue-ink); font-size: 12px; font-weight: 600;
+  }
+  .est-banner.show { display: flex; }
+
+  /* =========================================================
+     2. LOCATION STOCK HEALTH STRIP (4 Store/WH Cards)
+     ========================================================= */
+  .loc-grid {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 1100px) { .loc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .loc-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 13px;
+    padding: 13px 15px; box-shadow: var(--sh); cursor: pointer;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .loc-card:hover { border-color: var(--line2); }
+  .loc-card.active {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-soft);
+  }
+  .loc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .loc-name { font-size: 14.5px; font-weight: 780; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
+  .loc-tag {
+    font-size: 10.5px; font-weight: 650; padding: 2px 7px; border-radius: 99px;
+    background: var(--surface2); border: 1px solid var(--line); color: var(--mute);
+  }
+  .loc-tag.wh { color: var(--blue-ink); background: var(--blue-soft); border-color: transparent; }
+
+  .loc-kpi-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .loc-big { font-size: 24px; font-weight: 850; letter-spacing: -0.03em; line-height: 1; }
+  .loc-big small { font-size: 12px; font-weight: 600; color: var(--mute); margin-left: 5px; letter-spacing: 0; }
+  .loc-pct { font-size: 12px; font-weight: 750; color: var(--ink2); }
+
+  /* Restrained 3-segment bar: Slate (In stock), Light Slate (Zero/Low), Red (Negative / Active Out) */
+  .loc-bar {
+    display: flex; height: 5px; border-radius: 99px; overflow: hidden; gap: 2px; background: var(--surface3);
+  }
+  .loc-bar i { display: block; height: 100%; }
+  .loc-bar .b-ok { background: var(--mute); }
+  .loc-bar .b-zero { background: var(--line2); }
+  .loc-bar .b-bad { background: var(--red); opacity: .85; }
+
+  .loc-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding-top: 7px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--mute); font-weight: 550;
+  }
+  .loc-stat-group { display: flex; align-items: center; gap: 10px; }
+  .loc-stat b { color: var(--ink); font-weight: 700; }
+  .loc-stat.bad b { color: var(--red); font-weight: 750; }
+  .loc-send-link {
+    font-size: 11.5px; font-weight: 700; color: var(--blue-ink); text-decoration: none;
+    white-space: nowrap;
+  }
+  .loc-send-link:hover { text-decoration: underline; }
+
+  /* =========================================================
+     3. INSTRUMENT FILTER BAR (Status Chips + Search + Selects)
+     ========================================================= */
+  .sc-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 7px 9px; margin-bottom: 12px; box-shadow: var(--sh);
+  }
+  .sc-chips { display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; }
+  .sc-chip {
+    height: 30px; padding: 0 8px; border-radius: 7px; border: 1px solid transparent;
+    background: transparent; color: var(--mute); font: inherit; font-size: 11.5px; font-weight: 650;
+    display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;
+  }
+  .sc-chip:hover { background: var(--surface2); color: var(--ink); }
+  .sc-chip b {
+    font-size: 10.5px; font-weight: 700; padding: 1px 5px; border-radius: 99px;
+    background: var(--surface3); color: var(--ink2);
+  }
+  .sc-chip.on {
+    background: var(--ink); color: var(--surface); font-weight: 700;
+  }
+  .sc-chip.on b { background: rgba(255,255,255,.2); color: var(--surface); }
+  .sc-chip .dot-red { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+  .sc-chip .dot-blue { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+
+  .sc-inputs { display: flex; align-items: center; gap: 6px; justify-content: flex-end; flex-shrink: 0; }
+  .sc-search {
+    position: relative; width: 190px;
+    display: flex; align-items: center;
+  }
+  .sc-search svg { position: absolute; left: 9px; width: 13px; height: 13px; color: var(--mute2); pointer-events: none; }
+  .sc-search input {
+    width: 100%; height: 30px; padding: 0 9px 0 28px;
+    border: 1px solid var(--line2); border-radius: 7px;
+    background: var(--surface2); color: var(--ink); font: inherit; font-size: 11.5px;
+    outline: none;
+  }
+  .sc-search input:focus { border-color: var(--blue); background: var(--surface); }
+  .sc-sel {
+    height: 30px; padding: 0 7px; border: 1px solid var(--line2); border-radius: 7px;
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 11.5px; font-weight: 600;
+  }
+
+  /* =========================================================
+     4. COMPARISON MATRIX TABLE
+     ========================================================= */
+  .sc-table-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--sh); overflow: hidden;
+  }
+  table.sc-mat { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.sc-mat th {
+    padding: 11px 14px; border-bottom: 1px solid var(--line);
+    background: var(--surface2); color: var(--mute);
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    text-align: right; white-space: nowrap;
+  }
+  table.sc-mat th.col-prod { text-align: left; width: 31%; }
+  table.sc-mat th.col-wh {
+    background: color-mix(in srgb, var(--blue-soft) 55%, var(--surface2));
+    border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+    color: var(--ink);
+  }
+  table.sc-mat th.col-act { width: 168px; }
+  table.sc-mat th small {
+    display: block; font-size: 9.5px; font-weight: 600; color: var(--mute2);
+    text-transform: none; letter-spacing: 0; margin-top: 1px;
+  }
+
+  table.sc-mat tbody tr { cursor: pointer; transition: background .12s; }
+  table.sc-mat tbody tr:hover { background: var(--surface2); }
+  table.sc-mat td {
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    vertical-align: middle; text-align: right;
+  }
+  table.sc-mat tbody tr:last-child td { border-bottom: 0; }
+  table.sc-mat td.col-prod { text-align: left; }
+  table.sc-mat td.col-wh {
+    background: color-mix(in srgb, var(--blue-soft) 28%, transparent);
+    border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+  }
+
+  /* Spotlighted Store Column when a Store Card is clicked */
+  table.sc-mat th.is-focus,
+  table.sc-mat td.is-focus {
+    background: var(--blue-soft) !important;
+  }
+
+  .prod-top { display: flex; align-items: center; gap: 7px; }
+  .prod-name { font-size: 13.5px; font-weight: 700; color: var(--ink); text-decoration: none; }
+  .prod-vel {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--mute); background: var(--surface3);
+    padding: 1px 6px; border-radius: 5px;
+  }
+  .prod-meta {
+    font-family: var(--mono); font-size: 11px; color: var(--mute); margin-top: 2px;
+  }
+
+  /* Stock Cell Anatomy */
+  .cell-box {
+    display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px;
+    padding: 3px 7px; border-radius: 7px; min-width: 64px;
+  }
+  .cell-qty { font-size: 14.5px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); line-height: 1.15; }
+  .cell-sub {
+    font-family: var(--mono); font-size: 10px; font-weight: 550; color: var(--mute);
+    white-space: nowrap;
+  }
+  .cell-sub .po { color: var(--blue-ink); font-weight: 700; }
+
+  /* Restrained Alert Levels (Red only for genuine Negative / Active Out) */
+  .cell-box.lv-neg {
+    background: var(--red-soft);
+  }
+  .cell-box.lv-neg .cell-qty,
+  .cell-box.lv-neg .cell-sub { color: var(--red-ink); font-weight: 800; }
+
+  .cell-box.lv-out .cell-qty { color: var(--red); }
+  .cell-box.lv-out .cell-sub { color: var(--red); font-weight: 650; }
+
+  .cell-box.lv-low .cell-qty { color: var(--ink); }
+  .cell-box.lv-low .cell-sub { color: var(--ink2); font-weight: 700; }
+
+  .cell-box.lv-zero .cell-qty { color: var(--mute2); font-weight: 600; }
+
+  /* Next Step Action Pills (Low-color discipline) */
+  .act-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 26px; padding: 0 10px; border-radius: 7px;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap; text-decoration: none;
+  }
+  .act-pill.send {
+    background: var(--blue-soft); color: var(--blue-ink); border: 1px solid var(--blue-ring);
+  }
+  .act-pill.count {
+    background: var(--red-soft); color: var(--red-ink); border: 1px solid transparent;
+  }
+  .act-pill.reorder {
+    background: var(--surface2); color: var(--ink2); border: 1px solid var(--line2);
+  }
+  .act-pill.ok {
+    background: transparent; color: var(--mute); font-weight: 600;
+  }
+
+  .sc-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--surface2); border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--mute);
+  }
+  .sc-pager { display: flex; align-items: center; gap: 8px; }
+
+  /* =========================================================
+     5. SLIDE-OVER PRODUCT STOCK & TRANSFER DRAWER
+     ========================================================= */
+  .drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.28); z-index: 70;
+    display: none; justify-content: flex-end;
+  }
+  .drawer-backdrop.open { display: flex; }
+  .drawer {
+    width: 430px; max-width: 100%; height: 100%;
+    background: var(--surface); border-left: 1px solid var(--line);
+    box-shadow: var(--sh-lg); display: flex; flex-direction: column;
+  }
+  .dr-head {
+    padding: 18px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .dr-head small { font-family: var(--mono); font-size: 11px; color: var(--mute); display: block; }
+  .dr-head h3 { margin: 3px 0 0; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+  .dr-close {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface2); color: var(--mute); cursor: pointer; font-size: 16px;
+  }
+  .dr-body { padding: 18px 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .dr-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .dr-stat {
+    background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  }
+  .dr-stat small { font-size: 10.5px; color: var(--mute); display: block; }
+  .dr-stat b { font-size: 16px; font-weight: 800; display: block; margin-top: 2px; }
+  .dr-locs { display: flex; flex-direction: column; gap: 8px; }
+  .dr-loc-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+  }
+  .dr-loc-row b { font-size: 13.5px; display: block; }
+  .dr-loc-row small { font-size: 11.5px; color: var(--mute); }
+  .dr-loc-r { text-align: right; }
+  .dr-loc-r strong { font-size: 15px; font-weight: 800; display: block; }
+  .dr-foot {
+    padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface2);
+    display: flex; gap: 8px;
+  }
+  .dr-foot .sc-btn { flex: 1; justify-content: center; }
+</style>
+</head>
+<body>
+
+<header class="studio">
+  <div class="studio-l">
+    <span class="studio-badge">Mockup Preview</span>
+    <span><b>Stock Compare Redesign</b> — Click any store card to spotlight its column, click any product row to open the transfer drawer, or toggle Actual / Estimated stock</span>
+  </div>
+  <div class="studio-r">
+    <button type="button" class="st-btn" onclick="toggleDrawer(true)">Open Product Drawer</button>
+    <button type="button" class="st-btn on" id="btn-light" onclick="setTheme('light')">Light</button>
+    <button type="button" class="st-btn" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <span class="sb-mark">R</span>
+      <div><b>Retail OS</b><small>The Daily Centro</small></div>
+    </div>
+    <a class="sb-row" href="javascript:void(0)">Today</a>
+    <div class="sb-sec">Run the stores</div>
+    <a class="sb-row" href="javascript:void(0)">Problems <span class="sb-cnt">92</span></a>
+    <a class="sb-row" href="javascript:void(0)">Inspections</a>
+    <a class="sb-row" href="javascript:void(0)">Permits</a>
+    <a class="sb-row" href="javascript:void(0)">Planogram</a>
+    <div class="sb-sec">Stock</div>
+    <a class="sb-row on" href="javascript:void(0)">Inventory <span class="sb-cnt">809</span></a>
+    <a class="sb-row" href="javascript:void(0)">Transfers</a>
+    <a class="sb-row" href="javascript:void(0)">Purchasing <span class="sb-cnt">13</span></a>
+    <a class="sb-row" href="javascript:void(0)">Auto replenishment <span class="sb-cnt">312</span></a>
+    <div class="sb-sec">Insight</div>
+    <a class="sb-row" href="javascript:void(0)">Sales</a>
+    <a class="sb-row" href="javascript:void(0)">Team</a>
+    <a class="sb-row" href="javascript:void(0)">Settings</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="pos-sw">
+        <span class="on">Daily Centro</span>
+        <span>Steamy Co.</span>
+        <span>Publico</span>
+        <span>SipStop</span>
+        <span>7-Eleven</span>
+      </div>
+      <div class="tb-actions">
+        <span>EN / 中文</span>
+        <span class="tb-av">A</span>
+        <span>Admin</span>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- 1. Executive Header + Mode Switch + Actions -->
+      <div class="sc-head">
+        <div class="sc-head-l">
+          <h1>Stock compare</h1>
+          <div class="sc-sub">
+            <span>Every store &amp; warehouse side by side</span>
+            <span>·</span>
+            <span class="sc-sync-pill"><i></i> Synced 2m ago · 809 active products</span>
+          </div>
+        </div>
+        <div class="sc-head-r">
+          <div class="sc-mode-seg" role="tablist">
+            <button type="button" class="on" onclick="setEst(false, this)">Actual POS stock</button>
+            <button type="button" onclick="setEst(true, this)">Estimated (+PO &amp; transfers)</button>
+          </div>
+          <a class="sc-btn" href="javascript:void(0)">List view</a>
+          <a class="sc-btn" href="javascript:void(0)">Export CSV</a>
+          <a class="sc-btn" href="javascript:void(0)">Cycle counts</a>
+          <a class="sc-btn pri" href="javascript:void(0)">Move from warehouse (99) &#8594;</a>
+        </div>
+      </div>
+
+      <div class="est-banner" id="est-banner">
+        <span><b>Estimated stock mode active:</b> Includes open purchase orders and in-transit warehouse transfers as if completed. StoreHub POS is not modified.</span>
+        <span style="font-family:var(--mono);font-size:11px">13 open POs · 4 open transfers</span>
+      </div>
+
+      <!-- 2. Location Stock Health Strip -->
+      <div class="loc-grid">
+        <div class="loc-card" onclick="focusCol(1, this)">
+          <div class="loc-top">
+            <span class="loc-name">Warehouse</span>
+            <span class="loc-tag wh">Central hub</span>
+          </div>
+          <div class="loc-kpi-row">
+            <div class="loc-big">742<small>in stock</small></div>
+            <span class="loc-pct">92% stocked</span>
+          </div>
+          <div class="loc-bar">
+            <i class="b-ok" style="flex:742"></i>
+            <i class="b-zero" style="flex:65"></i>
+            <i class="b-bad" style="flex:2"></i>
+          </div>
+          <div class="loc-foot">
+            <div class="loc-stat-group">
+              <span class="loc-stat bad"><b>2</b> neg</span>
+              <span class="loc-stat"><b>65</b> zero</span>
+            </div>
+            <span>Sends to 3 branches</span>
+          </div>
+        </div>
+
+        <div class="loc-card" onclick="focusCol(2, this)">
+          <div class="loc-top">
+            <span class="loc-name">Bantayan</span>
+            <span class="loc-tag">Open</span>
+          </div>
+          <div class="loc-kpi-row">
+            <div class="loc-big">486<small>in stock</small></div>
+            <span class="loc-pct">68% stocked</span>
+          </div>
+          <div class="loc-bar">
+            <i class="b-ok" style="flex:486"></i>
+            <i class="b-zero" style="flex:120"></i>
+            <i class="b-bad" style="flex:203"></i>
+          </div>
+          <div class="loc-foot">
+            <div class="loc-stat-group">
+              <span class="loc-stat bad"><b>8</b> neg</span>
+              <span class="loc-stat bad"><b>315</b> out</span>
+            </div>
+            <a class="loc-send-link" href="javascript:void(0)" onclick="event.stopPropagation()">64 can send &#8594;</a>
+          </div>
+        </div>
+
+        <div class="loc-card" onclick="focusCol(3, this)">
+          <div class="loc-top">
+            <span class="loc-name">Getafe</span>
+            <span class="loc-tag">Open</span>
+          </div>
+          <div class="loc-kpi-row">
+            <div class="loc-big">590<small>in stock</small></div>
+            <span class="loc-pct">77% stocked</span>
+          </div>
+          <div class="loc-bar">
+            <i class="b-ok" style="flex:590"></i>
+            <i class="b-zero" style="flex:95"></i>
+            <i class="b-bad" style="flex:124"></i>
+          </div>
+          <div class="loc-foot">
+            <div class="loc-stat-group">
+              <span class="loc-stat bad"><b>4</b> neg</span>
+              <span class="loc-stat bad"><b>215</b> out</span>
+            </div>
+            <a class="loc-send-link" href="javascript:void(0)" onclick="event.stopPropagation()">35 can send &#8594;</a>
+          </div>
+        </div>
+
+        <div class="loc-card" onclick="focusCol(4, this)">
+          <div class="loc-top">
+            <span class="loc-name">Tabunoc</span>
+            <span class="loc-tag">Closed</span>
+          </div>
+          <div class="loc-kpi-row">
+            <div class="loc-big">412<small>in stock</small></div>
+            <span class="loc-pct">51% stocked</span>
+          </div>
+          <div class="loc-bar">
+            <i class="b-ok" style="flex:412"></i>
+            <i class="b-zero" style="flex:397"></i>
+          </div>
+          <div class="loc-foot">
+            <div class="loc-stat-group">
+              <span class="loc-stat"><b>0</b> neg</span>
+              <span class="loc-stat"><b>397</b> zero</span>
+            </div>
+            <span>Transfers paused</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Single-Row Instrument Filter Bar -->
+      <div class="sc-toolbar">
+        <div class="sc-chips" role="tablist">
+          <button type="button" class="sc-chip on" onclick="filterChip('all', this)">All <b>809</b></button>
+          <button type="button" class="sc-chip" onclick="filterChip('neg', this)"><i class="dot-red"></i>Negative <b>12</b></button>
+          <button type="button" class="sc-chip" onclick="filterChip('out', this)">Zero / Out <b>542</b></button>
+          <button type="button" class="sc-chip" onclick="filterChip('low', this)">Low (&lt;3d) <b>28</b></button>
+          <button type="button" class="sc-chip" onclick="filterChip('send', this)"><i class="dot-blue"></i>WH can send <b>99</b></button>
+        </div>
+        <div class="sc-inputs">
+          <label class="sc-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" placeholder="Search product or SKU…" oninput="filterSearch(this.value)">
+          </label>
+          <select class="sc-sel" aria-label="Store">
+            <option>All locations</option>
+            <option>Warehouse</option>
+            <option>Bantayan</option>
+            <option>Getafe</option>
+            <option>Tabunoc</option>
+          </select>
+          <select class="sc-sel" aria-label="Category">
+            <option>All categories</option>
+            <option>Dairy &amp; Chilled</option>
+            <option>Beverages</option>
+            <option>Snacks &amp; Chips</option>
+            <option>Personal Care</option>
+          </select>
+          <select class="sc-sel" aria-label="Sort">
+            <option>Sort: Attention first</option>
+            <option>Sort: Velocity (fast → slow)</option>
+            <option>Sort: Name (A–Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 4. High-Density Comparison Matrix -->
+      <div class="sc-table-card">
+        <table class="sc-mat" id="sc-mat">
+          <thead>
+            <tr>
+              <th class="col-prod">Product · SKU · 30d Velocity</th>
+              <th class="col-wh" data-col="1">Warehouse<small>Central stock</small></th>
+              <th data-col="2">Bantayan<small>Open · 68%</small></th>
+              <th data-col="3">Getafe<small>Open · 77%</small></th>
+              <th data-col="4">Tabunoc<small>Closed</small></th>
+              <th>Total<small>All locations</small></th>
+              <th class="col-act">Next step<small>Recommended action</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: Out of stock in Bantayan, WH has plenty -> Send from WH -->
+            <tr data-status="out send" onclick="toggleDrawer(true)">
+              <td class="col-prod">
+                <div class="prod-top">
+                  <span class="prod-name">Yakult Cultured Milk 5-Pack</span>
+                  <span class="prod-vel">13.9/day</span>
+                </div>
+                <div class="prod-meta">480009211042 · Dairy &amp; Chilled</div>
+              </td>
+              <td class="col-wh" data-col="1">
+                <div class="cell-box"><span class="cell-qty">140</span><span class="cell-sub"><span class="po">+60 PO</span></span></div>
+              </td>
+              <td data-col="2">
+                <div class="cell-box lv-out"><span class="cell-qty">0</span><span class="cell-sub">Out · 8.4/d</span></div>
+              </td>
+              <td data-col="3">
+                <div class="cell-box lv-low"><span class="cell-qty">9</span><span class="cell-sub">1.6d left</span></div>
+              </td>
+              <td data-col="4">
+                <div class="cell-box lv-zero"><span class="cell-qty">0</span><span class="cell-sub">Closed</span></div>
+              </td>
+              <td>
+                <div class="cell-box"><span class="cell-qty">149</span><span class="cell-sub">+60 incoming</span></div>
+              </td>
+              <td><span class="act-pill send">Send from WH &#8594;</span></td>
+            </tr>
+
+            <!-- Row 2: Negative stock in Bantayan -> Check count -->
+            <tr data-status="neg" onclick="toggleDrawer(true)">
+              <td class="col-prod">
+                <div class="prod-top">
+                  <span class="prod-name">Lucky Me! Pancit Canton Calamansi 60g</span>
+                  <span class="prod-vel">9.2/day</span>
+                </div>
+                <div class="prod-meta">480777027001 · Instant Noodles</div>
+              </td>
+              <td class="col-wh" data-col="1">
+                <div class="cell-box"><span class="cell-qty">216</span><span class="cell-sub">Ready</span></div>
+              </td>
+              <td data-col="2">
+                <div class="cell-box lv-neg"><span class="cell-qty">-4</span><span class="cell-sub">Negative!</span></div>
+              </td>
+              <td data-col="3">
+                <div class="cell-box"><span class="cell-qty">42</span><span class="cell-sub">8.1d left</span></div>
+              </td>
+              <td data-col="4">
+                <div class="cell-box"><span class="cell-qty">12</span><span class="cell-sub">—</span></div>
+              </td>
+              <td>
+                <div class="cell-box"><span class="cell-qty">266</span><span class="cell-sub">Across 4 locs</span></div>
+              </td>
+              <td><span class="act-pill count">Check count</span></td>
+            </tr>
+
+            <!-- Row 3: Zero in WH and stores -> Reorder -->
+            <tr data-status="out" onclick="toggleDrawer(true)">
+              <td class="col-prod">
+                <div class="prod-top">
+                  <span class="prod-name">Coca-Cola Zero Sugar 500ml PET</span>
+                  <span class="prod-vel">7.5/day</span>
+                </div>
+                <div class="prod-meta">544900013180 · Beverages</div>
+              </td>
+              <td class="col-wh" data-col="1">
+                <div class="cell-box lv-out"><span class="cell-qty">0</span><span class="cell-sub"><span class="po">+48 PO</span></span></div>
+              </td>
+              <td data-col="2">
+                <div class="cell-box lv-out"><span class="cell-qty">0</span><span class="cell-sub">Out · 3.2/d</span></div>
+              </td>
+              <td data-col="3">
+                <div class="cell-box lv-out"><span class="cell-qty">0</span><span class="cell-sub">Out · 4.3/d</span></div>
+              </td>
+              <td data-col="4">
+                <div class="cell-box lv-zero"><span class="cell-qty">0</span><span class="cell-sub">Closed</span></div>
+              </td>
+              <td>
+                <div class="cell-box lv-out"><span class="cell-qty">0</span><span class="cell-sub">+48 on PO</span></div>
+              </td>
+              <td><span class="act-pill reorder">Reorder PO</span></td>
+            </tr>
+
+            <!-- Row 4: Low cover in Getafe, WH can send -->
+            <tr data-status="low send" onclick="toggleDrawer(true)">
+              <td class="col-prod">
+                <div class="prod-top">
+                  <span class="prod-name">Nestlé Bear Brand Sterilized Milk 200ml</span>
+                  <span class="prod-vel">6.4/day</span>
+                </div>
+                <div class="prod-meta">480036139080 · Dairy &amp; Chilled</div>
+              </td>
+              <td class="col-wh" data-col="1">
+                <div class="cell-box"><span class="cell-qty">96</span><span class="cell-sub">Ready</span></div>
+              </td>
+              <td data-col="2">
+                <div class="cell-box"><span class="cell-qty">28</span><span class="cell-sub">9.3d left</span></div>
+              </td>
+              <td data-col="3">
+                <div class="cell-box lv-low"><span class="cell-qty">5</span><span class="cell-sub">1.4d left</span></div>
+              </td>
+              <td data-col="4">
+                <div class="cell-box"><span class="cell-qty">8</span><span class="cell-sub">—</span></div>
+              </td>
+              <td>
+                <div class="cell-box"><span class="cell-qty">137</span><span class="cell-sub">Healthy total</span></div>
+              </td>
+              <td><span class="act-pill send">Send from WH &#8594;</span></td>
+            </tr>
+
+            <!-- Row 5: Healthy across all locations -->
+            <tr data-status="ok" onclick="toggleDrawer(true)">
+              <td class="col-prod">
+                <div class="prod-top">
+                  <span class="prod-name">Piattos Cheese Potato Crisps 85g</span>
+                  <span class="prod-vel">5.1/day</span>
+                </div>
+                <div class="prod-meta">480001664480 · Snacks &amp; Chips</div>
+              </td>
+              <td class="col-wh" data-col="1">
+                <div class="cell-box"><span class="cell-qty">180</span><span class="cell-sub">Ready</span></div>
+              </td>
+              <td data-col="2">
+                <div class="cell-box"><span class="cell-qty">36</span><span class="cell-sub">14d left</span></div>
+              </td>
+              <td data-col="3">
+                <div class="cell-box"><span class="cell-qty">44</span><span class="cell-sub">17d left</span></div>
+              </td>
+              <td data-col="4">
+                <div class="cell-box"><span class="cell-qty">19</span><span class="cell-sub">—</span></div>
+              </td>
+              <td>
+                <div class="cell-box"><span class="cell-qty">279</span><span class="cell-sub">Stocked</span></div>
+              </td>
+              <td><span class="act-pill ok">Stocked</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="sc-foot">
+          <span>Click any cell or row to inspect branch cover, incoming purchase orders, and transfer options.</span>
+          <div class="sc-pager">
+            <span>Page 1 of 17 · 809 products</span>
+            <button type="button" class="sc-btn" style="height:28px;padding:0 10px;font-size:11.5px">Next &#8594;</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Slide-over Product Stock & Transfer Drawer -->
+<div class="drawer-backdrop" id="drawer" onclick="if(event.target===this)toggleDrawer(false)">
+  <aside class="drawer">
+    <div class="dr-head">
+      <div>
+        <small>480009211042 · DAIRY &amp; CHILLED</small>
+        <h3>Yakult Cultured Milk 5-Pack</h3>
+      </div>
+      <button type="button" class="dr-close" onclick="toggleDrawer(false)">&times;</button>
+    </div>
+    <div class="dr-body">
+      <div class="dr-summary">
+        <div class="dr-stat"><small>Total on hand</small><b>149</b></div>
+        <div class="dr-stat"><small>30d velocity</small><b>13.9 / day</b></div>
+        <div class="dr-stat"><small>Incoming PO</small><b style="color:var(--blue-ink)">+60</b></div>
+      </div>
+
+      <div class="dr-locs">
+        <div class="dr-loc-row" style="background:var(--blue-soft);border-color:var(--blue-ring)">
+          <div><b>Warehouse (Central Hub)</b><small>+60 arriving on PO-1048</small></div>
+          <div class="dr-loc-r"><strong>140 units</strong><small style="color:var(--blue-ink);font-weight:700">Can send to stores</small></div>
+        </div>
+        <div class="dr-loc-row" style="border-color:var(--red)">
+          <div><b>Bantayan</b><small>Sells 8.4/day · 0 days cover</small></div>
+          <div class="dr-loc-r"><strong style="color:var(--red)">0 units</strong><small style="color:var(--red);font-weight:700">Suggest send 48</small></div>
+        </div>
+        <div class="dr-loc-row">
+          <div><b>Getafe</b><small>Sells 5.5/day · 1.6 days cover</small></div>
+          <div class="dr-loc-r"><strong>9 units</strong><small style="color:var(--blue-ink);font-weight:700">Suggest send 24</small></div>
+        </div>
+        <div class="dr-loc-row">
+          <div><b>Tabunoc</b><small>Store closed</small></div>
+          <div class="dr-loc-r"><strong style="color:var(--mute)">0 units</strong><small>—</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="dr-foot">
+      <a class="sc-btn" href="javascript:void(0)">Product sales &#8599;</a>
+      <a class="sc-btn pri" href="javascript:void(0)">Send 72 from Warehouse &#8594;</a>
+    </div>
+  </aside>
+</div>
+
+<script>
+function setTheme(th) {
+  document.documentElement.dataset.theme = th;
+  document.getElementById('btn-light').classList.toggle('on', th === 'light');
+  document.getElementById('btn-dark').classList.toggle('on', th === 'dark');
+}
+function setEst(on, btn) {
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+  document.getElementById('est-banner').classList.toggle('show', on);
+}
+function focusCol(colIdx, card) {
+  const already = card.classList.contains('active');
+  document.querySelectorAll('.loc-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#sc-mat [data-col]').forEach(el => el.classList.remove('is-focus'));
+  if (!already) {
+    card.classList.add('active');
+    document.querySelectorAll(`#sc-mat [data-col="${colIdx}"]`).forEach(el => el.classList.add('is-focus'));
+  }
+}
+function filterChip(key, btn) {
+  btn.parentElement.querySelectorAll('.sc-chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#sc-mat tbody tr').forEach(tr => {
+    const st = tr.dataset.status || '';
+    tr.style.display = (key === 'all' || st.includes(key)) ? '' : 'none';
+  });
+}
+function filterSearch(q) {
+  const s = q.trim().toLowerCase();
+  document.querySelectorAll('#sc-mat tbody tr').forEach(tr => {
+    tr.style.display = (!s || tr.textContent.toLowerCase().includes(s)) ? '' : 'none';
+  });
+}
+function toggleDrawer(open) {
+  document.getElementById('drawer').classList.toggle('open', open);
+}
+</script>
+</body>
+</html>

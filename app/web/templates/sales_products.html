@@ -5,17 +5,21 @@
 <link rel="stylesheet" href="/static/daterange.css?v={{ asset_v('daterange.css') }}">
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&supplier=' ~ supplier %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
-<div class="page-head"><div><h1>{{ t('Sales by product') }}</h1>
-  <p class="page-desc">{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
-  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="button" data-export="csv">{{ t('Download CSV') }}</button><button class="sec sm" type="button" data-export="detailed">{{ t('Detailed CSV') }}</button></div></div>
+<div class="page-head sp-head"><div><h1>{{ t('Sales by product') }}</h1>
+  <div class="sp-meta">
+    <span><i class="sp-syncdot"></i> {{ t('Last synced') }} {{ fr.last_success|ago }}</span> &middot;
+    <span>{% if custom %}{{ frm }} &rarr; {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %}</span> &middot;
+    <span>{{ t('Cancelled sales excluded, returns subtracted') }}</span>
+    <span class="sp-info" tabindex="0" role="note" data-tip="{{ t('What sold, how much and for how much, taken from the items on every StoreHub sale. Cancelled sales are excluded and returns are subtracted.') }}" aria-label="{{ t('Product sales info') }}">i</span>
+  </div></div>
+  <div class="row sp-actions"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><button class="sec sm" type="button" data-export="csv"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>{{ t('Download CSV') }}</button><button class="pri sm" type="button" data-export="detailed"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>{{ t('Detailed CSV') }}</button></div></div>
 
 <form id="product-sales-filters" data-mf="1" novalidate class="filters product-sales-filters" method="get" action="/sales/products">
-  {# search first: one big bar; Enter searches #}
-  <div class="psf-search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="product-sales-search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}" aria-label="{{ t('Search') }}"><button type="submit">{{ t('Search') }}</button>
-  </div>
-  <div class="psf-row">
+  <div class="psf-top">
+    <div class="psf-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="product-sales-search" name="q" value="{{ q }}" placeholder="{{ t('Name, barcode or SKU') }}" aria-label="{{ t('Search') }}"><button type="submit">{{ t('Search') }}</button>
+    </div>
     {% set keep = 'loc=' ~ loc ~ '&q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&supplier=' ~ supplier %}
     <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
     <div class="psf-seg" role="group" aria-label="{{ t('Period') }}">
@@ -23,6 +27,8 @@
       {% if not custom and days not in (1, 7, 14) %}<a class="on" href="?{{ keep }}&days={{ days }}">{{ days }} {{ t('days') }}</a>{% endif %}
       <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}" style="--lbl:'{{ (frm[8:10] ~ '/' ~ frm[5:7] ~ ' – ' ~ to[8:10] ~ '/' ~ to[5:7]) if custom else t('Custom') }}'" {{ 'data-on' if custom }} data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div>
     </div>
+  </div>
+  <div class="psf-row">
     {% set m = locations|selectattr('id', 'equalto', loc)|list %}<label class="psf-chip psf-filter"><span>{{ t('Location') }}</span><b class="psf-v">{{ m[0].name if loc and m else t('All') }}</b><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></label>
     {% set m = suppliers|selectattr('id', 'equalto', supplier)|list %}<label class="psf-chip psf-filter"><span>{{ t('Supplier') }}</span><b class="psf-v">{{ m[0].name if supplier and m else t('All') }}</b><select id="sales-product-supplier" name="supplier" onchange="this.form.submit()"><option value="0">{{ t('All') }}</option>{% for item in suppliers %}<option value="{{ item.id }}" {{ 'selected' if item.id == supplier }}>{{ item.name }}</option>{% endfor %}</select></label>
     <label class="psf-chip psf-filter"><span>{{ t('Category') }}</span><b class="psf-v">{{ category or t('All') }}</b><select name="category" onchange="this.form.submit()"><option value="">{{ t('All') }}</option>{% for k in cats %}<option {{ 'selected' if k == category }} value="{{ k }}">{{ k }}</option>{% endfor %}</select></label>
@@ -42,28 +48,43 @@ document.querySelectorAll('[data-export]').forEach(function (b) {
 
 <dl class="product-sales-summary" aria-label="{{ t('Sales summary') }}">
   <div class="product-sales-metric product-sales-revenue">
-    <dt>{{ t('Net sales') }}</dt><dd><span class="metric-currency">PHP</span>{{ total_net|money }}</dd>
+    <dt>{{ t('Net sales') }} &middot; {% if custom %}{{ frm }} &rarr; {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %}</dt>
+    <dd><span class="metric-currency">PHP</span>{{ total_net|money }}</dd>
+    <dd class="sp-sub">{% if days > 1 %}{{ t('Daily avg') }} <b>PHP {{ (total_net / days)|money }}</b>{% else %}{{ t('Period total') }}{% endif %}</dd>
   </div>
-  <div class="product-sales-metric"><dt>{{ t('Products sold') }}</dt><dd>{{ total|num(0) }}</dd></div>
-  <div class="product-sales-metric"><dt>{{ t('Units sold') }}</dt><dd>{{ total_units|num(0) }}</dd></div>
-  <div class="product-sales-metric"><dt>{{ t('Average per unit') }}</dt><dd>{% if total_units %}<span class="metric-currency">PHP</span>{{ (total_net / total_units)|money }}{% else %}&mdash;{% endif %}</dd></div>
+  <div class="product-sales-metric">
+    <dt>{{ t('Products sold') }}</dt>
+    <dd>{{ total|num(0) }}</dd>
+    <dd class="sp-sub">{{ t('Active SKUs with sales') }}</dd>
+  </div>
+  <div class="product-sales-metric">
+    <dt>{{ t('Units sold') }}</dt>
+    <dd>{{ total_units|num(0) }}</dd>
+    <dd class="sp-sub">{% if days > 1 %}{{ t('Avg') }} <b>{{ (total_units / days)|num(0) }}</b> {{ t('units / day') }}{% else %}{{ t('Total quantity') }}{% endif %}</dd>
+  </div>
+  <div class="product-sales-metric">
+    <dt>{{ t('Average per unit') }}</dt>
+    <dd>{% if total_units %}<span class="metric-currency">PHP</span>{{ (total_net / total_units)|money }}{% else %}&mdash;{% endif %}</dd>
+    <dd class="sp-sub">{{ t('Weighted unit price') }}</dd>
+  </div>
 </dl>
 
 {% if rows %}
 {% set mx = rows|map(attribute=2)|max %}
-<div class="tw"><table>
-  <tr><th>#</th><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Avg price') }}</th>{% if labels %}<th>{{ t('Trend') }}</th>{% endif %}</tr>
-  {% for p, units, net, ds in rows %}
-  <tr><td class="mute">{{ offset + loop.index }}</td>
-    <td><div style="font-weight:650"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days }}{% endif %}&loc={{ loc }}&list_query={{ (qs ~ '&page=' ~ page)|urlencode }}">{{ p.name }}</a></div><div class="small mute">{{ p.barcode or p.sku or '' }}{% if source_scope == 'all' or source_scope == 'loyverse' %} &middot; {{ 'StoreHub' if p.source == 'storehub' else account_labels.get(p.source_account, p.source_account|replace('LOYVERSE_TOKEN_', '')) }}{% endif %}</div></td>
-    <td class="small">{{ p.category or '' }}</td>
-    <td class="right">{{ units|num(0) if units == units|round(0) else units|num(2) }}</td>
-    <td class="right"><b>{{ net|money }}</b></td>
-    <td style="min-width:110px"><div class="bar" data-tip="{{ p.name }}: {{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}{{ t('% of net sales') }}"><i style="width:{{ (net / mx * 100)|round(1) if mx else 0 }}%"></i></div><div class="small mute">{{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}%</div></td>
-    <td class="right">{{ (net / units)|money if units else '' }}</td>
-    {% if labels %}<td>{{ sparkline(series.get(p.id, []), 90, 28, labels=labels, fmt=unit_fmt) }}</td>{% endif %}
+<div class="tw sp-table-wrap"><table class="sp-table">
+  <thead><tr><th style="width:46px">#</th><th>{{ t('Product') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Units') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Avg price') }}</th>{% if labels %}<th class="right">{{ t('Trend') }}</th>{% endif %}</tr></thead>
+  <tbody>{% for p, units, net, ds in rows %}{% set rank = offset + loop.index %}
+  <tr>
+    <td><span class="sp-rank{{ ' r' ~ rank if rank <= 3 else '' }}">{{ rank }}</span></td>
+    <td><div class="sp-prod-name"><a href="/sales/product/{{ p.id }}?{% if custom %}days=custom&frm={{ frm }}&to={{ to }}{% else %}days={{ days }}{% endif %}&loc={{ loc }}&list_query={{ (qs ~ '&page=' ~ page)|urlencode }}">{{ p.name }}</a></div><div class="sp-prod-sku">{{ p.barcode or p.sku or '' }}{% if source_scope == 'all' or source_scope == 'loyverse' %} &middot; {{ 'StoreHub' if p.source == 'storehub' else account_labels.get(p.source_account, p.source_account|replace('LOYVERSE_TOKEN_', '')) }}{% endif %}</div></td>
+    <td>{% if p.category %}<span class="sp-cat">{{ p.category }}</span>{% endif %}</td>
+    <td class="right"><b>{{ units|num(0) if units == units|round(0) else units|num(2) }}</b></td>
+    <td class="right"><b class="sp-money">{{ net|money }}</b></td>
+    <td class="sp-share-cell"><div class="sp-share-row"><div class="bar sp-share-bar" data-tip="{{ p.name }}: {{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}{{ t('% of net sales') }}"><i style="width:{{ (net / mx * 100)|round(1) if mx else 0 }}%"></i></div><span class="sp-share-pct">{{ '%.1f'|format(net / total_net * 100 if total_net else 0) }}%</span></div></td>
+    <td class="right sp-avg">{{ (net / units)|money if units else '' }}</td>
+    {% if labels %}<td class="right sp-trend">{{ sparkline(series.get(p.id, []), 90, 28, labels=labels, fmt=unit_fmt) }}</td>{% endif %}
   </tr>
-  {% endfor %}
+  {% endfor %}</tbody>
 </table></div>
 <div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page - 1 }}">{{ t('Previous') }}</a>{% endif %}
   <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + per - 1) // per) or 1 }} {{ t('· showing') }} {{ offset + 1 }}&ndash;{{ offset + rows|length }} {{ t('of') }} {{ total }} {{ t('products') }}</span>

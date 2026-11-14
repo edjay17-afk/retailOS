@@ -137,8 +137,9 @@ def new_product_list_page(lid: int, c: Ctx = Depends(need(PERM))):
     if lst.status != "saved":
         return redirect("/new-product")
     pushable = sum(1 for i in lst.items if i.status != "created" and i.price is not None)
+    batch_stats = {"created": sum(1 for i in lst.items if i.status == "created"), "failed": sum(1 for i in lst.items if i.status == "failed"), "pending": sum(1 for i in lst.items if i.status not in ("created", "failed") and i.price is not None), "excel_only": sum(1 for i in lst.items if i.status not in ("created", "failed") and i.price is None), "retail_value": sum((i.price or 0.0) * (i.qty or 0.0) for i in lst.items)}
     return render(c, "new_product_list.html", lst=lst, summary=npl.summary(lst), crumb=f"NP-{lst.id:05d}",
-                  can_push=c.can("product.push") and pushable > 0)
+                  can_push=c.can("product.push") and pushable > 0, batch_stats=batch_stats)
 
 
 @router.get("/new-product/lists/{lid}/excel")

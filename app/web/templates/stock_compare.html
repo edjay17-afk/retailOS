@@ -18,106 +18,167 @@
 })();
 </script>
 <link rel="stylesheet" href="/static/stock_compare_a.css?v={{ asset_v('stock_compare_a.css') }}">
-{% set qs = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&attention=' ~ attention ~ '&sort=' ~ sort ~ '&status=' ~ status ~ '&est=' ~ est %}
-{% set base = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&est=' ~ est %}
+{% set qs = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&attention=' ~ attention ~ '&sort=' ~ sort ~ '&status=' ~ status ~ '&est=' ~ est ~ '&loc=' ~ loc %}
+{% set base = 'q=' ~ (q|urlencode) ~ '&category=' ~ (category|urlencode) ~ '&sort=' ~ sort ~ '&est=' ~ est ~ '&loc=' ~ loc %}
+
 <div class="page-head stock-compare-head">
-  <div><h1>{{ t('Stock compare') }}</h1>
-    <p class="sync-note"><span class="page-desc">{{ t('Every store side by side') }} · </span>{{ t('Synced') }} <strong>{{ fr.last_success|ago }}</strong></p></div>
-  <div class="row">
-    <a class="btn sec" href="/inventory/compare?view=move">{{ t('Move from warehouse') }}</a>
+  <div class="sc-title-grp">
+    <div class="sc-title-row">
+      <h1>{{ t('Stock compare') }}</h1>
+      <span class="sc-sync-dot"><i></i>{{ t('Synced') }} <strong>{{ fr.last_success|ago }}</strong></span>
+    </div>
+  </div>
+  <div class="row sc-head-actions">
+    <div class="ta-seg" role="tablist" aria-label="{{ t('Stock view mode') }}">
+      <a role="tab" class="{{ 'on' if not est }}" href="?q={{ q|urlencode }}&category={{ category|urlencode }}&sort={{ sort }}&status={{ status }}&loc={{ loc }}">{{ t('StoreHub stock') }}</a>
+      <a role="tab" class="{{ 'on' if est }}" href="?q={{ q|urlencode }}&category={{ category|urlencode }}&sort={{ sort }}&status={{ status }}&loc={{ loc }}&est=1">{{ t('Estimated stock') }}</a>
+    </div>
     <a class="btn sec" href="/inventory?view=list">{{ t('List view') }}</a>
     <a class="btn sec" href="?{{ qs }}&export=csv">{{ t('Export CSV') }}</a>
-    {% if can('count.enter') %}<a class="btn sec" href="/stock-events/new?kind=write_off">{{ t('Record stock event') }}</a><a class="btn" href="/counts"><svg class="i"><use href="#i-scan"/></svg>{{ t('Stock counts') }}</a>{% endif %}
+    {% if can('count.enter') %}
+      <a class="btn sec" href="/stock-events/new?kind=write_off">{{ t('Record stock event') }}</a>
+      <a class="btn sec" href="/counts"><svg class="i"><use href="#i-scan"/></svg>{{ t('Stock counts') }}</a>
+    {% endif %}
+    <a class="btn pri" href="/inventory/compare?view=move">{{ t('Move from warehouse') }}</a>
   </div>
 </div>
 
-<div class="ta-mode"><div class="ta-seg" role="tablist"><a role="tab" class="{{ 'on' if not est }}" href="?q={{ q|urlencode }}&category={{ category|urlencode }}&sort={{ sort }}&status={{ status }}">{{ t('StoreHub stock') }}</a><a role="tab" class="{{ 'on' if est }}" href="?q={{ q|urlencode }}&category={{ category|urlencode }}&sort={{ sort }}&status={{ status }}&est=1">{{ t('Estimated stock') }}</a></div>
-{% if est %}<span class="ta-mode-note">{{ t('Estimated = StoreHub stock + open purchase orders + transfers not yet completed, as if all of them finished. Only in Retail OS; StoreHub is not changed.') }}</span>{% endif %}</div>
 <div class="ta-cards" aria-label="{{ t('Stock summary') }}">
   {% for l in locs %}{% set h = health.get(l.id) %}{% if h %}
-  <div class="ta-card">
-    <div class="ta-name">{{ short(l.name) }}{% if l.closed %} <span class="ta-closed">{{ t('Closed') }}</span>{% endif %}</div>
+  {% set total_loc = h.ok + h.zero + h.neg %}
+  {% set pct = ((h.ok * 100 / total_loc)|round|int) if total_loc else 0 %}
+  <div class="ta-card{{ ' is-wh' if l.type == 'warehouse' else '' }}{{ ' is-closed' if l.closed else '' }}">
+    <div class="ta-card-top">
+      <div class="ta-name">{{ short(l.name) }}{% if l.type == 'warehouse' %} <span class="ta-pill-badge wh">Hub</span>{% elif l.closed %} <span class="ta-pill-badge">{{ t('Closed') }}</span>{% endif %}</div>
+      <span class="ta-pct">{{ pct }}%</span>
+    </div>
     <div class="ta-big">{{ h.ok|num(0) }}<small>{{ t('in stock') }}</small></div>
-    <div class="ta-stack" role="img" aria-label="{{ h.ok }} {{ t('in stock') }}, {{ h.zero }} {{ t('zero') }}, {{ h.neg }} {{ t('negative') }}"><i class="ok" style="flex:{{ h.ok }}"></i><i class="zero" style="flex:{{ h.zero }}"></i><i class="neg" style="flex:{{ h.neg }}"></i></div>
-    <div class="ta-leg"><span><i class="d neg"></i>{{ h.neg|num(0) }} {{ t('negative') }}</span><span><i class="d zero"></i>{{ h.zero|num(0) }} {{ t('zero') }}</span></div>
-    {% if l.type == 'warehouse' %}<div class="ta-send ta-send-wh">{{ t('Sends to the stores') }}</div>
-    {% elif send_counts.get(l.id) is not none %}<a class="ta-send" href="/inventory/compare?view=move&store={{ l.id }}">{{ send_counts[l.id]|num(0) }} {{ t('can be sent from the warehouse') }}</a>{% endif %}
+    <div class="ta-stack" role="img" aria-label="{{ h.ok }} {{ t('in stock') }}, {{ h.zero }} {{ t('zero') }}, {{ h.neg }} {{ t('negative') }}">
+      <i class="{{ 'wh-ok' if l.type == 'warehouse' else 'ok' }}" style="flex:{{ h.ok }}"></i><i class="zero" style="flex:{{ h.zero }}"></i><i class="neg" style="flex:{{ h.neg }}"></i>
+    </div>
+    <div class="ta-leg">
+      <div class="ta-leg-grp">
+        <span class="{{ 'is-neg' if h.neg else '' }}"><i class="d neg"></i>{{ h.neg|num(0) }} {{ t('neg') }}</span>
+        <span><i class="d zero"></i>{{ h.zero|num(0) }} {{ t('zero') }}</span>
+      </div>
+      {% if l.type == 'warehouse' %}
+        <span class="ta-card-meta">Hub</span>
+      {% elif send_counts.get(l.id) %}
+        <a class="ta-send" href="/inventory/compare?view=move&store={{ l.id }}">{{ send_counts[l.id]|num(0) }} {{ t('send') }} →</a>
+      {% elif l.closed %}
+        <span class="ta-card-meta">—</span>
+      {% else %}
+        <span class="ta-card-meta">0 {{ t('send') }}</span>
+      {% endif %}
+    </div>
   </div>{% endif %}{% endfor %}
 </div>
 
 <div class="ta-bar">
-<div class="ta-chips" role="tablist">
-  {% for key, label, tip in (('', t('All'), ''), ('neg', t('Negative'), ''), ('zero', t('Zero'), ''), ('low', t('Low stock'), ''), ('send', t('Can send'), t('Can send from warehouse'))) %}
-  <a role="tab" class="{{ 'on' if status == key }}" {% if tip %}title="{{ tip }}"{% endif %} href="?{{ base }}&status={{ key }}">{{ label }} <b>{{ chips['all' if key == '' else key]|num(0) }}</b></a>{% endfor %}
-</div>
-<form novalidate class="ta-filters" method="get">
-  <input type="hidden" name="status" value="{{ status }}">
-  <input id="stock-compare-search" data-search type="search" name="q" value="{{ q }}" placeholder="{{ t('Search') }}…" title="{{ t('Search name, barcode or SKU') }}" aria-label="{{ t('Search name, barcode or SKU') }}">
-  <select name="category" aria-label="{{ t('Category') }}" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for ctg in cats %}<option value="{{ ctg }}" {{ 'selected' if ctg == category }}>{{ ctg }}</option>{% endfor %}</select>
-  <select name="sort" aria-label="{{ t('Sort') }}" onchange="this.form.submit()"><option value="attention" {{ 'selected' if sort != 'name' }}>{{ t('Attention first') }}</option><option value="name" {{ 'selected' if sort == 'name' }}>{{ t('Name') }}</option></select>
-  <button class="btn ta-apply" type="submit">{{ t('Apply') }}</button>
-</form>
-<script>
-(function () {
-  var form = document.querySelector('.ta-filters');
-  var search = document.getElementById('stock-compare-search');
-  var timer = null, request = 0, controller = null;
-  function apply() {
-    if (timer) { clearTimeout(timer); timer = null; }
-    var url = form.action.split('?')[0] + '?' + new URLSearchParams(new FormData(form)).toString();
-    var current = ++request;
-    if (controller) controller.abort();
-    controller = new AbortController();
-    form.setAttribute('aria-busy', 'true');
-    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}, signal: controller.signal})
-      .then(function (response) { if (!response.ok) throw new Error('Search failed'); return response.text(); })
-      .then(function (html) {
-        if (current !== request) return;
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        if (!doc.querySelector('.sc-wrap')) throw new Error('Search failed');
-        ['.ta-cards', '.ta-chips', '.sc-wrap', '.pager'].forEach(function (selector) {
-          var oldPart = document.querySelector(selector), newPart = doc.querySelector(selector);
-          if (oldPart && newPart) oldPart.replaceWith(newPart);
-        });
-        var oldExport = document.querySelector('.stock-compare-head a[href*="export=csv"]');
-        var newExport = doc.querySelector('.stock-compare-head a[href*="export=csv"]');
-        if (oldExport && newExport) oldExport.href = newExport.href;
-        history.replaceState(null, '', url);
-      })
-      .catch(function (error) { if (error.name !== 'AbortError') window.location.assign(url); })
-      .finally(function () { if (current === request) form.removeAttribute('aria-busy'); });
-  }
-  search.addEventListener('input', function () {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(apply, 400);
-  });
-  search.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter') { event.preventDefault(); apply(); }
-  });
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    apply();
-  });
-})();
-</script>
+  <div class="ta-chips" role="tablist">
+    {% for key, label, tip in (('', t('All'), ''), ('neg', t('Negative'), ''), ('zero', t('Zero'), ''), ('low', t('Low stock'), ''), ('send', t('Can send'), t('Can send from warehouse'))) %}
+    <a role="tab" class="{{ 'on' if status == key }}" {% if tip %}title="{{ tip }}"{% endif %} href="?{{ base }}&status={{ key }}">{{ label }} <b>{{ chips['all' if key == '' else key]|num(0) }}</b></a>{% endfor %}
+  </div>
+  <form novalidate class="ta-filters" method="get">
+    <input type="hidden" name="status" value="{{ status }}"><input type="hidden" name="est" value="{{ est }}">
+    <input id="stock-compare-search" data-search type="search" name="q" value="{{ q }}" placeholder="{{ t('Search') }}…" title="{{ t('Search name, barcode or SKU') }}" aria-label="{{ t('Search name, barcode or SKU') }}">
+    <select name="loc" aria-label="{{ t('Store') }}" onchange="this.form.submit()"><option value="0">{{ t('All stores') }}</option>{% for l in locs %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ short(l.name) }}</option>{% endfor %}</select>
+    <select name="category" aria-label="{{ t('Category') }}" onchange="this.form.submit()"><option value="">{{ t('All categories') }}</option>{% for ctg in cats %}<option value="{{ ctg }}" {{ 'selected' if ctg == category }}>{{ ctg }}</option>{% endfor %}</select>
+    <select name="sort" aria-label="{{ t('Sort') }}" onchange="this.form.submit()"><option value="attention" {{ 'selected' if sort != 'name' }}>{{ t('Attention first') }}</option><option value="name" {{ 'selected' if sort == 'name' }}>{{ t('Name') }}</option></select>
+    <button class="btn ta-apply" type="submit">{{ t('Apply') }}</button>
+  </form>
+  <script>
+  (function () {
+    var form = document.querySelector('.ta-filters');
+    var search = document.getElementById('stock-compare-search');
+    var timer = null, request = 0, controller = null;
+    function apply() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      var url = form.action.split('?')[0] + '?' + new URLSearchParams(new FormData(form)).toString();
+      var current = ++request;
+      if (controller) controller.abort();
+      controller = new AbortController();
+      form.setAttribute('aria-busy', 'true');
+      fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}, signal: controller.signal})
+        .then(function (response) { if (!response.ok) throw new Error('Search failed'); return response.text(); })
+        .then(function (html) {
+          if (current !== request) return;
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          if (!doc.querySelector('.sc-wrap')) throw new Error('Search failed');
+          ['.ta-cards', '.ta-chips', '.sc-wrap', '.pager'].forEach(function (selector) {
+            var oldPart = document.querySelector(selector), newPart = doc.querySelector(selector);
+            if (oldPart && newPart) oldPart.replaceWith(newPart);
+          });
+          var oldExport = document.querySelector('.stock-compare-head a[href*="export=csv"]');
+          var newExport = doc.querySelector('.stock-compare-head a[href*="export=csv"]');
+          if (oldExport && newExport) oldExport.href = newExport.href;
+          history.replaceState(null, '', url);
+        })
+        .catch(function (error) { if (error.name !== 'AbortError') window.location.assign(url); })
+        .finally(function () { if (current === request) form.removeAttribute('aria-busy'); });
+    }
+    search.addEventListener('input', function () {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(apply, 400);
+    });
+    search.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') { event.preventDefault(); apply(); }
+    });
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      apply();
+    });
+  })();
+  </script>
 </div>
 
-<div class="sc-wrap ta-wrap"><table class="sc ta"><thead><tr><th class="sc-p">{{ t('Product') }}</th>{% for l in locs %}<th class="r"><a href="/inventory?view=list&loc={{ l.id }}" title="{{ l.name }}">{{ short(l.name) }}</a></th>{% endfor %}<th class="r">{{ t('Next step') }}</th></tr></thead>
-  <tbody>
-  {% for r in rows %}
-  <tr>
-    <td class="sc-p"><a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a><small>{{ r.p.barcode or r.p.sku or '' }}{% if r.p.category %} · {{ r.p.category }}{% endif %}</small></td>
-    {% for l in locs %}{% set x = r.cells.get(l.id) %}
-    <td class="r">{% if x %}<a class="ta-cell lv-{{ x.level }}" href="/inventory?view=list&loc={{ l.id }}&q={{ (r.p.barcode or r.p.name)|urlencode }}"
-        title="{{ r.p.name }} · {{ short(l.name) }}: {{ x.qty|num }}{% if x.adj %} ({{ t('StoreHub') }} {{ x.actual|num }} · {{ x.adj }}){% endif %}{% if x.ads %} · {{ t('sells') }} {{ x.ads|num(1) }}/{{ t('day') }}{% endif %}{% if x.cover is not none %} · {{ x.cover|num(1) }} {{ t('days left') }}{% endif %}{% if x.incoming %} · +{{ x.incoming|num }} {{ t('incoming') }}{% endif %}">{{ x.qty|num }}{% if x.incoming %}<em>+{{ x.incoming|num }}</em>{% endif %}</a>{% else %}<span class="mute">–</span>{% endif %}</td>
-    {% endfor %}
-    <td class="r"><span class="ta-tag ta-{{ r.next }}">{{ {'send': t('Send from warehouse'), 'count': t('Check count'), 'reorder': t('Reorder'), 'ok': t('OK'), 'none': t('No stock record')}[r.next] }}</span></td>
-  </tr>
-  {% else %}<tr><td colspan="{{ locs|length + 2 }}"><div class="empty">{{ t('No products match.') }} {% if q or category or attention or status %}<a class="btn sec" href="/inventory/compare">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>
-  {% endfor %}
-  </tbody></table></div>
-<p class="small mute sc-note">{{ t('Click a number to open that product in that store. A small +number is stock on its way on open purchase orders.') }}</p>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
-<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} · {{ total }} {{ t('products') }}</span>
-{% if page * 50 < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+<div class="sc-wrap ta-wrap">
+  <table class="sc ta">
+    <thead>
+      <tr>
+        <th class="sc-p">{{ t('Product') }}</th>
+        {% for l in locs %}
+        <th class="c-loc{{ ' is-wh' if l.type == 'warehouse' else '' }}{{ ' ta-focus' if l.id == loc }}"><a href="/inventory?view=list&loc={{ l.id }}" title="{{ l.name }}">{{ short(l.name) }}</a></th>
+        {% endfor %}
+        <th class="c-loc c-tot">{{ t('Total') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="sc-p">
+          <a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a>
+          <small>{{ [r.p.barcode or r.p.sku, r.p.category, (t('No stock record') if not r.cells else '')]|select|join(' · ') }}</small>
+        </td>
+        {% for l in locs %}{% set x = r.cells.get(l.id) %}
+        <td class="r{{ ' ta-focus' if l.id == loc }}">
+          {% if x %}
+          <a class="ta-cell lv-{{ x.level }}{{ ' is-wh' if l.type == 'warehouse' else '' }}{{ ' is-closed' if l.closed else '' }}"
+             href="/inventory?view=list&loc={{ l.id }}&q={{ (r.p.barcode or r.p.name)|urlencode }}"
+             title="{{ r.p.name }} · {{ short(l.name) }}: {{ x.qty|num }}{% if x.adj %} ({{ t('StoreHub') }} {{ x.actual|num }} · {{ x.adj }}){% endif %}{% if x.ads %} · {{ t('sells') }} {{ x.ads|num(1) }}/{{ t('day') }}{% endif %}{% if x.cover is not none %} · {{ x.cover|num(1) }} {{ t('days left') }}{% endif %}{% if x.incoming %} · +{{ x.incoming|num }} {{ t('incoming') }}{% endif %}">{{ x.qty|num }}{% if x.incoming %}<em>+{{ x.incoming|num }}</em>{% endif %}</a>
+          {% else %}
+          <span class="ta-cell is-empty">–</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="r">
+          {% if r.cells %}
+          <span class="ta-cell is-total{{ ' is-tot-zero' if r.total <= 0 else '' }}">{{ r.total|num }}</span>
+          {% else %}
+          <span class="ta-cell is-empty">–</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ locs|length + 2 }}"><div class="empty">{{ t('No products match.') }} {% if q or category or attention or status or loc %}<a class="btn sec" href="/inventory/compare">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pager">
+  {% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+  <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} · {{ total }} {{ t('products') }}</span>
+  {% if page * 50 < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}
+</div>
 {% endblock %}

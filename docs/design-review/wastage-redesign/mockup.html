@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<!-- Design mockup: redesigned /wastage page for RetailOS. Rendered to PNG by Playwright. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface2:#f8f9fc;
+    --line:#e6e8f1; --line2:#d6d9e6;
+    --ink:#0f172a; --mute:#64748b; --mute2:#94a3b8;
+    --primary:#2563eb; --primary-h:#1d4ed8; --primary-soft:#e8efff;
+    --ok:#047857; --ok-soft:#d9f7ea; --warn:#a85a00; --warn-soft:#fff1d1; --bad:#c62828; --bad-soft:#fde4e4;
+    --sh1:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14.5px/1.5 "Inter","Segoe UI",system-ui,sans-serif;color:var(--ink);background:#f2f4f7;font-weight:600}
+  .shot{width:1440px;background:#f2f4f7;padding:26px 30px 34px}
+  h1{font-size:24px;font-weight:750}
+  .desc{color:var(--mute);font-size:13px;font-weight:500;margin-top:2px}
+  .page-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+  .page-head .actions{margin-left:auto;display:flex;gap:10px}
+  .btn{border:none;border-radius:10px;background:var(--primary);color:#fff;font:inherit;font-weight:660;padding:8.5px 15px;font-size:13.5px;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line2)}
+  .btn.ghost{background:transparent;color:var(--mute)}
+  .btn.sm{padding:5px 11px;font-size:12.8px;border-radius:8px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--sh1)}
+  .card h2{font-size:15.5px;font-weight:700}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .card-head .sub{font-size:12.5px;color:var(--mute);font-weight:500}
+
+  /* stat strip */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--sh1)}
+  .stat .k{font-size:12px;color:var(--mute);font-weight:650;text-transform:uppercase;letter-spacing:.05em}
+  .stat .v{font-size:24px;font-weight:750;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--mute2);font-weight:500;margin-top:1px}
+  .stat.warn .v{color:var(--warn)}
+
+  /* breakdowns */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .bar-row{display:grid;grid-template-columns:120px 1fr 86px;gap:10px;align-items:center;padding:5px 0}
+  .bar-row .name{font-size:13px}
+  .bar-track{height:9px;border-radius:99px;background:var(--surface2);overflow:hidden}
+  .bar-fill{height:100%;border-radius:99px;background:var(--primary)}
+  .bar-row .val{font-size:12px;color:var(--mute);text-align:right}
+  .bar-fill.r0{background:#c62828}.bar-fill.r1{background:#ea7d24}.bar-fill.r2{background:#eab308}.bar-fill.r3{background:#64748b}.bar-fill.r4{background:#0ea5e9}.bar-fill.r5{background:#94a3b8}
+
+  /* entry form */
+  .entry{margin-bottom:16px}
+  .fgrid{display:grid;grid-template-columns:1.2fr .7fr 2fr .5fr;gap:12px;align-items:end}
+  label{display:block;font-size:12px;color:var(--mute);font-weight:650;margin-bottom:5px}
+  input,select,textarea{font:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+  .lookup{display:flex;gap:8px}
+  .lookup input{flex:1}
+  .iconbtn{width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--line2);border-radius:10px;background:#fff;color:var(--mute)}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{padding:7px 13px;border-radius:99px;border:1px solid var(--line2);background:#fff;font-size:12.5px;font-weight:650;color:var(--mute);cursor:pointer}
+  .chip.on{background:var(--bad-soft);border-color:#f0c4c4;color:var(--bad)}
+  .entry-lower{display:flex;gap:12px;align-items:flex-end;margin-top:12px}
+  .batch{margin-top:14px;border-top:1px dashed var(--line2);padding-top:12px}
+  .batch-row{display:grid;grid-template-columns:1fr 70px 130px 30px;gap:10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;background:var(--surface2)}
+  .batch-row .q{text-align:right;font-weight:750}
+  .batch-row .x{border:1px solid var(--line2);background:#fff;color:var(--mute2);border-radius:50%;width:22px;height:22px;font-size:11px;display:grid;place-items:center;cursor:pointer}
+  .batch-foot{display:flex;align-items:center;gap:12px;margin-top:4px}
+  .batch-foot .tot{font-size:13px;color:var(--mute)}
+
+  /* records */
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .fchip{padding:5px 12px;border-radius:99px;border:1px solid var(--line2);background:#fff;font-size:12px;font-weight:650;color:var(--mute);cursor:pointer}
+  .fchip.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+  .search{width:200px;margin-left:auto}
+  .count{font-size:12px;color:var(--mute2)}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  td.small{font-size:12.5px;color:var(--mute)}
+  .right{text-align:right}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+  .badge.r-Spoiled{background:#fde4e4;color:#c62828}
+  .badge.r-Expired{background:#fff1d1;color:#a85a00}
+  .badge.r-Damaged{background:#fef9c3;color:#a16207}
+  .badge.r-Lost{background:#e2e8f0;color:#475569}
+  .badge.r-Return{background:#e0f2fe;color:#0369a1}
+  .badge.r-Other{background:#f1f5f9;color:#64748b}
+  .st{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+  .st.no{background:#f1f5f9;color:#64748b}
+  .st.in{background:var(--primary-soft);color:var(--primary)}
+  .st.ok{background:var(--ok-soft);color:var(--ok)}
+  .future{border:1px dashed var(--line2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);background:var(--surface2);margin-top:12px;font-weight:500}
+  .future b{color:var(--ink)}
+
+  /* mobile shot */
+  .shot.mob{width:390px;padding:16px 14px 26px}
+  .shot.mob .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .shot.mob .stat .v{font-size:19px}
+  .shot.mob h1{font-size:20px}
+  .shot.mob .fgrid{grid-template-columns:1fr}
+  .shot.mob .card{padding:14px}
+  .rcard{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;background:#fff}
+  .rcard .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .rcard .name{font-weight:700;font-size:13.5px}
+  .rcard .q{font-weight:750}
+  .rcard .meta{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:12px;color:var(--mute);align-items:center}
+  .caption{font-size:11.5px;color:var(--mute2);margin-bottom:10px;font-weight:500}
+</style>
+</head>
+<body>
+
+<!-- ================================================= SHOT 1 : desktop -->
+<section class="shot" id="shot1">
+  <div class="page-head">
+    <div><h1>Wastage</h1><div class="desc">Record anything thrown away or lost. Every record also goes to the Wastage Record table in Lark.</div></div>
+    <div class="actions"><button class="btn ghost">Export CSV</button><button class="btn sec">Import from Lark</button></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Units wasted · 30 days</div><div class="v">412</div><div class="d">86 records</div></div>
+    <div class="stat warn"><div class="k">Estimated cost</div><div class="v">₱ 8,942</div><div class="d">qty × product cost · 6 items without cost</div></div>
+    <div class="stat"><div class="k">Top reason</div><div class="v">Spoiled</div><div class="d">46% of units</div></div>
+    <div class="stat"><div class="k">Highest store</div><div class="v">Getafe</div><div class="d">₱ 3,210 · 36% of cost</div></div>
+  </div>
+
+  <div class="split">
+    <div class="card"><div class="card-head"><h2>By reason</h2><span class="sub">last 30 days · units and est. cost</span></div>
+      <div class="bar-row"><span class="name">Spoiled</span><div class="bar-track"><div class="bar-fill r0" style="width:46%"></div></div><span class="val">189 · ₱4,102</span></div>
+      <div class="bar-row"><span class="name">Expired</span><div class="bar-track"><div class="bar-fill r1" style="width:22%"></div></div><span class="val">91 · ₱2,266</span></div>
+      <div class="bar-row"><span class="name">Damaged</span><div class="bar-track"><div class="bar-fill r2" style="width:15%"></div></div><span class="val">62 · ₱1,288</span></div>
+      <div class="bar-row"><span class="name">Lost / theft</span><div class="bar-track"><div class="bar-fill r3" style="width:9%"></div></div><span class="val">37 · ₱742</span></div>
+      <div class="bar-row"><span class="name">Supplier return</span><div class="bar-track"><div class="bar-fill r4" style="width:5%"></div></div><span class="val">21 · ₱388</span></div>
+      <div class="bar-row"><span class="name">Other</span><div class="bar-track"><div class="bar-fill r5" style="width:3%"></div></div><span class="val">12 · ₱156</span></div>
+    </div>
+    <div class="card"><div class="card-head"><h2>By store</h2><span class="sub">est. cost share</span></div>
+      <div class="bar-row"><span class="name">Getafe</span><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div><span class="val">₱3,210</span></div>
+      <div class="bar-row"><span class="name">Bantayan</span><div class="bar-track"><div class="bar-fill" style="width:31%"></div></div><span class="val">₱2,772</span></div>
+      <div class="bar-row"><span class="name">Tabunoc</span><div class="bar-track"><div class="bar-fill" style="width:21%"></div></div><span class="val">₱1,864</span></div>
+      <div class="bar-row"><span class="name">Warehouse</span><div class="bar-track"><div class="bar-fill" style="width:12%"></div></div><span class="val">₱1,096</span></div>
+      <div class="bar-row" style="margin-top:8px;border-top:1px dashed var(--line2);padding-top:10px"><span class="name small" style="color:var(--mute2);font-size:12px">Getafe spoiled dairy is 3× other stores — worth a look</span></div>
+    </div>
+  </div>
+
+  <div class="card entry">
+    <div class="card-head"><h2>Record wastage</h2><span class="sub">scan or type several items, then record them together</span></div>
+    <div class="fgrid">
+      <div><label>Store</label><select><option>The Daily Centro - Getafe</option><option>The Daily Centro - Bantayan</option></select></div>
+      <div><label>Date</label><input type="date" value="2026-11-12"></div>
+      <div><label>Product</label><div class="lookup"><input placeholder="Scan barcode or type product name"><span class="iconbtn">▦</span></div></div>
+      <div><label>Quantity</label><input inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="entry-lower">
+      <div style="flex:1"><label>Reason</label><div class="chips">
+        <span class="chip on">Spoiled</span><span class="chip">Expired</span><span class="chip">Damaged</span>
+        <span class="chip">Lost / theft</span><span class="chip">Supplier return</span><span class="chip">Other</span>
+      </div></div>
+      <button class="btn sec">＋ Add line</button>
+    </div>
+    <div class="batch">
+      <div class="batch-row"><span>Fresh Milk 1L<div class="small" style="font-size:11.5px;color:var(--mute2)">4800366…</div></span><span class="q">6</span><span class="badge r-Spoiled">Spoiled</span><span class="x">×</span></div>
+      <div class="batch-row"><span>Gardenia Classic Bread</span><span class="q">4</span><span class="badge r-Spoiled">Spoiled</span><span class="x">×</span></div>
+      <div class="batch-foot"><button class="btn">Record 3 items</button><span class="tot">13 units · est. ₱ 386</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Records</h2><span class="sub">86 records · 412 units · last 30 days</span></div>
+    <div class="filters">
+      <span class="fchip on">All</span><span class="fchip">Spoiled</span><span class="fchip">Expired</span><span class="fchip">Damaged</span>
+      <span class="fchip">Lost / theft</span><span class="fchip">Supplier return</span><span class="fchip">Other</span>
+      <input class="search" placeholder="Search product…"><span class="count">All stores ▾</span>
+    </div>
+    <table>
+      <tr><th>Product</th><th>Store</th><th>Date</th><th>Category</th><th class="right">Qty</th><th class="right">Est. cost</th><th>Reason</th><th>By</th><th>In StoreHub</th></tr>
+      <tr><td>Fresh Milk 1L</td><td class="small">Getafe</td><td class="small">12 Nov</td><td class="small">Dairy</td><td class="right"><b>6</b></td><td class="right small">₱ 396</td><td><span class="badge r-Spoiled">Spoiled</span></td><td class="small">ana</td><td><span class="st ok">verified</span></td></tr>
+      <tr><td>Gardenia Classic Bread</td><td class="small">Getafe</td><td class="small">12 Nov</td><td class="small">Bakery</td><td class="right"><b>4</b></td><td class="right small">₱ 180</td><td><span class="badge r-Spoiled">Spoiled</span></td><td class="small">ana</td><td><span class="st in">entered ADJ-1042</span></td></tr>
+      <tr><td>C2 Green Tea 500ml</td><td class="small">Bantayan</td><td class="small">11 Nov</td><td class="small">Drinks</td><td class="right"><b>12</b></td><td class="right small">₱ 420</td><td><span class="badge r-Damaged">Damaged</span></td><td class="small">joel</td><td><span class="st no">not entered</span></td></tr>
+      <tr><td>Century Tuna 155g</td><td class="small">Tabunoc</td><td class="small">11 Nov</td><td class="small">Canned</td><td class="right"><b>2</b></td><td class="right small">₱ 84</td><td><span class="badge r-Expired">Expired</span></td><td class="small">mia</td><td><span class="st no">not entered</span></td></tr>
+      <tr><td>Purefoods Hotdog 1kg</td><td class="small">Getafe</td><td class="small">10 Nov</td><td class="small">Frozen</td><td class="right"><b>3</b></td><td class="right small">₱ 465</td><td><span class="badge r-Lost">Lost / theft</span></td><td class="small">ana</td><td><span class="st ok">verified</span></td></tr>
+      <tr><td>Bear Brand 300g</td><td class="small">Warehouse</td><td class="small">10 Nov</td><td class="small">Milk</td><td class="right"><b>8</b></td><td class="right small">₱ 1,096</td><td><span class="badge r-Return">Supplier return</span></td><td class="small">rex</td><td><span class="st in">entered ADJ-1039</span></td></tr>
+    </table>
+    <div class="future"><b>Coming with the StoreHub robot:</b> “not entered” rows are keyed into the back office as stock adjustments, the reference appears as “entered”, and the next sync turns them “verified” — the loop we designed for n8n + the robot.</div>
+  </div>
+</section>
+
+<!-- ================================================= SHOT 2 : mobile entry -->
+<section class="shot mob" id="shot2" style="margin-top:30px">
+  <div class="caption">Mobile (390 px) — the same page: stats collapse to two columns, entry stacks, reason becomes tap chips, records become cards.</div>
+  <h1>Wastage</h1>
+  <div class="desc" style="margin-bottom:12px">Record anything thrown away or lost.</div>
+  <div class="stats">
+    <div class="stat"><div class="k">Units · 30d</div><div class="v">412</div></div>
+    <div class="stat warn"><div class="k">Est. cost</div><div class="v">₱8,942</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-head"><h2>Record wastage</h2></div>
+    <div class="fgrid">
+      <div><label>Store</label><select><option>Getafe</option></select></div>
+      <div><label>Product</label><div class="lookup"><input placeholder="Scan barcode or type name"><span class="iconbtn">▦</span></div></div>
+      <div><label>Quantity</label><input inputmode="decimal" placeholder="0"></div>
+      <div><label>Reason</label><div class="chips"><span class="chip on">Spoiled</span><span class="chip">Expired</span><span class="chip">Damaged</span><span class="chip">Lost / theft</span><span class="chip">Other</span></div></div>
+      <button class="btn sec">＋ Add line</button>
+    </div>
+  </div>
+  <div class="rcard"><div class="top"><span class="name">Fresh Milk 1L</span><span class="q">×6</span></div><div class="meta"><span>Getafe · 12 Nov · ana</span><span class="badge r-Spoiled">Spoiled</span></div></div>
+  <div class="rcard"><div class="top"><span class="name">C2 Green Tea 500ml</span><span class="q">×12</span></div><div class="meta"><span>Bantayan · 11 Nov · joel</span><span class="badge r-Damaged">Damaged</span></div></div>
+  <div class="rcard"><div class="top"><span class="name">Century Tuna 155g</span><span class="q">×2</span></div><div class="meta"><span>Tabunoc · 11 Nov · mia</span><span class="badge r-Expired">Expired</span></div></div>
+</section>
+
+</body>
+</html>

@@ -82,3 +82,27 @@ def test_a_phone_keeps_the_compact_lists(client, sync, fake, session):
         assert page.locator(".se-feed").is_visible() and page.locator(".se-cards").is_visible()
         assert not page.locator(".stock-change-table").is_visible() and not page.locator(".stock-change-tabs").is_visible()
         browser.close()
+
+
+def test_history_search_filters_while_typing_without_enter_or_reload(client, sync, fake, session):
+    from playwright.sync_api import sync_playwright
+    user, loc, prod = _world(sync, fake, session)
+    for p in session.scalars(select(Product).where(Product.source == 'storehub')):
+        session.add(InventoryChange(location_id=loc.id, product_id=p.id, old_qty=10, new_qty=8, delta=-2))
+    session.commit()
+    today = to_local(now_utc()).strftime("%Y-%m-%d")
+    stock_movements.run(session, fetch=lambda pairs, s, e: {pair: [_row(today + " 10:00", "Ana Perez", "Sale", 10, -2, 8, "k%d" % i)] for i, pair in enumerate(pairs)})
+    login(client, "se_admin")
+    with sync_playwright() as pw:
+        browser, page = _page(pw, client, 1440, 900)
+        page.goto("http://qa.test/stock-events?tab=history")
+        assert page.locator(".se-hist").get_by_text("Cola 500ml").count() and page.locator(".se-hist").get_by_text("Untracked Service").count()
+        page.evaluate("window.__same_page = true")
+        page.locator("#sh-q-desk").press_sequentially("Untra", delay=40)       # only typing: no Enter, no button
+        page.wait_for_function("()=>!document.querySelector('.se-hist').textContent.includes('Cola 500ml')")
+        assert page.locator(".se-hist").get_by_text("Untracked Service").count() == 1
+        assert page.evaluate("window.__same_page === true")                    # the page did not reload
+        assert "q=Untra" in page.url
+        page.locator("#sh-q-desk").fill("")
+        page.wait_for_function("()=>document.querySelector('.se-hist').textContent.includes('Cola 500ml')")
+        browser.close()

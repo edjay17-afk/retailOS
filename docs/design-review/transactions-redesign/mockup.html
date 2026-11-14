@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transactions — redesign mockup</title>
+<style>
+  :root{
+    --bg:#f8f7f5;--surface:#ffffff;--surface2:#f8f9fc;--line:#e6e8f1;--line2:#d6d9e6;
+    --ink:#0f172a;--mute:#64748b;--mute2:#94a3b8;
+    --primary:#2563eb;--primary-h:#1d4ed8;--primary-soft:#e8efff;
+    --ok:#047857;--ok-soft:#d9f7ea;--warn:#a85a00;--warn-soft:#fff1d1;--bad:#c62828;--bad-soft:#fde4e4;
+    --purple:#7c3aed;
+    --r:14px;--r2:10px;
+    --sh1:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.05);
+    --font:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 var(--font);font-weight:600;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:22px 26px 60px}
+  h1{font-size:25px;margin:0;font-weight:750;letter-spacing:-.01em}
+  h2{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+  .crumbs{font-size:13px;color:var(--mute);margin-bottom:6px}
+  .crumbs b{color:var(--ink)}
+
+  /* head — same pattern as the Sales overview */
+  .head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);font-weight:550;margin-top:6px}
+  .syncdot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:2px}
+  .info{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--line2);color:var(--mute2);font-size:10.5px;font-weight:700;cursor:help}
+  .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap}
+  .btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}
+
+  /* toolbar — two deliberate slim rows: pickers + search, then quick payment filter */
+  .toolbar{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:12px;box-shadow:var(--sh1)}
+  .tb-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tb-lab{font-size:12px;color:var(--mute);font-weight:650;margin-right:2px}
+  .chip-sel{position:relative;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 24px 0 11px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);font-size:13px;font-weight:650;white-space:nowrap;cursor:pointer}
+  .chip-sel span{color:var(--mute);font-weight:550}
+  .chip-sel b{max-width:130px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+  .chip-sel::after{content:"";position:absolute;right:10px;top:50%;width:8px;height:8px;margin-top:-4px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat}
+  .chip-sel select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;appearance:none}
+  .seg{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--surface2)}
+  .seg a{padding:5px 11px;border-radius:7px;color:var(--mute);font-size:12.5px;font-weight:650;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+  .seg a:hover{color:var(--ink)}
+  .seg a.on{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,23,42,.14)}
+  .search{position:relative;flex:1 1 150px;min-width:150px;max-width:300px}
+  .search input{box-sizing:border-box;width:100%;height:38px;padding:0 12px 0 32px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);font:inherit;font-size:13px}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--mute2);fill:none;stroke-width:2}
+  .payseg{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--surface2)}
+  .payseg a{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:7px;color:var(--mute);font-size:12.5px;font-weight:650;text-decoration:none;white-space:nowrap}
+  .payseg a.on{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,23,42,.14)}
+  .vdiv{width:1px;height:24px;background:var(--line);flex:none}
+  /* payment dots — NEW names: the old i.card collided with the .card component class */
+  .pd{width:8px;height:8px;border-radius:50%;background:var(--mute2);flex:none;display:inline-block}
+  .pd.k-cash{background:var(--ok)}
+  .pd.k-gcash{background:var(--primary)}
+  .pd.k-card{background:var(--purple)}
+
+  /* stat strip — like sales-strip */
+  .strip{display:grid;grid-template-columns:1.2fr 1fr 1fr 1.25fr 1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh1);margin-bottom:18px;overflow:hidden}
+  .stat{padding:14px 18px;border-left:1px solid var(--line)}
+  .stat:first-child{border-left:none}
+  .stat .lab{font-size:12px;font-weight:650;color:var(--mute)}
+  .stat .row{display:flex;align-items:center;gap:9px;margin-top:3px}
+  .stat .val{font-size:23px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .sub{font-size:12px;color:var(--mute);font-weight:550;margin-top:3px}
+  .stat .sub b{color:var(--ink)}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:750;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .delta.up{background:var(--ok-soft);color:var(--ok)}
+  .delta.down{background:var(--bad-soft);color:var(--bad)}
+  .mix{display:flex;height:8px;border-radius:99px;overflow:hidden;margin:10px 0 7px;background:var(--line)}
+  .mix i{display:block;height:100%}
+  .mixlg{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--mute);font-weight:550}
+  .mixlg b{color:var(--ink)}
+  .mixlg i{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+
+  /* feed */
+  .board{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden}
+  .dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:15px 18px 9px;background:var(--surface2);border-top:1px solid var(--line)}
+  .dayhead:first-child{border-top:none}
+  .dayhead .l{display:flex;align-items:baseline;gap:9px}
+  .dayhead b{font-size:15px;font-weight:750}
+  .dayhead span{font-size:12.5px;color:var(--mute);font-weight:550}
+  .dayhead .n{font-size:13.5px;font-weight:750;font-variant-numeric:tabular-nums}
+  .txrow{display:grid;grid-template-columns:64px minmax(170px,1.5fr) minmax(130px,1fr) 130px 22px;align-items:center;gap:14px;padding:11px 18px;border-top:1px solid var(--line);color:var(--ink);text-decoration:none;cursor:pointer}
+  .txrow:hover{background:var(--surface2)}
+  .txtime{font-size:13px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}
+  .txmain{min-width:0}
+  .txmain b{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+  .txmain small{display:block;font-size:12.5px;color:var(--mute);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .badge{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:700;font-style:normal}
+  .badge.bad{background:var(--bad-soft);color:var(--bad)}
+  .badge.warn{background:var(--warn-soft);color:var(--warn)}
+  .pays{display:flex;gap:6px;flex-wrap:wrap}
+  .paychip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .paychip.plain{border:none;background:none;padding:2px 0}
+  .txtotal{text-align:right;font-size:15px;font-weight:750;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .txrow.is-cancelled{opacity:.55}
+  .txrow.is-cancelled .txtotal{text-decoration:line-through}
+  .txrow.is-return .txtotal{color:var(--warn)}
+  .chev{color:var(--mute2);font-size:15px;text-align:right}
+  .pager{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px 0 0;font-size:12.5px;color:var(--mute)}
+
+  @media (max-width:900px){
+    .wrap{padding:16px 14px 50px}
+    .search{width:100%;margin-left:0}
+    .chip-sel{flex:1 1 auto}
+    .chip-sel b{max-width:none}
+    .seg,.payseg{overflow-x:auto;flex-wrap:nowrap;max-width:100%}
+    .strip{grid-template-columns:1fr 1fr}
+    .stat{border-left:none;border-top:1px solid var(--line);padding:12px 14px}
+    .stat:nth-child(-n+2){border-top:none}
+    .stat:nth-child(2n){border-left:1px solid var(--line)}
+    .stat:first-child{grid-column:1/-1}
+    .txrow{grid-template-columns:1fr auto;grid-template-areas:"time total" "main main" "pays pays";row-gap:3px;padding:11px 14px}
+    .txtime{grid-area:time}
+    .txmain{grid-area:main}
+    .pays{grid-area:pays;margin-top:4px}
+    .txtotal{grid-area:total;font-size:14.5px}
+    .chev{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumbs">Dashboard &nbsp;›&nbsp; Sales &nbsp;›&nbsp; <b>Transactions</b></div>
+  <div class="head">
+    <div>
+      <h1>Transactions</h1>
+      <div class="meta">
+        <span>All stores</span> · <span>Last 14 days</span> ·
+        <span><i class="syncdot"></i> Last synced 4 min ago</span>
+        <span class="info" title="Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.">i</span>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn">Daily sales</a><a class="btn">By employee</a><a class="btn pri">Download CSV</a>
+    </div>
+  </div>
+
+  <form class="toolbar">
+    <div class="tb-row">
+      <label class="chip-sel"><span>Store</span><b>All my locations</b><select><option>All my locations</option></select></label>
+      <label class="chip-sel"><span>Employee</span><b>All employees</b><select><option>All employees</option></select></label>
+      <div class="seg"><a>Today</a><a>7 days</a><a class="on">14 days</a><a>31 Oct – 13 Nov ▾</a></div>
+      <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Invoice #"></div>
+    </div>
+    <div class="tb-row">
+      <span class="tb-lab">Payment</span>
+      <div class="payseg"><a class="on">All</a><a><i class="pd k-cash"></i>Cash</a><a><i class="pd k-gcash"></i>GCash</a><a><i class="pd k-card"></i>Card</a></div>
+    </div>
+  </form>
+
+  <div class="strip">
+    <div class="stat">
+      <div class="lab">Net sales (14 days)</div>
+      <div class="row"><span class="val">₱96,420.55</span><span class="delta up">▲ 6.4%</span></div>
+      <div class="sub">Avg / day <b>₱6,887</b> · Prev <b>₱90,618</b></div>
+    </div>
+    <div class="stat">
+      <div class="lab">Transactions</div>
+      <div class="row"><span class="val">462</span><span class="delta up">▲ 2.1%</span></div>
+      <div class="sub">Cancelled <b>7</b> (1.5%)</div>
+    </div>
+    <div class="stat">
+      <div class="lab">Average basket</div>
+      <div class="row"><span class="val">₱208.70</span><span class="delta up">▲ 4.2%</span></div>
+      <div class="sub">prev period <b>₱200.30</b></div>
+    </div>
+    <div class="stat">
+      <div class="lab">Cash share <b style="color:var(--ink)">58%</b></div>
+      <div class="mix"><i style="width:58%;background:var(--ok)"></i><i style="width:27%;background:var(--primary)"></i><i style="width:15%;background:var(--purple)"></i></div>
+      <div class="mixlg"><span><i style="background:var(--ok)"></i>Cash <b>₱55.9k</b></span><span><i style="background:var(--primary)"></i>GCash <b>₱26.1k</b></span><span><i style="background:var(--purple)"></i>Card <b>₱14.4k</b></span></div>
+    </div>
+    <div class="stat">
+      <div class="lab">Returns &amp; cancelled</div>
+      <div class="row"><span class="val" style="color:var(--warn)">₱412.50</span></div>
+      <div class="sub">2 returns · 7 cancelled</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="pager"><a class="btn">Previous</a><span>Page 1 of 8 · showing 1–60 of 462 transactions</span><a class="btn">Next</a></div>
+</div>
+
+<script>
+const P=(v)=>"₱"+v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const days=[
+ {d:"Today", s:"13 Nov · 33 transactions", n:7045.04, rows:[
+   ["5:31 AM","10229","ZENWOK Balamban","Mark Villanueva",9,[["Cash","k-cash"]],313.64,""],
+   ["5:22 AM","10203","Bantayan","Maria Santos",3,[["Card","k-card"]],273.12,""],
+   ["5:18 AM","10221","ZENWOK Balamban","Ana Cruz",5,[["GCash","k-gcash"]],60.95,""],
+   ["4:28 AM","10211","Getafe","Jose Reyes",2,[["GCash","k-gcash"]],159.08,""],
+   ["4:06 AM","10213","Getafe","Jose Reyes",4,[["Cash","k-cash"]],233.94,""],
+   ["3:58 AM","10202","Bantayan","Maria Santos",3,[["GCash","k-gcash"]],213.82,""],
+   ["3:37 AM","10226","Bantayan","Maria Santos",1,[["Cash","k-cash"]],0.00,"cancelled"],
+   ["3:31 AM","10198","ZENWOK Balamban","Mark Villanueva",6,[["Cash","k-cash"],["GCash","k-gcash"]],402.10,""],
+ ]},
+ {d:"Yesterday", s:"12 Nov · 41 transactions", n:8612.30, rows:[
+   ["9:48 PM","10185","Getafe","Jose Reyes",3,[["Cash","k-cash"]],188.25,""],
+   ["9:12 PM","10184","Bantayan","Maria Santos",5,[["GCash","k-gcash"]],356.40,""],
+   ["8:55 PM","10180","ZENWOK Balamban","Ana Cruz",2,[["Card","k-card"]],145.00,""],
+   ["8:31 PM","10177","Bantayan","Maria Santos",4,[["Cash","k-cash"]],-219.50,"return"],
+   ["8:02 PM","10171","Getafe","Jose Reyes",7,[["GCash","k-gcash"]],512.75,""],
+ ]},
+ {d:"Tuesday", s:"11 Nov · 38 transactions", n:7940.18, rows:[
+   ["8:44 PM","10102","ZENWOK Balamban","Mark Villanueva",2,[["Cash","k-cash"]],96.50,""],
+   ["8:20 PM","10099","Bantayan","Maria Santos",8,[["Card","k-card"]],688.90,""],
+   ["7:57 PM","10095","Getafe","Jose Reyes",3,[["GCash","k-gcash"]],174.30,""],
+ ]},
+];
+document.getElementById("board").innerHTML = days.map(g=>`
+  <div class="dayhead"><div class="l"><b>${g.d}</b><span>${g.s}</span></div><span class="n">${P(g.n)}</span></div>
+  ${g.rows.map(([tm,inv,st,emp,it,pays,tot,flag])=>`
+  <a class="txrow ${flag==='cancelled'?'is-cancelled':''} ${flag==='return'?'is-return':''}">
+    <span class="txtime">${tm}</span>
+    <span class="txmain"><b>${inv}
+      ${flag==='cancelled'?'<em class="badge bad">Cancelled</em>':''}
+      ${flag==='return'?'<em class="badge warn">Return</em>':''}</b>
+      <small>${st} · ${emp} · ${it} items</small></span>
+    <span class="pays">${pays.map(([m,k])=>`<span class="paychip"><i class="pd ${k}"></i>${m}</span>`).join("")}</span>
+    <span class="txtotal">${tot<0?'−':''}${P(Math.abs(tot))}</span>
+    <span class="chev">›</span>
+  </a>`).join("")}`).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RetailOS — Transaction Details Receipt Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e5e7eb;
+    --line2: #d1d5db;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --green: #16a34a;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #111827;
+    font-family: var(--sans);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum" 1;
+  }
+
+  .shot {
+    width: 1440px;
+    height: 900px;
+    margin: 0 auto 48px;
+    background: var(--bg);
+    display: grid;
+    grid-template-columns: 224px 1fr;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* RetailOS Sidebar */
+  .sb {
+    background: var(--surface); border-right: 1px solid var(--line);
+    padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .sb-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+  .sb-logo {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--blue);
+    color: #fff; font-weight: 800; font-size: 16px; display: grid; place-items: center;
+  }
+  .sb-brand strong { display: block; font-size: 14.5px; font-weight: 750; }
+  .sb-brand span { display: block; font-size: 11px; color: var(--mute); }
+  .sb-sec { font-size: 10px; font-weight: 700; letter-spacing: .07em; color: var(--mute2); text-transform: uppercase; padding: 14px 10px 6px; }
+  .sb-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 9px; font-size: 13px; font-weight: 550; color: var(--ink2); margin-bottom: 2px; }
+  .sb-item.on { background: var(--blue); color: #fff; font-weight: 650; }
+  .sb-item b { font-size: 11px; font-weight: 650; padding: 1px 7px; border-radius: 99px; background: #fef3c7; color: #92400e; }
+  .sb-user { border: 1px solid var(--line); border-radius: 11px; padding: 8px 10px; display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 650; }
+  .sb-av { width: 28px; height: 28px; border-radius: 99px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+
+  /* Main Workspace */
+  .main { display: flex; flex-direction: column; min-width: 0; height: 900px; }
+  .topbar {
+    height: 60px; padding: 0 28px; background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .sw { display: inline-flex; padding: 3px; background: #eaedf2; border-radius: 10px; gap: 2px; }
+  .sw span { font-size: 12.5px; font-weight: 600; color: var(--mute); padding: 5px 12px; border-radius: 7px; }
+  .sw span.on { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .tb-r { display: flex; align-items: center; gap: 12px; }
+  .lang { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+  .lang span { font-size: 11.5px; font-weight: 600; padding: 4px 8px; color: var(--mute); }
+  .lang span.on { color: var(--ink); font-weight: 700; }
+  .tb-badge { position: relative; width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--ink2); font-size: 14px; }
+  .tb-badge i { position: absolute; top: 2px; right: 0; font-style: normal; background: var(--red); color: #fff; font-size: 9.5px; font-weight: 700; padding: 1px 4px; border-radius: 99px; }
+
+  .desk {
+    flex: 1; padding: 20px 32px 30px;
+    display: flex; flex-direction: column; min-height: 0;
+  }
+
+  /* Nav Row */
+  .rc-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .pill {
+    height: 34px; padding: 0 13px; border-radius: 99px;
+    border: 1px solid var(--line2); background: var(--surface);
+    color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 650;
+    display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  }
+  .pill.pri { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .pill.off { color: var(--mute2); opacity: .6; }
+  .nav-grp { display: flex; align-items: center; gap: 8px; }
+
+  /* =========================================================
+     THERMAL RECEIPT PAPER COMPONENT
+     ========================================================= */
+  .slip-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 10px;
+    filter: drop-shadow(0 18px 34px rgba(15, 23, 42, .10)) drop-shadow(0 3px 8px rgba(15, 23, 42, .05));
+  }
+  /* Printer bezel slot */
+  .slip-slot {
+    width: 100%;
+    height: 7px;
+    border-radius: 99px;
+    background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+  }
+  /* Thermal paper sheet */
+  .slip-paper {
+    position: relative;
+    width: calc(100% - 18px);
+    margin-top: -3px;
+    background: #ffffff;
+    border-left: 1px solid #dbe2ea;
+    border-right: 1px solid #dbe2ea;
+    border-top: 1px solid #dbe2ea;
+    padding: 20px 24px 20px;
+    font-family: var(--mono);
+    color: #0f172a;
+  }
+  /* Classic sawtooth tear-off edge */
+  .slip-paper::after {
+    content: "";
+    position: absolute;
+    left: -1px; right: -1px; bottom: -9px; height: 9px;
+    background:
+      linear-gradient(135deg, #ffffff 33.33%, transparent 33.33%) 0 0 / 12px 9px,
+      linear-gradient(225deg, #ffffff 33.33%, transparent 33.33%) 0 0 / 12px 9px;
+  }
+
+  .rc-center { text-align: center; }
+  .rc-store { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .rc-branch { font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .rc-inv-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px; padding: 3px 10px; border-radius: 99px;
+    background: #f1f5f9; font-size: 11px; font-weight: 700;
+  }
+  .rc-inv-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  .dash { border-top: 1px dashed #cbd5e1; margin: 13px 0; }
+
+  .meta-rows { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; }
+  .meta-row { display: flex; justify-content: space-between; gap: 12px; }
+  .meta-row span { color: var(--mute); }
+  .meta-row strong { font-weight: 600; color: var(--ink); text-align: right; }
+
+  /* Item lines */
+  .item-head {
+    display: grid; grid-template-columns: 32px 1fr 78px;
+    font-size: 10px; font-weight: 700; color: var(--mute); text-transform: uppercase; letter-spacing: .05em;
+    padding-bottom: 6px; border-bottom: 1px dashed #cbd5e1; margin-bottom: 8px;
+  }
+  .item-head span:last-child { text-align: right; }
+  .items { display: flex; flex-direction: column; gap: 9px; }
+  .item-row { display: grid; grid-template-columns: 32px 1fr 78px; align-items: start; font-size: 12px; }
+  .item-qty { font-weight: 700; color: var(--ink2); }
+  .item-name { font-family: var(--sans); font-weight: 650; font-size: 12.5px; color: var(--ink); line-height: 1.25; }
+  .item-sub { font-family: var(--mono); font-size: 10.5px; color: var(--mute); margin-top: 2px; }
+  .item-disc { color: var(--red); }
+  .item-amt { font-weight: 700; text-align: right; font-size: 12px; }
+
+  /* Totals & Payments */
+  .sum-rows { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; }
+  .sum-row { display: flex; justify-content: space-between; }
+  .sum-row span { color: var(--mute); }
+  .sum-row.disc strong { color: var(--red); }
+  .sum-grand {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 16px; font-weight: 800; padding: 8px 0 4px;
+    border-top: 1px dashed #94a3b8; border-bottom: 1px dashed #94a3b8; margin: 8px 0;
+  }
+  .pay-row { display: flex; justify-content: space-between; font-size: 11.5px; margin-top: 4px; }
+  .pay-row span { color: var(--ink2); font-weight: 600; }
+  .pay-row strong { font-weight: 700; }
+
+  /* Minimal fake barcode at footer */
+  .barcode {
+    margin-top: 14px; text-align: center;
+  }
+  .barcode-bars {
+    height: 26px; width: 190px; margin: 0 auto 4px;
+    background: repeating-linear-gradient(90deg,
+      #0f172a 0 2px, transparent 2px 4px,
+      #0f172a 4px 5px, transparent 5px 8px,
+      #0f172a 8px 11px, transparent 11px 13px,
+      #0f172a 13px 14px, transparent 14px 17px
+    );
+    opacity: .82;
+  }
+  .barcode-num { font-size: 10px; color: var(--mute); letter-spacing: .08em; }
+
+  /* =========================================================
+     OPTION 1 LAYOUT: RECEIPT DESK + SIDE CONTEXT
+     ========================================================= */
+  .desk-grid {
+    display: grid;
+    grid-template-columns: 440px 330px;
+    justify-content: center;
+    gap: 28px;
+    align-items: start;
+  }
+  .ctx-col { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+  .ctx-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+  }
+  .ctx-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin: 0 0 12px; }
+  .pay-bar { height: 7px; border-radius: 99px; background: var(--surface3); overflow: hidden; display: flex; gap: 2px; margin-bottom: 12px; }
+  .pay-bar .cash { background: #16a34a; }
+  .pay-bar .gcash { background: var(--blue); }
+  .ctx-kv { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 1px solid var(--surface3); }
+  .ctx-kv:last-child { border-bottom: 0; padding-bottom: 0; }
+  .ctx-kv span { color: var(--mute); }
+  .ctx-kv strong { font-weight: 650; }
+  .ctx-kv a { color: var(--blue); text-decoration: none; font-weight: 650; }
+
+  /* =========================================================
+     OPTION 2 LAYOUT: PURE CENTERED THERMAL RECEIPT
+     ========================================================= */
+  .pure-center {
+    display: flex; justify-content: center; align-items: flex-start; padding-top: 2px;
+  }
+
+  /* =========================================================
+     OPTION 3 LAYOUT: TRANSACTIONS LIST + RECEIPT SLIDE-OVER
+     ========================================================= */
+  .dim-page { opacity: .42; filter: blur(.3px); pointer-events: none; }
+  .dim-row {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 140px 140px 1fr 120px; align-items: center; font-size: 13px;
+  }
+  .drawer {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 452px;
+    background: #eef1f5; border-left: 1px solid var(--line2);
+    box-shadow: -20px 0 50px rgba(15, 23, 42, .14);
+    padding: 18px 24px 20px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .drawer-head strong { font-size: 13.5px; font-weight: 750; }
+  .drawer-x { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line2); background: var(--surface); display: grid; place-items: center; font-size: 15px; }
+  .drawer-foot { display: flex; gap: 8px; margin-top: 14px; }
+  .drawer-foot a { flex: 1; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; font-weight: 700; text-decoration: none; }
+  .drawer-foot .sec { background: var(--surface); border: 1px solid var(--line2); color: var(--ink); }
+  .drawer-foot .pri { background: var(--blue); color: #fff; }
+</style>
+</head>
+<body>
+
+  <!-- =========================================================
+       DESIGN 1: THERMAL RECEIPT DESK (Receipt Slip + Context Panel)
+       ========================================================= -->
+  <section class="shot" id="tx-opt-1">
+    <aside class="sb">
+      <div>
+        <div class="sb-brand"><div class="sb-logo">R</div><div><strong>Retail OS</strong><span>The Daily Centro</span></div></div>
+        <div class="sb-item">Today</div>
+        <div class="sb-sec">Run the stores</div>
+        <div class="sb-item">Problems <b>92</b></div>
+        <div class="sb-item">Inspections</div>
+        <div class="sb-item">Permits</div>
+        <div class="sb-item">Planogram</div>
+        <div class="sb-sec">Stock</div>
+        <div class="sb-item">Inventory <b>809</b></div>
+        <div class="sb-item">Transfers</div>
+        <div class="sb-item">Purchasing <b>13</b></div>
+        <div class="sb-sec">Insight</div>
+        <div class="sb-item on">Sales</div>
+        <div class="sb-item">Team</div>
+        <div class="sb-item">Settings</div>
+      </div>
+      <div class="sb-user"><span class="sb-av">A</span> Admin</div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="sw"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span><span>SipStop</span><span>7-Eleven</span></div>
+        <div class="tb-r">
+          <div class="lang"><span class="on">EN</span><span>中文</span></div>
+          <div class="tb-badge">🔔<i>80</i></div>
+          <div class="sb-user" style="border:0;padding:0"><span class="sb-av">A</span> Admin</div>
+        </div>
+      </div>
+
+      <div class="desk">
+        <div class="rc-nav">
+          <a class="pill" href="#">‹ Transactions</a>
+          <div class="nav-grp">
+            <a class="pill" href="#">‹ Previous</a>
+            <a class="pill" href="#">Next ›</a>
+            <a class="pill pri" href="#">Print receipt</a>
+          </div>
+        </div>
+
+        <div class="desk-grid">
+          <!-- Center Thermal Receipt -->
+          <div class="slip-wrap">
+            <div class="slip-slot"></div>
+            <article class="slip-paper">
+              <div class="rc-center">
+                <div class="rc-store">The Daily Centro</div>
+                <div class="rc-branch">Bantayan Branch &middot; Reg #2</div>
+                <div class="rc-inv-badge"><i></i> SALE &middot; INV-261113-0842</div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="meta-rows">
+                <div class="meta-row"><span>Date</span><strong>13 Nov 2026 &middot; 2:41 PM</strong></div>
+                <div class="meta-row"><span>Cashier</span><strong>Ana Reyes</strong></div>
+                <div class="meta-row"><span>Items</span><strong>5 units (3 lines)</strong></div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="item-head">
+                <span>Qty</span><span>Item</span><span>Amount</span>
+              </div>
+              <div class="items">
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Yakult Cultured Milk 5-Pack</div>
+                    <div class="item-sub">@ 65.00 <span class="item-disc">&middot; Disc -10.00</span></div>
+                  </div>
+                  <span class="item-amt">120.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">1&times;</span>
+                  <div>
+                    <div class="item-name">Coca-Cola Zero Sugar 500ml</div>
+                    <div class="item-sub">@ 42.00</div>
+                  </div>
+                  <span class="item-amt">42.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Piattos Cheese Crisps 85g</div>
+                    <div class="item-sub">@ 38.00</div>
+                  </div>
+                  <span class="item-amt">76.00</span>
+                </div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="sum-rows">
+                <div class="sum-row"><span>Subtotal</span><strong>221.43</strong></div>
+                <div class="sum-row disc"><span>Discount</span><strong>-10.00</strong></div>
+                <div class="sum-row"><span>VAT (12%)</span><strong>26.57</strong></div>
+              </div>
+
+              <div class="sum-grand">
+                <span>TOTAL</span>
+                <span>PHP 238.00</span>
+              </div>
+
+              <div class="pay-row"><span>Cash</span><strong>150.00</strong></div>
+              <div class="pay-row"><span>GCash</span><strong>88.00</strong></div>
+
+              <div class="barcode">
+                <div class="barcode-bars"></div>
+                <div class="barcode-num">REF 9f41c820-4b2a</div>
+              </div>
+            </article>
+          </div>
+
+          <!-- Quiet Companion Panel -->
+          <aside class="ctx-col">
+            <div class="ctx-card">
+              <div class="ctx-h">Payment split</div>
+              <div class="pay-bar"><i class="cash" style="width:63%"></i><i class="gcash" style="width:37%"></i></div>
+              <div class="ctx-kv"><span>Cash (63%)</span><strong>PHP 150.00</strong></div>
+              <div class="ctx-kv"><span>GCash (37%)</span><strong>PHP 88.00</strong></div>
+              <div class="ctx-kv"><span>Total paid</span><strong>PHP 238.00</strong></div>
+            </div>
+
+            <div class="ctx-card">
+              <div class="ctx-h">Source record</div>
+              <div class="ctx-kv"><span>Store</span><strong>Bantayan</strong></div>
+              <div class="ctx-kv"><span>Register</span><strong>#2</strong></div>
+              <div class="ctx-kv"><span>Channel</span><strong>In Store POS</strong></div>
+              <div class="ctx-kv"><span>Cashier</span><a href="#">Ana Reyes →</a></div>
+              <div class="ctx-kv"><span>Synced</span><strong>StoreHub POS</strong></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       DESIGN 2: PURE CENTERED THERMAL RECEIPT (Ultra-Minimal)
+       ========================================================= -->
+  <section class="shot" id="tx-opt-2">
+    <aside class="sb">
+      <div>
+        <div class="sb-brand"><div class="sb-logo">R</div><div><strong>Retail OS</strong><span>The Daily Centro</span></div></div>
+        <div class="sb-item">Today</div>
+        <div class="sb-sec">Run the stores</div>
+        <div class="sb-item">Problems <b>92</b></div>
+        <div class="sb-item">Inspections</div>
+        <div class="sb-item">Permits</div>
+        <div class="sb-item">Planogram</div>
+        <div class="sb-sec">Stock</div>
+        <div class="sb-item">Inventory <b>809</b></div>
+        <div class="sb-item">Transfers</div>
+        <div class="sb-item">Purchasing <b>13</b></div>
+        <div class="sb-sec">Insight</div>
+        <div class="sb-item on">Sales</div>
+        <div class="sb-item">Team</div>
+        <div class="sb-item">Settings</div>
+      </div>
+      <div class="sb-user"><span class="sb-av">A</span> Admin</div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="sw"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span><span>SipStop</span><span>7-Eleven</span></div>
+        <div class="tb-r">
+          <div class="lang"><span class="on">EN</span><span>中文</span></div>
+          <div class="tb-badge">🔔<i>80</i></div>
+          <div class="sb-user" style="border:0;padding:0"><span class="sb-av">A</span> Admin</div>
+        </div>
+      </div>
+
+      <div class="desk">
+        <div class="rc-nav">
+          <a class="pill" href="#">‹ Transactions</a>
+          <div class="nav-grp">
+            <a class="pill" href="#">‹ Prev</a>
+            <a class="pill" href="#">Next ›</a>
+            <a class="pill pri" href="#">Print</a>
+          </div>
+        </div>
+
+        <div class="pure-center">
+          <div class="slip-wrap" style="width:450px;">
+            <div class="slip-slot"></div>
+            <article class="slip-paper" style="padding:22px 26px;">
+              <div class="rc-center">
+                <div class="rc-store">The Daily Centro</div>
+                <div class="rc-branch">Bantayan Branch &middot; Register #2 &middot; In Store POS</div>
+                <div class="rc-inv-badge"><i></i> INV-261113-0842</div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="meta-rows">
+                <div class="meta-row"><span>Date &amp; Time</span><strong>13 Nov 2026 &middot; 2:41 PM</strong></div>
+                <div class="meta-row"><span>Cashier</span><strong>Ana Reyes</strong></div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="item-head">
+                <span>Qty</span><span>Product</span><span>Total</span>
+              </div>
+              <div class="items">
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Yakult Cultured Milk 5-Pack</div>
+                    <div class="item-sub">65.00 ea <span class="item-disc">&middot; -10.00</span></div>
+                  </div>
+                  <span class="item-amt">120.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">1&times;</span>
+                  <div>
+                    <div class="item-name">Coca-Cola Zero Sugar 500ml</div>
+                    <div class="item-sub">42.00 ea</div>
+                  </div>
+                  <span class="item-amt">42.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Piattos Cheese Crisps 85g</div>
+                    <div class="item-sub">38.00 ea</div>
+                  </div>
+                  <span class="item-amt">76.00</span>
+                </div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="sum-rows">
+                <div class="sum-row"><span>Subtotal</span><strong>221.43</strong></div>
+                <div class="sum-row disc"><span>Discount</span><strong>-10.00</strong></div>
+                <div class="sum-row"><span>VAT (12%)</span><strong>26.57</strong></div>
+              </div>
+
+              <div class="sum-grand">
+                <span>TOTAL</span>
+                <span>PHP 238.00</span>
+              </div>
+
+              <div class="pay-row"><span>Cash</span><strong>150.00</strong></div>
+              <div class="pay-row"><span>GCash</span><strong>88.00</strong></div>
+
+              <div class="barcode">
+                <div class="barcode-bars"></div>
+                <div class="barcode-num">REF 9f41c820-4b2a</div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       DESIGN 3: SLIDE-OVER RECEIPT DRAWER (On Transactions List)
+       ========================================================= -->
+  <section class="shot" id="tx-opt-3">
+    <aside class="sb">
+      <div>
+        <div class="sb-brand"><div class="sb-logo">R</div><div><strong>Retail OS</strong><span>The Daily Centro</span></div></div>
+        <div class="sb-item">Today</div>
+        <div class="sb-sec">Run the stores</div>
+        <div class="sb-item">Problems <b>92</b></div>
+        <div class="sb-item">Inspections</div>
+        <div class="sb-item">Permits</div>
+        <div class="sb-item">Planogram</div>
+        <div class="sb-sec">Stock</div>
+        <div class="sb-item">Inventory <b>809</b></div>
+        <div class="sb-item">Transfers</div>
+        <div class="sb-item">Purchasing <b>13</b></div>
+        <div class="sb-sec">Insight</div>
+        <div class="sb-item on">Sales</div>
+        <div class="sb-item">Team</div>
+        <div class="sb-item">Settings</div>
+      </div>
+      <div class="sb-user"><span class="sb-av">A</span> Admin</div>
+    </aside>
+
+    <div class="main" style="position:relative;">
+      <div class="topbar">
+        <div class="sw"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span><span>SipStop</span><span>7-Eleven</span></div>
+        <div class="tb-r">
+          <div class="lang"><span class="on">EN</span><span>中文</span></div>
+          <div class="tb-badge">🔔<i>80</i></div>
+          <div class="sb-user" style="border:0;padding:0"><span class="sb-av">A</span> Admin</div>
+        </div>
+      </div>
+
+      <div class="desk dim-page">
+        <h1 style="margin:0 0 16px;font-size:22px;font-weight:800;">Transactions</h1>
+        <div class="dim-row"><strong>INV-261113-0842</strong><span>2:41 PM</span><span>Bantayan &middot; Ana Reyes</span><strong style="text-align:right">PHP 238.00</strong></div>
+        <div class="dim-row"><strong>INV-261113-0841</strong><span>2:36 PM</span><span>Getafe &middot; Mark Cruz</span><strong style="text-align:right">PHP 145.00</strong></div>
+        <div class="dim-row"><strong>INV-261113-0840</strong><span>2:29 PM</span><span>Bantayan &middot; Ana Reyes</span><strong style="text-align:right">PHP 512.00</strong></div>
+        <div class="dim-row"><strong>INV-261113-0839</strong><span>2:18 PM</span><span>Getafe &middot; Mark Cruz</span><strong style="text-align:right">PHP 89.00</strong></div>
+      </div>
+
+      <aside class="drawer">
+        <div>
+          <div class="drawer-head">
+            <strong>Receipt preview</strong>
+            <span class="drawer-x">&times;</span>
+          </div>
+
+          <div class="slip-wrap" style="width:100%;">
+            <div class="slip-slot"></div>
+            <article class="slip-paper" style="padding:18px 20px;">
+              <div class="rc-center">
+                <div class="rc-store">The Daily Centro</div>
+                <div class="rc-branch">Bantayan &middot; Reg #2 &middot; Ana Reyes</div>
+                <div class="rc-inv-badge"><i></i> INV-261113-0842 &middot; 2:41 PM</div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="items">
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Yakult Cultured Milk 5-Pack</div>
+                    <div class="item-sub">65.00 ea <span class="item-disc">&middot; -10.00</span></div>
+                  </div>
+                  <span class="item-amt">120.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">1&times;</span>
+                  <div>
+                    <div class="item-name">Coca-Cola Zero Sugar 500ml</div>
+                    <div class="item-sub">42.00 ea</div>
+                  </div>
+                  <span class="item-amt">42.00</span>
+                </div>
+                <div class="item-row">
+                  <span class="item-qty">2&times;</span>
+                  <div>
+                    <div class="item-name">Piattos Cheese Crisps 85g</div>
+                    <div class="item-sub">38.00 ea</div>
+                  </div>
+                  <span class="item-amt">76.00</span>
+                </div>
+              </div>
+
+              <div class="dash"></div>
+
+              <div class="sum-rows">
+                <div class="sum-row"><span>Subtotal</span><strong>221.43</strong></div>
+                <div class="sum-row disc"><span>Discount</span><strong>-10.00</strong></div>
+                <div class="sum-row"><span>Tax</span><strong>26.57</strong></div>
+              </div>
+
+              <div class="sum-grand">
+                <span>TOTAL</span>
+                <span>PHP 238.00</span>
+              </div>
+
+              <div class="pay-row"><span>Cash</span><strong>150.00</strong></div>
+              <div class="pay-row"><span>GCash</span><strong>88.00</strong></div>
+
+              <div class="barcode">
+                <div class="barcode-bars"></div>
+                <div class="barcode-num">5 ITEMS &middot; REF 9f41c820</div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="drawer-foot">
+          <a class="sec" href="#">Print</a>
+          <a class="pri" href="#">Open full details ↗</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</body>
+</html>

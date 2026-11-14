@@ -87,3 +87,49 @@ def receipt_data(row: ZReading) -> dict | None:
         "collectionTotal": collection_total,
         "transaction": transaction,
     }
+
+
+# (receipt key, heading used in the CSV) for every block of label/value lines printed on the receipt, in printing order
+_CSV_HEADER_FIELDS = (("operatedBy", "Operated By"), ("accred", "Accred #"), ("min", "MIN"), ("ptu", "PTU"), ("sn", "S/N"), ("reportDate", "Report Date"),
+                      ("reportTime", "Report Time"), ("startDateTime", "Start Date & Time"), ("endDateTime", "End Date & Time"))
+_CSV_SECTIONS = (("counters", ""), ("sales", ""), ("breakdown", "Breakdown of Sales: "), ("discount", "Discount Summary: "),
+                 ("salesAdjustment", "Sales Adjustment: "), ("vatAdjustment", "VAT Adjustment: "), ("transaction", "Transaction Summary: "))
+
+
+def csv_columns(receipts: list[dict | None]) -> tuple[list[str], list[list[str]]]:
+    """Every field of the receipt as spreadsheet columns, one row per report (the same order as `receipts`; None = detail not read yet, left blank).
+    Values are the text the official report printed. The payment methods differ from store to store, so each one found gets its own Trans/Amount columns."""
+    def clean(label: str) -> str:
+        return label[:-1] if label.endswith(":") else label
+
+    found = [r for r in receipts if r]
+    heads = ["Store Name (on receipt)"] + [h for _, h in _CSV_HEADER_FIELDS]
+    labels: dict[str, list[str]] = {}
+    for key, prefix in _CSV_SECTIONS:
+        seen: list[str] = []
+        for r in found:
+            seen.extend(clean(label) for label, _ in r[key] if clean(label) not in seen)
+        labels[key] = seen
+        heads.extend(prefix + label for label in seen)
+    methods: list[str] = []
+    for r in found:
+        methods.extend(c["method"] for c in r["collections"] if c["method"] not in methods)
+    for m in methods:
+        heads.extend((f"Collections: {m} Trans", f"Collections: {m} Amount"))
+    heads.extend(("Collections: Total Collection Trans", "Collections: Total Collection Amount"))
+
+    rows = []
+    for r in receipts:
+        if not r:
+            rows.append([""] * len(heads))
+            continue
+        out = [r["store"]] + [r[key] for key, _ in _CSV_HEADER_FIELDS]
+        for key, _ in _CSV_SECTIONS:
+            printed = {clean(label): value for label, value in r[key]}
+            out.extend(printed.get(label, "") for label in labels[key])
+        by_method = {c["method"]: c for c in r["collections"]}
+        for m in methods:
+            out.extend((by_method[m]["count"], by_method[m]["amount"]) if m in by_method else ("", ""))
+        out.extend((r["collectionTotal"]["count"], r["collectionTotal"]["amount"]))
+        rows.append(out)
+    return heads, rows

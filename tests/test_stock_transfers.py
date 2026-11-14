@@ -127,7 +127,7 @@ def test_web_preview_confirmation_permissions_and_chinese(sync,fake,session,clie
     assert '&lt;script&gt;' in detail and '<script>alert(1)</script>' not in detail
     client.cookies.set('lang','zh')
     chinese_list=client.get('/stock-transfers').text
-    assert '库存调拨' in chinese_list and '已创建' in chinese_list and '应用筛选' in chinese_list
+    assert '库存调拨' in chinese_list and '已创建' in chinese_list and '全部地点' in chinese_list
     assert '门店已确认' in client.get('/stock-transfers/1').text  # progress strip on the reworked sheet
     login(client,'staff_transfers')
     assert client.get('/stock-transfers').status_code==200  # V2.1: store staff see transfers for their own store
@@ -439,3 +439,21 @@ def test_latest_export_excludes_old_records_but_keeps_unchanged(sync, fake, sess
     history = client.get('/stock-transfers?status=Created').text
     assert 'STOLD' in history and 'STCURRENT' in history
     assert session.scalar(select(StockTransfer.status).where(StockTransfer.reference == 'STOLD')) == 'Created'
+
+
+def test_list_page_tabs_in_transit_pill_and_late_flag(sync, fake, session, client):
+    seeded(sync, fake, session)
+    admin = add_user(session, 'list_admin', 'admin')
+    ids = list(session.scalars(select(InventoryCurrent.location_id).distinct()))
+    for reference, status in (('STNEW', 'Created'), ('STLATE', 'Shipped'), ('STDONE', 'Completed'), ('STGONE', 'Cancelled')):
+        svc.apply(session, import_source(session, admin, export(reference=reference, status=status)), admin, ids)
+    session.commit()
+    login(client, 'list_admin')
+    page = client.get('/stock-transfers').text
+    assert '2 in transit' in page and '240.00' in page                      # Created + Shipped, 120 each
+    assert page.count('class="st-row') == 4 and 'class="st-row cancelled"' in page
+    assert 'days on the way' in page                                        # STLATE was created in September
+    assert page.count('days on the way') == 1                               # only a shipped transfer can be late
+    assert 'href="?status=Shipped&history=1&loc=0"' in page                 # status tabs keep the other filters
+    shipped = client.get('/stock-transfers?status=Shipped').text
+    assert 'STLATE' in shipped and 'STNEW' not in shipped and 'Clear filters' in shipped

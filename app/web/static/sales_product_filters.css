@@ -1,81 +1,129 @@
-/* ===== Sales by product filter bar: search first, the filters underneath ===== */
-.content .filters.product-sales-filters{display:block;padding:12px;margin:16px 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+/* ===== Sales by product (Option 1 — Studio Bento + Ranked Product Ledger) ===== */
+.sp-head{margin-bottom:14px}
+.sp-head h1{margin:0}
+.sp-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);font-weight:550;margin-top:6px}
+.sp-syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:2px}
+.sp-info{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--line2);color:var(--mute2);font-size:10.5px;font-weight:700;cursor:help}
+.sp-actions{gap:8px}
+.sp-actions .i{width:15px;height:15px}
 
-/* tier 1: one big search bar */
-.psf-search{display:flex;align-items:center;gap:10px;box-sizing:border-box;height:42px;padding:0 5px 0 14px;border:1px solid var(--line2);border-radius:12px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
-.psf-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 16%,transparent)}
-.psf-search>svg{flex:none;width:17px;height:17px;color:var(--mute)}
-.content .psf-search input[name=q]{flex:1;min-width:0;height:100%;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;outline:0;font-size:14px;font-weight:500;color:var(--ink)}
-.psf-search>button{flex:none;height:32px;min-height:0;padding:0 14px;border-radius:9px;font-size:13px;font-weight:700}
+.content .filters.product-sales-filters{display:block;padding:12px 14px;margin:0 0 14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh1)}
 
-/* tier 2: the period switch and the filter chips */
-.psf-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
-/* the switch: every segment fills the whole track height, so a click anywhere in it counts; the white thumb is drawn inside */
-.psf-seg{display:inline-flex;align-items:stretch;box-sizing:border-box;height:40px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface2);isolation:isolate}
-.psf-seg>a,.psf-seg .drp-btn{position:relative;z-index:0;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:100%;min-height:0;margin:0;padding:0 16px;border:0;border-radius:11px;background:transparent;box-shadow:none;color:var(--mute);font:inherit;font-size:13px;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer;transition:color .15s}
-.psf-seg>a:hover,.psf-seg .drp-btn:hover{color:var(--ink);background:transparent;border:0}
-.psf-seg>a.on,.psf-seg .drp[data-on] .drp-btn{color:var(--ink);font-weight:800}
-.psf-seg>a.on::before,.psf-seg .drp[data-on] .drp-btn::before{content:"";position:absolute;z-index:-1;inset:3px;border-radius:9px;background:var(--surface);box-shadow:0 1px 3px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.04)}
-.psf-seg .drp{position:relative;display:flex;align-self:stretch}
+/* tier 1: search + period segmented switch aligned at 40px */
+.psf-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.psf-search{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:10px;box-sizing:border-box;height:40px;padding:0 4px 0 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);transition:border-color .15s,background-color .15s,box-shadow .15s}
+.psf-search:hover{border-color:var(--primary);background:var(--surface)}
+.psf-search:focus-within{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 16%,transparent)}
+.psf-search>svg{flex:none;width:16px;height:16px;color:var(--mute2)}
+.content .psf-search input[name=q]{flex:1;min-width:0;height:100%;min-height:0;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;outline:0;font-size:13.5px;font-weight:500;color:var(--ink)}
+#main-content #product-sales-filters .psf-search>button{flex:none;height:30px;min-height:30px;padding:0 13px;border-radius:8px;font-size:12.5px;font-weight:700}
+
+/* period switch: keep >=37px button hit box inside 40px container */
+.psf-seg{display:inline-flex;align-items:stretch;box-sizing:border-box;height:40px;padding:0;border:1px solid var(--line);border-radius:11px;background:var(--surface2);isolation:isolate}
+#main-content #product-sales-filters .psf-seg>a,
+#main-content #product-sales-filters .psf-seg .drp .drp-btn{position:relative;z-index:0;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:100%;min-height:38px;width:auto;margin:0;padding:0 15px;border:0;border-radius:10px;background:transparent;box-shadow:none;color:var(--mute);font:inherit;font-size:12.5px;font-weight:650;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer;transition:color .15s}
+#main-content #product-sales-filters .psf-seg>a:hover,
+#main-content #product-sales-filters .psf-seg .drp .drp-btn:hover{color:var(--ink);background:transparent;border:0;filter:none}
+#main-content #product-sales-filters .psf-seg>a.on,
+#main-content #product-sales-filters .psf-seg .drp[data-on] .drp-btn{color:var(--ink);font-weight:750}
+#main-content #product-sales-filters .psf-seg>a.on::before,
+#main-content #product-sales-filters .psf-seg .drp[data-on] .drp-btn::before{content:"";position:absolute;z-index:-1;inset:3px;border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.04)}
+.psf-seg .drp{position:relative;display:flex;align-self:stretch;width:auto}
 .psf-seg .drp-btn>*{display:none}
 .psf-seg .drp-btn::after{content:var(--lbl,"Custom")}
 .psf-seg .drp-btn:focus-visible,.psf-seg>a:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.psf-seg .drp-btn:active{transform:none}
 
-/* the chips: the whole chip is the click target - the real <select> lies invisibly over it, the chosen value is plain text */
-.content .filters .psf-chip{position:relative;display:inline-flex;align-items:center;gap:7px;box-sizing:border-box;height:40px;margin:0;padding:0 31px 0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:border-color .15s,background-color .15s,box-shadow .15s}
-.content .filters .psf-chip>span{color:var(--mute);font-size:12.5px;font-weight:600;line-height:1}
-.content .filters .psf-chip>.psf-v{max-width:200px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
-.content .filters .psf-chip::after{content:"";position:absolute;right:13px;top:50%;width:10px;height:10px;margin-top:-5px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat}
+/* tier 2: filter chips + right-aligned sort chip */
+.psf-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.content .filters .psf-chip{position:relative;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:36px;margin:0;padding:0 26px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);font-size:12.5px;font-weight:650;white-space:nowrap;cursor:pointer;transition:border-color .15s,background-color .15s,box-shadow .15s}
+.content .filters .psf-chip>span{color:var(--mute);font-size:12px;font-weight:550;line-height:1}
+.content .filters .psf-chip>.psf-v{max-width:180px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.content .filters .psf-chip::after{content:"";position:absolute;right:10px;top:50%;width:9px;height:9px;margin-top:-4.5px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat}
 .content .filters .psf-chip select{position:absolute;inset:0;z-index:1;width:100%;height:100%;min-width:0;min-height:0;margin:0;padding:0;border:0;border-radius:inherit;background:transparent;box-shadow:none;opacity:0;cursor:pointer;font-size:16px;appearance:none;-webkit-appearance:none}
-.content .filters .psf-chip:hover{border-color:var(--primary)}
+.content .filters .psf-chip:hover{border-color:var(--primary);background:var(--surface)}
 .content .filters .psf-chip:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 16%,transparent)}
-/* a store, supplier or category is picked: the chip turns blue so you can see what is filtering the list */
-.content .filters .psf-filter:has(select option:checked:not(:first-child)){background:var(--primary-soft);border-color:color-mix(in srgb,var(--primary) 45%,transparent);color:var(--primary)}
-.content .filters .psf-filter:has(select option:checked:not(:first-child))>span{color:color-mix(in srgb,var(--primary) 70%,var(--mute))}
+.content .filters .psf-filter:has(select option:checked:not(:first-child)){background:var(--primary-soft);border-color:color-mix(in srgb,var(--primary) 42%,transparent);color:var(--primary)}
+.content .filters .psf-filter:has(select option:checked:not(:first-child))>span{color:color-mix(in srgb,var(--primary) 72%,var(--mute))}
 .content .filters .psf-chip.psf-sort{margin-left:auto}
 
+html[data-theme=dark] .content .filters .psf-chip::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23a5a5ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E")}
+html[data-theme=dark] #main-content #product-sales-filters .psf-seg>a.on::before,
+html[data-theme=dark] #main-content #product-sales-filters .psf-seg .drp[data-on] .drp-btn::before{background:#2b2f38;box-shadow:none}
+html[data-theme=dark] #main-content #product-sales-filters .psf-seg>a.on,
+html[data-theme=dark] #main-content #product-sales-filters .psf-seg .drp[data-on] .drp-btn{color:#f1f3f7}
+
+/* 4 separated Studio Bento KPI cards */
+.product-sales-summary{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px;padding:0;background:transparent;border:0;overflow:visible}
+.product-sales-metric{min-width:0;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh1);display:flex;flex-direction:column;justify-content:space-between;gap:4px}
+.product-sales-metric dt{margin:0;font-size:12px;line-height:1.35;color:var(--mute);font-weight:650}
+.product-sales-metric dd{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:2px 0 0;font-size:24px;font-weight:800;line-height:1.15;letter-spacing:-.025em;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.product-sales-metric .metric-currency{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--mute)}
+.product-sales-metric dd.sp-sub{display:block;margin:2px 0 0;font-size:11.5px;font-weight:550;letter-spacing:0;line-height:1.35;color:var(--mute)}
+.product-sales-metric dd.sp-sub b{color:var(--ink);font-weight:700}
+.product-sales-revenue{background:linear-gradient(180deg,var(--surface) 0%,color-mix(in srgb,var(--ok) 6%,var(--surface)) 100%);border-color:color-mix(in srgb,var(--ok) 28%,var(--line))}
+.product-sales-revenue dd{color:var(--ink)}
+html[data-theme=dark] .product-sales-revenue{background:linear-gradient(180deg,var(--surface) 0%,color-mix(in srgb,var(--ok) 11%,var(--surface)) 100%);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+
+/* Ranked product ledger table */
+.sp-table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh1);overflow-x:auto}
+.sp-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.sp-table th{padding:11px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);background:var(--surface2);border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.sp-table th.right,.sp-table td.right{text-align:right}
+.sp-table td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.sp-table tbody tr:last-child td{border-bottom:0}
+.sp-table tbody tr:hover td{background:color-mix(in srgb,var(--surface2) 55%,transparent)}
+.sp-rank{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 6px;border-radius:7px;font-size:11.5px;font-weight:800;background:var(--surface2);color:var(--mute)}
+.sp-rank.r1{background:#fef3c7;color:#b45309}
+.sp-rank.r2{background:#e2e8f0;color:#334155}
+.sp-rank.r3{background:#ffedd5;color:#c2410c}
+html[data-theme=dark] .sp-rank.r1{background:rgba(245,158,11,.2);color:#fbbf24}
+html[data-theme=dark] .sp-rank.r2{background:rgba(148,163,184,.22);color:#e2e8f0}
+html[data-theme=dark] .sp-rank.r3{background:rgba(249,115,22,.22);color:#fdba74}
+.sp-prod-name{font-weight:680;line-height:1.35}
+.sp-prod-name a{color:var(--ink);text-decoration:none}
+.sp-prod-name a:hover{color:var(--primary);text-decoration:underline}
+.sp-prod-sku{margin-top:2px;font-size:11.5px;color:var(--mute);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.sp-cat{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);color:var(--mute);font-size:11.5px;font-weight:650;white-space:nowrap}
+.sp-money{font-weight:750;color:var(--ink)}
+.sp-avg{color:var(--mute);font-weight:600}
+.sp-share-cell{min-width:136px}
+.sp-share-row{display:flex;align-items:center;gap:8px}
+.sp-share-bar{flex:1;height:7px;border-radius:999px;background:var(--surface2);overflow:hidden;margin:0}
+.sp-share-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary),#3b82f6)}
+.sp-share-pct{font-size:12px;font-weight:700;color:var(--mute);width:42px;text-align:right}
+.sp-trend svg{display:inline-block;vertical-align:middle}
+
+@media(max-width:1000px){
+  .product-sales-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .product-sales-metric{padding:13px 15px}
+  .product-sales-metric dd{font-size:22px}
+}
 @media(max-width:700px){
-  .content .filters.product-sales-filters{padding:10px;border-radius:16px}
-  .psf-search{height:44px}
+  .content .filters.product-sales-filters{padding:10px;border-radius:14px}
+  .psf-search{flex:1 1 100%;height:42px}
   .content .psf-search input[name=q]{font-size:16px}
   .psf-seg{width:100%}
-  .psf-seg>a,.psf-seg .drp{flex:1}
-  .psf-seg>a,.psf-seg .drp-btn{width:100%;padding:0 6px}
+  #main-content #product-sales-filters .psf-seg>a,
+  #main-content #product-sales-filters .psf-seg .drp{flex:1}
+  #main-content #product-sales-filters .psf-seg>a,
+  #main-content #product-sales-filters .psf-seg .drp .drp-btn{width:100%;padding:0 6px}
   .content .filters .psf-chip{flex:1 1 calc(50% - 4px);min-width:0}
   .content .filters .psf-chip.psf-sort{margin-left:0}
-}
-html[data-theme=dark] .content .filters .psf-chip::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23a5a5ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E")}
-html[data-theme=dark] .psf-seg>a.on::before,html[data-theme=dark] .psf-seg .drp[data-on] .drp-btn::before{background:#2b2f38;box-shadow:none}
-html[data-theme=dark] .psf-seg>a.on,html[data-theme=dark] .psf-seg .drp[data-on] .drp-btn{color:#f1f3f7}
+  .product-sales-summary{margin-bottom:14px}
 
-/* One compact summary, with revenue leading and quiet separators. */
-.product-sales-summary{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));margin:0 0 18px;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.product-sales-metric{min-width:0;padding:18px 22px;position:relative}
-.product-sales-metric+ .product-sales-metric:before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:1px;background:var(--line)}
-.product-sales-metric dt{margin:0 0 9px;font-size:12px;line-height:1.4;color:var(--mute);font-weight:600}
-.product-sales-metric dd{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin:0;font-size:28px;font-weight:700;line-height:1.15;letter-spacing:-.8px;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.product-sales-metric .metric-currency{font-size:10px;font-weight:650;letter-spacing:.03em;color:var(--mute)}
-.product-sales-revenue{background:var(--primary-soft)}
-.product-sales-revenue dd{color:var(--primary);font-weight:750}
-.product-sales-revenue+ .product-sales-metric:before{display:none}
-@media(max-width:1000px){.product-sales-metric{padding:16px}.product-sales-metric dd{font-size:24px}}
-@media(max-width:600px){
- .product-sales-summary{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}
- .product-sales-metric{padding:14px}
- .product-sales-metric dt{font-size:11px;margin-bottom:7px}
- .product-sales-metric dd{font-size:23px;gap:5px}
- .product-sales-metric:nth-child(n+3){border-top:1px solid var(--line)}
- .product-sales-metric:nth-child(3):before{display:none}
- .product-sales-metric:nth-child(4):before{top:14px;bottom:14px}
-}
-
-/* phone: Sales by product keeps the net sales, the search and one line per product (name, units, net sales) */
-@media(max-width:700px){
-  main:has(#product-sales-filters) .page-head p,
+  /* phone: keep net sales, search and 1 crisp row per product */
+  main:has(#product-sales-filters) .page-head .sp-meta,
   main:has(#product-sales-filters) .page-head .row button{display:none}
   main:has(#product-sales-filters) .product-sales-metric:not(.product-sales-revenue){display:none}
+  main:has(#product-sales-filters) .product-sales-revenue{grid-column:1 / -1}
+  main:has(#product-sales-filters) .tw table th:nth-child(3),
+  main:has(#product-sales-filters) .tw table th:nth-child(6),
+  main:has(#product-sales-filters) .tw table th:nth-child(7),
+  main:has(#product-sales-filters) .tw table th:nth-child(8),
   main:has(#product-sales-filters) .tw table td:nth-child(3),
   main:has(#product-sales-filters) .tw table td:nth-child(6),
   main:has(#product-sales-filters) .tw table td:nth-child(7),
   main:has(#product-sales-filters) .tw table td:nth-child(8){display:none!important}
 }
+@media(prefers-reduced-motion:reduce){.psf-search,.content .filters .psf-chip,#main-content #product-sales-filters .psf-seg>a,#main-content #product-sales-filters .psf-seg .drp .drp-btn{transition:none}}

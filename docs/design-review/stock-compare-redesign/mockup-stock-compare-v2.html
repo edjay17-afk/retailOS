@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RetailOS — Stock Compare (3 New Minimal Designs)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --blue-line: #bfdbfe;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --red-line: #fecaca;
+    --slate-bar: #475569;
+    --sh: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.02);
+    --sh-md: 0 10px 26px -6px rgba(15,23,42,.07), 0 4px 10px -4px rgba(15,23,42,.04);
+    --sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: #0f172a;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    padding: 28px 32px 64px;
+  }
+
+  .gallery-head {
+    max-width: 1460px; margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: #f8fafc;
+  }
+  .gallery-head h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .gallery-head p { margin: 4px 0 0; font-size: 13px; color: #94a3b8; }
+
+  .concept-wrap {
+    max-width: 1460px; margin: 0 auto 44px;
+    background: var(--bg);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+    border: 1px solid #334155;
+  }
+
+  .concept-tagbar {
+    background: #1e293b; color: #f8fafc;
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #334155;
+  }
+  .concept-tagbar .c-left { display: flex; align-items: center; gap: 12px; }
+  .c-badge {
+    background: var(--blue); color: #fff;
+    font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 99px;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .c-title { font-size: 15px; font-weight: 750; color: #fff; }
+  .c-desc { font-size: 12.5px; color: #94a3b8; }
+
+  /* Shared App Frame inside each concept */
+  .frame {
+    padding: 24px 28px 30px;
+    background: var(--bg);
+  }
+
+  /* Minimal Top Row */
+  .m-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 18px;
+  }
+  .m-title-grp { display: flex; align-items: center; gap: 14px; }
+  .m-title { font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin: 0; }
+  .m-seg {
+    display: inline-flex; padding: 3px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 9px;
+  }
+  .m-seg span {
+    font-size: 12px; font-weight: 650; padding: 5px 11px; border-radius: 6px; color: var(--mute);
+    cursor: pointer;
+  }
+  .m-seg span.on { background: var(--ink); color: #fff; font-weight: 700; }
+
+  .m-actions { display: flex; align-items: center; gap: 8px; }
+  .m-search {
+    height: 34px; width: 210px; padding: 0 12px;
+    border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); font: inherit; font-size: 12.5px; color: var(--ink);
+  }
+  .m-pills {
+    display: inline-flex; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 2px; gap: 2px;
+  }
+  .m-pills span {
+    font-size: 12px; font-weight: 650; padding: 5px 10px; border-radius: 6px; color: var(--mute);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .m-pills span.on { background: var(--surface3); color: var(--ink); font-weight: 750; }
+  .m-pills b { font-family: var(--mono); font-size: 11px; color: var(--mute); }
+  .m-pills span.on b { color: var(--ink); }
+  .m-btn {
+    height: 34px; padding: 0 13px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface);
+    font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .m-btn.pri { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* =========================================================
+     OPTION 1: INTEGRATED COLUMN-HEADER MATRIX
+     (No separate store cards! Store health is built into the table header)
+     ========================================================= */
+  .o1-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--sh-md); overflow: hidden;
+  }
+  table.o1-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .o1-tbl thead th {
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: bottom;
+    background: var(--surface);
+  }
+  .o1-tbl thead th.c-prod { width: 30%; }
+  .o1-tbl thead th.c-loc {
+    width: 14%;
+    border-left: 1px solid var(--line);
+  }
+  .o1-tbl thead th.c-wh {
+    background: #f8faff;
+  }
+  .o1-tbl thead th.c-act {
+    width: 14%;
+    border-left: 1px solid var(--line);
+    text-align: right;
+  }
+
+  .th-loc-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .th-loc-name { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+  .th-loc-pct { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--mute); }
+  .th-loc-pct.bad { color: var(--red); }
+  .th-loc-bar {
+    height: 5px; border-radius: 99px; background: var(--surface3);
+    display: flex; overflow: hidden; gap: 2px; margin-bottom: 6px;
+  }
+  .th-loc-bar i { display: block; height: 100%; border-radius: 99px; }
+  .th-loc-bar .ok { background: var(--slate-bar); }
+  .th-loc-bar .bad { background: var(--red); }
+  .th-loc-sub {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 600; color: var(--mute2);
+  }
+  .th-loc-sub b { color: var(--red); font-weight: 700; }
+
+  .o1-tbl tbody tr { border-bottom: 1px solid var(--surface3); }
+  .o1-tbl tbody tr:last-child { border-bottom: 0; }
+  .o1-tbl tbody tr:hover { background: var(--surface2); }
+  .o1-tbl td {
+    padding: 14px 18px;
+    vertical-align: middle;
+  }
+  .o1-tbl td.c-loc { border-left: 1px solid var(--surface3); }
+  .o1-tbl td.c-wh { background: rgba(239,246,255,.45); }
+  .o1-tbl td.c-act { border-left: 1px solid var(--surface3); text-align: right; }
+
+  .p-title { font-size: 13.5px; font-weight: 750; color: var(--ink); }
+  .p-sku { font-family: var(--mono); font-size: 11px; color: var(--mute2); margin-top: 2px; }
+
+  /* Clean cell: just the number + subtle horizontal gauge */
+  .cell-num-wrap {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .cell-val {
+    font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--ink);
+  }
+  .cell-meter {
+    width: 44px; height: 5px; border-radius: 99px; background: var(--surface3); overflow: hidden;
+  }
+  .cell-meter i { display: block; height: 100%; border-radius: 99px; background: #64748b; }
+  .c-wh .cell-meter i { background: var(--blue); }
+
+  /* Zero / Negative pills — ultra clean */
+  .pill-zero {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    padding: 3px 10px; border-radius: 7px;
+    background: var(--red-soft); color: var(--red); border: 1px solid var(--red-line);
+  }
+  .pill-muted-zero {
+    font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--mute2);
+  }
+
+  .act-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 7px;
+    font-size: 12px; font-weight: 700; text-decoration: none;
+  }
+  .act-chip.send { background: var(--blue-soft); color: var(--blue); }
+  .act-chip.fix { background: var(--red-soft); color: var(--red); }
+  .act-chip.po { background: var(--surface3); color: var(--ink2); }
+  .act-chip.ok { color: var(--mute2); font-weight: 600; }
+
+  /* =========================================================
+     OPTION 2: VISUAL STOCK STRIPS (Card Rows + Distribution Bar)
+     ========================================================= */
+  .o2-summary {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .o2-loc-pill {
+    flex: 1; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 11px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: var(--sh);
+  }
+  .o2-loc-pill.wh { border-color: var(--blue-line); background: #f8faff; }
+  .o2-loc-l { display: flex; align-items: center; gap: 10px; }
+  .o2-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--slate-bar); }
+  .o2-dot.wh { background: var(--blue); }
+  .o2-dot.warn { background: var(--red); }
+  .o2-loc-name { font-size: 13px; font-weight: 750; }
+  .o2-loc-r { display: flex; align-items: baseline; gap: 8px; }
+  .o2-loc-num { font-family: var(--mono); font-size: 16px; font-weight: 800; }
+  .o2-loc-out { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--red); }
+
+  .o2-list { display: flex; flex-direction: column; gap: 8px; }
+  .o2-row {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 13px;
+    padding: 13px 18px;
+    display: grid;
+    grid-template-columns: 270px 1fr 420px 120px;
+    align-items: center; gap: 20px;
+    box-shadow: var(--sh);
+  }
+  /* Visual proportional distribution bar across branches */
+  .o2-dist {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .o2-dist-bar {
+    height: 8px; border-radius: 99px; background: var(--surface3);
+    display: flex; overflow: hidden; gap: 2px;
+  }
+  .o2-dist-bar .seg-wh { background: var(--blue); }
+  .o2-dist-bar .seg-st { background: #64748b; }
+  .o2-dist-bar .seg-out { background: var(--red-line); }
+  .o2-dist-meta {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 600; color: var(--mute);
+  }
+
+  /* 4 mini store blocks */
+  .o2-boxes {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  }
+  .o2-box {
+    background: var(--surface2); border: 1px solid var(--line);
+    border-radius: 9px; padding: 6px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .o2-box.wh { background: var(--blue-soft); border-color: var(--blue-line); }
+  .o2-box.bad { background: var(--red-soft); border-color: var(--red-line); }
+  .o2-box span { font-size: 10.5px; font-weight: 700; color: var(--mute); text-transform: uppercase; }
+  .o2-box.wh span { color: var(--blue); }
+  .o2-box.bad span { color: var(--red); }
+  .o2-box b { font-family: var(--mono); font-size: 13.5px; font-weight: 800; color: var(--ink); }
+  .o2-box.bad b { color: var(--red); }
+
+  /* =========================================================
+     OPTION 3: SPLIT WORKBENCH (Matrix Left + Live Transfer Dock Right)
+     ========================================================= */
+  .o3-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 16px;
+    align-items: start;
+  }
+  .o3-matrix {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 15px;
+    box-shadow: var(--sh); overflow: hidden;
+  }
+  table.o3-tbl { width: 100%; border-collapse: collapse; }
+  .o3-tbl th {
+    padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--line);
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--mute); text-align: right;
+  }
+  .o3-tbl th:first-child { text-align: left; }
+  .o3-tbl td {
+    padding: 13px 16px; border-bottom: 1px solid var(--surface3);
+    font-family: var(--mono); font-size: 14px; font-weight: 700; text-align: right;
+  }
+  .o3-tbl td:first-child { font-family: var(--sans); text-align: left; }
+  .o3-tbl tr.sel {
+    background: var(--blue-soft);
+  }
+  .o3-tbl tr.sel td:first-child {
+    box-shadow: inset 3px 0 0 var(--blue);
+  }
+  .o3-dot-bad {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--red); margin-right: 5px; vertical-align: middle;
+  }
+
+  /* Right Transfer Dock */
+  .o3-dock {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 15px;
+    padding: 18px; box-shadow: var(--sh-md);
+  }
+  .dock-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 14px; border-bottom: 1px solid var(--surface3); margin-bottom: 14px;
+  }
+  .dock-title { font-size: 15px; font-weight: 800; }
+  .dock-sku { font-family: var(--mono); font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .dock-vel {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; background: var(--surface3); color: var(--ink2);
+  }
+
+  .dock-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .dock-row {
+    display: grid; grid-template-columns: 82px 1fr 48px; align-items: center; gap: 10px;
+    font-size: 12.5px; font-weight: 650;
+  }
+  .dock-track {
+    height: 8px; border-radius: 99px; background: var(--surface3); overflow: hidden;
+  }
+  .dock-track i { display: block; height: 100%; border-radius: 99px; background: var(--slate-bar); }
+  .dock-track i.wh { background: var(--blue); }
+  .dock-track i.bad { background: var(--red); width: 6% !important; }
+  .dock-num { font-family: var(--mono); font-size: 13px; font-weight: 700; text-align: right; }
+  .dock-num.bad { color: var(--red); }
+
+  .dock-cta {
+    width: 100%; height: 38px; border-radius: 9px; border: 0;
+    background: var(--blue); color: #fff; font: inherit; font-size: 13px; font-weight: 750;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+  <div class="gallery-head">
+    <div>
+      <h1>Stock Compare — 3 New Minimal-Word Designs</h1>
+      <p>Stripped of text clutter: pure numbers, visual bars, and 3 distinct layout architectures.</p>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       OPTION 1: INTEGRATED HEADER MATRIX (No separate top cards)
+       ========================================================= -->
+  <section class="concept-wrap" id="opt-1">
+    <div class="concept-tagbar">
+      <div class="c-left">
+        <span class="c-badge">Option 1</span>
+        <span class="c-title">Integrated Column-Header Matrix</span>
+      </div>
+      <span class="c-desc">Removes the 4 bulky top cards — store health bars live directly inside the column headers; cells show pure numbers + mini bars.</span>
+    </div>
+
+    <div class="frame">
+      <div class="m-top">
+        <div class="m-title-grp">
+          <h2 class="m-title">Stock compare</h2>
+          <div class="m-seg">
+            <span class="on">Actual</span>
+            <span>Estimated</span>
+          </div>
+          <div class="m-pills">
+            <span class="on">All <b>809</b></span>
+            <span>Out <b>542</b></span>
+            <span>Negative <b>12</b></span>
+            <span>Can send <b>99</b></span>
+          </div>
+        </div>
+        <div class="m-actions">
+          <input class="m-search" placeholder="Search product…" readonly />
+          <button class="m-btn">Export</button>
+          <button class="m-btn pri">Send from WH (99) →</button>
+        </div>
+      </div>
+
+      <div class="o1-card">
+        <table class="o1-tbl">
+          <thead>
+            <tr>
+              <th class="c-prod">
+                <div class="th-loc-name" style="color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em;">Product</div>
+              </th>
+              <th class="c-loc c-wh">
+                <div class="th-loc-top">
+                  <span class="th-loc-name">Warehouse</span>
+                  <span class="th-loc-pct">92%</span>
+                </div>
+                <div class="th-loc-bar"><i class="ok" style="width:92%;background:var(--blue)"></i></div>
+                <div class="th-loc-sub"><span>742 stocked</span><span>65 out</span></div>
+              </th>
+              <th class="c-loc">
+                <div class="th-loc-top">
+                  <span class="th-loc-name">Bantayan</span>
+                  <span class="th-loc-pct bad">68%</span>
+                </div>
+                <div class="th-loc-bar"><i class="ok" style="width:68%"></i><i class="bad" style="width:32%"></i></div>
+                <div class="th-loc-sub"><span>486 stocked</span><b>323 out</b></div>
+              </th>
+              <th class="c-loc">
+                <div class="th-loc-top">
+                  <span class="th-loc-name">Getafe</span>
+                  <span class="th-loc-pct">77%</span>
+                </div>
+                <div class="th-loc-bar"><i class="ok" style="width:77%"></i><i class="bad" style="width:23%"></i></div>
+                <div class="th-loc-sub"><span>590 stocked</span><b>219 out</b></div>
+              </th>
+              <th class="c-loc">
+                <div class="th-loc-top">
+                  <span class="th-loc-name">Tabunoc</span>
+                  <span class="th-loc-pct">51%</span>
+                </div>
+                <div class="th-loc-bar"><i class="ok" style="width:51%"></i></div>
+                <div class="th-loc-sub"><span>412 stocked</span><span>Closed</span></div>
+              </th>
+              <th class="c-act">
+                <div class="th-loc-name" style="color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em;">Action</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="p-title">Yakult Cultured Milk 5-Pack</div>
+                <div class="p-sku">480009211042</div>
+              </td>
+              <td class="c-loc c-wh">
+                <div class="cell-num-wrap"><span class="cell-val">140</span><span class="cell-meter"><i style="width:85%"></i></span></div>
+              </td>
+              <td class="c-loc"><span class="pill-zero">0</span></td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">9</span><span class="cell-meter"><i style="width:18%"></i></span></div>
+              </td>
+              <td class="c-loc"><span class="pill-muted-zero">0</span></td>
+              <td class="c-act"><span class="act-chip send">Send →</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="p-title">Lucky Me! Pancit Canton 60g</div>
+                <div class="p-sku">480777027001</div>
+              </td>
+              <td class="c-loc c-wh">
+                <div class="cell-num-wrap"><span class="cell-val">216</span><span class="cell-meter"><i style="width:95%"></i></span></div>
+              </td>
+              <td class="c-loc"><span class="pill-zero">-4</span></td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">42</span><span class="cell-meter"><i style="width:55%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">12</span><span class="cell-meter"><i style="width:24%"></i></span></div>
+              </td>
+              <td class="c-act"><span class="act-chip fix">Count</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="p-title">Coca-Cola Zero Sugar 500ml</div>
+                <div class="p-sku">544900013180</div>
+              </td>
+              <td class="c-loc c-wh"><span class="pill-zero">0</span></td>
+              <td class="c-loc"><span class="pill-zero">0</span></td>
+              <td class="c-loc"><span class="pill-zero">0</span></td>
+              <td class="c-loc"><span class="pill-muted-zero">0</span></td>
+              <td class="c-act"><span class="act-chip po">+ PO</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="p-title">Bear Brand Sterilized Milk 200ml</div>
+                <div class="p-sku">480036139080</div>
+              </td>
+              <td class="c-loc c-wh">
+                <div class="cell-num-wrap"><span class="cell-val">96</span><span class="cell-meter"><i style="width:65%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">28</span><span class="cell-meter"><i style="width:45%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">5</span><span class="cell-meter"><i style="width:12%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">8</span><span class="cell-meter"><i style="width:20%"></i></span></div>
+              </td>
+              <td class="c-act"><span class="act-chip send">Send →</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="p-title">Piattos Cheese Crisps 85g</div>
+                <div class="p-sku">480001664480</div>
+              </td>
+              <td class="c-loc c-wh">
+                <div class="cell-num-wrap"><span class="cell-val">180</span><span class="cell-meter"><i style="width:88%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">36</span><span class="cell-meter"><i style="width:60%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">44</span><span class="cell-meter"><i style="width:70%"></i></span></div>
+              </td>
+              <td class="c-loc">
+                <div class="cell-num-wrap"><span class="cell-val">19</span><span class="cell-meter"><i style="width:35%"></i></span></div>
+              </td>
+              <td class="c-act"><span class="act-chip ok">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       OPTION 2: VISUAL DISTRIBUTION STRIPS (Card Rows)
+       ========================================================= -->
+  <section class="concept-wrap" id="opt-2">
+    <div class="concept-tagbar">
+      <div class="c-left">
+        <span class="c-badge">Option 2</span>
+        <span class="c-title">Visual Stock Strips (Card-Row Layout)</span>
+      </div>
+      <span class="c-desc">Replaces the spreadsheet grid with clean horizontal product cards, a visual stock balance bar, and 4 compact store pills.</span>
+    </div>
+
+    <div class="frame">
+      <div class="m-top">
+        <div class="m-title-grp">
+          <h2 class="m-title">Stock compare</h2>
+          <div class="m-pills">
+            <span class="on">All <b>809</b></span>
+            <span>Out <b>542</b></span>
+            <span>Negative <b>12</b></span>
+            <span>Can send <b>99</b></span>
+          </div>
+        </div>
+        <div class="m-actions">
+          <input class="m-search" placeholder="Search product…" readonly />
+          <button class="m-btn pri">Send from WH (99) →</button>
+        </div>
+      </div>
+
+      <!-- Ultra-thin 1-line location bar -->
+      <div class="o2-summary">
+        <div class="o2-loc-pill wh">
+          <div class="o2-loc-l"><span class="o2-dot wh"></span><span class="o2-loc-name">Warehouse</span></div>
+          <div class="o2-loc-r"><span class="o2-loc-num">742</span></div>
+        </div>
+        <div class="o2-loc-pill">
+          <div class="o2-loc-l"><span class="o2-dot warn"></span><span class="o2-loc-name">Bantayan</span></div>
+          <div class="o2-loc-r"><span class="o2-loc-num">486</span><span class="o2-loc-out">323 out</span></div>
+        </div>
+        <div class="o2-loc-pill">
+          <div class="o2-loc-l"><span class="o2-dot warn"></span><span class="o2-loc-name">Getafe</span></div>
+          <div class="o2-loc-r"><span class="o2-loc-num">590</span><span class="o2-loc-out">219 out</span></div>
+        </div>
+        <div class="o2-loc-pill">
+          <div class="o2-loc-l"><span class="o2-dot"></span><span class="o2-loc-name">Tabunoc</span></div>
+          <div class="o2-loc-r"><span class="o2-loc-num">412</span></div>
+        </div>
+      </div>
+
+      <div class="o2-list">
+        <div class="o2-row">
+          <div>
+            <div class="p-title">Yakult Cultured Milk 5-Pack</div>
+            <div class="p-sku">149 total · 13.9/d</div>
+          </div>
+          <div class="o2-dist">
+            <div class="o2-dist-bar">
+              <i class="seg-wh" style="flex:140"></i>
+              <i class="seg-out" style="flex:35"></i>
+              <i class="seg-st" style="flex:15"></i>
+            </div>
+            <div class="o2-dist-meta"><span>94% in Warehouse</span><span style="color:var(--red)">Bantayan out</span></div>
+          </div>
+          <div class="o2-boxes">
+            <div class="o2-box wh"><span>WH</span><b>140</b></div>
+            <div class="o2-box bad"><span>BAN</span><b>0</b></div>
+            <div class="o2-box"><span>GET</span><b>9</b></div>
+            <div class="o2-box"><span>TAB</span><b>0</b></div>
+          </div>
+          <div style="text-align:right"><span class="act-chip send">Send →</span></div>
+        </div>
+
+        <div class="o2-row">
+          <div>
+            <div class="p-title">Lucky Me! Pancit Canton 60g</div>
+            <div class="p-sku">266 total · 9.2/d</div>
+          </div>
+          <div class="o2-dist">
+            <div class="o2-dist-bar">
+              <i class="seg-wh" style="flex:216"></i>
+              <i class="seg-out" style="flex:30"></i>
+              <i class="seg-st" style="flex:54"></i>
+            </div>
+            <div class="o2-dist-meta"><span>81% in Warehouse</span><span style="color:var(--red)">Bantayan -4</span></div>
+          </div>
+          <div class="o2-boxes">
+            <div class="o2-box wh"><span>WH</span><b>216</b></div>
+            <div class="o2-box bad"><span>BAN</span><b>-4</b></div>
+            <div class="o2-box"><span>GET</span><b>42</b></div>
+            <div class="o2-box"><span>TAB</span><b>12</b></div>
+          </div>
+          <div style="text-align:right"><span class="act-chip fix">Count</span></div>
+        </div>
+
+        <div class="o2-row">
+          <div>
+            <div class="p-title">Bear Brand Sterilized Milk 200ml</div>
+            <div class="p-sku">137 total · 6.4/d</div>
+          </div>
+          <div class="o2-dist">
+            <div class="o2-dist-bar">
+              <i class="seg-wh" style="flex:96"></i>
+              <i class="seg-st" style="flex:41"></i>
+            </div>
+            <div class="o2-dist-meta"><span>70% in Warehouse</span><span>All stocked</span></div>
+          </div>
+          <div class="o2-boxes">
+            <div class="o2-box wh"><span>WH</span><b>96</b></div>
+            <div class="o2-box"><span>BAN</span><b>28</b></div>
+            <div class="o2-box"><span>GET</span><b>5</b></div>
+            <div class="o2-box"><span>TAB</span><b>8</b></div>
+          </div>
+          <div style="text-align:right"><span class="act-chip send">Send →</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       OPTION 3: SPLIT WORKBENCH (Clean Number Grid + Right Inspector Card)
+       ========================================================= -->
+  <section class="concept-wrap" id="opt-3">
+    <div class="concept-tagbar">
+      <div class="c-left">
+        <span class="c-badge">Option 3</span>
+        <span class="c-title">Split Workbench (Number Grid + Live Transfer Card)</span>
+      </div>
+      <span class="c-desc">Ultra-clean number-only table on the left paired with an always-open Quick Transfer card on the right.</span>
+    </div>
+
+    <div class="frame">
+      <div class="m-top">
+        <div class="m-title-grp">
+          <h2 class="m-title">Stock compare</h2>
+          <div class="m-pills">
+            <span class="on">All <b>809</b></span>
+            <span>Out <b>542</b></span>
+            <span>Negative <b>12</b></span>
+            <span>Can send <b>99</b></span>
+          </div>
+        </div>
+        <div class="m-actions">
+          <input class="m-search" placeholder="Search product…" readonly />
+        </div>
+      </div>
+
+      <div class="o3-grid">
+        <div class="o3-matrix">
+          <table class="o3-tbl">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th style="color:var(--blue)">Warehouse</th>
+                <th>Bantayan</th>
+                <th>Getafe</th>
+                <th>Tabunoc</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="sel">
+                <td><div class="p-title">Yakult Cultured Milk 5-Pack</div></td>
+                <td style="color:var(--blue)">140</td>
+                <td style="color:var(--red)"><span class="o3-dot-bad"></span>0</td>
+                <td>9</td>
+                <td style="color:var(--mute2)">0</td>
+                <td>149</td>
+              </tr>
+              <tr>
+                <td><div class="p-title">Lucky Me! Pancit Canton 60g</div></td>
+                <td style="color:var(--blue)">216</td>
+                <td style="color:var(--red)"><span class="o3-dot-bad"></span>-4</td>
+                <td>42</td>
+                <td>12</td>
+                <td>266</td>
+              </tr>
+              <tr>
+                <td><div class="p-title">Coca-Cola Zero Sugar 500ml</div></td>
+                <td style="color:var(--red)">0</td>
+                <td style="color:var(--red)"><span class="o3-dot-bad"></span>0</td>
+                <td style="color:var(--red)"><span class="o3-dot-bad"></span>0</td>
+                <td style="color:var(--mute2)">0</td>
+                <td style="color:var(--red)">0</td>
+              </tr>
+              <tr>
+                <td><div class="p-title">Bear Brand Sterilized Milk 200ml</div></td>
+                <td style="color:var(--blue)">96</td>
+                <td>28</td>
+                <td>5</td>
+                <td>8</td>
+                <td>137</td>
+              </tr>
+              <tr>
+                <td><div class="p-title">Piattos Cheese Crisps 85g</div></td>
+                <td style="color:var(--blue)">180</td>
+                <td>36</td>
+                <td>44</td>
+                <td>19</td>
+                <td>279</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <aside class="o3-dock">
+          <div class="dock-top">
+            <div>
+              <div class="dock-title">Yakult Cultured Milk</div>
+              <div class="dock-sku">480009211042</div>
+            </div>
+            <span class="dock-vel">13.9 / day</span>
+          </div>
+
+          <div class="dock-bars">
+            <div class="dock-row">
+              <span>Warehouse</span>
+              <div class="dock-track"><i class="wh" style="width:92%"></i></div>
+              <span class="dock-num" style="color:var(--blue)">140</span>
+            </div>
+            <div class="dock-row">
+              <span>Bantayan</span>
+              <div class="dock-track"><i class="bad"></i></div>
+              <span class="dock-num bad">0</span>
+            </div>
+            <div class="dock-row">
+              <span>Getafe</span>
+              <div class="dock-track"><i style="width:16%"></i></div>
+              <span class="dock-num">9</span>
+            </div>
+            <div class="dock-row" style="color:var(--mute2)">
+              <span>Tabunoc</span>
+              <div class="dock-track"><i style="width:0%"></i></div>
+              <span class="dock-num">0</span>
+            </div>
+          </div>
+
+          <button class="dock-cta">Send 48 to Bantayan →</button>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

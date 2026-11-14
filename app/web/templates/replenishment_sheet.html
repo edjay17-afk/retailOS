@@ -3,97 +3,158 @@
 {% block content %}
 <link rel="stylesheet" href="/static/replenishment_sheet.css?v={{ asset_v('replenishment_sheet.css') }}">
 {% set qs = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&todo=' ~ todo ~ '&search=' ~ (search|urlencode) %}
+{% set base_filter = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&search=' ~ (search|urlencode) %}
 {% set here = '/replenishment/sheet?' ~ qs ~ '&page=' ~ page %}
-<div class="page-head">
-  <div><h1>{{ t('Auto replenishment') }}</h1>
-    <p class="sync-note"><span class="rs-sub-count">{{ kpi.products|num(0) }} {{ t('products need stock') }}</span><span class="page-desc">{{ t('One sheet for every store: what each store needs, what the warehouse can send, and what to order from suppliers.') }}</span></p></div>
+{% set decided_n = counts.get('approved', 0) + counts.get('modified', 0) %}
+
+<div class="page-head rs-head">
+  <div class="rs-title-group">
+    <h1>{{ t('Auto replenishment') }}</h1>
+    <span class="rs-pill num" title="{% if sales_only %}Sales-only · {{ cover_days }}d cover{% endif %}{% if last %} · {{ last.run_at|local }} ({{ t(last.status) }}){% endif %}">{{ counts.get('pending', 0) }} ready · {{ counts.get('needs_review', 0) }} review · {{ decided_n }} decided</span>
+    {% if last and last.status != 'ok' %}
+      <span class="rs-pill bad">{{ last.run_at|local }} · {{ t(last.status) }}</span>
+    {% endif %}
+  </div>
   <div class="row noprint">
-    {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec"><svg class="i"><use href="#i-sync"/></svg>{{ t('Refresh') }}</button></form>{% endif %}
-    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0" class="rs-create{{ '' if (counts.get('approved', 0) + counts.get('modified', 0)) else ' rs-create-idle' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok"><svg class="i"><use href="#i-check"/></svg>{{ t('Create batches from approved') }}</button></form>{% endif %}
-    <a class="btn sec" href="/replenishment/batches"><svg class="i"><use href="#i-file"/></svg>{{ t('Order batches') }}</a>
-    <a class="btn sec" href="/replenishment?view=list">{{ t('List view') }}</a>
+    {% if can('repl.run') %}<form novalidate method="post" action="/replenishment/run" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sec">↻ {{ t('Refresh') }}</button></form>{% endif %}
+    <a class="btn sec" href="/replenishment/batches">{{ t('Order batches') }}</a>
+    {% if can('repl.decide') %}<form novalidate method="post" action="/replenishment/batches/create" style="margin:0" class="rs-create{{ '' if decided_n else ' rs-create-idle' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ok rs-create-btn">{{ t('Create batches from approved') }}{% if decided_n %} ({{ decided_n }}){% endif %}</button></form>{% endif %}
   </div>
 </div>
 
-{% if sales_only %}<p class="rs-note small mute"><b>{{ t('Based on sales only for now.') }}</b> {{ t('Stock on hand is not used while inventory is not accurate. Each suggestion covers {days} days of sales, minus what is already on order, and anything approved in the last {days} days is not suggested again.', days=cover_days) }}</p>{% endif %}
-
-<div class="rs-kpis">
-  <div class="rs-kpi"><b>{{ kpi.products|num(0) }}</b><small>{{ t('products need stock') }}</small></div>
-  <div class="rs-kpi"><b>PHP {{ kpi.value|money }}</b><small>{{ t('total to move or order') }}</small></div>
-  {% if has_wh %}<div class="rs-kpi"><b>PHP {{ kpi.send|money }}</b><small>{{ t('can be sent from the warehouse') }}</small></div>
-  <div class="rs-kpi {{ 'hot' if kpi.order > 0 }}"><b>PHP {{ kpi.order|money }}</b><small>{{ t('must be ordered from suppliers') }}</small></div>{% endif %}
-</div>
-{% if last %}<p class="small {{ 'mute' if last.status == 'ok' else '' }}" {% if last.status != 'ok' %}style="color:var(--bad)"{% endif %}>{{ t('Last run') }} {{ last.run_at|local }} ({{ t(last.status) }}){% if last.note %}: {{ t(last.note) }}{% endif %}</p>{% endif %}
-
 <form novalidate class="rs-tools{{ ' rs-filters-open' if loc or todo }}" method="get">
-  <span class="rs-seg">
-    {% for v, l, n in (('pending', 'Ready to review', counts.get('pending', 0)), ('needs_review', 'Needs review', counts.get('needs_review', 0)), ('decided', 'Decided', counts.get('approved', 0) + counts.get('modified', 0)), ('all', 'All', none)) %}<a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&todo={{ todo }}&search={{ search|urlencode }}"><span class="rs-label-full">{{ t(l) }}</span><span class="rs-label-mobile">{{ t({'pending':'Ready','needs_review':'Needs review','decided':'Decided','all':'All'}[v]) }}</span>{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>{% endfor %}
-  </span>
-  <input type="hidden" name="status" value="{{ status }}">
-  <input type="search" name="search" value="{{ search }}" placeholder="{{ t('Product name or barcode') }}" aria-label="{{ t('Search') }}">
-  <button type="button" class="rs-filter-toggle sec" aria-expanded="{{ 'true' if loc or todo else 'false' }}"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg>{{ t('Filter') }}{% if loc or todo %}<b>{{ (1 if loc else 0) + (1 if todo else 0) }}</b>{% endif %}</button>
-  <select name="loc" class="rs-store" onchange="this.form.submit()" aria-label="{{ t('Store') }}"><option value="0">{{ t('All stores') }}</option>{% for l in all_stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ short(l.name) }}</option>{% endfor %}{% if wh_loc %}<option value="{{ wh_loc.id }}" {{ 'selected' if wh_view }}>{{ wh_loc.name }}</option>{% endif %}</select>
-  <select name="todo" onchange="this.form.submit()" aria-label="{{ t('What to do') }}"><option value="">{{ t('What to do') }}: {{ t('All') }}</option><option value="send" {{ 'selected' if todo == 'send' }}>{{ t('Send to stores') }}</option><option value="order" {{ 'selected' if todo == 'order' }}>{{ t('Order from supplier') }}</option><option value="both" {{ 'selected' if todo == 'both' }}>{{ t('Send and order') }}</option></select>
-  <select name="supplier" onchange="this.form.submit()" aria-label="{{ t('Supplier') }}"><option value="0">{{ t('All suppliers') }}</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if supplier == s.id }}>{{ s.name }}</option>{% endfor %}</select>
-  <button class="sm">{{ t('Search') }}</button>
-  {% if not sales_only %}<span class="rs-legend"><i class="u"></i>{{ t('Urgent (under 1 day)') }}<i class="w"></i>{{ t('Soon (1 to 3 days)') }}<i class="n"></i>{{ t('Normal') }}</span>{% endif %}
+  <div class="rs-tools-top">
+    <div class="rs-action-seg" role="navigation" aria-label="{{ t('What to do') }}">
+      <a class="{{ 'on' if not todo }}" href="?{{ base_filter }}">All actions <b>{{ todo_counts.all|num(0) }}</b></a>
+      {% if not wh_view %}<a class="{{ 'on' if todo == 'send' }}" href="?{{ base_filter }}&todo=send">Send from WH <b>{{ todo_counts.send|num(0) }}</b></a>{% endif %}
+      <a class="{{ 'on' if todo == 'order' }}" href="?{{ base_filter }}&todo=order">Order supplier <b>{{ todo_counts.order|num(0) }}</b></a>
+      <a class="{{ 'on' if todo == 'both' }}" href="?{{ base_filter }}&todo=both">Split <b>{{ todo_counts.both|num(0) }}</b></a>
+    </div>
+    <input type="hidden" name="status" value="{{ status }}">
+    <input type="hidden" name="todo" value="{{ todo }}">
+    <div class="rs-search-cluster">
+      <input type="search" name="search" value="{{ search }}" placeholder="{{ t('Search product or SKU') }}" aria-label="{{ t('Search') }}">
+      <button type="button" class="rs-filter-toggle sec" aria-expanded="{{ 'true' if loc or todo else 'false' }}"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg>{{ t('Filter') }}{% if loc or todo %}<b>{{ (1 if loc else 0) + (1 if todo else 0) }}</b>{% endif %}</button>
+      <div class="rs-chip">
+        <span class="rs-chip-lbl">{{ t('Store') }}</span>
+        <select name="loc" class="rs-store" onchange="this.form.submit()" aria-label="{{ t('Store') }}">
+          <option value="0">{{ t('All stores') }}</option>
+          {% for l in all_stores %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ short(l.name) }}</option>{% endfor %}
+          {% if wh_loc %}<option value="{{ wh_loc.id }}" {{ 'selected' if wh_view }}>{{ wh_loc.name }}</option>{% endif %}
+        </select>
+      </div>
+      <div class="rs-chip">
+        <span class="rs-chip-lbl">{{ t('Supplier') }}</span>
+        <select name="supplier" onchange="this.form.submit()" aria-label="{{ t('Supplier') }}">
+          <option value="0">{{ t('All suppliers') }}</option>
+          {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if supplier == s.id }}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="sm rs-go-btn">{{ t('Search') }}</button>
+    </div>
+  </div>
 </form>
+
+<div class="rs-meta-strip">
+  <div class="rs-meta-left">
+    {% if can('repl.decide') %}<label class="rs-all" title="{{ t('Select all') }}"><input type="checkbox" id="repl-select-all"><span>{{ t('All') }}</span></label>{% endif %}
+    <span class="rs-seg">
+      {% for v, l, n in (('pending', 'Ready', counts.get('pending', 0)), ('needs_review', 'Review', counts.get('needs_review', 0)), ('decided', 'Decided', decided_n), ('all', 'All', none)) %}
+        <a class="{{ 'on' if status == v }}" href="?status={{ v }}&loc={{ loc }}&supplier={{ supplier }}&todo={{ todo }}&search={{ search|urlencode }}">{{ t(l) }}{% if n is not none %} <b>{{ n }}</b>{% endif %}</a>
+      {% endfor %}
+    </span>
+  </div>
+  <div class="rs-meta-right">
+    <span class="rs-summary-inline num">{{ kpi.products|num(0) }} SKUs · ₱{{ kpi.value|money }}</span>
+    <a class="rs-list-link" href="/replenishment?view=list">{{ t('List view') }}</a>
+  </div>
+</div>
+
+<div class="rs-wrap">
+  <table class="rs{{ ' rs-wh-view' if wh_view }}{{ ' rs-no-wh' if not has_wh }}">
+    <thead class="rs-sr">
+      <tr>
+        <th class="rs-cb">{{ t('Select') }}</th>
+        <th>{{ t('Product') }}</th>
+        {% if has_wh %}<th class="r">{{ t('Warehouse has') }}</th>{% endif %}
+        {% for l in stores %}<th class="c" title="{{ l.name }}">{{ short(l.name) }}</th>{% endfor %}
+        <th class="r">{{ t('Stores need') }}</th>
+        {% if wh_view %}<th class="r">{{ t('To order') }}</th>{% endif %}
+        <th>{{ t('What to do') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+    <tr class="rs-row" data-todo="{{ row.todo[0] }}" data-pid="{{ row.p.id }}" data-wh="{{ '' if row.wh is none else (row.wh|int) }}">
+      <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
+      <td class="rs-p">
+        <button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button>
+        <div class="rs-p-head">
+          <b>{{ row.p.name }}</b>
+          <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}">i</button>
+        </div>
+        <small class="num">{% if row.supplier %}{{ row.supplier.name }}{% endif %}{% if row.unit %} · ₱{{ row.unit|money }}/unit{% endif %}{% if row.value %} · Total ₱{{ row.value|money }}{% endif %}</small>
+        <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template>
+      </td>
+      {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh"><span class="wh-pill {{ 'short' if row.todo[0] != 'send' }}">WH: {{ row.wh|num }}</span></td>{% endif %}
+      <td class="c rs-chips-cell">
+        <div class="rs-chips">
+          {% for l in stores %}{% set x = row.cells.get(l.id) %}
+          <div class="s-chip{{ ' rs-z' if not x }}{{ ' urg' if x and x.level == 'u' }}" data-label="{{ short(l.name) }}">
+            <span class="s-chip-name">{{ short(l.name) }}</span>
+            {% if not x %}<span class="q z" title="{{ t('Nothing suggested') }}">0</span>
+            {% else %}{% set r = x.r %}{% set tip = r.product.name ~ ' · ' ~ short(l.name) ~ ': ' ~ t('sells') ~ ' ' ~ (r.ads|num) ~ '/' ~ t('day') ~ (' · ' ~ t('on hand') ~ ' ' ~ (r.on_hand|num) if not sales_only else '') ~ (' · +' ~ (r.incoming|num) ~ ' ' ~ t('incoming') if r.incoming else '') ~ ' · ' ~ t('Suggested') ~ ' ' ~ (r.final_qty|num) %}
+              {% if x.selectable %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" data-unit="{{ r.unit_cost or 0 }}" data-qty="{{ x.qty|int }}" hidden>{% endif %}
+              {% if x.editable %}
+              <form id="repl-quantity-{{ r.id }}" method="post" action="/replenishment/{{ r.id }}/decide" class="repl-quantity" data-nobusy data-rec-id="{{ r.id }}" data-saved="{{ x.qty|int }}">
+                <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save"><input type="hidden" name="back" value="{{ here }}">
+                <input class="q {{ x.level }}" type="number" name="qty" min="1" max="100000" step="1" required value="{{ x.qty|int }}" title="{{ tip }}" aria-label="{{ t('Quantity') }}: {{ r.product.name }} · {{ short(l.name) }}">
+                <button hidden name="saveButton" type="submit">{{ t('Save') }}</button><span class="repl-save-status" role="status" aria-live="polite"></span>
+              </form>
+              {% elif x.review %}<span class="q rv" title="{{ tip }} — {% for z in r.needs_review_reasons %}{{ t(z|replace('_',' ')) }}{{ '; ' if not loop.last }}{% endfor %}">{{ x.qty|num }}</span>
+              {% else %}<span class="q d" title="{{ tip }}">{{ x.qty|num }}{% if r.transfer_sheet_id %}<em>{{ t('sheet') }}</em>{% elif r.batch_id %}<em>{{ t('batch') }}</em>{% endif %}</span>{% endif %}
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </td>
+      <td class="r rs-need" data-label="{{ t('Stores need') }}"><b>Need {{ row.need|num }}</b></td>
+      {% if wh_view %}<td class="r rs-to-order" data-label="{{ t('To order') }}"><b>To order {{ row.todo[2]|num }}</b></td>{% endif %}
+      <td class="rs-todo">{% set td = row.todo %}
+        {% if wh_view %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
+        {% elif td[0] == 'send' %}<span class="need">{{ t('Send') }} {{ td[1]|num }} from WH</span>
+        {% elif td[0] == 'order' %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
+        {% else %}<span class="need mix">{{ t('Send') }} {{ td[1]|num }}, {{ t('Order')|lower }} {{ td[2]|num }}</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr class="rs-empty-row"><td colspan="6"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 <form novalidate method="post" action="{{ '/replenishment/proceed' if (can('transfer.sheet') or can('po.create')) else '/replenishment/bulk' }}" id="bulk">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ here }}">
   <div class="rs-dock noprint" id="repl-selection" hidden>
-    <div><b><span id="repl-selected-count">0</span> {{ t('selected') }}</b><small>PHP <span id="rs-selected-value">0.00</span> <span id="repl-save-hint" hidden>· {{ t('Save edited quantities before proceeding.') }}</span></small></div>
-    <button type="button" class="sec sm" id="repl-clear">{{ t('Clear selection') }}</button>
-    <button type="submit" id="repl-proceed" data-sheet="{{ t('Create Stock Transfer') }}" data-po="{{ t('Create purchase order') }}" data-both="{{ t('Create Stock Transfer and Purchase Order') }}" data-default="{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}">{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}</button>
+    <div class="rs-dock-info">
+      <b><span id="repl-selected-count">0</span> {{ t('selected') }}</b>
+      <small>₱<span id="rs-selected-value">0.00</span> <span id="rs-selected-split"></span> <span id="repl-save-hint" hidden>· {{ t('Save edited quantities before proceeding.') }}</span></small>
+    </div>
+    <div class="rs-dock-actions">
+      <button type="button" class="sec sm" id="repl-clear">{{ t('Clear') }}</button>
+      <button type="submit" id="repl-proceed" data-sheet="{{ t('Create Stock Transfer') }}" data-po="{{ t('Create purchase order') }}" data-both="{{ t('Create Stock Transfer and Purchase Order') }}" data-default="{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}">{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}</button>
+    </div>
   </div>
 </form>
 
-<div class="rs-wrap"><table class="rs{{ ' rs-wh-view' if wh_view }}">
-  <thead><tr>
-    <th class="rs-cb">{% if can('repl.decide') %}<label class="rs-all"><input type="checkbox" id="repl-select-all"><span>{{ t('Select all') }}</span></label>{% endif %}</th>
-    <th>{{ t('Product') }}</th>
-    {% if has_wh %}<th class="r">{{ t('Warehouse has') }}</th>{% endif %}
-    {% for l in stores %}<th class="c" title="{{ l.name }}">{{ short(l.name) }}</th>{% endfor %}
-    <th class="r">{{ t('Stores need') }}</th>{% if wh_view %}<th class="r">{{ t('To order') }}</th>{% endif %}<th>{{ t('What to do') }}</th>
-  </tr></thead>
-  <tbody>
-  {% for row in rows %}
-  <tr class="rs-row" data-todo="{{ row.todo[0] }}" data-pid="{{ row.p.id }}">
-    <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
-    <td class="rs-p"><button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button><b>{{ row.p.name }}</b><button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/><path d="M10.4 10.6h2.2v6.4h1.4v1.6h-4.2V17h1.4v-4.8h-.8z" fill="currentColor"/></svg></button><small>{{ row.p.barcode or '' }}{% if row.supplier %} · {{ row.supplier.name }}{% endif %}</small>
-      <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template></td>
-    {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh {{ 'short' if row.todo[0] != 'send' }}">{{ row.wh|num }}</td>{% endif %}
-    {% for l in stores %}{% set x = row.cells.get(l.id) %}
-    <td class="c" data-label="{{ short(l.name) }}">
-      {% if not x %}<span class="q z" title="{{ t('Nothing suggested') }}">0</span>
-      {% else %}{% set r = x.r %}{% set tip = r.product.name ~ ' · ' ~ short(l.name) ~ ': ' ~ t('sells') ~ ' ' ~ (r.ads|num) ~ '/' ~ t('day') ~ (' · ' ~ t('on hand') ~ ' ' ~ (r.on_hand|num) if not sales_only else '') ~ (' · +' ~ (r.incoming|num) ~ ' ' ~ t('incoming') if r.incoming else '') ~ ' · ' ~ t('Suggested') ~ ' ' ~ (r.final_qty|num) %}
-        {% if x.selectable %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" data-unit="{{ r.unit_cost or 0 }}" hidden>{% endif %}
-        {% if x.editable %}
-        <form id="repl-quantity-{{ r.id }}" method="post" action="/replenishment/{{ r.id }}/decide" class="repl-quantity" data-nobusy data-rec-id="{{ r.id }}" data-saved="{{ x.qty|int }}">
-          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save"><input type="hidden" name="back" value="{{ here }}">
-          <input class="q {{ x.level }}" type="number" name="qty" min="1" max="100000" step="1" required value="{{ x.qty|int }}" title="{{ tip }}" aria-label="{{ t('Quantity') }}: {{ r.product.name }} · {{ short(l.name) }}">
-          <button hidden name="saveButton" type="submit">{{ t('Save') }}</button><span class="repl-save-status" role="status" aria-live="polite"></span>
-        </form>
-        {% elif x.review %}<span class="q rv" title="{{ tip }} — {% for z in r.needs_review_reasons %}{{ t(z|replace('_',' ')) }}{{ '; ' if not loop.last }}{% endfor %}">{{ x.qty|num }}</span>
-        {% else %}<span class="q d" title="{{ tip }}">{{ x.qty|num }}{% if r.transfer_sheet_id %}<em>{{ t('sheet') }}</em>{% elif r.batch_id %}<em>{{ t('batch') }}</em>{% endif %}</span>{% endif %}
-      {% endif %}
-    </td>{% endfor %}
-    <td class="r rs-need" data-label="{{ t('Stores need') }}"><b>{{ row.need|num }}</b></td>{% if wh_view %}<td class="r rs-need" data-label="{{ t('To order') }}"><b>{{ row.todo[2]|num }}</b></td>{% endif %}
-    <td class="rs-todo">{% set td = row.todo %}
-      {% if wh_view %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
-      {% elif td[0] == 'send' %}<span class="need">{{ t('Send') }} {{ td[1]|num }}</span>
-      {% elif td[0] == 'order' %}<span class="need sup">{{ t('Order') }} {{ td[2]|num }} {{ t('from supplier') }}</span>
-      {% else %}<span class="need mix">{{ t('Send') }} {{ td[1]|num }}, {{ t('Order')|lower }} {{ td[2]|num }}</span>{% endif %}</td>
-  </tr>
-  {% else %}<tr><td colspan="{{ stores|length + (5 if has_wh else 4) + (1 if wh_view else 0) }}"><div class="empty">{{ t('No suggestions here.') }} {% if last and last.status == 'blocked' %}{{ t('The last run was blocked because data was stale.') }}{% endif %}</div></td></tr>
-  {% endfor %}
-  </tbody>
-  {% if rows %}<tfoot><tr><td></td><td>{{ t('Total') }} <small>({{ t('all pages') }})</small></td>{% if has_wh %}<td></td>{% endif %}{% for l in stores %}<td class="c">{{ col_totals[l.id]|num }}</td>{% endfor %}<td class="r">{{ grand|num }}</td>{% if wh_view %}<td></td>{% endif %}<td></td></tr></tfoot>{% endif %}
-</table></div>
 <p class="small mute rs-foot">{{ t('Change a number and it saves by itself. Tick the rows you have checked, then proceed.') }} {{ t('Managers can approve up to') }} {{ limit|money }} {{ t('per line') }}.</p>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
-<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + pages - 1) // pages) or 1 }} · {{ total }} {{ t('products') }}</span>
-{% if page * pages < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+<div class="pager">
+  {% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+  <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + pages - 1) // pages) or 1 }} · {{ total }} {{ t('products') }}</span>
+  {% if page * pages < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}
+</div>
+
 <div class="drawer-scrim" id="drawer-scrim" hidden></div>
 <dialog class="drawer" id="drawer" aria-labelledby="drawer-title" hidden>
   <div class="drawer-head"><h2 id="drawer-title"></h2><button type="button" class="iconbtn" id="drawer-close" aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>

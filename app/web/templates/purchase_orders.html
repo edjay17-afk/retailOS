@@ -7,24 +7,43 @@
 <div class="po-desk po-top">
   <div class="po-hero">
     <h1 class="po-kicker">{{ t('Purchase orders') }}</h1>
-    <p class="po-big"><span>PHP</span><b>{{ summary.value|money }}</b><em>{{ t('Still to arrive')|lower }}</em></p>
-    <p class="po-facts"><span><b>{{ summary.incoming }}</b> {{ t('on the way') }}</span><span><b>{{ summary.due_soon }}</b> {{ t('due within 3 days') }}</span><span><b class="warn">{{ summary.stale }}</b> {{ t('stale') }}</span></p>
-    <p class="po-note">{{ t('Copied from StoreHub. A PO that is open more than') }} {{ stale_days }} {{ t('days past its expected date is shown as') }} <span class="badge b-warn">{{ t('stale') }}</span> {{ t('and is not counted as incoming stock. Receive or cancel it in StoreHub.') }}</p>
+    <span class="po-meta-pill">{{ summary.open }} {{ t('open')|lower }} · {{ summary.value|money }} {{ t('incoming') }}</span>
   </div>
   {% if can('po.create') %}<a class="po-new" href="/purchase-orders/new"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>{{ t('New purchase order') }}</a>{% endif %}
 </div>
 
 <div class="page-head po-phone"><h1>{{ t('Purchase orders') }}</h1>{% if can('po.create') %}<a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div>
-<p class="small mute po-phone">{{ t('Copied from StoreHub. A PO that is open more than') }} {{ stale_days }} {{ t('days past its expected date is shown as') }} <span class="badge b-warn">{{ t('stale') }}</span> {{ t('and is not counted as incoming stock. Receive or cancel it in StoreHub.') }}</p>
 
-<div class="po-desk po-controls">
+<div class="po-desk po-toolbar">
   <div class="po-tabs" role="group" aria-label="{{ t('Status') }}">
-    <a href="?view=open&loc={{ loc }}" class="{{ 'on' if view == 'open' }}">{{ t('Open') }}<span>{{ summary.open }}</span></a>
-    <a href="?view=closed&loc={{ loc }}" class="{{ 'on' if view == 'closed' }}">{{ t('Closed') }}<span>{{ summary.closed }}</span></a>
-    <a href="?view=all&loc={{ loc }}" class="{{ 'on' if view == 'all' }}">{{ t('All') }}<span>{{ summary.all }}</span></a>
+    <a href="?view=open&loc={{ loc }}{% if q %}&q={{ q|urlencode }}{% endif %}" class="{{ 'on' if view == 'open' }}">{{ t('Open') }}<span>{{ summary.open }}</span></a>
+    <a href="?view=closed&loc={{ loc }}{% if q %}&q={{ q|urlencode }}{% endif %}" class="{{ 'on' if view == 'closed' }}">{{ t('Closed') }}<span>{{ summary.closed }}</span></a>
+    <a href="?view=all&loc={{ loc }}{% if q %}&q={{ q|urlencode }}{% endif %}" class="{{ 'on' if view == 'all' }}">{{ t('All') }}<span>{{ summary.all }}</span></a>
   </div>
-  <form novalidate method="get" class="po-where"><input type="hidden" name="view" value="{{ view }}">
-    <label class="po-chip"><span>{{ t('Location') }}</span><b>{% if loc %}{% for l in locations %}{% if l.id == loc %}{{ l.name|replace('The Daily Centro - ', '') }}{% endif %}{% endfor %}{% else %}{{ t('All locations') }}{% endif %}</b><select name="loc" aria-label="{{ t('Location') }}" onchange="this.form.submit()"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></label>
+  <form novalidate method="get" class="po-filters" id="po-filter-form">
+    <input type="hidden" name="view" value="{{ view }}">
+    <label class="po-search">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input type="search" name="q" id="po-search-input" value="{{ q or '' }}" placeholder="{{ t('Search PO # or supplier') }}" aria-label="{{ t('Search PO # or supplier') }}" autocomplete="off">
+    </label>
+    <label class="po-chip">
+      <span>{{ t('Urgency') }}</span>
+      <b>{{ t('Overdue') if urgency == 'stale' else t('Due soon') if urgency == 'due_soon' else t('On the way') if urgency == 'incoming' else (t('All open') if view == 'open' else t('All statuses')) }}</b>
+      <select name="urgency" aria-label="{{ t('Urgency') }}" onchange="this.form.submit()">
+        <option value="all" {{ 'selected' if urgency == 'all' }}>{{ t('All open') if view == 'open' else t('All statuses') }}</option>
+        <option value="stale" {{ 'selected' if urgency == 'stale' }}>{{ t('Overdue') }} ({{ summary.stale }})</option>
+        <option value="due_soon" {{ 'selected' if urgency == 'due_soon' }}>{{ t('Due soon') }} ({{ summary.due_soon }})</option>
+        <option value="incoming" {{ 'selected' if urgency == 'incoming' }}>{{ t('On the way') }} ({{ summary.incoming }})</option>
+      </select>
+    </label>
+    <label class="po-chip">
+      <span>{{ t('Location') }}</span>
+      <b>{% if loc %}{% for l in locations %}{% if l.id == loc %}{{ l.name|replace('The Daily Centro - ', '') }}{% endif %}{% endfor %}{% else %}{{ t('All locations') }}{% endif %}</b>
+      <select name="loc" aria-label="{{ t('Location') }}" onchange="this.form.submit()">
+        <option value="0">{{ t('All locations') }}</option>
+        {% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}
+      </select>
+    </label>
   </form>
 </div>
 
@@ -33,17 +52,50 @@
 
 <section class="po-desk po-feed" aria-label="{{ t('Purchase orders') }}">
   {% for g in groups %}
-  <div class="po-group {{ g.key }}"><b>{{ t('Needs attention') if g.key == 'stale' else t('On the way') if g.key == 'incoming' else t('Closed') }}</b><span>{% if g.key == 'stale' %}{{ t('Not counted as incoming. Receive or cancel in StoreHub.') }}{% else %}{{ g.rows|length }} {{ t('POs') }}{% endif %}</span></div>
-  {% for po, kind, remaining, days in g.rows %}
-  <a class="po-row {{ kind }}" href="/purchase-orders/{{ po.id }}">
-    <span class="po-id"><b>{{ t('PO #') }}{{ po.sh_po_id }}</b><small>{{ po.supplier.name if po.supplier else '—' }}</small></span>
-    <span class="po-where-cell"><b>{{ po.location.name|replace('The Daily Centro - ', '') if po.location else '—' }}</b><small>{{ t('Created') }} {{ po.created_sh|local('%d %b') }}</small></span>
-    <span class="po-state"><em class="po-pill {{ kind }}"><i></i>{{ t(po.status) }}{{ t(' (stale)') if kind == 'stale' }}{{ t(' (deleted)') if kind == 'deleted' }}</em>{% set due = due_text(kind, days)|trim %}{% if due %}<small class="{{ 'late' if kind == 'stale' or (days is not none and days <= 0) }}">{{ due }}</small>{% endif %}</span>
-    <span class="po-lines"><b>{{ po.lines|length }} {{ t('Lines')|lower }}</b><small>{% if kind in ('incoming', 'stale') %}{{ remaining|num }} {{ t('Still to arrive')|lower }}{% else %}—{% endif %}</small></span>
-    <span class="po-total">{{ po.total|money }}</span>
-  </a>
-  {% endfor %}
-  {% else %}<div class="po-empty">{{ t('No purchase orders.') }}{% if loc %} <a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% elif view != 'all' %} <a class="btn sec" href="?view=all">{{ t('View all orders') }}</a>{% elif can('po.create') %} <a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div>{% endfor %}
+  <div class="po-group-card {{ g.key }}">
+    <div class="po-group {{ g.key }}">
+      <div class="po-group-left">
+        <b>{{ t('Needs attention') if g.key == 'stale' else t('On the way') if g.key == 'incoming' else t('Closed') }}</b>
+        <span>{% if g.key == 'stale' %}{{ g.rows|length }} {{ t('overdue PO') if g.rows|length == 1 else t('overdue POs') }} · {{ t('Not counted as incoming. Receive or cancel in StoreHub.') }}{% elif g.key == 'incoming' %}{{ g.rows|length }} {{ t('POs') }} {{ t('expected') }}{% else %}{{ g.rows|length }} {{ t('POs') }}{% endif %}</span>
+      </div>
+      <span class="po-group-sum {{ 'stale' if g.key == 'stale' else '' }}">{{ g.total_value|money }}</span>
+    </div>
+    {% for po, kind, remaining, days, ordered_qty, received_qty, pct in g.rows %}
+    {% set due = due_text(kind, days)|trim %}
+    {% set pill_cls = 'stale' if kind == 'stale' else ('warn' if kind == 'incoming' and days is not none and days <= 1 else ('incoming' if kind == 'incoming' else ('deleted' if kind == 'deleted' else 'closed'))) %}
+    <div class="po-row {{ kind }}" data-search="{{ ('po #' ~ po.sh_po_id ~ ' ' ~ po.sh_po_id ~ ' ' ~ (po.supplier.name if po.supplier else '') ~ ' ' ~ (po.location.name if po.location else ''))|lower }}">
+      <div class="po-id">
+        <a class="po-row-link" href="/purchase-orders/{{ po.id }}"><b>{{ t('PO #') }}{{ po.sh_po_id }}</b></a>
+        <small>{{ po.supplier.name if po.supplier else '—' }}</small>
+      </div>
+      <div class="po-where-cell">
+        <b>{{ po.location.name|replace('The Daily Centro - ', '') if po.location else '—' }}</b>
+        <small>{{ t('Created') }} {{ po.created_sh|local('%d %b') }}</small>
+      </div>
+      <div class="po-state">
+        <em class="po-pill {{ pill_cls }}"><i></i>{% if kind == 'stale' %}{{ t('Stale') }}{% if due %} · {{ due }}{% endif %}{% elif kind == 'incoming' and days is not none and days <= 1 and due %}{{ due }}{% elif kind == 'deleted' %}{{ t(po.status) }}{{ t(' (deleted)') }}{% else %}{{ t(po.status)|capitalize }}{% if due %} · {{ due }}{% endif %}{% endif %}</em>
+      </div>
+      <div class="po-lines">
+        {% if ordered_qty > 0 %}
+        <span class="po-prog {{ 'partial' if received_qty > 0 and kind in ('incoming', 'stale') else '' }}" aria-hidden="true"><b style="width:{{ pct }}%"></b></span>
+        <small>{% if kind in ('incoming', 'stale') and received_qty > 0 %}{{ remaining|num }} {{ t('pcs left') }}{% elif kind == 'stale' %}{{ received_qty|num }} / {{ ordered_qty|num }} {{ t('pcs') }}{% elif kind == 'incoming' %}{{ po.lines|length }} {{ t('Lines')|lower if (po.lines|length != 1 or lang == 'zh') else 'line' }} · {{ remaining|num }} {{ t('pcs') }}{% else %}{{ received_qty|num }} / {{ ordered_qty|num }} {{ t('pcs') }}{% endif %}</small>
+        {% else %}
+        <small>{{ po.lines|length }} {{ t('Lines')|lower if (po.lines|length != 1 or lang == 'zh') else 'line' }}</small>
+        {% endif %}
+      </div>
+      <div class="po-total">{{ po.total|money }}</div>
+      <div class="po-act">
+        {% if kind in ('incoming', 'stale') and can('receiving.count') %}
+        <form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="po-btn ok" type="submit">{{ t('Receive') }}</button></form>
+        {% else %}
+        <a class="po-btn sec" href="/purchase-orders/{{ po.id }}">{{ t('View') }}</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="po-empty">{{ t('No purchase orders.') }}{% if loc or q or urgency != 'all' %} <a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% elif view != 'all' %} <a class="btn sec" href="?view=all">{{ t('View all orders') }}</a>{% elif can('po.create') %} <a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div>{% endfor %}
+  <div class="po-empty po-filter-empty" hidden>{{ t('No purchase orders.') }}</div>
 </section>
 
 <div class="tw po-phone"><table class="wide"><tr><th scope="col">{{ t('PO #') }}</th><th scope="col">{{ t('Supplier') }}</th><th scope="col">{{ t('Deliver to') }}</th><th scope="col">{{ t('Created') }}</th><th scope="col">{{ t('Expected') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col" class="right">{{ t('Lines') }}</th><th scope="col" class="right">{{ t('Still to arrive') }}</th><th scope="col" class="right">{{ t('Total') }}</th><th></th></tr>
@@ -54,6 +106,33 @@
 <td class="right">{{ po.lines|length }}</td><td class="right">{{ remaining|num if kind in ('incoming','stale') else '' }}</td><td class="right">{{ po.total|money }}</td>
 <td>{% if kind in ('incoming','stale') and can('receiving.count') %}<form novalidate method="post" action="/purchase-orders/{{ po.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm">{{ t('Receive') }}</button></form>{% endif %}</td></tr>
 {% else %}<tr><td colspan="10"><div class="empty">{{ t('No purchase orders.') }}{% if loc %}<a class="btn sec" href="?view={{ view|urlencode }}">{{ t('Clear filters') }}</a>{% elif view != 'all' %}<a class="btn sec" href="?view=all">{{ t('View all orders') }}</a>{% elif can('po.create') %}<a class="btn" href="/purchase-orders/new">{{ t('New purchase order') }}</a>{% endif %}</div></td></tr>{% endfor %}</table></div>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('POs') }}</span>
-{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% set pager_extra %}{% if q %}&q={{ q|urlencode }}{% endif %}{% if urgency and urgency != 'all' %}&urgency={{ urgency|urlencode }}{% endif %}{% endset %}
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}{{ pager_extra }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('POs') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?view={{ view|urlencode }}&loc={{ loc }}{{ pager_extra }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+<script>
+(function () {
+  var inp = document.getElementById('po-search-input');
+  var feed = document.querySelector('.po-feed');
+  if (!inp || !feed) return;
+  var cards = feed.querySelectorAll('.po-group-card');
+  var empty = feed.querySelector('.po-filter-empty');
+  if (!cards.length) return;
+  inp.addEventListener('input', function () {
+    var q = (inp.value || '').trim().toLowerCase();
+    var anyVisible = 0;
+    cards.forEach(function (card) {
+      var rows = card.querySelectorAll('.po-row');
+      var shown = 0;
+      rows.forEach(function (r) {
+        var hit = !q || (r.getAttribute('data-search') || '').indexOf(q) !== -1;
+        r.hidden = !hit;
+        if (hit) shown += 1;
+      });
+      card.hidden = shown === 0;
+      anyVisible += shown;
+    });
+    if (empty) empty.hidden = anyVisible > 0;
+  });
+})();
+</script>
 {% endblock %}

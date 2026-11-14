@@ -111,7 +111,8 @@ def test_move_view_lists_what_the_warehouse_can_send_and_makes_a_transfer_sheet(
 def test_triage_cards_chips_and_next_step(client, sync, fake, session):
     _page(client, session, sync, fake)
     page = client.get("/inventory/compare").text
-    assert 'class="ta-cards"' in page and 'class="ta-chips"' in page and "Next step" in page
+    assert 'class="ta-cards"' in page and 'class="ta-chips"' in page and ">Total<" in page
+    assert "Next step" not in page
     neg = client.get("/inventory/compare?status=neg").text         # seeded data has a negative cell (-3): only products with one stay
     assert "Chips" in neg and "Cola 500ml" not in neg
     assert "No products match." in client.get("/inventory/compare?status=send&q=zzzz-none").text
@@ -137,7 +138,7 @@ def test_search_filters_automatically_without_pressing_enter(client, session, sy
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel='msedge', headless=True)
-        page = browser.new_page(viewport={'width': 1440, 'height': 500})
+        page = browser.new_page(viewport={'width': 1440, 'height': 340})
         page.route('http://qa.test/**', serve)
         page.route('https://**', lambda route: route.abort())
         page.goto('http://qa.test/inventory/compare?view=all')
@@ -206,3 +207,22 @@ def test_estimated_stock_counts_open_transfers_as_if_completed(client, sync, fak
     assert shut[(wh.id, prod.id)]["out"] == 10.0                        # the sender's side is unchanged
     assert "Estimated = StoreHub stock" not in client.get("/inventory/compare").text
     assert client.get(f"/inventory?view=list&loc={shop.id}").status_code == 200
+
+
+def test_store_filter_looks_at_that_store_only(client, sync, fake, session):
+    _page(client, session, sync, fake)
+    stores = [s for s in session.scalars(select(Location).where(Location.type == "store")) if s.storehub_id in ("S_A", "S_B")]
+    names = {p.id: p.name for p in session.scalars(select(Product))}
+    for store in stores:
+        for status, test in (("neg", lambda q: q < 0), ("zero", lambda q: q == 0)):
+            expected = {names[i.product_id] for i in session.scalars(select(InventoryCurrent).where(InventoryCurrent.location_id == store.id)) if test(i.on_hand) and i.product_id in names}
+            body = client.get(f"/inventory/compare?view=all&status={status}&loc={store.id}").text.split("<tbody>")[1]
+            shown = {n for n in names.values() if f">{n}</a>" in body}
+            assert shown == expected, (store.name, status, shown, expected)        # exactly this store's negative / zero products
+    alpha = next(s for s in stores if s.storehub_id == "S_A")
+    beta = next(s for s in stores if s.storehub_id == "S_B")
+    in_alpha = client.get(f"/inventory/compare?view=all&status=neg&loc={alpha.id}").text
+    assert "Chips" in in_alpha and 'class="r ta-focus"' in in_alpha                 # Chips is negative in Alpha, and Alpha's column is marked
+    assert f'value="{alpha.id}" selected' in in_alpha
+    assert ">Chips</a>" not in client.get(f"/inventory/compare?view=all&status=neg&loc={beta.id}").text.split("<tbody>")[1]
+    assert client.get(f"/inventory/compare?export=csv&status=neg&loc={beta.id}").status_code == 200

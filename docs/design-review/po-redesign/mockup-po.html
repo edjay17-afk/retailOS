@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Purchase Orders — 3 Design Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-soft: #f1f5f9;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --ok: #059669;
+    --ok-soft: #ecfdf5;
+    --ok-line: #a7f3d0;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --warn-line: #fde68a;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --red-line: #fecdd3;
+    --sh1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --sh2: 0 8px 24px rgba(15, 23, 42, 0.07);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    background: #eef1f7;
+    color: var(--ink);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .frame {
+    width: 1180px;
+    background: var(--bg);
+    border: 1px solid #dbe1ec;
+    border-radius: 22px;
+    padding: 24px 28px 28px;
+    margin: 0 auto 36px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  }
+  .concept-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 14px;
+  }
+  .concept-tag span {
+    background: var(--ink);
+    color: #fff;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .head h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 11px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .actions { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 650;
+    text-decoration: none;
+    box-shadow: var(--sh1);
+  }
+  .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn.dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 11px; font-size: 12px; border-radius: 8px; }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 8px 10px;
+    box-shadow: var(--sh1);
+    margin-bottom: 14px;
+  }
+  .seg {
+    display: inline-flex;
+    background: #f1f5f9;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .seg a.on {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .07);
+  }
+  .seg a b {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+  }
+  .seg a.on b { background: var(--ink); color: #fff; }
+  .search-box {
+    flex: 1;
+    min-width: 190px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    color: #94a3b8;
+    font-size: 12.5px;
+  }
+  .chip-sel {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .chip-sel span.lbl { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.warn { background: var(--warn-soft); color: #b45309; border: 1px solid var(--warn-line); }
+  .pill.red { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-line); }
+  .pill.ok { background: var(--ok-soft); color: #047857; border: 1px solid var(--ok-line); }
+  .pill.muted { background: #f1f5f9; color: #475569; }
+
+  /* OPT 1: Studio Ledger Sections */
+  .group-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--sh1);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+  }
+  .group-head.warn { background: #fffbf0; border-bottom-color: #fde68a; }
+  .group-head-left { display: flex; align-items: center; gap: 9px; }
+  .group-head-left b { font-size: 13px; font-weight: 750; color: var(--ink); }
+  .group-head.warn .group-head-left b { color: #92400e; }
+  .group-head-left span { font-size: 12px; color: var(--muted); }
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 230px 175px 210px 165px 120px 110px;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .ledger-row:first-of-type { border-top: 0; }
+  .po-title { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .po-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .prog {
+    width: 72px;
+    height: 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .prog > b { display: block; height: 100%; background: var(--ok); }
+  .prog.partial > b { background: var(--blue); }
+  .amt { text-align: right; font-size: 14px; font-weight: 750; color: var(--ink); }
+
+  /* OPT 2: Triage Cards */
+  .sec-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 14px 4px 8px;
+    font-size: 12px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .sec-label.warn { color: #b45309; }
+  .po-cards { display: flex; flex-direction: column; gap: 9px; }
+  .po-card {
+    display: grid;
+    grid-template-columns: 240px 170px 210px 1fr 120px 110px;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--ok);
+    border-radius: 14px;
+    padding: 13px 16px;
+    box-shadow: var(--sh1);
+  }
+  .po-card.stale { border-left-color: #ef4444; background: #fffdfd; }
+  .dest-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    font-size: 12px;
+    font-weight: 650;
+    color: #334155;
+  }
+
+  /* OPT 3: Split Inspector Desk */
+  .split-desk {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .mini-list {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--sh1);
+  }
+  .mini-row {
+    display: grid;
+    grid-template-columns: 1fr 135px 95px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .mini-row:first-child { border-top: 0; }
+  .mini-row.active {
+    background: #eff6ff;
+    box-shadow: inset 3px 0 0 var(--blue);
+  }
+  .inspector {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--sh2);
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 14px 0;
+  }
+  .step-box {
+    background: var(--surface2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .step-box.done { background: var(--ok-soft); border-color: var(--ok-line); color: #047857; font-weight: 650; }
+  .step-box.now { background: var(--blue-soft); border-color: #bfdbfe; color: var(--blue); font-weight: 700; }
+  .insp-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 1px solid var(--line-soft);
+    font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== OPTION 1 ==================== -->
+<section class="frame" id="opt1">
+  <div class="concept-tag"><span>Option 1</span> Studio Receiving Ledger (Matches Sales Redesign)</div>
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Purchase orders</h1>
+      <span class="meta-pill num">4 open · ₱118,450.00 incoming</span>
+    </div>
+    <div class="actions">
+      <a class="btn dark" href="#">+ New purchase order</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">Open <b>4</b></a>
+      <a href="#">Closed <b>18</b></a>
+      <a href="#">All <b>22</b></a>
+    </div>
+    <div class="search-box">Search PO # or supplier</div>
+    <div class="chip-sel"><span class="lbl">Urgency</span> All open ▾</div>
+    <div class="chip-sel"><span class="lbl">Location</span> All locations ▾</div>
+  </div>
+
+  <div class="group-card">
+    <div class="group-head warn">
+      <div class="group-head-left">
+        <b>Needs attention</b>
+        <span>1 overdue PO · receive or cancel in StoreHub</span>
+      </div>
+      <span class="pill red num">₱24,900.00</span>
+    </div>
+    <div class="ledger-row">
+      <div>
+        <div class="po-title num">PO #7003</div>
+        <div class="po-sub">Zenwok Trading</div>
+      </div>
+      <div>
+        <div class="po-title">Central Warehouse</div>
+        <div class="po-sub">Created 15 Oct</div>
+      </div>
+      <div>
+        <span class="pill red"><i></i>Stale · 30 days late</span>
+      </div>
+      <div class="num">
+        <span class="prog"><b style="width:0%"></b></span>
+        <span style="font-size:12px;color:var(--muted)">0 / 24 pcs</span>
+      </div>
+      <div class="amt num">₱24,900.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+  </div>
+
+  <div class="group-card">
+    <div class="group-head">
+      <div class="group-head-left">
+        <b>On the way</b>
+        <span>3 POs expected</span>
+      </div>
+      <span class="meta-pill num">₱93,550.00</span>
+    </div>
+    <div class="ledger-row">
+      <div>
+        <div class="po-title num">PO #7008</div>
+        <div class="po-sub">Coca-Cola Beverages PH</div>
+      </div>
+      <div>
+        <div class="po-title">Central Warehouse</div>
+        <div class="po-sub">Created 12 Nov</div>
+      </div>
+      <div>
+        <span class="pill warn"><i></i>Due today</span>
+      </div>
+      <div class="num">
+        <span class="prog partial"><b style="width:35%"></b></span>
+        <span style="font-size:12px;color:var(--muted)">42 pcs left</span>
+      </div>
+      <div class="amt num">₱48,200.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+    <div class="ledger-row">
+      <div>
+        <div class="po-title num">PO #7009</div>
+        <div class="po-sub">Nestle Philippines</div>
+      </div>
+      <div>
+        <div class="po-title">Tagbilaran</div>
+        <div class="po-sub">Created 13 Nov</div>
+      </div>
+      <div>
+        <span class="pill ok"><i></i>Open · Due in 2 days</span>
+      </div>
+      <div class="num">
+        <span class="prog"><b style="width:0%"></b></span>
+        <span style="font-size:12px;color:var(--muted)">18 lines</span>
+      </div>
+      <div class="amt num">₱31,850.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+    <div class="ledger-row">
+      <div>
+        <div class="po-title num">PO #7010</div>
+        <div class="po-sub">Yakult PH</div>
+      </div>
+      <div>
+        <div class="po-title">Getafe</div>
+        <div class="po-sub">Created 13 Nov</div>
+      </div>
+      <div>
+        <span class="pill ok"><i></i>Open · Due in 4 days</span>
+      </div>
+      <div class="num">
+        <span class="prog"><b style="width:0%"></b></span>
+        <span style="font-size:12px;color:var(--muted)">6 lines</span>
+      </div>
+      <div class="amt num">₱13,500.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 2 ==================== -->
+<section class="frame" id="opt2">
+  <div class="concept-tag"><span>Option 2</span> Triage Delivery Cards (Matches Auto Replenishment)</div>
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Purchase orders</h1>
+      <span class="meta-pill num">4 open · 1 needs attention</span>
+    </div>
+    <div class="actions">
+      <a class="btn dark" href="#">+ New purchase order</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">Open <b>4</b></a>
+      <a href="#">Closed <b>18</b></a>
+      <a href="#">All <b>22</b></a>
+    </div>
+    <div class="search-box">Search PO # or supplier</div>
+    <div class="chip-sel"><span class="lbl">Location</span> All locations ▾</div>
+  </div>
+
+  <div class="sec-label warn">
+    <span>Needs attention · 1 PO</span>
+    <span>Not counted as incoming inventory</span>
+  </div>
+  <div class="po-cards">
+    <div class="po-card stale">
+      <div>
+        <div class="po-title num">PO #7003</div>
+        <div class="po-sub">Zenwok Trading</div>
+      </div>
+      <div>
+        <span class="dest-pill">Central Warehouse</span>
+        <div class="po-sub" style="margin-top:4px">Created 15 Oct</div>
+      </div>
+      <div>
+        <span class="pill red"><i></i>Open (stale)</span>
+        <div class="po-sub" style="color:var(--red);font-weight:700;margin-top:4px">30 days late</div>
+      </div>
+      <div class="num" style="font-size:12.5px;color:var(--muted)">8 lines · 24 still to arrive</div>
+      <div class="amt num">₱24,900.00</div>
+      <div style="text-align:right"><a class="btn sm" href="#">Open →</a></div>
+    </div>
+  </div>
+
+  <div class="sec-label">
+    <span>On the way · 3 POs</span>
+    <span class="num">₱93,550.00 expected</span>
+  </div>
+  <div class="po-cards">
+    <div class="po-card">
+      <div>
+        <div class="po-title num">PO #7008</div>
+        <div class="po-sub">Coca-Cola Beverages PH</div>
+      </div>
+      <div>
+        <span class="dest-pill">Central Warehouse</span>
+        <div class="po-sub" style="margin-top:4px">Created 12 Nov</div>
+      </div>
+      <div>
+        <span class="pill warn"><i></i>Open · Due today</span>
+      </div>
+      <div class="num" style="font-size:12.5px;color:var(--muted)">12 lines · 42 still to arrive</div>
+      <div class="amt num">₱48,200.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+    <div class="po-card">
+      <div>
+        <div class="po-title num">PO #7009</div>
+        <div class="po-sub">Nestle Philippines</div>
+      </div>
+      <div>
+        <span class="dest-pill">Tagbilaran</span>
+        <div class="po-sub" style="margin-top:4px">Created 13 Nov</div>
+      </div>
+      <div>
+        <span class="pill ok"><i></i>Open · Due in 2 days</span>
+      </div>
+      <div class="num" style="font-size:12.5px;color:var(--muted)">18 lines · 96 still to arrive</div>
+      <div class="amt num">₱31,850.00</div>
+      <div style="text-align:right"><a class="btn sm ok" href="#">Receive</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 3 ==================== -->
+<section class="frame" id="opt3">
+  <div class="concept-tag"><span>Option 3</span> Master-Detail Receiving Desk (Queue + Live PO Inspector)</div>
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Purchase orders</h1>
+      <span class="meta-pill num">Click any order to inspect items</span>
+    </div>
+    <div class="actions">
+      <a class="btn dark" href="#">+ New purchase order</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">Open <b>4</b></a>
+      <a href="#">Closed <b>18</b></a>
+      <a href="#">All <b>22</b></a>
+    </div>
+    <div class="search-box">Search PO # or supplier</div>
+    <div class="chip-sel"><span class="lbl">Location</span> All locations ▾</div>
+  </div>
+
+  <div class="split-desk">
+    <div class="mini-list">
+      <div class="mini-row active">
+        <div>
+          <div class="po-title num">PO #7008 · Coca-Cola Beverages PH</div>
+          <div class="po-sub">Central Warehouse · 12 lines · 42 pcs remaining</div>
+        </div>
+        <div><span class="pill warn"><i></i>Due today</span></div>
+        <div class="amt num">₱48,200.00</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="po-title num">PO #7003 · Zenwok Trading</div>
+          <div class="po-sub">Central Warehouse · 8 lines · 24 pcs remaining</div>
+        </div>
+        <div><span class="pill red"><i></i>30d late</span></div>
+        <div class="amt num">₱24,900.00</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="po-title num">PO #7009 · Nestle Philippines</div>
+          <div class="po-sub">Tagbilaran · 18 lines · 96 pcs remaining</div>
+        </div>
+        <div><span class="pill ok"><i></i>Due in 2d</span></div>
+        <div class="amt num">₱31,850.00</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="po-title num">PO #7010 · Yakult PH</div>
+          <div class="po-sub">Getafe · 6 lines · 18 pcs remaining</div>
+        </div>
+        <div><span class="pill ok"><i></i>Due in 4d</span></div>
+        <div class="amt num">₱13,500.00</div>
+      </div>
+    </div>
+
+    <div class="inspector">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:12px">
+        <div>
+          <div style="font-size:17px;font-weight:800" class="num">PO #7008</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px">Coca-Cola Beverages PH → Central Warehouse</div>
+        </div>
+        <span class="pill warn"><i></i>Due today</span>
+      </div>
+
+      <div class="steps">
+        <div class="step-box done">1. Ordered<br>12 Nov</div>
+        <div class="step-box now">2. Receiving<br>Pending count</div>
+        <div class="step-box">3. Completed<br>StoreHub</div>
+      </div>
+
+      <div style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Top items to arrive</div>
+      <div class="insp-line"><span>Coca-Cola Zero Sugar 500ml</span><b class="num">24 pcs</b></div>
+      <div class="insp-line"><span>Sprite Mismo 295ml</span><b class="num">12 pcs</b></div>
+      <div class="insp-line"><span>Royal Tru-Orange 1.5L</span><b class="num">6 pcs</b></div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <a class="btn ok" style="flex:1;justify-content:center" href="#">Record delivery</a>
+        <a class="btn" href="#">View full PO</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

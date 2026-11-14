@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<!-- Design mockup: redesigned /settings page for RetailOS. Rendered to PNG by _render.py -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface2:#f8f9fc;
+    --line:#e6e8f1; --line2:#d6d9e6;
+    --ink:#1f2430; --mute:#6b7280; --mute2:#9aa1af;
+    --primary:#2563eb; --primary-h:#1d4ed8; --primary-soft:#eef3ff;
+    --ok:#187b51; --warn:#b45309; --warn-soft:#fef3c7;
+    --bad:#b91c1c; --bad-soft:#fee2e2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:#f2f4f7}
+  .shot{width:1440px;background:#f2f4f7}
+  .page{display:flex;min-height:900px}
+
+  /* ---------- left section nav ---------- */
+  .secnav{width:248px;background:var(--surface);border-right:1px solid var(--line);padding:18px 14px;flex:none}
+  .secnav h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:2px 6px 10px}
+  .filter{width:100%;padding:7px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--surface2);color:var(--mute);font-size:13px;margin-bottom:12px}
+  .secnav a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:13.5px}
+  .secnav a.on{background:var(--primary-soft);color:var(--primary);font-weight:600}
+  .secnav a .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .secnav a.adv{color:var(--mute2)}
+  .secnav a .tag{margin-left:auto;font-size:10.5px;padding:1px 7px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);color:var(--mute)}
+  .secnav a .tag.red{background:var(--bad-soft);border-color:#f5c2c2;color:var(--bad)}
+
+  /* ---------- main ---------- */
+  main{flex:1;padding:22px 28px 40px}
+  .head{display:flex;align-items:center;gap:18px}
+  h1{font-size:22px;font-weight:650}
+  .filter{margin-left:auto;width:240px;padding:7px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--mute);font-size:13px}
+  .tabs{display:flex;gap:6px;margin:12px 0 22px;border-bottom:1px solid var(--line);padding-bottom:0}
+  .tabs a{padding:8px 14px;text-decoration:none;color:var(--mute);font-size:13.5px;border-bottom:2px solid transparent}
+  .tabs a.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:18px;overflow:hidden}
+  .card>header{padding:14px 18px 10px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px}
+  .card>header h2{font-size:15px;font-weight:650}
+  .card>header .sub{font-size:12.5px;color:var(--mute)}
+  .rows>div{display:flex;align-items:center;gap:16px;padding:12px 18px;border-top:1px solid var(--line)}
+  .rows>div:first-child{border-top:none}
+  .lab{flex:1;min-width:0}
+  .lab b{font-size:13.5px;font-weight:600;display:block}
+  .lab span{font-size:12.5px;color:var(--mute)}
+  .lab code{font-size:11px;color:var(--mute2);background:var(--surface2);padding:1px 5px;border-radius:4px}
+  .ctl{display:flex;align-items:center;gap:10px;flex:none}
+
+  input[type=text],input[type=number],select,textarea{
+    font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;color:var(--ink);width:180px}
+  input[type=number]{width:96px;text-align:right}
+  textarea{width:320px;min-height:96px;resize:none;line-height:1.7}
+  .save{padding:7px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600}
+  .save.sec{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+
+  /* toggle */
+  .tgl{width:42px;height:24px;border-radius:99px;background:var(--primary);position:relative;flex:none}
+  .tgl::after{content:"";position:absolute;top:3px;left:21px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .tgl.off{background:#c9cedb}
+  .tgl.off::after{left:3px}
+
+  /* badges */
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--warn-soft);color:var(--warn);border:1px solid #f2dcab}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn)}
+  .reset{font-size:12px;color:var(--primary);text-decoration:none}
+  .meta{font-size:11.5px;color:var(--mute2);margin-top:3px}
+  .meta a{color:var(--primary);text-decoration:none}
+
+  /* danger zone */
+  .danger{border-color:#f3c8c8;background:#fffafa}
+  .danger>header{background:var(--bad-soft);border-bottom-color:#f3c8c8}
+  .danger>header h2{color:var(--bad);display:flex;align-items:center;gap:8px}
+  .warnline{font-size:12.5px;color:var(--bad);background:var(--bad-soft);border:1px solid #f3c8c8;border-radius:8px;padding:8px 12px;margin:0 18px 14px}
+
+  /* SLA table */
+  table.sla{border-collapse:collapse;margin:6px 0}
+  table.sla th{font-size:12px;color:var(--mute);font-weight:600;text-align:left;padding:8px 14px 6px;border-bottom:1px solid var(--line)}
+  table.sla td{padding:8px 14px;border-bottom:1px solid var(--line)}
+  table.sla td:first-child{font-weight:700}
+  .sev{display:inline-block;min-width:34px;text-align:center;font-size:12px;font-weight:700;border-radius:6px;padding:2px 6px}
+  .sev.p0{background:#fee2e2;color:#b91c1c}.sev.p1{background:#ffedd5;color:#c2410c}
+  .sev.p2{background:#fef9c3;color:#a16207}.sev.p3{background:#e0f2fe;color:#0369a1}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;width:340px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--surface2);border:1px solid var(--line2);border-radius:99px;padding:4px 6px 4px 11px}
+  .chip i{font-style:normal;color:var(--mute2);border:1px solid var(--line2);border-radius:50%;width:16px;height:16px;font-size:10px;display:grid;place-items:center;background:#fff}
+
+  /* modal */
+  .overlay{position:relative;background:rgba(31,36,48,.42);display:grid;place-items:center;padding:60px 0}
+  .modal{width:460px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+  .modal header{background:var(--bad);color:#fff;padding:14px 18px;font-weight:650;font-size:15px;display:flex;gap:10px;align-items:center}
+  .modal .body{padding:16px 18px;font-size:13.5px;color:var(--ink)}
+  .modal .body p+p{margin-top:8px;color:var(--mute);font-size:12.5px}
+  .modal footer{padding:14px 18px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line)}
+  .btn-ghost{padding:8px 16px;border-radius:8px;border:1px solid var(--line2);background:#fff;font-size:13px;color:var(--ink)}
+  .btn-danger{padding:8px 16px;border-radius:8px;border:none;background:var(--bad);color:#fff;font-size:13px;font-weight:600}
+
+  .caption{padding:26px 28px 8px;font-size:12px;color:var(--mute)}
+  .caption b{color:var(--ink)}
+  .pad{padding:14px 18px}
+</style>
+</head>
+<body>
+
+<!-- ================================================= SHOT 1 : overview -->
+<section class="shot" id="shot1">
+  <div class="page">
+    <main style="max-width:980px;margin:0 auto;width:100%">
+      <div class="head"><h1>Settings</h1><input class="filter" value="Filter settings…"></div>
+      <div class="tabs">
+        <a class="on" href="#">Locations and rules</a><a href="#">Suppliers</a><a href="#">Product set-up</a><a href="#">Users</a>
+      </div>
+
+      <div class="card">
+        <header><h2>General</h2><span class="sub">Name and tax used across the app</span></header>
+        <div class="rows">
+          <div>
+            <div class="lab"><b>Company name</b><span>Name shown in the app</span> <code>app.company</code></div>
+            <div class="ctl"><input type="text" value="The Daily Centro"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Sales tax percent</b><span>StoreHub gives the price without tax; the retail price adds this tax</span> <code>product.vat_rate</code></div>
+            <div class="ctl"><input type="number" value="12"><button class="save sec">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h2>Data freshness</h2><span class="sub">Data older than this is shown as stale and blocks unsafe orders</span></header>
+        <div class="rows">
+          <div>
+            <div class="lab"><b>Sales data is stale after (minutes)</b><span>Without a successful sync</span> <code>fresh.sales_min</code>
+              <div class="meta">Last changed to 25 by maria · 12 Mar 2026 · <a href="#">Reset to default (20)</a></div></div>
+            <div class="ctl"><span class="badge">Changed from default</span><input type="number" value="25"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Inventory data is stale after (minutes)</b> <code>fresh.inventory_min</code></div>
+            <div class="ctl"><input type="number" value="30"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Purchase order data is stale after (minutes)</b> <code>fresh.purchase_orders_min</code></div>
+            <div class="ctl"><input type="number" value="30"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Product data is stale after (minutes)</b><span>36 hours</span> <code>fresh.products_min</code></div>
+            <div class="ctl"><input type="number" value="2160"><button class="save sec">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h2>Replenishment — demand &amp; cover</h2><span class="sub">How suggestions are worked out</span></header>
+        <div class="rows">
+          <div>
+            <div class="lab"><b>Mode</b><span>sales_only ignores stock on hand — use it while inventory is not accurate</span> <code>repl.mode</code></div>
+            <div class="ctl"><select><option>stock_and_sales</option><option>sales_only</option></select><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Days of sales history</b><span>Average daily sales lookback (one week)</span> <code>repl.lookback_days</code></div>
+            <div class="ctl"><input type="number" value="7"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Safety stock (days of sales)</b> <code>repl.default_safety_days</code></div>
+            <div class="ctl"><input type="number" value="2"><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Block recommendations with no case pack</b> <code>repl.require_case_pack</code></div>
+            <div class="ctl"><span class="tgl"></span><button class="save sec">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card danger">
+        <header><h2>⚠ AI assistant — sensitive</h2><span class="sub">Changes here need a confirmation</span></header>
+        <div class="rows">
+          <div>
+            <div class="lab"><b>Let the AI run low-risk actions itself</b><span>Create issue, send reminder — when the policy gate allows. Off by default</span> <code>ai.auto_low_risk</code></div>
+            <div class="ctl"><span class="tgl off"></span><button class="save sec">Save</button></div>
+          </div>
+          <div>
+            <div class="lab"><b>Cost cap: AI requests per day</b> <code>ai.max_calls_per_day</code></div>
+            <div class="ctl"><input type="number" value="60"><button class="save sec">Save</button></div>
+          </div>
+        </div>
+        <div class="warnline">High-risk actions never run automatically, regardless of these settings. Turning on auto-actions is logged and confirmed with a dialog.</div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ================================================= SHOT 2 : details -->
+<section class="shot" id="shot2" style="margin-top:30px">
+  <div class="caption"><b>Detail view — typed controls replace the old raw-JSON rows:</b> SLA table, per-line reason codes as chips, audit trail under the field, and the confirm dialog every dangerous change gets.</div>
+  <div class="page" style="min-height:0">
+    <main style="padding-top:6px">
+      <div class="card">
+        <header><h2>Issues &amp; escalation</h2><span class="sub">Acknowledge minutes and due hours per severity</span></header>
+        <div class="pad">
+          <table class="sla">
+            <tr><th>Severity</th><th>Acknowledge within (minutes)</th><th>Due within (hours)</th></tr>
+            <tr><td><span class="sev p0">P0</span></td><td><input type="number" value="10"></td><td><input type="number" value="4"></td></tr>
+            <tr><td><span class="sev p1">P1</span></td><td><input type="number" value="30"></td><td><input type="number" value="24"></td></tr>
+            <tr><td><span class="sev p2">P2</span></td><td><input type="number" value="240"></td><td><input type="number" value="72"></td></tr>
+            <tr><td><span class="sev p3">P3</span></td><td><input type="number" value="1440"></td><td><input type="number" value="168"></td></tr>
+          </table>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:14px">
+            <button class="save sec">Save</button>
+            <span class="meta">code: <code>issue.sla</code> · Last changed by admin · 28 Feb 2026 · <a href="#">Reset to default</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h2>Replenishment — reason codes</h2><span class="sub">For modifying or rejecting a suggestion</span></header>
+        <div class="rows">
+          <div>
+            <div class="lab"><b>Reason codes</b><span>One reason per line — no JSON editing</span> <code>repl.reason_codes</code></div>
+            <div class="ctl">
+              <div class="chips">
+                <span class="chip">Promotion ended<i>×</i></span>
+                <span class="chip">Store closure / renovation<i>×</i></span>
+                <span class="chip">Supplier constraint<i>×</i></span>
+                <span class="chip">Known upcoming event<i>×</i></span>
+                <span class="chip">Overstock concern<i>×</i></span>
+                <span class="chip">Incorrect inventory<i>×</i></span>
+              </div>
+              <button class="save sec">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay">
+        <div class="modal">
+          <header>⚠ Change replenishment mode?</header>
+          <div class="body">
+            <p><b>sales_only</b> ignores stock on hand. Only use this while inventory is not accurate.</p>
+            <p>Suggestions will change immediately for every store. This change is written to the audit log.</p>
+          </div>
+          <footer><button class="btn-ghost">Cancel</button><button class="btn-danger">Confirm change</button></footer>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+</body>
+</html>

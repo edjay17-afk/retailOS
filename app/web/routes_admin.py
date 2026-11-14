@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 import math
 import re
 
@@ -30,8 +29,28 @@ def settings_page(c: Ctx = Depends(need("settings.manage"))):
     locs = list(db.scalars(select(Location).order_by(Location.monitored.desc(), Location.name)))
     managers = list(db.scalars(select(User).where(User.active.is_(True), User.deleted_at.is_(None), User.role.in_(["store_manager", "management", "admin"]))))
     current = cfg.all_settings(db)
-    rows = [(k, current[k], cfg.DEFAULTS[k][1], isinstance(current[k], (list, dict))) for k in cfg.DEFAULTS]
-    return render(c, "settings.html", locs=locs, managers=managers, rows=rows)
+    last = _last_setting_changes(db)
+    groups = []
+    for gid, title, sub in cfg.GROUPS:
+        rows = [dict(key=k, value=current[k], default=cfg.DEFAULTS[k][0], desc=cfg.DEFAULTS[k][1], meta=cfg.meta_for(k),
+                     changed=current[k] != cfg.DEFAULTS[k][0], last=last.get(k))
+                for k in cfg.DEFAULTS if cfg.meta_for(k)["group"] == gid]
+        if rows:
+            groups.append(dict(id=gid, title=title, sub=sub, rows=rows, danger=any(r["meta"].get("danger") for r in rows)))
+    return render(c, "settings.html", locs=locs, managers=managers, groups=groups)
+
+
+def _last_setting_changes(db) -> dict:
+    """The most recent setting.update / setting.reset audit event per key: {key: {"by": name, "ts": datetime}}."""
+    from ..models import AuditEvent
+    out: dict[str, dict] = {}
+    events = db.scalars(select(AuditEvent).where(AuditEvent.action.in_(("setting.update", "setting.reset")),
+                                                 AuditEvent.entity_type == "setting").order_by(AuditEvent.id.desc())).all()
+    names = {str(u.id): (u.full_name or u.username) for u in db.scalars(select(User))}
+    for ev in events:
+        if ev.entity_id and ev.entity_id not in out:
+            out[ev.entity_id] = {"by": names.get(ev.actor_id or "", ev.actor_id or "?"), "ts": ev.ts}
+    return out
 
 
 @router.post("/settings/locations/{lid}")
@@ -55,30 +74,31 @@ def location_update(lid: int, monitored: str = Form(""), closed: str = Form(""),
 
 
 @router.post("/settings/value")
-def setting_update(key: str = Form(...), value: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
-    c.check_csrf(csrf)
+async def setting_update(request: Request, c: Ctx = Depends(need("settings.manage"))):
+    form = await request.form()
+    key = str(form.get("key", ""))
+    c.check_csrf(str(form.get("csrf", "")))
     if key not in cfg.DEFAULTS:
         raise HTTPException(400, "Unknown setting")
-    default = cfg.DEFAULTS[key][0]
-    try:
-        if isinstance(default, bool):
-            new = value.strip().lower() in ("1", "true", "yes", "on")
-        elif isinstance(default, int):
-            new = int(float(value))
-        elif isinstance(default, float):
-            new = float(value)
-        elif isinstance(default, (list, dict)):
-            new = json.loads(value)
-            if type(new) is not type(default):
-                raise ValueError("wrong JSON type")
-        else:
-            new = value.strip()
-    except (ValueError, json.JSONDecodeError) as e:
-        return redirect("/settings", err=f"{key}: invalid value ({e})")
+    new, problem = cfg.parse_value(key, form)
+    if problem:
+        return redirect("/settings", err=f"{key}: {problem}")
     before = cfg.get(c.db, key)
     cfg.set_(c.db, key, new)
     audit.log(c.db, actor_type="human", actor_id=c.user.id, action="setting.update", entity_type="setting", entity_id=key, before={"value": before}, after={"value": new})
     return redirect("/settings", ok=f"Saved {key}")
+
+
+@router.post("/settings/reset")
+def setting_reset(key: str = Form(...), csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
+    c.check_csrf(csrf)
+    if key not in cfg.DEFAULTS:
+        raise HTTPException(400, "Unknown setting")
+    before = cfg.get(c.db, key)
+    cfg.set_(c.db, key, cfg.DEFAULTS[key][0])
+    audit.log(c.db, actor_type="human", actor_id=c.user.id, action="setting.reset", entity_type="setting", entity_id=key,
+              before={"value": before}, after={"value": cfg.DEFAULTS[key][0]})
+    return redirect("/settings", ok=f"{key} is back to its default")
 
 
 # ======================================================================================= suppliers

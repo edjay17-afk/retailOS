@@ -126,9 +126,22 @@ def test_custom_range_and_csv_export(client, session, sync, fake):
 def test_only_admin_and_warehouse_see_transactions_and_employee_sales(client, session):
     add_user(session, "sm", "store_manager")
     login(client, "sm")
-    for path in ("/sales/transactions", "/sales/employees", "/sales/tx/1", "/planogram"):
+    for path in ("/sales/transactions", "/sales/employees", "/sales/employees/panel", "/sales/tx/1", "/planogram"):
         assert client.get(path).status_code == 403
     assert client.get("/sales").status_code == 200  # daily sales stay visible to managers
+
+
+def test_sales_employee_panel_returns_daily_store_split_and_receipts(client, session, sync, fake):
+    add_user(session, "mgr", "warehouse")
+    _seed_sales(sync, fake, session)
+    login(client, "mgr")
+    r = client.get("/sales/employees/panel", params={"emp": "E1", "days": "14"})
+    assert r.status_code == 200
+    assert "emp-panel-inner" in r.text
+    assert "120.00" in r.text
+    assert "T1" in r.text and "T4" in r.text
+    assert "Alpha" in r.text and "Beta" in r.text
+    assert "/sales/transactions?" in r.text and "emp=E1" in r.text
 
 
 def test_daily_sales_and_employee_exports_follow_the_filter(client, session):
@@ -138,3 +151,30 @@ def test_daily_sales_and_employee_exports_follow_the_filter(client, session):
         r = client.get(url)
         assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv") and "attachment" in r.headers["content-disposition"]
     assert "2026-10-01-to-2026-10-07" in r.headers["content-disposition"]
+
+
+def test_sales_overview_day_panel_and_scoping(client, session, sync, fake):
+    from sqlalchemy import select
+    from app.models import Location
+    add_user(session, "boss_ov", "admin")
+    _seed_sales(sync, fake, session)
+    login(client, "boss_ov")
+    r = client.get("/sales?days=14")
+    assert r.status_code == 200
+    assert "sales-chart-data" in r.text
+    assert "By store" in r.text and "Alpha" in r.text and "Beta" in r.text
+    t = today_local()
+    p = client.get("/sales/day-panel", params={"day": t.isoformat(), "loc": "0"})
+    assert p.status_code == 200 and "sd-panel-inner" in p.text and "Cash" in p.text and "Transactions" in p.text
+    assert client.get("/sales/day-panel", params={"day": "not-a-date"}).status_code == 400
+
+    # Store manager scoping and permission hiding on detail links
+    alpha = session.scalar(select(Location).where(Location.storehub_id == "S_A"))
+    beta = session.scalar(select(Location).where(Location.storehub_id == "S_B"))
+    add_user(session, "sm_a", "store_manager", [alpha.id])
+    login(client, "sm_a")
+    assert client.get("/sales").status_code == 200
+    assert client.get("/sales/day-panel", params={"day": t.isoformat(), "loc": str(beta.id)}).status_code == 403
+    sm_panel = client.get("/sales/day-panel", params={"day": t.isoformat(), "loc": str(alpha.id)})
+    assert sm_panel.status_code == 200 and "/sales/products?" in sm_panel.text and "/sales/transactions?" not in sm_panel.text
+

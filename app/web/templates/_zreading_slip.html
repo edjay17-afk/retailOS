@@ -1,0 +1,74 @@
+{# Shared 80mm Official Thermal Receipt preview card. Expects slip_row, slip_store, slip_receipt, slip_mode ('list' | 'detail'). #}
+<div class="zr-slip-shell" id="zr-slip-shell">
+  <div class="zr-slip-eyebrow">
+    <span>{{ t('Live 80mm Preview') if slip_mode == 'list' else t('Official 80mm Receipt') }}</span>
+    <span class="zr-slip-id num" id="zr-slip-chip">Z #{{ slip_row.z_count }} · {{ slip_row.close_at.strftime('%m/%d %H:%M') }}</span>
+  </div>
+
+  <div class="zr-receipt-80" id="zr-receipt-ready" {% if not slip_receipt %}hidden{% endif %}>
+    {% set d = slip_receipt or {} %}
+    {% set counters = dict(d.get('counters') or []) %}
+    {% set sales = dict(d.get('sales') or []) %}
+    {% set breakdown = dict(d.get('breakdown') or []) %}
+    {% set txn = dict(d.get('transaction') or []) %}
+    <div class="r80-c r80-b" id="zr-r-store">{{ d.get('store') or slip_store }}</div>
+    <div class="r80-c" id="zr-r-op">{% if d.get('operatedBy') %}Operated by: {{ d.get('operatedBy') }}{% endif %}</div>
+    <div class="r80-c" id="zr-r-ids">
+      {%- set id_parts = [] -%}
+      {%- if d.get('min') %}{% set _ = id_parts.append('MIN: ' ~ d.get('min')) %}{% endif -%}
+      {%- if d.get('ptu') %}{% set _ = id_parts.append('PTU: ' ~ d.get('ptu')) %}{% endif -%}
+      {%- if d.get('sn') %}{% set _ = id_parts.append('S/N: ' ~ d.get('sn')) %}{% endif -%}
+      {{ id_parts|join(' · ') -}}
+    </div>
+    <div class="r80-c r80-title">*** Z-READING REPORT ***</div>
+    <div class="r80-dash"></div>
+    <div class="r80-row"><span>Report Date / Time:</span><b id="zr-r-dt">{{ (d.get('reportDate', '') ~ ' ' ~ d.get('reportTime', ''))|trim or slip_row.close_at.strftime('%m/%d/%Y %H:%M') }}</b></div>
+    <div class="r80-row"><span>Beg. SI # — End. SI #:</span><b id="zr-r-si">{{ counters.get('Beg. SI #', '—') }} — {{ counters.get('End. SI #', '—') }}</b></div>
+    <div class="r80-row"><span>Z Count / SALES Count:</span><b id="zr-r-zsc">{{ counters.get('Z Count No.:') or slip_row.z_count }} / {{ counters.get('SALES Count') or slip_row.tx_count }}</b></div>
+
+    <div class="r80-dash"></div>
+    <div class="r80-c r80-sec">- - - BREAKDOWN OF SALES - - -</div>
+    <div id="zr-r-breakdown">
+      {% for label in ('VATABLE SALES', 'VAT AMOUNT', 'VAT EXEMPT SALES', 'Gross Amount', 'Less Discount', 'Net Amount') %}
+        {% set val = breakdown.get(label, '') %}
+        {% if val %}<div class="r80-row {{ 'r80-b' if label == 'Net Amount' else '' }}"><span>{{ label }}:</span><span>{{ val }}</span></div>{% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="r80-dash"></div>
+    <div class="r80-c r80-sec">- - - COLLECTIONS SUMMARY - - -</div>
+    <div id="zr-r-collections">
+      {% for c in d.get('collections') or [] %}
+      <div class="r80-row"><span>{{ c.method }}{% if c.count %} ({{ c.count }}){% endif %}</span><span>{{ c.amount }}</span></div>
+      {% endfor %}
+      {% set ct = d.get('collectionTotal') or {} %}
+      {% if ct.get('amount') %}
+      <div class="r80-row r80-b"><span>Total Collection{% if ct.get('count') %} ({{ ct.get('count') }}){% endif %}:</span><span>{{ ct.get('amount') }}</span></div>
+      {% endif %}
+    </div>
+
+    <div class="r80-dash"></div>
+    <div class="r80-c r80-sec">- - - TRANSACTION SUMMARY - - -</div>
+    <div id="zr-r-txn">
+      {% for label in ('Opening Fund', 'Cash in Drawer:', 'GCASH:', 'Less Withdrawal', 'Expected Drawer', 'Short/Over') %}
+        {% set val = txn.get(label, '') %}
+        {% if val %}<div class="r80-row {{ 'r80-b' if label in ('Expected Drawer', 'Short/Over') else '' }}"><span>{{ label.rstrip(':') }}:</span><span>{{ val }}</span></div>{% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="r80-actions">
+      <a class="zr-btn primary" id="zr-r-print" href="/sales/zreadings/{{ slip_row.sh_id }}/receipt">{{ t('Print 80mm Receipt') }}</a>
+      {% if slip_mode == 'list' %}
+      <a class="zr-btn sec" id="zr-r-detail" href="/sales/zreadings/{{ slip_row.sh_id }}">{{ t('Full Detail Tables') }}</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="zr-receipt-empty" id="zr-receipt-pending" {% if slip_receipt %}hidden{% endif %}>
+    <b id="zr-p-title">Z #{{ slip_row.z_count }} · {{ slip_store }}</b>
+    <p>{{ t('The official detail report has not been read yet. It will appear after the next read-only sync.') }}</p>
+    {% if slip_mode == 'list' %}
+    <a class="zr-btn sec" id="zr-p-detail" href="/sales/zreadings/{{ slip_row.sh_id }}">{{ t('Details') }}</a>
+    {% endif %}
+  </div>
+</div>

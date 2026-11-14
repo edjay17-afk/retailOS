@@ -1,0 +1,72 @@
+<div class="emp-panel-inner">
+  <div class="emp-dr-kpis">
+    <div class="emp-dr-kpi">
+      <span>{{ t('Net sales') }}</span>
+      <b>{{ emp_info.net|money }}</b>
+    </div>
+    <div class="emp-dr-kpi">
+      <span>{{ t('Average basket') }}</span>
+      <b>{{ emp_info.avg|money }}</b>
+    </div>
+    <div class="emp-dr-kpi">
+      <span>{{ t('Transactions') }}</span>
+      <b>{{ emp_info.txs|num(0) }}{% if emp_info.cancelled %} <small>({{ emp_info.cancelled }} {{ t('cancelled') }})</small>{% endif %}</b>
+    </div>
+    <div class="emp-dr-kpi">
+      <span>{{ t('Items sold') }}</span>
+      <b>{{ emp_info.units|num(0) if emp_info.units == emp_info.units|round(0) else emp_info.units|num(2) }} <small>({{ '%.1f'|format(emp_info.units_per_tx) }}/tx)</small></b>
+    </div>
+  </div>
+
+  {% if daily %}
+  <div class="emp-dr-sec">
+    <h3>{{ daily|length }}-{{ t('day daily net sales') }}</h3>
+    {% set dmax = (daily|map(attribute='net')|max) or 1 %}
+    <div class="emp-mini-bars" style="grid-template-columns:repeat({{ daily|length }}, minmax(0, 1fr))">
+      {% for d in daily %}
+      {% set pct = (d.net / dmax * 100)|round(0)|int if dmax and d.net > 0 else 4 %}
+      <i style="height:{{ pct if pct >= 5 else 4 }}%" tabindex="0" data-tip="{{ d.label }} · {{ d.net|money }}"></i>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if store_split %}
+  <div class="emp-dr-sec">
+    <h3>{{ t('Store contribution') }}</h3>
+    <div class="emp-store-list">
+      {% for s in store_split %}
+      <div class="emp-store-row">
+        <span class="s-name">{{ s.name }}</span>
+        <span class="s-val">{{ s.net|money }}</span>
+        <span class="s-bar"><i style="width:{{ s.pct|round(1) }}%"></i></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="emp-dr-sec">
+    <h3>{{ t('Recent receipts') }}</h3>
+    {% if recent_txs %}
+    <div class="emp-tx-list">
+      {% for tx in recent_txs %}
+      <a class="emp-tx-item" href="/sales/tx/{{ tx.id }}">
+        <div>
+          <b>#{{ tx.invoice_no or tx.refid }}</b>{% if tx.cancelled %} <span class="badge b-bad">{{ t('Cancelled') }}</span>{% endif %}
+          <small>{{ loc_names.get(tx.location_id, '') }} · {{ tx.tx_time|ago }}</small>
+        </div>
+        <strong>{{ tx.total|money }}</strong>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="mute small">{{ t('No receipts recorded in this period.') }}</p>
+    {% endif %}
+  </div>
+
+  <div class="emp-dr-foot">
+    <button type="button" class="btn sec sm" data-emp-drawer-close>{{ t('Close') }}</button>
+    <a class="btn sm" href="{{ tx_url }}">{{ t('Open all transactions') }} &rarr;</a>
+  </div>
+</div>

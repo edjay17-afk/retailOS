@@ -1,33 +1,60 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Today') }}{% endblock %}
-{% block page_styles %}<link rel="stylesheet" href="/static/roll_number.css?v={{ asset_v('roll_number.css') }}"><link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}">{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/roll_number.css?v={{ asset_v('roll_number.css') }}"><link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}"><link rel="stylesheet" href="/static/dashboard_redesign.css?v={{ asset_v('dashboard_redesign.css') }}">{% endblock %}
 {% block source_aside %}<span class="date-chip" aria-label="{{ brief.date|day }}"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>{{ brief.date|day }}</span>{% endblock %}
 {% block content %}
 {% set completed = insp.get('completed', 0) + insp.get('late', 0) + insp.get('submitted', 0) %}
 {% set checklist_total = insp.values()|sum %}
 {% set urgent = open_issues.get('P0', 0) + open_issues.get('P1', 0) %}
+{% set open_branch_count = (cards|rejectattr('closed')|list|length) if cards else 0 %}
+{% set total_branch_count = (cards|length) if cards else 0 %}
 
-{% if not source_options %}<div class="b-head"><p>{{ brief.date|day }}</p></div>{% endif %}
 {% if cards is not none %}
+<header class="dash-head">
+  <div class="dash-head-left">
+    <h1>{{ t('Today') }}</h1>
+    <div class="dash-head-sub">
+      <span>{{ brief.date|day }}</span>
+      {% if total_branch_count %}&middot; <span>{{ open_branch_count }}/{{ total_branch_count }} {{ t('branches open') }}</span>{% endif %}
+      {% if checklist_total %}&middot; <span>{{ completed }}/{{ checklist_total }} {{ t('checklists done') }}</span>{% endif %}
+      <span class="dash-live-pill"><i></i><span class="dash-live-ticker-text">{{ t('POS Live · Updates automatically') }}</span></span>
+    </div>
+  </div>
+  <div class="dash-head-actions">
+    {% if cards|length > 1 %}
+    <div class="dash-seg" id="dash-branch-seg" role="group" aria-label="{{ t('Filter branch view') }}">
+      <button type="button" class="on" data-branch="all">{{ t('All stores') }}</button>
+      {% for s in cards %}<button type="button" data-branch="{{ s.id }}">{{ s.name }}</button>{% endfor %}
+    </div>
+    {% endif %}
+    <a class="dash-cta" href="/sales">{{ t('Sales overview') }}</a>
+    {% if can('repl.view') %}
+    <a class="dash-cta pri" href="/replenishment">{{ t('Review orders') }}{% if recs and recs[0] %} ({{ recs[0]|num(0) }}){% endif %}</a>
+    {% elif can('po.view') %}
+    <a class="dash-cta pri" href="/purchase-orders">{{ t('Purchase orders') }}</a>
+    {% endif %}
+  </div>
+</header>
+
 <div id="live-store-sales">
 <div class="lv-hero">
   <a class="lv-big" href="/sales">
     <small>{{ t('All stores, net sales today') }}</small>
     <strong id="lv-total" data-raw="{{ sales.today }}" data-total="{{ sales.today|money }}">PHP <span id="live-sales-today">{{ sales.today|money }}</span></strong>
-    <span class="lv-pill">{{ t('Yesterday') }} PHP <span id="live-sales-yesterday">{{ sales.yesterday|money }}</span></span>
+    <span class="lv-pill">{{ t('Yesterday full day:') }} <b>PHP <span id="live-sales-yesterday">{{ sales.yesterday|money }}</span></b></span>
     {% if sales.series %}{% set hpeak = sales.series|max %}
     <div class="hv lv-herobars" data-prefix="PHP " data-suffix="" role="group" aria-label="{{ t('Net sales over the last 14 complete days') }}">
       {% for v in sales.series %}<span class="hv-bar{{ ' last' if loop.last else '' }}" tabindex="0" role="img" style="--h:{{ ((v / hpeak * 100) if hpeak > 0 else 0)|round(1) }}%;--i:{{ loop.index0 }}" data-label="{{ sales.labels[loop.index0] }}" data-amount="{{ v|money }}" aria-label="{{ sales.labels[loop.index0] }}: PHP {{ v|money }}"></span>{% endfor %}
       <div class="hv-tip" hidden><b></b><span></span></div>
     </div>
-    <span class="lv-hn">{{ t('Last 14 complete days') }} · PHP {{ (sales.series|sum)|money }}</span>
+    <span class="lv-hn">{{ t('Last 14 complete days') }} &middot; PHP {{ (sales.series|sum)|money }}</span>
     {% endif %}
   </a>
 
   <section class="lv-t">
     <div class="lv-k"><i style="background:var(--primary)"></i>{{ t('Transactions today') }}</div>
     <div class="lv-v" id="live-tx-today">{{ stat.tx|num(0) }}</div>
-    <div class="lv-s">{{ t('Average basket') }} PHP <span id="live-avg-basket">{{ stat.avg_basket|money }}</span></div>
+    <div class="lv-s">{{ t('Average basket') }} <b>PHP <span id="live-avg-basket">{{ stat.avg_basket|money }}</span></b></div>
     {% if stat.hourly %}
     <div class="hv lv-hours" data-prefix="" data-suffix=" {{ t('transactions') }}" role="group" aria-label="{{ t('Transactions per hour today') }}">
       {% for h in stat.hourly %}<span class="hv-bar{{ ' peak' if h.peak else '' }}" tabindex="0" role="img" style="--h:{{ h.pct }}%;--i:{{ loop.index0 }}" data-label="{{ h.label }}" data-amount="{{ h.n }}" aria-label="{{ h.label }}: {{ h.n }} {{ t('transactions') }}"></span>{% endfor %}
@@ -42,19 +69,18 @@
     <div class="lv-v">{{ stat.out_total|num(0) }} <small>{{ t('products') }}</small></div>
     <div class="lv-s">{{ t('They sold in the last 30 days') }}</div>
     <div class="lv-by">{% for r in stat.out_by_store %}<div><span>{{ r.name }}</span><u><i style="width:{{ r.pct }}%"></i></u><b>{{ r.n }}</b></div>{% endfor %}</div>
-    {% if stat.gap %}<div class="lv-worst">{{ t('Biggest gap') }}: {{ stat.gap.name }} · {{ stat.gap.per_day }} {{ t('sold per day') }}</div>{% endif %}
+    {% if stat.gap %}<div class="lv-worst">{{ t('Top gap:') }} <b>{{ stat.gap.name }}</b> &middot; {{ stat.gap.per_day }}/day</div>{% endif %}
   </section>
 
   <section class="lv-t">
-    <div class="lv-k"><i style="background:var(--warn)"></i>{{ t('Jobs waiting for you') }}</div>
+    <div class="lv-k"><i style="background:var(--warn)"></i>{{ t('Operations & checklists') }}</div>
     <div class="lv-jr" data-live="jobs-head"><div class="lv-v">{{ stat.jobs_total|num(0) }}</div>
       {% if stat.checks_total %}<div class="lv-ring" style="--p:{{ stat.checks_pct }}"><b>{{ stat.checks_done }}/{{ stat.checks_total }}</b></div><small class="lv-s">{{ t('checklists done') }}</small>{% endif %}</div>
     <div class="lv-todo" data-live="jobs-list">
-      {% for j in stat.jobs %}<a href="{{ {'po': '/purchase-orders', 'sheets': '/transfer-sheets', 'recs': '/replenishment', 'issues': '/issues'}[j.key] }}"><em class="{{ 'ok' if not j.n else '' }}">{{ '✓' if not j.n else '' }}</em><span>{{ {'po': t('Purchase orders to receive'), 'sheets': t('Transfer sheets'), 'recs': t('Orders to review'), 'issues': t('Open issues')}[j.key] }}</span><b>{{ j.n }}</b></a>{% else %}<p class="lv-s">{{ t('Nothing is waiting.') }}</p>{% endfor %}
+      {% for j in stat.jobs %}<a href="{{ {'po': '/purchase-orders', 'sheets': '/transfer-sheets', 'recs': '/replenishment', 'issues': '/issues'}[j.key] }}"><em class="{{ 'ok' if not j.n else '' }}">{{ '✓' if not j.n else '' }}</em><span>{{ {'po': t('PO receive'), 'sheets': t('Transfers'), 'recs': t('Orders'), 'issues': t('Issues')}[j.key] }}</span><b>{{ j.n }}</b></a>{% else %}<p class="lv-s">{{ t('Nothing is waiting.') }}</p>{% endfor %}
     </div>
   </section>
 </div>
-
 
 <section class="phone-only phone-home-actions">
 <div class="phone-metrics">{% for j in stat.jobs if j.key in ['recs','issues'] %}<a href="{{ '/replenishment' if j.key == 'recs' else '/issues' }}">{{ t('Orders to review') if j.key == 'recs' else t('Open issues') }}<strong>{{ j.n }}</strong></a>{% endfor %}</div>
@@ -63,14 +89,19 @@
 <div class="phone-quick">{% if can('inventory.view') %}<a class="btn sec" href="/inventory?view=list"><svg class="i"><use href="#i-scan"/></svg>{{ t('Scan product') }}</a>{% endif %}{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url == '/transfer-sheets' %}<a class="btn sec" href="{{ url }}">{{ t('New transfer') }}</a>{% endif %}{% endfor %}{% endfor %}</div>
 <h2 class="phone-section-title">{{ t('Sales by store') }}</h2>
 </section>
+
+<div class="dash-sec-head">
+  <h2>{{ t('Branch pulse today') }}</h2>
+  <small>{{ t('Click any store card to inspect 14-day sales curve, open tasks, and stockout risks') }}</small>
+</div>
 <div class="b-stores">
   {% for s in cards %}
-  <article class="b-card lv-card{{ '' if s.has_sales else ' off' }}{{ ' shut' if s.closed }}" data-store-id="{{ s.id }}" data-href="/sales?loc={{ s.id }}&amp;days=1" style="--accent:{{ s.accent }}">
+  <article class="b-card lv-card{{ '' if s.has_sales else ' off' }}{{ ' shut' if s.closed }}" data-store-id="{{ s.id }}" data-href="/sales?loc={{ s.id }}&amp;days=1">
     <div class="lv-edge"></div>
     <div class="lv-in">
       <div class="lv-top"><div><h2><a href="/sales?loc={{ s.id }}&amp;days=1">{{ s.name }}</a></h2>
-        <p class="b-reg">{% if s.register %}{% if s.shift_open %}<span class="lv-dot"></span>{% endif %}{{ t('Register') }} {{ s.register }} · {% if s.shift_open %}{{ t('open since') }}{% else %}{{ t('closed') }}{% endif %} {{ s.shift_time.strftime('%H:%M') }}{% else %}&nbsp;{% endif %}</p></div>
-        {% if s.closed %}<span class="lv-badge shut">{{ t('Closed') }}</span>{% elif s.top %}<span class="lv-badge">★ {{ t('Top today') }}</span>{% endif %}</div>
+        <p class="b-reg">{% if s.register %}{% if s.shift_open %}<span class="lv-dot"></span>{% endif %}{{ t('Register') }} {{ s.register }} &middot; {% if s.shift_open %}{{ t('open since') }}{% else %}{{ t('closed') }}{% endif %} {{ s.shift_time.strftime('%H:%M') }}{% else %}&nbsp;{% endif %}</p></div>
+        {% if s.closed %}<span class="lv-badge shut">{{ t('Closed') }}</span>{% elif s.top %}<span class="lv-badge">{{ t('Top today') }}</span>{% endif %}</div>
       {% if s.has_sales %}
       <div class="b-big"><small>PHP</small> <span class="store-today">{{ s.today|money }}</span></div>
       <p class="b-y">{{ t('Yesterday') }} PHP <span class="store-yesterday">{{ s.yesterday|money }}</span></p>
@@ -79,52 +110,178 @@
         <div class="hv-tip" hidden><b></b><span></span></div>
       </div>
       <div class="lv-share"><i style="width:{{ s.share }}%"></i></div>
-      <div class="lv-sharel"><span>{{ s.share }}% {{ t("of today's sales") }}</span><span><span class="store-tx">{{ s.tx|num(0) }}</span> {{ t('transactions') }}</span></div>
+      <div class="lv-sharel"><span><b class="lv-share-pct">{{ s.share }}%</b> {{ t("of today's sales") }}</span><span><span class="store-tx">{{ s.tx|num(0) }}</span> {{ t('transactions') }}</span></div>
       {% else %}
       {% if s.closed %}<div class="b-big b-none">{{ t('Store closed') }}</div><p class="b-y">{{ t('No sales are expected here.') }}</p>
       {% else %}<div class="b-big b-none">{{ t('No sales data') }}</div><p class="b-y">{{ t('Not available from StoreHub yet') }}</p>
       <div class="lv-empty">{{ t('The 14-day chart appears with data') }}</div>{% endif %}
       {% endif %}
       {% if s.health.total %}
-      <div class="lv-health" role="img" aria-label="{{ t('Stock health') }}"><i style="flex:{{ s.health.ok }};background:#16a34a"></i><i style="flex:{{ s.health.low }};background:#f59e0b"></i><i style="flex:{{ s.health.out }};background:#dc2626"></i></div>
-      <div class="lv-hl"><span><b>{{ s.health_pct.ok }}%</b> {{ t('in stock') }}</span><span><b>{{ s.health.low }}</b> {{ t('low') }}</span><span><b>{{ s.health.out }}</b> {{ t('out') }}</span></div>
+      <div class="lv-health" role="img" aria-label="{{ t('Stock health') }}"><i style="flex:{{ s.health.ok }}"></i><i style="flex:{{ s.health.low }}"></i><i style="flex:{{ s.health.out }}"></i></div>
+      <div class="lv-hl"><span><b>{{ s.health_pct.ok }}%</b> {{ t('in stock') }}</span><span>{{ s.health.low }} {{ t('low') }} &middot; <b class="{{ 'hl-out' if s.health.out else '' }}">{{ s.health.out }} {{ t('out') }}</b></span></div>
       {% else %}<div class="lv-hl"><span>{{ t('Stock health unavailable') }}</span></div>{% endif %}
       <div class="lv-foot" data-live="foot-{{ s.id }}">
-        <div class="lv-mini">{% if s.checks_total %}<div class="lv-ring sm{{ ' warn' if s.checks_left else '' }}" style="--p:{{ s.checks_pct }}"><b>{{ '✓' if not s.checks_left else (s.checks_total - s.checks_left) ~ '/' ~ s.checks_total }}</b></div>{% endif %}<span>{{ t('Checklists') }}<br><b>{{ t('done') if s.checks_total and not s.checks_left else (s.checks_left ~ ' ' ~ t('left') if s.checks_total else '—') }}</b></span></div>
+        <div class="lv-mini">{% if s.checks_total %}<div class="lv-ring sm{{ ' warn' if s.checks_left else '' }}" style="--p:{{ s.checks_pct }}"><b>{{ '✓' if not s.checks_left else (s.checks_total - s.checks_left) ~ '/' ~ s.checks_total }}</b></div>{% endif %}<span>{{ t('Checklists') }}<br><b>{{ (s.checks_total - s.checks_left) ~ '/' ~ s.checks_total if s.checks_total else '—' }}</b></span></div>
         <div class="lv-mini"><span>{{ t('Orders') }}<br><b>{{ s.orders }}</b></span></div>
-        <div class="lv-mini"><span>{{ t("Open issues") }}<br><b>{{ s.issues }}</b></span></div>
+        <div class="lv-mini"><span>{{ t('Open issues') }}<br><b{% if s.issues > 1 %} style="color:var(--bad)"{% endif %}>{{ s.issues }}</b></span></div>
       </div>
     </div>
   </article>
   {% endfor %}
 </div>
 <p class="b-note small mute store-note">{{ t('Today so far, from the latest sync.') }} {{ t('Updates automatically.') }}</p>
-<section class="desktop-work-queue" aria-labelledby="work-today-title"><div class="work-queue-head"><h2 id="work-today-title">{{ t('Your work today') }}</h2></div>
-{% for title, links in nav_groups %}{% for url, label, icon, tag in links %}{% if url in ['/replenishment','/replenishment/loyverse','/inspections','/issues'] and not (source_scope.startswith('loyverse') and url == '/replenishment') and not (not source_scope.startswith('loyverse') and url == '/replenishment/loyverse') %}<a href="{{ url }}"><span class="work-icon"><svg class="i"><use href="#i-{{ icon }}"/></svg></span><span class="work-copy"><strong>{{ t(label) }}</strong><small>{% if tag %}{{ tag }} {{ t('items') }}{% elif url == '/inspections' %}{{ completed }}/{{ checklist_total }} {{ t('completed') }}{% else %}{{ t('Open') }}{% endif %}</small></span><span class="work-link">{{ t('Review') if 'replenishment' in url else t('Open') }} &rarr;</span></a>{% endif %}{% endfor %}{% endfor %}</section>
-</div>
 
-<div class="b-row">
-  <section class="b-box" data-live="wh">
-    <h2>{{ t('Warehouse') }}</h2>
-    {% for j in wjobs %}
-    <a class="b-job" href="{{ j.href }}">
-      <span class="lv-ic {{ j.key }}"><svg class="i" aria-hidden="true"><use href="#{{ {'po': 'i-box', 'sheets': 'i-sync', 'recs': 'i-trend'}[j.key] }}"/></svg></span>
-      <span class="grow"><b>{{ j.n }}</b> {% if j.key == 'po' %}{{ t('purchase orders waiting to be received') }}<small>{{ t('Oldest') }}: PO{{ j.oldest_no }}{% if j.supplier %}, {{ j.supplier }}{% endif %}{% if j.oldest_days is not none %}, {{ j.oldest_days }} {{ t('days') }}{% endif %}</small>
-      {% elif j.key == 'sheets' %}{{ t('transfer sheets not in StoreHub yet') }}<small>{{ j.drafts }} {{ t('drafts') }}, {{ j.waiting }} {{ t('waiting for StoreHub') }}</small>
-      {% else %}{{ t('order suggestions to review') }}<small>PHP {{ j.value|money }} {{ t('suggested') }}</small>{% endif %}</span>
-      <em>{{ t('Review') if j.key == 'recs' else t('Open') }}</em>
-    </a>
-    {% else %}<p class="small mute">{{ t('Nothing is waiting.') }}</p>{% endfor %}
+{# Precompute queue items once so counts & feed share one source #}
+{% set q_urgent = brief['items']|selectattr('priority', 'equalto', 'high')|list|length %}
+{% set q_other_brief = brief['items']|rejectattr('priority', 'equalto', 'high')|list|length %}
+{% set q_stock = (wjobs|length) + q_other_brief %}
+{% set q_checks = my_tasks[:4]|length %}
+{% set q_total = (brief['items']|length) + (wjobs|length) + q_checks %}
+
+<section class="dash-workspace">
+  <section class="desktop-work-queue" aria-labelledby="work-today-title" data-live="wh">
+    <div class="dash-panel-head">
+      <div>
+        <h2 id="work-today-title">{{ t('Priority queue') }} <span class="dash-sr">{{ t('Your work today') }}</span></h2>
+        <small>{{ t('Urgent store issues, Warehouse work, and checklists in one feed') }}</small>
+      </div>
+      <div class="dash-chips" id="dash-q-tabs">
+        <button type="button" class="dash-chip on" data-q="all">{{ t('All') }} ({{ q_total }})</button>
+        <button type="button" class="dash-chip" data-q="urgent">{{ t('Urgent') }} ({{ q_urgent }})</button>
+        <button type="button" class="dash-chip" data-q="stock">{{ t('Stock & PO') }} ({{ q_stock }})</button>
+        <button type="button" class="dash-chip" data-q="checks">{{ t('Checklists') }} ({{ q_checks }})</button>
+      </div>
+    </div>
+
+    <div class="dq-list" id="dash-q-list">
+      {% for i in brief['items'] %}
+      {% set is_hi = i.priority == 'high' %}
+      <article class="dq-item" data-cat="{{ 'urgent' if is_hi else 'stock' }}">
+        <div class="dq-left">
+          <div class="dq-ico{{ ' high' if is_hi }}">{{ '!' if is_hi else '•' }}</div>
+          <div>
+            <div class="dq-title">{{ t(i.title) }} <span class="dq-tag{{ ' high' if is_hi }}">{{ t('Urgent') if is_hi else t(i.priority) }}</span></div>
+            <div class="dq-desc">{{ t(i.recommendation) }}</div>
+          </div>
+        </div>
+        <a class="dq-act" href="{{ i.link }}">{{ t('Open') }}</a>
+      </article>
+      {% endfor %}
+
+      {% for j in wjobs %}
+      <article class="dq-item" data-cat="stock">
+        <div class="dq-left">
+          <div class="dq-ico">{{ {'po': 'PO', 'sheets': 'TR', 'recs': 'OR'}[j.key] }}</div>
+          <div>
+            <div class="dq-title">
+              <b>{{ j.n }}</b>
+              {% if j.key == 'po' %}{{ t('purchase orders waiting to be received') }} <span class="dq-tag">{{ t('Warehouse') }}</span>
+              {% elif j.key == 'sheets' %}{{ t('transfer sheets not in StoreHub yet') }} <span class="dq-tag">{{ t('Warehouse') }}</span>
+              {% else %}{{ t('order suggestions to review') }} <span class="dq-tag">{{ t('Replenish') }}</span>{% endif %}
+            </div>
+            <div class="dq-desc">
+              {% if j.key == 'po' %}{{ t('Oldest') }}: PO{{ j.oldest_no }}{% if j.supplier %}, {{ j.supplier }}{% endif %}{% if j.oldest_days is not none %}, {{ j.oldest_days }} {{ t('days') }}{% endif %}
+              {% elif j.key == 'sheets' %}{{ j.drafts }} {{ t('drafts') }}, {{ j.waiting }} {{ t('waiting for StoreHub') }}
+              {% else %}PHP {{ j.value|money }} {{ t('suggested') }}{% endif %}
+            </div>
+          </div>
+        </div>
+        <a class="dq-act" href="{{ j.href }}">{{ t('Review') if j.key == 'recs' else t('Open') }}</a>
+      </article>
+      {% endfor %}
+
+      {% for task in my_tasks[:4] %}
+      <article class="dq-item" data-cat="checks">
+        <div class="dq-left">
+          <div class="dq-ico">CL</div>
+          <div>
+            <div class="dq-title">{{ t(task.template.name|replace(' checklist', '')) }} <span class="dq-tag">{{ t('Checklist') }}</span></div>
+            <div class="dq-desc">{{ task.location.name|replace('The Daily Centro - ', '') }} &middot; {{ t('Late · ') if task.due_at < now }}{{ task.due_at|clock }}</div>
+          </div>
+        </div>
+        <a class="dq-act" href="/inspections/{{ task.id }}">{{ t('Start') }}</a>
+      </article>
+      {% endfor %}
+
+      {% if not q_total %}
+      <p class="small mute">{{ t('Nothing needs management action right now.') }}</p>
+      {% endif %}
+    </div>
   </section>
-  <section class="b-box" data-live="best">
-    <h2>{{ t('Best sellers today') }}</h2>
-    {% for r in stat.best %}
-    <div class="lv-rank"><span class="n">{{ loop.index }}</span><span class="nm">{{ r.name }}</span><span class="t"><i style="width:{{ r.pct }}%"></i></span><b>{{ r.units|num(0) if r.units == r.units|round(0) else r.units|num(1) }}</b></div>
-    {% else %}<p class="small mute">{{ t('No sales yet.') }}</p>{% endfor %}
-  </section>
+
+  <div class="dash-side-col">
+    {% if ai %}
+    <section class="dash-card">
+      <div class="dash-ai-head">
+        <h2 class="dash-ai-title"><span class="dash-ai-badge" aria-hidden="true"><svg class="i"><use href="#i-sparkles"/></svg></span> {{ t('AI briefing') }}</h2>
+        <a class="dq-act" href="/assistant">{{ t('Open assistant') }}</a>
+      </div>
+      {% if ai.row %}
+      <p class="dash-ai-headline">{{ ai.row.output_json.headline }}</p>
+      {% for it in ai.row.output_json['items'][:2] %}
+      <div class="dash-ai-pt"><i class="{{ 'high' if it.priority == 'high' }}"></i><div><strong>{{ it.title }}</strong><div class="small mute">{{ it.recommended_action }}</div></div></div>
+      {% endfor %}
+      <div class="dash-ai-foot">
+        <span>{{ t('Generated') }} {{ ai.row.created_at|ago }} &middot; {{ ai.row.validation.statements - ai.row.validation.unsupported }}/{{ ai.row.validation.statements }} {{ t('verified') }}</span>
+        <a href="/assistant">{{ t('Read brief') }} &rarr;</a>
+      </div>
+      {% else %}
+      <p class="small mute">{% if ai.status.available %}{{ t('Your next briefing is ready to generate.') }}{% else %}{{ t('Connect your AI provider to get daily briefings.') }}{% endif %}</p>
+      <div class="dash-ai-foot"><span></span><a href="/assistant">{{ t('Open assistant') }} &rarr;</a></div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="dash-card">
+      <div class="dash-panel-head" style="margin-bottom:10px">
+        <h2>{{ t('Live velocity & gaps') }}</h2>
+        <div class="dash-chips" id="dash-vel-tabs">
+          <button type="button" class="dash-chip on" data-v="best">{{ t('Best sellers') }}</button>
+          <button type="button" class="dash-chip" data-v="gaps">{{ t('Stockout gaps') }}</button>
+        </div>
+      </div>
+      <div class="dash-rank-list" data-live="best">
+        {% for r in stat.best %}
+        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ r.name }}">{{ r.name }}</span><span class="dash-rank-tr"><i style="width:{{ r.pct }}%"></i></span><span class="dash-rank-v">{{ r.units|num(0) if r.units == r.units|round(0) else r.units|num(1) }}</span></div>
+        {% else %}<p class="small mute">{{ t('No sales yet.') }}</p>{% endfor %}
+      </div>
+      <div class="dash-rank-list" id="dash-vel-gaps" hidden>
+        {% for g in stat.gaps %}
+        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ g.name }}">{{ g.name }}</span><span class="dash-rank-tr bad"><i style="width:{{ g.pct }}%"></i></span><span class="dash-rank-v">{{ g.per_day }}/day</span></div>
+        {% else %}<p class="small mute">{{ t('No out-of-stock 30-day sellers.') }}</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+</section>
+
+{% set po_job = (wjobs|selectattr('key', 'equalto', 'po')|list|first) %}
+<section class="dash-ops-strip">
+  <div class="dash-card dash-ops-mini">
+    <div class="dash-ops-top"><span>{{ t('Purchase orders') }}</span>{% if can('po.view') %}<a href="/purchase-orders">{{ t('Open') }}</a>{% endif %}</div>
+    <b class="dash-ops-big">{{ po_job.n if po_job else (ops.po_total if ops else 0) }} {{ t('open') }}{% if ops and ops.po_overdue %} <small class="bad">&middot; {{ ops.po_overdue }} {{ t('overdue') }}</small>{% endif %}</b>
+    <div class="small mute">{% if po_job %}{{ t('Oldest') }}: PO{{ po_job.oldest_no }}{% elif ops %}{{ t('Tracked in StoreHub') }}{% else %}{{ t('All received') }}{% endif %}</div>
+  </div>
+  <div class="dash-card dash-ops-mini">
+    <div class="dash-ops-top"><span>{{ t('Expiry watch') }}</span>{% if can('inventory.view') %}<a href="/inventory?tab=expiry">{{ t('Inspect') }}</a>{% endif %}</div>
+    <b class="dash-ops-big">{{ ops.expiry_total if ops else 0 }} {{ t('batches') }} <small>&le; 30 days</small></b>
+    <div class="small mute">{{ t('Active shelf batches tracked') }}</div>
+  </div>
+  <div class="dash-card dash-ops-mini">
+    <div class="dash-ops-top"><span>{{ t('Auto replenishment') }}</span>{% if can('repl.view') %}<a href="/replenishment">{{ t('Review') }}</a>{% endif %}</div>
+    <b class="dash-ops-big">{{ ops.open_suggestions if ops else (recs[0] if recs else 0) }} {{ t('suggestions') }}</b>
+    <div class="small mute">{% if recs and recs[1] %}PHP {{ recs[1]|money }} {{ t('total value') }}{% else %}{{ t('Waiting for review') }}{% endif %}</div>
+  </div>
+  <div class="dash-card dash-ops-mini">
+    <div class="dash-ops-top"><span>{{ t('Data freshness') }}</span>{% if can('sync.view') %}<a href="/sync">{{ t('Sync') }}</a>{% endif %}</div>
+    <div class="dash-fresh-pills">
+      {% for f in fresh %}<span class="dash-fpill{{ ' stale' if f.status != 'fresh' else '' }}" title="{{ t(f.label) }}: {{ t('last synced') }} {{ f.last_success|ago }}">{{ t(f.label) }}</span>{% endfor %}
+    </div>
+  </div>
+</section>
 </div>
 {% endif %}
-<details class="b-more"><summary>{{ t('More details') }} <span class="small mute">{{ t('Needs attention') }}, {{ t('checklists') }}, {{ t('charts') }}, {{ t('data status') }}</span></summary>
+
+<details class="b-more"><summary>{{ t('More details') }} <span class="small mute">{{ t('Operations charts') }}, {{ t('checklists') }}, {{ t('supporting facts') }}, {{ t('data status') }}</span></summary>
 {% if ops %}
 <div class="section-head ops-head"><h2>{{ t('Operations at a glance') }}</h2><span class="small mute">{{ t('Order suggestions, stock, purchase orders and transfers') }}</span></div>
 <div class="ops-grid">
@@ -194,19 +351,40 @@
       {% for task in my_tasks %}<a class="checklist-row" href="/inspections/{{ task.id }}"><span><strong>{{ t(task.template.name|replace(' checklist', '')) }}</strong><small>{{ task.location.name|replace('The Daily Centro - ', '') }}</small></span><span class="checklist-time {{ 'overdue' if task.due_at < now }}">{{ t('Late · ') if task.due_at < now }}{{ task.due_at|clock }}</span></a>
       {% else %}<p class="small mute">{{ t('All scheduled checklists are complete.') if checklist_total else t('No checklists scheduled today.') }}</p>{% endfor %}
     </section>
-    {% if ai %}
-    <section class="overview-panel assistant-summary">
-      <div class="section-head"><h2><span class="ai-square" aria-hidden="true"><svg class="i"><use href="#i-sparkles"/></svg></span> {{ t('AI briefing') }}</h2><a class="attention-open" href="/assistant" aria-label="{{ t('Open assistant') }}"><svg class="i"><use href="#i-arrow"/></svg></a></div>
-      {% if ai.row %}<p class="assistant-headline">{{ ai.row.output_json.headline }}</p>
-      {% for it in ai.row.output_json['items'][:2] %}<div class="brief-line"><span class="status-dot {{ 'urgent-dot' if it.priority == 'high' }}"></span><div><strong>{{ it.title }}</strong><p>{{ it.recommended_action }}</p></div></div>{% endfor %}
-      <div class="small mute">{{ t('Generated') }} {{ ai.row.created_at|ago }} · {{ ai.row.validation.statements - ai.row.validation.unsupported }} / {{ ai.row.validation.statements }} {{ t('statements verified') }}</div>
-      {% else %}<p class="small mute">{% if ai.status.available %}{{ t('Your next briefing is ready to generate.') }}{% else %}{{ t('Connect your AI provider to get daily briefings.') }}{% endif %}</p>{% endif %}
-      <a class="assistant-cta" href="/assistant">{{ t('Read the briefing') if ai.row else t('Open assistant') }}<svg class="i"><use href="#i-arrow"/></svg></a>
-    </section>{% endif %}
   </div>
 </div>
 <div class="freshness-strip"><span class="small mute">{{ t('Data status') }}</span>{% for f in fresh %}<span class="badge dot {{ 'b-ok' if f.status == 'fresh' else 'b-bad' }}" title="{{ t(f.label) }}: {{ t('last synced') }} {{ f.last_success|ago }}">{{ t(f.label) }}</span>{% endfor %}{% if can('sync.view') %}<a class="small" href="/sync">{{ t('Sync details') }} <span aria-hidden="true">↗</span></a>{% endif %}</div>
 </details>
+
+{% if cards is not none %}
+<div class="dash-scrim" id="dash-store-scrim"></div>
+<aside class="dash-drawer" id="dash-store-drawer" aria-hidden="true">
+  <div class="dash-dr-head">
+    <div>
+      <h3 id="dash-dr-title"></h3>
+      <p id="dash-dr-sub"></p>
+    </div>
+    <button class="dash-dr-close" id="dash-dr-close" type="button" aria-label="{{ t('Close') }}">&#10005;</button>
+  </div>
+  <div class="dash-dr-body" id="dash-dr-body"></div>
+  <div class="dash-dr-foot">
+    <a class="dash-cta" id="dash-dr-checks" href="/inspections">{{ t('Open checklists') }}</a>
+    <a class="dash-cta pri" id="dash-dr-sales" href="/sales">{{ t('View store sales') }}</a>
+  </div>
+</aside>
+
+{% set ns = namespace(store_map={}) %}
+{% for s in cards %}
+  {% set reg_txt = (t('Register') ~ ' ' ~ s.register ~ ' · ' ~ (t('open since') if s.shift_open else t('closed')) ~ ' ' ~ (s.shift_time.strftime('%H:%M') if s.shift_time else '')) if s.register else '' %}
+  {% set _ = ns.store_map.update({s.id|string: {
+    'id': s.id, 'name': s.name, 'today': s.today, 'yesterday': s.yesterday, 'tx': s.tx,
+    'bars': s.bars, 'out_of_stock': s.out_of_stock, 'gap': s.gap,
+    'orders': s.orders, 'issues': s.issues,
+    'checks_total': s.checks_total, 'checks_left': s.checks_left, 'reg_text': reg_txt
+  }}) %}
+{% endfor %}
+<script id="dashboard-store-data" type="application/json">{{ ns.store_map|tojson }}</script>
+{% endif %}
 {% endblock %}
 
-{% block scripts %}<script src="/static/roll_number.js?v={{ asset_v('roll_number.js') }}"></script><script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script><script src="/static/dashboard_refresh.js?v={{ asset_v('dashboard_refresh.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/roll_number.js?v={{ asset_v('roll_number.js') }}"></script><script src="/static/dashboard_live.js?v={{ asset_v('dashboard_live.js') }}"></script><script src="/static/dashboard_b.js?v={{ asset_v('dashboard_b.js') }}"></script><script src="/static/dashboard_refresh.js?v={{ asset_v('dashboard_refresh.js') }}"></script><script src="/static/dashboard_redesign.js?v={{ asset_v('dashboard_redesign.js') }}"></script>{% endblock %}

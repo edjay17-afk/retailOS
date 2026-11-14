@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sales by Shift — Redesign Concepts</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-soft: #eef2f6;
+    --ok: #10b981;
+    --ok-ink: #047857;
+    --ok-soft: #ecfdf5;
+    --ok-line: #a7f3d0;
+    --blue: #3b82f6;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --amber: #f59e0b;
+    --amber-ink: #b45309;
+    --amber-soft: #fffbeb;
+    --red-ink: #be123c;
+    --red-soft: #fff1f2;
+    --sh1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+    --sh2: 0 4px 12px rgba(15, 23, 42, 0.06);
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .frame {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    background: var(--bg);
+    padding: 28px;
+    border-radius: 22px;
+    border: 1px solid #dde3ed;
+  }
+  .concept-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .concept-tag span {
+    background: var(--ink);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  /* Shared header */
+  .page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .title-group h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .meta-pill.live {
+    background: var(--ok-soft);
+    border-color: var(--ok-line);
+    color: var(--ok-ink);
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    display: inline-block;
+  }
+  .head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-ghost {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    box-shadow: var(--sh1);
+  }
+
+  /* Filter Toolbar */
+  .toolbar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 12px;
+    box-shadow: var(--sh1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .chip-sel {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .chip-sel .lbl {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    background: #eef2f7;
+    padding: 4px;
+    border-radius: 11px;
+    height: 36px;
+    gap: 2px;
+  }
+  .seg a {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+  .seg a.on {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.10);
+  }
+  .seg .cal-pill {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .toolbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* KPI Grid */
+  .kpi-4 {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1.25fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 15px 18px;
+    box-shadow: var(--sh1);
+  }
+  .kpi-card.hero {
+    background: linear-gradient(155deg, #ecfdf5 0%, #ffffff 72%);
+    border-color: var(--ok-line);
+  }
+  .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .kpi-val {
+    font-size: 23px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .delta {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--ok-soft);
+    color: var(--ok-ink);
+  }
+  .kpi-sub {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .mix-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    margin: 9px 0 7px;
+  }
+  .mix-cash { background: #10b981; width: 81%; }
+  .mix-gcash { background: #3b82f6; width: 16%; }
+  .mix-card { background: #8b5cf6; width: 3%; }
+  .mix-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .mix-legend i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  /* Option 1 Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--sh1);
+    overflow: hidden;
+  }
+  table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.ledger th {
+    text-align: left;
+    padding: 11px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.ledger th.right,
+  table.ledger td.right { text-align: right; }
+  table.ledger td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+  table.ledger tr:last-child td { border-bottom: 0; }
+  table.ledger tr.tot-row td {
+    background: var(--surface2);
+    border-top: 1px solid var(--line);
+    font-weight: 750;
+  }
+  .win-main {
+    font-weight: 650;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .win-sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .status-pill.open {
+    background: var(--ok-soft);
+    color: var(--ok-ink);
+    border: 1px solid var(--ok-line);
+  }
+  .status-pill.closed {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  .status-pill.sync {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  .store-cell { font-weight: 600; color: var(--ink); }
+  .reg-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 1px 7px;
+    border-radius: 6px;
+    margin-left: 4px;
+  }
+  .cashier-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px 4px 5px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-decoration: none;
+  }
+  .cashier-link:hover { border-color: #cbd5e1; background: var(--surface2); }
+  .avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 10px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .arrow { color: var(--muted); font-size: 11px; }
+  .mute { color: var(--muted); }
+  .drop-val { color: var(--amber-ink); font-weight: 600; }
+  .void-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 650;
+    color: var(--red-ink);
+    background: var(--red-soft);
+    padding: 1px 6px;
+    border-radius: 5px;
+    margin-top: 2px;
+  }
+
+  /* OPTION 2: Day-Grouped Shift Cards */
+  .day-group { margin-bottom: 18px; }
+  .day-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .day-head strong { color: var(--ink); font-size: 13.5px; }
+  .shift-stack { display: flex; flex-direction: column; gap: 8px; }
+  .shift-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid #cbd5e1;
+    border-radius: 14px;
+    padding: 13px 16px;
+    box-shadow: var(--sh1);
+    display: grid;
+    grid-template-columns: 230px 180px 1fr 165px;
+    align-items: center;
+    gap: 16px;
+  }
+  .shift-card.is-open { border-left-color: var(--ok); }
+  .shift-card.is-sync { border-left-color: var(--amber); }
+  .sc-store { font-weight: 700; font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+  .sc-time { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 500; }
+  .sc-mix-row { display: flex; flex-direction: column; gap: 5px; }
+  .sc-mix-nums {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .sc-mix-nums strong { color: var(--ink); font-weight: 700; }
+  .sc-total { text-align: right; }
+  .sc-total-main { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+  .sc-total-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+  /* OPTION 3: Register Control Deck */
+  .live-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .live-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--ok-line);
+    border-radius: 12px;
+    padding: 8px 13px;
+    box-shadow: var(--sh1);
+    font-size: 12.5px;
+  }
+  .live-chip-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--ok-ink);
+    background: var(--ok-soft);
+    padding: 2px 7px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .kpi-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .mini-share {
+    display: inline-flex;
+    width: 72px;
+    height: 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .mini-share span:first-child { background: #10b981; }
+  .mini-share span:last-child { background: #3b82f6; }
+
+  .foot-note {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== OPTION 1 ==================== -->
+<section class="frame" id="opt1">
+  <div class="concept-tag"><span>Option 1</span> Studio Bento + Shift Ledger (Suite Match)</div>
+
+  <div class="page-head">
+    <div class="title-group">
+      <h1>Sales by shift</h1>
+      <span class="meta-pill live"><span class="dot"></span> 2 open</span>
+      <span class="meta-pill">31 Oct – 13 Nov · 42 shifts</span>
+    </div>
+    <div class="head-actions">
+      <a class="btn-ghost" href="#">Daily sales</a>
+      <a class="btn-ghost" href="#">↓ CSV</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="chip-sel"><span class="lbl">Store</span> All my locations ▾</div>
+    <div class="seg">
+      <a href="#">Today</a>
+      <a href="#">7 days</a>
+      <a class="on" href="#">14 days</a>
+      <a class="cal-pill" href="#">📅 31 Oct – 13 Nov</a>
+    </div>
+    <div class="toolbar-right">
+      <div class="seg">
+        <a class="on" href="#">All</a>
+        <a href="#">Open (2)</a>
+        <a href="#">Closed (40)</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-4">
+    <div class="kpi-card hero">
+      <div class="kpi-top"><span>Total sales (14d)</span><span class="delta">▲ 12.4%</span></div>
+      <div class="kpi-val num">₱482,910.40</div>
+      <div class="kpi-sub num">Avg ₱11,497.87 / shift · 4,813 tx</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span>Shifts</span><span class="meta-pill" style="height:20px;font-size:11px;padding:0 7px">5 stores</span></div>
+      <div class="kpi-val num">42</div>
+      <div class="kpi-sub">2 open now · 40 closed</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span>Payment mix</span><span class="num" style="color:var(--ink);font-weight:700">81% Cash</span></div>
+      <div class="mix-bar"><span class="mix-cash"></span><span class="mix-gcash"></span><span class="mix-card"></span></div>
+      <div class="mix-legend num">
+        <span><i style="background:#10b981"></i>Cash ₱391.2k</span>
+        <span><i style="background:#3b82f6"></i>GCash ₱77.3k</span>
+        <span><i style="background:#8b5cf6"></i>Card ₱14.4k</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span>Withdrawals</span><span>19 drops</span></div>
+      <div class="kpi-val num">₱38,500.00</div>
+      <div class="kpi-sub num">Net drawer cash: ₱352,700.00</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="ledger">
+      <thead>
+        <tr>
+          <th>Shift window</th>
+          <th>Store &amp; Register</th>
+          <th>Cashier</th>
+          <th class="right">Tx</th>
+          <th class="right">Total sales</th>
+          <th class="right">Cash</th>
+          <th class="right">GCASH</th>
+          <th class="right">Withdrawals</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="win-main num">13 Nov · 06:02 → <span class="status-pill open"><span class="dot"></span>Open</span></div>
+            <div class="win-sub num">5h 18m active</div>
+          </td>
+          <td><span class="store-cell">Daily Centro - Getafe</span> <span class="reg-tag">Reg #5</span></td>
+          <td><a class="cashier-link" href="#"><span class="avatar">JR</span> Jhun Rey Rejon <span class="arrow">↗</span></a></td>
+          <td class="right num">142</td>
+          <td class="right num"><strong>₱14,820.50</strong></td>
+          <td class="right num">₱11,640.50</td>
+          <td class="right num">₱3,180.00</td>
+          <td class="right num mute">₱0.00</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="win-main num">13 Nov · 07:00 → <span class="status-pill open"><span class="dot"></span>Open</span></div>
+            <div class="win-sub num">4h 20m active</div>
+          </td>
+          <td><span class="store-cell">Steamy Co. - Talibon</span> <span class="reg-tag">Reg #1</span></td>
+          <td><a class="cashier-link" href="#"><span class="avatar" style="background:#dcfce7;color:#166534">AR</span> Ana Reyes <span class="arrow">↗</span></a></td>
+          <td class="right num">88</td>
+          <td class="right num"><strong>₱9,410.00</strong></td>
+          <td class="right num">₱6,910.00</td>
+          <td class="right num">₱2,500.00</td>
+          <td class="right num drop-val">₱2,000.00</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="win-main num">12 Nov · 06:01 → 14:12</div>
+            <div class="win-sub num"><span class="status-pill closed">Closed</span> 8h 11m</div>
+          </td>
+          <td><span class="store-cell">Daily Centro - Getafe</span> <span class="reg-tag">Reg #5</span></td>
+          <td><a class="cashier-link" href="#"><span class="avatar" style="background:#fef3c7;color:#92400e">TJ</span> Torniado Jennifer <span class="arrow">↗</span></a></td>
+          <td class="right num">169</td>
+          <td class="right num">
+            <strong>₱12,266.00</strong>
+            <div><span class="void-tag">Void ₱140</span></div>
+          </td>
+          <td class="right num">₱10,236.00</td>
+          <td class="right num">₱2,030.00</td>
+          <td class="right num drop-val">₱5,000.00</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="win-main num">12 Nov · 14:15 → 22:05</div>
+            <div class="win-sub num"><span class="status-pill closed">Closed</span> 7h 50m</div>
+          </td>
+          <td><span class="store-cell">Publico - Tagbilaran</span> <span class="reg-tag">Reg #2</span></td>
+          <td><a class="cashier-link" href="#"><span class="avatar" style="background:#fce7f3;color:#9d174d">ML</span> Marco Lim <span class="arrow">↗</span></a></td>
+          <td class="right num">131</td>
+          <td class="right num"><strong>₱15,380.00</strong></td>
+          <td class="right num">₱12,180.00</td>
+          <td class="right num">₱3,200.00</td>
+          <td class="right num drop-val">₱3,500.00</td>
+        </tr>
+        <tr class="tot-row">
+          <td colspan="3">Total · 42 shifts shown</td>
+          <td class="right num">4,813</td>
+          <td class="right num">₱482,910.40</td>
+          <td class="right num">₱391,200.40</td>
+          <td class="right num">₱77,310.00</td>
+          <td class="right num">₱38,500.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot-note"><span>Philippine time · Read-only from StoreHub Shift Reports</span><span>Click cashier to inspect shift receipts</span></div>
+</section>
+
+<!-- ==================== OPTION 2 ==================== -->
+<section class="frame" id="opt2">
+  <div class="concept-tag"><span>Option 2</span> Day-Grouped Operations Feed (Visual Payment Splits)</div>
+
+  <div class="page-head">
+    <div class="title-group">
+      <h1>Sales by shift</h1>
+      <span class="meta-pill live"><span class="dot"></span> 2 live shifts</span>
+      <span class="meta-pill">31 Oct – 13 Nov</span>
+    </div>
+    <div class="head-actions">
+      <a class="btn-ghost" href="#">Daily sales</a>
+      <a class="btn-ghost" href="#">↓ CSV</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="chip-sel"><span class="lbl">Store</span> All my locations ▾</div>
+    <div class="seg">
+      <a href="#">Today</a>
+      <a href="#">7 days</a>
+      <a class="on" href="#">14 days</a>
+      <a class="cal-pill" href="#">📅 31 Oct – 13 Nov</a>
+    </div>
+    <div class="toolbar-right">
+      <span class="meta-pill">42 shifts · ₱482,910.40 total</span>
+    </div>
+  </div>
+
+  <div class="day-group">
+    <div class="day-head">
+      <strong>Today · Fri, 13 Nov</strong>
+      <span class="num">2 open shifts · ₱24,230.50</span>
+    </div>
+    <div class="shift-stack">
+      <div class="shift-card is-open">
+        <div>
+          <div class="sc-store">Daily Centro - Getafe <span class="reg-tag">Reg #5</span></div>
+          <div class="sc-time num">06:02 → Live (5h 18m) · <span class="status-pill open" style="padding:1px 6px"><span class="dot"></span>Open</span></div>
+        </div>
+        <div><a class="cashier-link" href="#"><span class="avatar">JR</span> Jhun Rey Rejon <span class="arrow">↗</span></a></div>
+        <div class="sc-mix-row">
+          <div class="mix-bar" style="margin:0;height:7px"><span style="background:#10b981;width:78%"></span><span style="background:#3b82f6;width:22%"></span></div>
+          <div class="sc-mix-nums num">
+            <span>Cash <strong>₱11,640.50</strong></span>
+            <span>GCash <strong>₱3,180.00</strong></span>
+            <span>142 tx</span>
+          </div>
+        </div>
+        <div class="sc-total">
+          <div class="sc-total-main num">₱14,820.50</div>
+          <div class="sc-total-sub num">No withdrawals</div>
+        </div>
+      </div>
+
+      <div class="shift-card is-open">
+        <div>
+          <div class="sc-store">Steamy Co. - Talibon <span class="reg-tag">Reg #1</span></div>
+          <div class="sc-time num">07:00 → Live (4h 20m) · <span class="status-pill open" style="padding:1px 6px"><span class="dot"></span>Open</span></div>
+        </div>
+        <div><a class="cashier-link" href="#"><span class="avatar" style="background:#dcfce7;color:#166534">AR</span> Ana Reyes <span class="arrow">↗</span></a></div>
+        <div class="sc-mix-row">
+          <div class="mix-bar" style="margin:0;height:7px"><span style="background:#10b981;width:73%"></span><span style="background:#3b82f6;width:27%"></span></div>
+          <div class="sc-mix-nums num">
+            <span>Cash <strong>₱6,910.00</strong></span>
+            <span>GCash <strong>₱2,500.00</strong></span>
+            <span>88 tx</span>
+          </div>
+        </div>
+        <div class="sc-total">
+          <div class="sc-total-main num">₱9,410.00</div>
+          <div class="sc-total-sub num drop-val">Drop -₱2,000.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-group" style="margin-bottom:0">
+    <div class="day-head">
+      <strong>Yesterday · Thu, 12 Nov</strong>
+      <span class="num">4 closed shifts · ₱48,892.00</span>
+    </div>
+    <div class="shift-stack">
+      <div class="shift-card">
+        <div>
+          <div class="sc-store">Daily Centro - Getafe <span class="reg-tag">Reg #5</span></div>
+          <div class="sc-time num">06:01 → 14:12 (8h 11m)</div>
+        </div>
+        <div><a class="cashier-link" href="#"><span class="avatar" style="background:#fef3c7;color:#92400e">TJ</span> Torniado Jennifer <span class="arrow">↗</span></a></div>
+        <div class="sc-mix-row">
+          <div class="mix-bar" style="margin:0;height:7px"><span style="background:#10b981;width:83%"></span><span style="background:#3b82f6;width:17%"></span></div>
+          <div class="sc-mix-nums num">
+            <span>Cash <strong>₱10,236.00</strong></span>
+            <span>GCash <strong>₱2,030.00</strong></span>
+            <span>169 tx</span>
+          </div>
+        </div>
+        <div class="sc-total">
+          <div class="sc-total-main num">₱12,266.00</div>
+          <div class="sc-total-sub num drop-val">Drop -₱5,000.00 · <span class="red" style="color:var(--red-ink)">Void ₱140</span></div>
+        </div>
+      </div>
+
+      <div class="shift-card is-sync">
+        <div>
+          <div class="sc-store">Publico - Tagbilaran <span class="reg-tag">Reg #2</span></div>
+          <div class="sc-time num">14:15 → 22:05 (7h 50m) · <span class="status-pill sync" style="padding:1px 6px">Syncing detail</span></div>
+        </div>
+        <div><span class="mute" style="font-size:12.5px">Pending cashier…</span></div>
+        <div class="sc-mix-row">
+          <div class="mix-bar" style="margin:0;height:7px;background:#e2e8f0"></div>
+          <div class="sc-mix-nums num"><span>131 tx · Breakdown loads on next StoreHub sync</span></div>
+        </div>
+        <div class="sc-total">
+          <div class="sc-total-main num">₱15,380.00</div>
+          <div class="sc-total-sub num mute">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 3 ==================== -->
+<section class="frame" id="opt3" style="margin-bottom:0">
+  <div class="concept-tag"><span>Option 3</span> Register Control Deck (Live Registers + Drawer Accountability)</div>
+
+  <div class="page-head">
+    <div class="title-group">
+      <h1>Sales by shift</h1>
+      <span class="meta-pill">31 Oct – 13 Nov</span>
+    </div>
+    <div class="head-actions">
+      <div class="chip-sel" style="height:34px"><span class="lbl">Store</span> All locations ▾</div>
+      <div class="seg" style="height:34px">
+        <a style="height:26px" href="#">Today</a>
+        <a style="height:26px" href="#">7d</a>
+        <a class="on" style="height:26px" href="#">14d</a>
+        <a style="height:26px" href="#">📅 Custom</a>
+      </div>
+      <a class="btn-ghost" href="#">Daily sales</a>
+      <a class="btn-ghost" href="#">↓ CSV</a>
+    </div>
+  </div>
+
+  <!-- Live Registers Strip -->
+  <div class="live-strip">
+    <div class="live-chip">
+      <span class="live-chip-badge"><span class="dot"></span> OPEN</span>
+      <strong>Getafe · Reg #5</strong>
+      <span class="mute">Jhun Rey · 5h 18m</span>
+      <strong class="num">₱14,820.50</strong>
+    </div>
+    <div class="live-chip">
+      <span class="live-chip-badge"><span class="dot"></span> OPEN</span>
+      <strong>Talibon · Reg #1</strong>
+      <span class="mute">Ana Reyes · 4h 20m</span>
+      <strong class="num">₱9,410.00</strong>
+    </div>
+    <div class="live-chip" style="border-color:#fde68a;background:#fffdf5">
+      <span class="status-pill sync">1 syncing</span>
+      <span class="mute">Tagbilaran Reg #2 waiting detail</span>
+    </div>
+  </div>
+
+  <div class="kpi-3">
+    <div class="kpi-card hero">
+      <div class="kpi-top"><span>Shift sales (42 shifts · 4,813 tx)</span><span class="delta">▲ 12.4%</span></div>
+      <div class="kpi-val num">₱482,910.40</div>
+      <div class="kpi-sub num">₱11,497.87 avg / shift</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span>Cash in vs Withdrawals</span><span>Net in drawer</span></div>
+      <div class="kpi-val num">₱352,700.40</div>
+      <div class="kpi-sub num">₱391,200.40 cash − ₱38,500.00 drops</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span>Cashless collected</span><span>19% of sales</span></div>
+      <div class="kpi-val num">₱91,710.00</div>
+      <div class="kpi-sub num">GCash ₱77,310 · Card ₱14,400</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="ledger">
+      <thead>
+        <tr>
+          <th>Date &amp; Time</th>
+          <th>Store / Reg</th>
+          <th>Cashier</th>
+          <th class="right">Tx</th>
+          <th class="right">Opening</th>
+          <th class="right">Cash</th>
+          <th class="right">Cashless</th>
+          <th class="right">Drops</th>
+          <th class="right">Total sales</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="win-main num">13 Nov · 06:02 <span class="status-pill open" style="padding:1px 7px"><span class="dot"></span>Open</span></div>
+          </td>
+          <td><strong>Getafe</strong> <span class="reg-tag">#5</span></td>
+          <td><a class="cashier-link" href="#">Jhun Rey Rejon <span class="arrow">↗</span></a></td>
+          <td class="right num">142</td>
+          <td class="right num mute">₱3,000</td>
+          <td class="right num">₱11,640.50</td>
+          <td class="right num" style="color:var(--blue-ink)">₱3,180.00</td>
+          <td class="right num mute">—</td>
+          <td class="right num"><strong>₱14,820.50</strong></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="win-main num">12 Nov · 06:01–14:12</div>
+          </td>
+          <td><strong>Getafe</strong> <span class="reg-tag">#5</span></td>
+          <td><a class="cashier-link" href="#">Torniado Jennifer <span class="arrow">↗</span></a></td>
+          <td class="right num">169</td>
+          <td class="right num mute">₱3,000</td>
+          <td class="right num">₱10,236.00</td>
+          <td class="right num" style="color:var(--blue-ink)">₱2,030.00</td>
+          <td class="right num drop-val">−₱5,000</td>
+          <td class="right num"><strong>₱12,266.00</strong></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="win-main num">12 Nov · 14:15–22:05</div>
+          </td>
+          <td><strong>Tagbilaran</strong> <span class="reg-tag">#2</span></td>
+          <td><a class="cashier-link" href="#">Marco Lim <span class="arrow">↗</span></a></td>
+          <td class="right num">131</td>
+          <td class="right num mute">₱2,500</td>
+          <td class="right num">₱12,180.00</td>
+          <td class="right num" style="color:var(--blue-ink)">₱3,200.00</td>
+          <td class="right num drop-val">−₱3,500</td>
+          <td class="right num"><strong>₱15,380.00</strong></td>
+        </tr>
+        <tr class="tot-row">
+          <td colspan="3">Total · 42 shifts</td>
+          <td class="right num">4,813</td>
+          <td class="right num mute">—</td>
+          <td class="right num">₱391,200.40</td>
+          <td class="right num" style="color:var(--blue-ink)">₱91,710.00</td>
+          <td class="right num drop-val">−₱38,500</td>
+          <td class="right num">₱482,910.40</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</body>
+</html>

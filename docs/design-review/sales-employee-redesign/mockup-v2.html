@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales by employee — Retail OS Mockup</title>
+<style>
+  :root{
+    --bg:#f7f8f5;--surface:#ffffff;--surface2:#eff1f3;--line:#dde0e3;--line2:#cdd1d6;
+    --ink:#181d25;--mute:#646a73;--mute2:#747a82;
+    --primary:#2563eb;--primary-h:#1d4ed8;--primary-soft:#e8efff;--primary-ink:#ffffff;
+    --lime:#cee43b;--lime-soft:#f3f7d8;
+    --ok:#16a34a;--ok-soft:#dcfae7;--bad:#e02424;--bad-soft:#fee4e2;--warn:#b54708;--warn-soft:#fef0c7;
+    --info:#0369a1;--info-soft:#e0f2fe;
+    --r:12px;--r2:8px;--h:38px;
+    --sh1:0 1px 2px rgba(16,24,40,.03);--sh2:0 12px 32px rgba(16,24,40,.14);
+    --font:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html[data-theme="dark"]{
+    --bg:#08090b;--surface:#101114;--surface2:#1a1c21;--line:#2b2f38;--line2:#414754;
+    --ink:#f1f3f7;--mute:#9ca3b0;--mute2:#7a8291;
+    --primary:#3b82f6;--primary-h:#2563eb;--primary-soft:#172542;
+    --ok:#22c55e;--ok-soft:#0e2d1d;--bad:#f87171;--bad-soft:#35161a;--warn:#fbbf24;--warn-soft:#34260e;
+    --sh1:0 1px 2px rgba(0,0,0,.35);--sh2:0 16px 36px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:400 14.5px/1.55 var(--font);letter-spacing:-.005em;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button,input,select{font:inherit;color:inherit}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* Shell */
+  .app{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+  .sidebar{background:var(--surface);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:11px;padding:2px 8px 16px}
+  .mark{width:36px;height:36px;border-radius:9px;background:var(--lime);color:#1d2220;display:grid;place-items:center;font-weight:800;font-size:20px;flex:none}
+  .brand-name{font-weight:750;font-size:15px;letter-spacing:-.02em;line-height:1.2}
+  .brand-name small{display:block;font-size:11px;font-weight:600;color:var(--mute)}
+  .ns-h{margin:14px 10px 4px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mute2)}
+  .nl{display:flex;align-items:center;gap:10px;min-height:36px;padding:7px 10px;border-radius:10px;font-size:13px;font-weight:600;color:var(--mute)}
+  .nl:hover{background:var(--surface2);color:var(--ink)}
+  .nl.on{background:var(--primary-soft);color:var(--primary);font-weight:700}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
+  .nl.on .dot{opacity:1}
+  .sb-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;padding-inline:6px}
+  .av{width:32px;height:32px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:12px;font-weight:750;flex:none}
+  .sb-user b{display:block;font-size:12.5px;line-height:1.2}
+  .sb-user small{font-size:11px;color:var(--mute)}
+
+  /* Topbar */
+  .main{min-width:0;display:flex;flex-direction:column}
+  .topbar{min-height:62px;padding:12px 28px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .crumbs{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px}
+  .crumbs b{color:var(--ink);font-weight:650}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pos-switch{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+  .pos-switch button{border:0;background:transparent;padding:5px 10px;border-radius:7px;font-size:12px;font-weight:650;color:var(--mute);cursor:pointer}
+  .pos-switch button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh1)}
+  .theme-btn{height:34px;padding:0 11px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);font-size:12px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .theme-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+  /* Content */
+  .content{padding:24px 28px 64px;max-width:1460px;width:100%}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  h1{margin:0;font-size:25px;font-weight:750;letter-spacing:-.03em;line-height:1.2}
+  .subline{margin:5px 0 0;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .info-dot{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1px solid var(--line2);font-size:11px;font-weight:700;color:var(--mute);cursor:help}
+  .sync-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:700}
+  .sync-pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 13px;border-radius:var(--r2);border:1px solid var(--line2);background:var(--surface);font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.prim{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.prim:hover{background:var(--primary-h);color:#fff}
+
+  /* Filter toolbar */
+  .toolbar{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh1);display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11.5px;font-weight:650;color:var(--mute)}
+  .field select,.field input{height:var(--h);padding:0 11px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);font-size:13.5px;outline:none}
+  .field select:focus,.field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .field.loc{min-width:210px}
+  .field.search{flex:1;min-width:210px;max-width:300px}
+  .seg{display:inline-flex;height:var(--h);background:var(--surface2);border:1px solid var(--line);border-radius:var(--r2);padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;padding:0 11px;border-radius:6px;font-size:12.5px;font-weight:650;color:var(--mute);cursor:pointer;white-space:nowrap}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh1)}
+  .toolbar-meta{margin-left:auto;font-size:12px;color:var(--mute);align-self:center;white-space:nowrap}
+
+  /* 5-metric compact strip matching sales.html .sales-strip */
+  .strip{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh1);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:16px;overflow:hidden}
+  .stat{padding:15px 18px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
+  .stat:last-child{border-right:0}
+  .stat .lab{font-size:12px;font-weight:650;color:var(--mute)}
+  .stat .val-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .stat .val{font-size:23px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .stat .sub{font-size:12px;color:var(--mute)}
+  .stat .sub b{color:var(--ink);font-weight:650}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:999px}
+  .delta.up{background:var(--ok-soft);color:var(--ok)}
+  .delta.down{background:var(--bad-soft);color:var(--bad)}
+  .delta.flat{background:var(--surface2);color:var(--mute)}
+
+  /* Insights row */
+  .insights{display:grid;grid-template-columns:1.45fr 1fr;gap:16px;margin-bottom:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh1)}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .card-head h2{margin:0;font-size:15.5px;font-weight:750;letter-spacing:-.02em}
+  .chips{display:inline-flex;gap:5px;flex-wrap:wrap}
+  .chip-btn{border:1px solid var(--line);background:var(--surface);color:var(--mute);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:650;cursor:pointer}
+  .chip-btn.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+
+  /* Horizontal bar comparison */
+  .hbar-list{display:flex;flex-direction:column;gap:9px}
+  .hbar-item{display:grid;grid-template-columns:150px 1fr 104px;align-items:center;gap:12px;padding:4px 6px;border-radius:8px;cursor:pointer}
+  .hbar-item:hover{background:var(--surface2)}
+  .hbar-name{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
+  .hbar-rank{font-size:11px;color:var(--mute2);width:14px;text-align:right;font-variant-numeric:tabular-nums}
+  .hbar-track{height:10px;background:var(--surface2);border-radius:999px;overflow:hidden;position:relative}
+  .hbar-fill{height:100%;border-radius:999px;background:var(--primary);transition:width .25s ease}
+  .hbar-item.top .hbar-fill{background:linear-gradient(90deg,var(--primary),#60a5fa)}
+  .hbar-val{text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+
+  /* Store & exception summary card */
+  .side-stack{display:flex;flex-direction:column;gap:14px}
+  .store-list{display:flex;flex-direction:column;gap:10px}
+  .store-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+  .store-row .s-name{font-size:13px;font-weight:650}
+  .store-row .s-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .store-row .s-bar{grid-column:1/-1;height:6px;background:var(--surface2);border-radius:999px;overflow:hidden}
+  .store-row .s-bar i{display:block;height:100%;background:var(--primary);border-radius:999px;opacity:.82}
+  .watch-box{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+  .watch-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+  .watch-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:8px;background:var(--surface2);font-size:12.5px}
+  .watch-item.warn{background:var(--warn-soft)}
+  .watch-item .badge{font-size:11px;font-weight:750;padding:2px 7px;border-radius:999px;background:var(--surface);border:1px solid var(--line);white-space:nowrap;flex-shrink:0}
+
+  /* Table */
+  .tw{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden}
+  .tw-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .tw-head h2{margin:0;font-size:15.5px;font-weight:750}
+  .tw-sub{font-size:12.5px;color:var(--mute)}
+  .tw-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{background:var(--surface2);color:var(--mute);font-size:11.5px;font-weight:700;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;user-select:none}
+  th.sort{cursor:pointer}
+  th.sort:hover{color:var(--ink)}
+  th.sort.on{color:var(--primary)}
+  th.r,td.r{text-align:right}
+  td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-variant-numeric:tabular-nums}
+  tbody tr{cursor:pointer;transition:background-color .12s}
+  tbody tr:hover{background:var(--surface2)}
+  tbody tr.active-row{background:var(--primary-soft)}
+  tbody tr:last-child td{border-bottom:0}
+  tfoot td{background:var(--surface2);font-weight:750;border-top:1px solid var(--line2);border-bottom:0}
+  .emp-cell{display:flex;align-items:center;gap:10px;min-width:170px}
+  .emp-name{font-weight:700;line-height:1.25}
+  .emp-sub{font-size:11.5px;color:var(--mute)}
+  .store-pills{display:flex;gap:4px;flex-wrap:wrap}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--surface2);border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+  .share-wrap{display:flex;align-items:center;gap:8px;min-width:120px}
+  .share-bar{flex:1;height:6px;background:var(--surface2);border-radius:999px;overflow:hidden}
+  .share-bar i{display:block;height:100%;background:var(--primary);border-radius:999px}
+  .cx-pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .cx-pill.hi{background:var(--bad-soft);color:var(--bad)}
+  .cx-pill.ok{background:var(--surface2);color:var(--mute)}
+
+  /* Slide-over detail drawer */
+  .backdrop{position:fixed;inset:0;background:rgba(15,23,42,.32);opacity:0;pointer-events:none;transition:opacity .18s;z-index:80}
+  .backdrop.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--sh2);transform:translateX(100%);transition:transform .22s ease;z-index:90;display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .dr-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .dr-title{display:flex;align-items:center;gap:12px}
+  .dr-title .av{width:42px;height:42px;font-size:14px}
+  .dr-title h3{margin:0;font-size:17px;font-weight:750}
+  .dr-title p{margin:2px 0 0;font-size:12.5px;color:var(--mute)}
+  .icon-x{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center}
+  .dr-body{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;flex:1}
+  .dr-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dr-kpi{padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .dr-kpi span{display:block;font-size:11.5px;color:var(--mute);font-weight:600}
+  .dr-kpi b{display:block;font-size:18px;font-weight:750;margin-top:2px;font-variant-numeric:tabular-nums}
+  .dr-sec h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+  .mini-bars{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;align-items:end;height:76px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .mini-bars i{display:block;background:var(--primary);border-radius:3px 3px 0 0;min-height:4px;opacity:.88}
+  .tx-list{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .tx-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px}
+  .tx-item:last-child{border-bottom:0}
+  .dr-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+
+  @media (max-width:1080px){
+    .app{grid-template-columns:1fr}
+    .sidebar{display:none}
+    .strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .stat{border-bottom:1px solid var(--line)}
+    .insights{grid-template-columns:1fr}
+  }
+  @media (max-width:680px){
+    .topbar{padding:10px 14px}
+    .content{padding:16px 14px 56px}
+    .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stat:first-child{grid-column:1/-1}
+    .hbar-item{grid-template-columns:120px 1fr 86px}
+    .toolbar-meta{margin-left:0}
+    th,td{padding:9px 10px}
+    .emp-cell{min-width:140px}
+    .pill{font-size:11px;padding:1px 6px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="mark">R</div>
+      <div class="brand-name">Retail OS<small>The Daily Centro</small></div>
+    </div>
+    <div class="ns-h">Today</div>
+    <a class="nl" href="#"><i class="dot"></i>Today</a>
+    <div class="ns-h">Run the stores</div>
+    <a class="nl" href="#"><i class="dot"></i>Issues</a>
+    <a class="nl" href="#"><i class="dot"></i>Inspections</a>
+    <a class="nl" href="#"><i class="dot"></i>Permits</a>
+    <div class="ns-h">Sales</div>
+    <a class="nl" href="#"><i class="dot"></i>Sales</a>
+    <a class="nl" href="#"><i class="dot"></i>Sales by product</a>
+    <a class="nl" href="#"><i class="dot"></i>Transactions</a>
+    <a class="nl on" href="#"><i class="dot"></i>Sales by employee</a>
+    <a class="nl" href="#"><i class="dot"></i>Sales by shift</a>
+    <a class="nl" href="#"><i class="dot"></i>Z-Reading Reports</a>
+    <div class="ns-h">Team</div>
+    <a class="nl" href="#"><i class="dot"></i>Employees</a>
+    <a class="nl" href="#"><i class="dot"></i>Performance</a>
+    <div class="sb-foot">
+      <div class="av">JL</div>
+      <div class="sb-user"><b>Justin Lim</b><small>Management</small></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <span>Dashboard</span><span>›</span><span>Sales</span><span>›</span><b>Sales by employee</b>
+      </nav>
+      <div class="top-right">
+        <div class="pos-switch" role="group" aria-label="POS Source">
+          <button type="button" class="on">Daily Centro</button>
+          <button type="button">Publico</button>
+          <button type="button">7-Eleven</button>
+        </div>
+        <button type="button" class="theme-btn" id="themeBtn">Dark mode</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>Sales by employee</h1>
+          <div class="subline">
+            <span id="scopeText">All stores · Last 14 days</span>
+            <span class="sync-pill"><i></i>Synced 4 min ago</span>
+            <span class="info-dot" title="Philippine business days. Cancelled transactions are excluded from net sales and units sold.">i</span>
+          </div>
+        </div>
+        <div class="head-actions">
+          <a class="btn" href="#">Daily sales</a>
+          <a class="btn" href="#">Transactions</a>
+          <button type="button" class="btn prim" id="csvBtn">Download CSV</button>
+        </div>
+      </div>
+
+      <form class="toolbar" onsubmit="return false">
+        <div class="field loc">
+          <label for="locSel">Location</label>
+          <select id="locSel">
+            <option value="all">All my locations (4 stores)</option>
+            <option value="Bantayan">Bantayan</option>
+            <option value="Getafe">Getafe</option>
+            <option value="Balamban">ZENWOK Balamban</option>
+            <option value="Tabunoc">Tabunoc</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Period</label>
+          <div class="seg" role="group" aria-label="Period">
+            <button type="button" data-days="1">Today</button>
+            <button type="button" data-days="7">7 days</button>
+            <button type="button" data-days="14" class="on">14 days</button>
+            <button type="button" data-days="30">30 days</button>
+            <button type="button" data-days="custom">Custom…</button>
+          </div>
+        </div>
+        <div class="field search">
+          <label for="searchInp">Find employee or store</label>
+          <input id="searchInp" type="search" placeholder="Name, StoreHub ID, or store…">
+        </div>
+        <div class="toolbar-meta" id="rowCountText">8 cashiers shown</div>
+      </form>
+
+      <section class="strip" aria-label="Summary metrics">
+        <div class="stat">
+          <div class="lab">Net sales</div>
+          <div class="val-row"><span class="val" id="kpiNet">₱326,173.28</span><span class="delta up">▲ 8.2%</span></div>
+          <div class="sub">Avg / day: <b id="kpiPerDay">₱23,298.09</b></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Transactions</div>
+          <div class="val-row"><span class="val" id="kpiTxs">1,586</span><span class="delta up">▲ 3.1%</span></div>
+          <div class="sub">Cancelled: <b id="kpiCx">27 (1.7%)</b></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Items sold</div>
+          <div class="val-row"><span class="val" id="kpiUnits">7,837</span><span class="delta up">▲ 5.4%</span></div>
+          <div class="sub">Units / tx: <b id="kpiUpt">4.9</b></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Average basket</div>
+          <div class="val-row"><span class="val" id="kpiAvg">₱205.70</span><span class="delta up">▲ 4.9%</span></div>
+          <div class="sub">Prev period: <b>₱196.09</b></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Employees with sales</div>
+          <div class="val-row"><span class="val" id="kpiStaff">8</span><span class="delta flat">of 11 active</span></div>
+          <div class="sub">Top 3 share: <b id="kpiTop3">56.3%</b></div>
+        </div>
+      </section>
+
+      <section class="insights">
+        <div class="card">
+          <div class="card-head">
+            <h2>Performance comparison</h2>
+            <div class="chips" id="metricSwitch">
+              <button type="button" class="chip-btn on" data-m="net">Net sales</button>
+              <button type="button" class="chip-btn" data-m="txs">Transactions</button>
+              <button type="button" class="chip-btn" data-m="avg">Avg basket</button>
+              <button type="button" class="chip-btn" data-m="upt">Items / tx</button>
+            </div>
+          </div>
+          <div class="hbar-list" id="hbarList"></div>
+        </div>
+
+        <div class="card side-stack">
+          <div>
+            <div class="card-head" style="margin-bottom:10px">
+              <h2>By store</h2>
+              <span class="tw-sub">Share of period net sales</span>
+            </div>
+            <div class="store-list" id="storeList"></div>
+          </div>
+
+          <div class="watch-box">
+            <div class="watch-title">Operational checks</div>
+            <div class="watch-item warn">
+              <span><b>Paolo Dizon</b> · 4.2% cancelled rate (6 of 143)</span>
+              <span class="badge">Review</span>
+            </div>
+            <div class="watch-item">
+              <span><b>Unassigned POS sales (—)</b> · 14 txs (₱1,842.00)</span>
+              <span class="badge">Terminal 2</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tw">
+        <div class="tw-head">
+          <div>
+            <h2>All employees</h2>
+            <span class="tw-sub">Click a column header to sort, or select any employee to inspect daily trend and recent receipts.</span>
+          </div>
+        </div>
+        <div class="tw-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="sort" data-k="name">Employee</th>
+                <th>Stores</th>
+                <th class="r sort" data-k="txs">Transactions</th>
+                <th class="r sort" data-k="units">Items sold</th>
+                <th class="r sort on" data-k="net">Net sales ↓</th>
+                <th>Share</th>
+                <th class="r sort" data-k="avg">Avg basket</th>
+                <th class="r sort" data-k="cancelled">Cancelled</th>
+                <th class="r">Last sale</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+            <tfoot id="tfoot"></tfoot>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Employee sales detail">
+  <div class="dr-head">
+    <div class="dr-title">
+      <div class="av" id="drAv">MS</div>
+      <div>
+        <h3 id="drName">Maria Santos</h3>
+        <p id="drStores">Bantayan · Getafe · ZENWOK Balamban</p>
+      </div>
+    </div>
+    <button type="button" class="icon-x" id="drClose" aria-label="Close detail">×</button>
+  </div>
+  <div class="dr-body">
+    <div class="dr-kpis" id="drKpis"></div>
+    <div class="dr-sec">
+      <h4>14-day daily net sales</h4>
+      <div class="mini-bars" id="drBars"></div>
+    </div>
+    <div class="dr-sec">
+      <h4>Store contribution</h4>
+      <div class="store-list" id="drStoreSplit"></div>
+    </div>
+    <div class="dr-sec">
+      <h4>Recent receipts</h4>
+      <div class="tx-list" id="drTxs"></div>
+    </div>
+  </div>
+  <div class="dr-foot">
+    <button type="button" class="btn" id="drCloseBtn">Close</button>
+    <a class="btn prim" href="#">Open all transactions →</a>
+  </div>
+</aside>
+
+<script>
+const STAFF = [
+  {id:"E01", name:"Maria Santos", stores:["Bantayan","Getafe","ZENWOK Balamban"], storeSplit:[["Bantayan",46210],["Getafe",26810],["ZENWOK Balamban",16011.75]], txs:430, cancelled:6, units:2134, net:89031.75, last:"4 min ago", daily:[4200,5100,4800,6100,6900,5800,6600,7200,6400,7100,7900,6800,7000,7131], recent:[["#INV-88412","Bantayan · 4m ago","₱412.00"],["#INV-88401","Bantayan · 19m ago","₱185.50"],["#INV-88378","Bantayan · 52m ago","₱620.00"]]},
+  {id:"E02", name:"Jose Reyes", stores:["Bantayan","Getafe","ZENWOK Balamban"], storeSplit:[["Bantayan",24120],["Getafe",17200],["ZENWOK Balamban",11221.01]], txs:252, cancelled:0, units:1328, net:52541.01, last:"1 hour ago", daily:[2900,3400,3100,3800,4100,3700,3900,4200,3600,4000,4100,3900,3800,4041], recent:[["#INV-88360","Getafe · 1h ago","₱290.00"],["#INV-88344","Getafe · 2h ago","₱145.00"],["#INV-88312","Getafe · 3h ago","₱510.00"]]},
+  {id:"E03", name:"Ana Cruz", stores:["Bantayan","Getafe","ZENWOK Balamban"], storeSplit:[["Getafe",21040],["Bantayan",14200],["ZENWOK Balamban",6844.77]], txs:205, cancelled:6, units:1028, net:42084.77, last:"2 hours ago", daily:[3200,3500,3100,2900,3300,2800,2900,3100,2700,3000,2800,2900,2950,2934], recent:[["#INV-88330","Getafe · 2h ago","₱215.00"],["#INV-88299","Getafe · 3h ago","₱98.00"],["#INV-88261","Getafe · 5h ago","₱340.00"]]},
+  {id:"E04", name:"Mark Villanueva", stores:["Bantayan","Getafe"], storeSplit:[["Bantayan",25480],["Getafe",14501.65]], txs:199, cancelled:2, units:976, net:39981.65, last:"18 min ago", daily:[2100,2500,2400,2800,2600,3000,2700,3100,2900,3200,3100,3300,3100,3181], recent:[["#INV-88405","Bantayan · 18m ago","₱310.00"],["#INV-88388","Bantayan · 41m ago","₱120.00"],["#INV-88355","Bantayan · 1h ago","₱248.00"]]},
+  {id:"E05", name:"Jenny Lim", stores:["ZENWOK Balamban","Bantayan"], storeSplit:[["ZENWOK Balamban",24300],["Bantayan",13459.82]], txs:184, cancelled:3, units:899, net:37759.82, last:"32 min ago", daily:[2800,2900,3100,2700,2900,2500,2600,2400,2700,2500,2600,2450,2800,2809], recent:[["#INV-88392","ZENWOK Balamban · 32m ago","₱440.00"],["#INV-88367","ZENWOK Balamban · 1h ago","₱165.00"],["#INV-88320","ZENWOK Balamban · 3h ago","₱220.00"]]},
+  {id:"E06", name:"Paolo Dizon", stores:["Bantayan"], storeSplit:[["Bantayan",29218.32]], txs:143, cancelled:6, units:622, net:29218.32, last:"47 min ago", daily:[1600,1900,1700,2100,1950,2200,2050,2300,2100,2250,2150,2300,2260,2358], recent:[["#INV-88381","Bantayan · 47m ago","₱195.00"],["#INV-88349","Bantayan · 2h ago","₱375.00"],["#INV-88301","Bantayan · 4h ago","₱142.00"]]},
+  {id:"E07", name:"Kim Torres", stores:["ZENWOK Balamban"], storeSplit:[["ZENWOK Balamban",21034.51]], txs:101, cancelled:1, units:513, net:21034.51, last:"3 hours ago", daily:[1800,1700,1650,1500,1600,1450,1500,1400,1450,1350,1400,1380,1420,1434], recent:[["#INV-88295","ZENWOK Balamban · 3h ago","₱280.00"],["#INV-88240","ZENWOK Balamban · 5h ago","₱150.00"],["#INV-88211","ZENWOK Balamban · 6h ago","₱195.00"]]},
+  {id:"E08", name:"Rita Gomez", stores:["Getafe","Tabunoc"], storeSplit:[["Getafe",10400],["Tabunoc",4121.44]], txs:72, cancelled:3, units:337, net:14521.44, last:"2 hours ago", daily:[850,920,880,1040,990,1100,1020,1120,1050,1090,1120,1080,1130,1131], recent:[["#INV-88318","Getafe · 2h ago","₱178.00"],["#INV-88270","Tabunoc · 4h ago","₱264.00"],["#INV-88205","Tabunoc · 7h ago","₱112.00"]]}
+];
+
+STAFF.forEach(s => {
+  const validTxs = s.txs - s.cancelled;
+  s.avg = validTxs > 0 ? s.net / validTxs : 0;
+  s.upt = validTxs > 0 ? s.units / validTxs : 0;
+});
+
+const php = v => "₱" + v.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+const ini = n => n.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+
+let state = { loc:"all", days:14, q:"", metric:"net", sortKey:"net", sortDir:-1, activeId:null };
+
+function filtered() {
+  const q = state.q.trim().toLowerCase();
+  return STAFF.filter(s => {
+    const locOk = state.loc === "all" || s.stores.some(st => st.toLowerCase().includes(state.loc.toLowerCase()));
+    const qOk = !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.stores.some(st => st.toLowerCase().includes(q));
+    return locOk && qOk;
+  }).sort((a,b) => {
+    const va = a[state.sortKey], vb = b[state.sortKey];
+    return (typeof va === "string" ? va.localeCompare(vb) : va - vb) * state.sortDir;
+  });
+}
+
+function render() {
+  const rows = filtered();
+  const totNet = rows.reduce((a,s)=>a+s.net, 0);
+  const totTxs = rows.reduce((a,s)=>a+s.txs, 0);
+  const totCx = rows.reduce((a,s)=>a+s.cancelled, 0);
+  const totUnits = rows.reduce((a,s)=>a+s.units, 0);
+  const validTxs = totTxs - totCx;
+
+  document.getElementById("rowCountText").textContent = `${rows.length} ${rows.length===1?"cashier":"cashiers"} shown`;
+  document.getElementById("kpiNet").textContent = php(totNet);
+  document.getElementById("kpiPerDay").textContent = php(totNet / (typeof state.days === "number" ? state.days : 14));
+  document.getElementById("kpiTxs").textContent = totTxs.toLocaleString();
+  document.getElementById("kpiCx").textContent = `${totCx} (${totTxs ? ((totCx/totTxs)*100).toFixed(1) : "0.0"}%)`;
+  document.getElementById("kpiUnits").textContent = totUnits.toLocaleString();
+  document.getElementById("kpiUpt").textContent = validTxs ? (totUnits/validTxs).toFixed(1) : "0.0";
+  document.getElementById("kpiAvg").textContent = php(validTxs ? totNet/validTxs : 0);
+  document.getElementById("kpiStaff").textContent = rows.length;
+  const top3 = [...rows].sort((a,b)=>b.net-a.net).slice(0,3).reduce((a,s)=>a+s.net,0);
+  document.getElementById("kpiTop3").textContent = totNet ? `${(top3/totNet*100).toFixed(1)}%` : "0%";
+
+  // Comparison bar list
+  const byMetric = [...rows].sort((a,b)=>b[state.metric]-a[state.metric]);
+  const maxM = Math.max(...byMetric.map(s=>s[state.metric]), 1);
+  const fmtM = s => state.metric === "net" ? php(s.net) : state.metric === "avg" ? php(s.avg) : state.metric === "upt" ? s.upt.toFixed(1)+" / tx" : s.txs.toLocaleString();
+  document.getElementById("hbarList").innerHTML = byMetric.map((s,i)=>`
+    <div class="hbar-item ${i===0?'top':''}" onclick="openDrawer('${s.id}')">
+      <div class="hbar-name"><span class="hbar-rank">${i+1}</span>${s.name}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(s[state.metric]/maxM*100).toFixed(1)}%"></div></div>
+      <div class="hbar-val">${fmtM(s)}</div>
+    </div>`).join("");
+
+  // Store totals
+  const stTotals = {};
+  rows.forEach(s => s.storeSplit.forEach(([st, v]) => { stTotals[st] = (stTotals[st]||0) + v; }));
+  const stSorted = Object.entries(stTotals).sort((a,b)=>b[1]-a[1]);
+  const stSum = stSorted.reduce((a,[,v])=>a+v, 0) || 1;
+  document.getElementById("storeList").innerHTML = stSorted.map(([st, v])=>`
+    <div class="store-row">
+      <span class="s-name">${st}</span>
+      <span class="s-val">${php(v)} <span class="emp-sub">(${(v/stSum*100).toFixed(0)}%)</span></span>
+      <div class="s-bar"><i style="width:${(v/stSum*100).toFixed(1)}%"></i></div>
+    </div>`).join("");
+
+  // Table
+  const maxNet = Math.max(...rows.map(s=>s.net), 1);
+  document.getElementById("tbody").innerHTML = rows.map((s, idx) => {
+    const share = totNet ? (s.net / totNet * 100) : 0;
+    const cxRate = s.txs ? (s.cancelled / s.txs * 100) : 0;
+    return `<tr class="${state.activeId===s.id?'active-row':''}" onclick="openDrawer('${s.id}')">
+      <td class="emp-sub">${idx+1}</td>
+      <td><div class="emp-cell"><div class="av">${ini(s.name)}</div><div><div class="emp-name">${s.name}</div><div class="emp-sub">${s.id} · ${s.upt.toFixed(1)} items/tx</div></div></div></td>
+      <td><div class="store-pills">${s.stores.map(st=>`<span class="pill">${st}</span>`).join("")}</div></td>
+      <td class="r">${s.txs.toLocaleString()}</td>
+      <td class="r">${s.units.toLocaleString()}</td>
+      <td class="r"><b>${php(s.net)}</b></td>
+      <td><div class="share-wrap"><div class="share-bar"><i style="width:${(s.net/maxNet*100).toFixed(1)}%"></i></div><span class="emp-sub num" style="min-width:38px;text-align:right">${share.toFixed(1)}%</span></div></td>
+      <td class="r">${php(s.avg)}</td>
+      <td class="r">${s.cancelled ? `<span class="cx-pill ${cxRate>=3?'hi':'ok'}">${s.cancelled} (${cxRate.toFixed(1)}%)</span>` : `<span class="emp-sub">0</span>`}</td>
+      <td class="r emp-sub" style="white-space:nowrap">${s.last}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("tfoot").innerHTML = rows.length ? `<tr>
+    <td></td><td>Total (${rows.length})</td><td></td>
+    <td class="r">${totTxs.toLocaleString()}</td>
+    <td class="r">${totUnits.toLocaleString()}</td>
+    <td class="r">${php(totNet)}</td>
+    <td>100.0%</td>
+    <td class="r">${php(validTxs ? totNet/validTxs : 0)}</td>
+    <td class="r">${totCx}</td>
+    <td></td>
+  </tr>` : "";
+}
+
+function openDrawer(id) {
+  const s = STAFF.find(x=>x.id===id);
+  if (!s) return;
+  state.activeId = id;
+  render();
+  document.getElementById("drAv").textContent = ini(s.name);
+  document.getElementById("drName").textContent = s.name;
+  document.getElementById("drStores").textContent = s.stores.join(" · ");
+  document.getElementById("drKpis").innerHTML = `
+    <div class="dr-kpi"><span>Net sales</span><b>${php(s.net)}</b></div>
+    <div class="dr-kpi"><span>Average basket</span><b>${php(s.avg)}</b></div>
+    <div class="dr-kpi"><span>Transactions</span><b>${s.txs} <small style="font-weight:500;color:var(--mute)">(${s.cancelled} cancelled)</small></b></div>
+    <div class="dr-kpi"><span>Items sold</span><b>${s.units.toLocaleString()} <small style="font-weight:500;color:var(--mute)">(${s.upt.toFixed(1)}/tx)</small></b></div>`;
+  const mx = Math.max(...s.daily, 1);
+  document.getElementById("drBars").innerHTML = s.daily.map(v=>`<i style="height:${Math.max(8, Math.round(v/mx*100))}%" title="${php(v)}"></i>`).join("");
+  document.getElementById("drStoreSplit").innerHTML = s.storeSplit.map(([st,v])=>`
+    <div class="store-row"><span class="s-name">${st}</span><span class="s-val">${php(v)}</span>
+    <div class="s-bar"><i style="width:${(v/s.net*100).toFixed(1)}%"></i></div></div>`).join("");
+  document.getElementById("drTxs").innerHTML = s.recent.map(([inv,meta,amt])=>`
+    <div class="tx-item"><div><b>${inv}</b><div class="emp-sub">${meta}</div></div><b>${amt}</b></div>`).join("");
+  document.getElementById("backdrop").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("drawer").setAttribute("aria-hidden","false");
+}
+
+function closeDrawer() {
+  state.activeId = null;
+  document.getElementById("backdrop").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawer").setAttribute("aria-hidden","true");
+  render();
+}
+
+document.getElementById("drClose").onclick = closeDrawer;
+document.getElementById("drCloseBtn").onclick = closeDrawer;
+document.getElementById("backdrop").onclick = closeDrawer;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+document.getElementById("locSel").onchange = e => { state.loc = e.target.value; document.getElementById("scopeText").textContent = `${state.loc==="all"?"All stores":state.loc} · Last ${state.days} days`; render(); };
+document.getElementById("searchInp").oninput = e => { state.q = e.target.value; render(); };
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".seg button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  state.days = b.dataset.days === "custom" ? 14 : Number(b.dataset.days);
+  document.getElementById("scopeText").textContent = `${state.loc==="all"?"All stores":state.loc} · ${b.textContent}`;
+  render();
+});
+document.querySelectorAll("#metricSwitch button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#metricSwitch button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  state.metric = b.dataset.m;
+  render();
+});
+document.querySelectorAll("th.sort").forEach(th => th.onclick = () => {
+  const k = th.dataset.k;
+  if (state.sortKey === k) state.sortDir *= -1;
+  else { state.sortKey = k; state.sortDir = k === "name" ? 1 : -1; }
+  document.querySelectorAll("th.sort").forEach(x => {
+    x.classList.remove("on");
+    x.textContent = x.textContent.replace(/ [↑↓]$/, "");
+  });
+  th.classList.add("on");
+  th.textContent += state.sortDir === -1 ? " ↓" : " ↑";
+  render();
+});
+document.getElementById("themeBtn").onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme === "dark";
+  root.dataset.theme = dark ? "light" : "dark";
+  document.getElementById("themeBtn").textContent = dark ? "Dark mode" : "Light mode";
+};
+render();
+</script>
+</body>
+</html>

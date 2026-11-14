@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Live Sales Notification (Top-Center) Visual Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --green: #16a34a;
+    --sh: 0 1px 2px rgba(15,23,42,.05);
+    --sh-toast: 0 14px 32px rgba(15,23,42,.12), 0 2px 6px rgba(15,23,42,.05);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --line2: #334155;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.15);
+    --green: #22c55e;
+    --sh: 0 1px 3px rgba(0,0,0,.35);
+    --sh-toast: 0 16px 36px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Studio Header */
+  .top {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .top h1 { margin: 0; font-size: 16px; font-weight: 750; letter-spacing: -0.02em; }
+  .top p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); gap: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--mute); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+  .sim-btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: 12px; font-weight: 650; padding: 7px 12px; border-radius: 9px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--sh);
+  }
+  .sim-btn:hover { background: var(--surface2); border-color: var(--line2); }
+  .sim-btn i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
+
+  .wrap { max-width: 1580px; margin: 0 auto; padding: 22px 28px 48px; }
+
+  /* 2x2 Grid for Options + Before banner */
+  .grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--sh); display: flex; flex-direction: column;
+  }
+  .meta {
+    padding: 15px 18px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  }
+  .meta-left { display: flex; flex-direction: column; gap: 4px; }
+  .badge {
+    display: inline-flex; align-self: flex-start; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--mute);
+  }
+  .badge.rec { background: var(--blue-soft); color: var(--blue-ink); padding: 3px 8px; border-radius: 999px; }
+  .meta h2 { margin: 0; font-size: 15px; font-weight: 750; letter-spacing: -0.015em; }
+  .meta p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.45; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; flex: none; }
+  .chip { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--line); color: var(--ink2); }
+
+  /* Simulated Top-Center Viewport Stage */
+  .viewport {
+    position: relative; background: var(--bg); min-height: 245px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .vp-topbar {
+    height: 54px; padding: 0 18px; background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .vp-sources { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); }
+  .vp-sources span { font-size: 11.5px; font-weight: 650; padding: 5px 10px; border-radius: 7px; color: var(--mute); }
+  .vp-sources span.on { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+  .vp-right { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 650; color: var(--mute); }
+  .vp-av { width: 24px; height: 24px; border-radius: 99px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 750; }
+
+  .vp-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; opacity: 0.72; }
+  .vp-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .vp-head b { font-size: 18px; font-weight: 780; letter-spacing: -0.02em; }
+  .vp-head small { font-size: 11.5px; color: var(--mute); }
+  .vp-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  }
+  .vp-k { padding: 12px 14px; border-right: 1px solid var(--line); }
+  .vp-k:last-child { border-right: 0; }
+  .vp-k small { font-size: 10.5px; color: var(--mute); display: block; }
+  .vp-k strong { font-size: 16px; font-weight: 800; display: block; margin-top: 3px; }
+
+  /* Center Stack Holder inside each viewport */
+  .center-stack {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    width: max-content; max-width: calc(100% - 24px);
+  }
+  .state-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--mute2); margin-top: 4px;
+  }
+
+  @keyframes toastPop {
+    from { opacity: 0; transform: translateY(-12px) scale(.96); }
+    to { opacity: 1; transform: none; }
+  }
+  .pop-anim { animation: toastPop .32s cubic-bezier(.16,.84,.24,1); }
+
+  /* =========================================================
+     OPTION 1: Dynamic Capsule Pill (Recommended)
+     ========================================================= */
+  .t-opt1 {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; gap: 10px;
+    height: 44px; padding: 0 12px 0 14px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line2); border-radius: 999px;
+    box-shadow: var(--sh-toast); cursor: pointer;
+    min-width: 340px;
+  }
+  .t-opt1:hover { border-color: var(--blue); }
+  .t1-pulse {
+    position: relative; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); flex: none;
+  }
+  .t1-pulse::after {
+    content: ""; position: absolute; inset: -3px; border-radius: 50%;
+    border: 1.5px solid var(--green); opacity: .35;
+  }
+  .t1-store {
+    font-size: 12.5px; font-weight: 700; color: var(--ink); white-space: nowrap;
+  }
+  .t1-sep { width: 1px; height: 16px; background: var(--line); flex: none; }
+  .t1-amt {
+    font-size: 15px; font-weight: 800; letter-spacing: -0.02em; color: var(--blue-ink);
+    white-space: nowrap;
+  }
+  .t1-meta {
+    font-size: 12px; font-weight: 550; color: var(--mute); white-space: nowrap; margin-left: auto;
+  }
+  .t1-pay {
+    font-size: 11px; font-weight: 650; color: var(--ink2);
+    background: var(--surface2); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .t1-x {
+    width: 22px; height: 22px; border-radius: 50%; border: 0; background: transparent;
+    color: var(--mute2); display: grid; place-items: center; cursor: pointer; padding: 0;
+  }
+  .t1-x:hover { background: var(--surface2); color: var(--ink); }
+  .t1-bar {
+    position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px;
+    background: linear-gradient(90deg, var(--blue) 72%, transparent 72%); opacity: .65;
+  }
+
+  /* =========================================================
+     OPTION 2: Architectural Receipt Card (3px Blue Bar)
+     ========================================================= */
+  .t-opt2 {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-width: 356px; padding: 10px 12px 10px 15px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line2); border-radius: 12px;
+    box-shadow: var(--sh-toast); cursor: pointer;
+  }
+  .t-opt2::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px;
+    background: var(--blue);
+  }
+  .t2-left { display: flex; flex-direction: column; gap: 2px; }
+  .t2-eyebrow {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 650; color: var(--mute);
+  }
+  .t2-eyebrow b { color: var(--ink); font-weight: 700; }
+  .t2-amt { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .t2-right { display: flex; align-items: center; gap: 10px; }
+  .t2-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .t2-tag {
+    font-size: 11px; font-weight: 650; color: var(--ink2);
+    background: var(--surface2); border: 1px solid var(--line);
+    padding: 1.5px 8px; border-radius: 6px;
+  }
+  .t2-sub { font-size: 11.5px; font-weight: 550; color: var(--mute); }
+
+  /* =========================================================
+     OPTION 3: High-Contrast Dark Slate HUD Pill
+     ========================================================= */
+  .t-opt3 {
+    display: flex; align-items: center; gap: 11px;
+    min-width: 348px; padding: 9px 12px 9px 11px;
+    background: #0f172a; color: #f8fafc;
+    border: 1px solid rgba(255,255,255,.12); border-radius: 13px;
+    box-shadow: 0 16px 36px rgba(15,23,42,.26); cursor: pointer;
+  }
+  html[data-theme="dark"] .t-opt3 {
+    background: #1e293b; border-color: rgba(255,255,255,.16);
+  }
+  .t3-badge {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,.1); color: #fff;
+    display: grid; place-items: center; font-size: 12.5px; font-weight: 750; flex: none;
+  }
+  .t3-main { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .t3-top { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #94a3b8; font-weight: 550; }
+  .t3-top b { color: #f8fafc; font-weight: 650; }
+  .t3-amt { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+  .t3-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .t3-pill {
+    font-size: 10.5px; font-weight: 650; color: #cbd5e1;
+    background: rgba(255,255,255,.1); padding: 1.5px 7px; border-radius: 999px;
+  }
+  .t3-items { font-size: 11px; color: #94a3b8; font-weight: 550; }
+  .t3-x {
+    width: 22px; height: 22px; border-radius: 6px; border: 0; background: transparent;
+    color: #64748b; display: grid; place-items: center; cursor: pointer; padding: 0;
+  }
+  .t3-x:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+  /* =========================================================
+     OPTION 4: Perforated Micro-Ticket (Two-Column Split)
+     ========================================================= */
+  .t-opt4 {
+    display: flex; align-items: stretch;
+    min-width: 356px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line2); border-radius: 12px;
+    box-shadow: var(--sh-toast); overflow: hidden; cursor: pointer;
+  }
+  .t4-left {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 13px; flex: 1;
+  }
+  .t4-ic {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--blue-soft); color: var(--blue-ink);
+    display: grid; place-items: center; flex: none;
+  }
+  .t4-info b { display: block; font-size: 13px; font-weight: 700; }
+  .t4-info small { display: block; font-size: 11.5px; color: var(--mute); font-weight: 550; margin-top: 1px; }
+  .t4-stub {
+    border-left: 1px dashed var(--line2);
+    background: var(--surface2);
+    padding: 9px 12px 9px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .t4-amt-col { text-align: right; }
+  .t4-amt-col strong { display: block; font-size: 15.5px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+  .t4-amt-col span { display: block; font-size: 10.5px; font-weight: 650; color: var(--blue-ink); margin-top: 1px; }
+
+  /* Current (Before) Reference Bar */
+  .before-bar {
+    margin-bottom: 20px; padding: 14px 18px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  }
+  .before-bar-info h3 { margin: 0; font-size: 13.5px; font-weight: 750; }
+  .before-bar-info p { margin: 3px 0 0; font-size: 12px; color: var(--mute); }
+  .cur-toast {
+    position: relative; display: flex; align-items: center; gap: 12px;
+    min-width: 330px; padding: 10px 16px 10px 10px;
+    border: 1px solid var(--line2); border-radius: 16px; background: var(--surface);
+    box-shadow: var(--sh-toast);
+  }
+  .cur-av { width: 42px; height: 42px; border-radius: 12px; background: #2563eb; color: #fff; display: grid; place-items: center; font-size: 17px; font-weight: 800; }
+  .cur-main { flex: 1; display: flex; flex-direction: column; }
+  .cur-main small { font-size: 12px; font-weight: 600; color: var(--mute); }
+  .cur-main strong { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .cur-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 12px; font-weight: 600; color: var(--mute); }
+  .cur-side em { font-style: normal; padding: 1px 9px; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 11.5px; font-weight: 800; }
+  .cur-x { position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line2); background: var(--surface); color: var(--mute); display: grid; place-items: center; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>RetailOS — Center Live Sales Notification Concepts</h1>
+    <p>Low-color, restrained top-center toast designs for single sales, stacked sales, and multi-sale bursts</p>
+  </div>
+  <div class="controls">
+    <button type="button" class="sim-btn" onclick="setMode('single')"><i></i> Single sale</button>
+    <button type="button" class="sim-btn" onclick="setMode('stack')"><i></i> 2-sale stack + burst</button>
+    <div class="seg" role="group">
+      <button type="button" class="active" onclick="setTheme('light', this)">Light</button>
+      <button type="button" onclick="setTheme('dark', this)">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Current (Before) Reference -->
+  <section class="before-bar">
+    <div class="before-bar-info">
+      <h3>Current Notification (Before)</h3>
+      <p>Chunky 42px blue square avatar, bright green/blue payment pills, and a floating outside corner × button.</p>
+    </div>
+    <div class="cur-toast">
+      <span class="cur-av">G</span>
+      <span class="cur-main"><small>New sale · Getafe</small><strong>PHP 215.50</strong></span>
+      <span class="cur-side"><em>Cash</em><span>3 items</span></span>
+      <span class="cur-x">&times;</span>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <!-- OPTION 1 -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-left">
+          <span class="badge rec">Option 1 · Recommended</span>
+          <h2>Dynamic Capsule Pill</h2>
+          <p>Sleek single-line pill that hovers cleanly at top-center without covering page headers: pulsing live dot, store name, tabular amount, neutral payment pill, and a subtle bottom countdown hairline.</p>
+        </div>
+      </div>
+      <div class="viewport">
+        <div class="center-stack" data-opt="1"></div>
+        <div class="vp-topbar">
+          <div class="vp-sources"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span></div>
+          <div class="vp-right"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-head"><b>Today</b><small>Fri 13 Nov · 2/3 branches open</small></div>
+          <div class="vp-kpis">
+            <div class="vp-k"><small>All stores, net sales</small><strong>PHP 7,595.50</strong></div>
+            <div class="vp-k"><small>Transactions today</small><strong>92</strong></div>
+            <div class="vp-k"><small>Out of stock</small><strong>542</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 2 -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-left">
+          <span class="badge">Option 2</span>
+          <h2>Architectural Receipt Card (3px Blue Bar)</h2>
+          <p>Matches your Today &amp; Sales card language directly: crisp 12px card with a 3.5px blue left accent bar, monochrome payment badge, tabular PHP total, and an inline close button.</p>
+        </div>
+      </div>
+      <div class="viewport">
+        <div class="center-stack" data-opt="2"></div>
+        <div class="vp-topbar">
+          <div class="vp-sources"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span></div>
+          <div class="vp-right"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-head"><b>Today</b><small>Fri 13 Nov · 2/3 branches open</small></div>
+          <div class="vp-kpis">
+            <div class="vp-k"><small>All stores, net sales</small><strong>PHP 7,595.50</strong></div>
+            <div class="vp-k"><small>Transactions today</small><strong>92</strong></div>
+            <div class="vp-k"><small>Out of stock</small><strong>542</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 3 -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-left">
+          <span class="badge">Option 3</span>
+          <h2>High-Contrast Dark Slate HUD</h2>
+          <p>Deep slate surface (#0f172a) separates the floating live alert from the white cards behind it so it reads immediately at a glance without using bright colors.</p>
+        </div>
+      </div>
+      <div class="viewport">
+        <div class="center-stack" data-opt="3"></div>
+        <div class="vp-topbar">
+          <div class="vp-sources"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span></div>
+          <div class="vp-right"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-head"><b>Today</b><small>Fri 13 Nov · 2/3 branches open</small></div>
+          <div class="vp-kpis">
+            <div class="vp-k"><small>All stores, net sales</small><strong>PHP 7,595.50</strong></div>
+            <div class="vp-k"><small>Transactions today</small><strong>92</strong></div>
+            <div class="vp-k"><small>Out of stock</small><strong>542</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 4 -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-left">
+          <span class="badge">Option 4</span>
+          <h2>Perforated POS Micro-Ticket</h2>
+          <p>Two-zone ticket card with a subtle receipt icon and store/item count on the left, separated by a dashed perforation line from the tabular PHP amount on the right.</p>
+        </div>
+      </div>
+      <div class="viewport">
+        <div class="center-stack" data-opt="4"></div>
+        <div class="vp-topbar">
+          <div class="vp-sources"><span class="on">Daily Centro</span><span>Steamy Co.</span><span>Publico</span></div>
+          <div class="vp-right"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-head"><b>Today</b><small>Fri 13 Nov · 2/3 branches open</small></div>
+          <div class="vp-kpis">
+            <div class="vp-k"><small>All stores, net sales</small><strong>PHP 7,595.50</strong></div>
+            <div class="vp-k"><small>Transactions today</small><strong>92</strong></div>
+            <div class="vp-k"><small>Out of stock</small><strong>542</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+const X_SVG = '<svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const REC_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
+
+const SAMPLES = [
+  { badge: 'G', store: 'Getafe', title: 'New sale · Getafe', amt: 'PHP 215.50', pay: 'Cash', items: '3 items' },
+  { badge: 'B', store: 'Bantayan', title: 'New sale · Bantayan', amt: 'PHP 85.00', pay: 'GCash', items: '1 item' },
+  { badge: '5', store: '5 new sales', title: '5 new sales', amt: 'PHP 1,140.00', pay: '', items: '14 items', burst: true }
+];
+
+let currentMode = 'stack';
+
+function buildToast(opt, s) {
+  if (opt === '1') {
+    return `
+      <div class="t-opt1 pop-anim">
+        <span class="t1-pulse"></span>
+        <span class="t1-store">${s.burst ? s.title : s.store}</span>
+        <span class="t1-sep"></span>
+        <span class="t1-amt">+ ${s.amt}</span>
+        <span class="t1-meta">${s.items}</span>
+        ${s.pay ? `<span class="t1-pay">${s.pay}</span>` : `<span class="t1-pay">All stores</span>`}
+        <button class="t1-x" type="button" aria-label="Close">${X_SVG}</button>
+        <i class="t1-bar"></i>
+      </div>`;
+  }
+  if (opt === '2') {
+    return `
+      <div class="t-opt2 pop-anim">
+        <div class="t2-left">
+          <div class="t2-eyebrow"><span class="t1-pulse" style="width:6px;height:6px"></span> ${s.burst ? `<b>${s.title}</b> · Batch` : `New sale · <b>${s.store}</b>`}</div>
+          <div class="t2-amt">${s.amt}</div>
+        </div>
+        <div class="t2-right">
+          <div class="t2-meta">
+            ${s.pay ? `<span class="t2-tag">${s.pay}</span>` : `<span class="t2-tag">View list →</span>`}
+            <span class="t2-sub">${s.items}</span>
+          </div>
+          <button class="t1-x" type="button" aria-label="Close">${X_SVG}</button>
+        </div>
+      </div>`;
+  }
+  if (opt === '3') {
+    return `
+      <div class="t-opt3 pop-anim">
+        <span class="t3-badge">${s.badge}</span>
+        <div class="t3-main">
+          <div class="t3-top"><span class="t1-pulse" style="width:6px;height:6px"></span> ${s.burst ? `<b>${s.title}</b>` : `New sale · <b>${s.store}</b>`}</div>
+          <div class="t3-amt">${s.amt}</div>
+        </div>
+        <div class="t3-right">
+          ${s.pay ? `<span class="t3-pill">${s.pay}</span>` : `<span class="t3-pill">Batch</span>`}
+          <span class="t3-items">${s.items}</span>
+        </div>
+        <button class="t3-x" type="button" aria-label="Close">${X_SVG}</button>
+      </div>`;
+  }
+  if (opt === '4') {
+    return `
+      <div class="t-opt4 pop-anim">
+        <div class="t4-left">
+          <span class="t4-ic">${REC_SVG}</span>
+          <div class="t4-info">
+            <b>${s.burst ? s.title : s.store}</b>
+            <small>${s.burst ? 'Tap to view transactions' : `New sale · ${s.items}`}</small>
+          </div>
+        </div>
+        <div class="t4-stub">
+          <div class="t4-amt-col">
+            <strong>${s.amt}</strong>
+            <span>${s.pay || s.items}</span>
+          </div>
+          <button class="t1-x" type="button" aria-label="Close">${X_SVG}</button>
+        </div>
+      </div>`;
+  }
+}
+
+function renderAll() {
+  const list = currentMode === 'single' ? [SAMPLES[0]] : [SAMPLES[0], SAMPLES[1], SAMPLES[2]];
+  document.querySelectorAll('[data-opt]').forEach(holder => {
+    const opt = holder.dataset.opt;
+    holder.innerHTML = list.map(s => buildToast(opt, s)).join('');
+  });
+}
+
+function setMode(m) {
+  currentMode = m;
+  renderAll();
+}
+function setTheme(theme, btn) {
+  document.documentElement.dataset.theme = theme;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+renderAll();
+</script>
+</body>
+</html>

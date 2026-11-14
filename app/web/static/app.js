@@ -628,5 +628,20 @@
       .finally(function () { f.classList.remove('is-busy'); if (btn) btn.disabled = false; });
   });
 
+  // Settings page: filter the setting rows by key or description, hiding empty groups.
+  var setFilter = document.getElementById('settings-filter');
+  if (setFilter) {
+    setFilter.addEventListener('input', function () {
+      var q = setFilter.value.trim().toLowerCase();
+      document.querySelectorAll('.setrow').forEach(function (row) {
+        row.style.display = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1 ? '' : 'none';
+      });
+      document.querySelectorAll('.setgroup').forEach(function (group) {
+        var any = Array.prototype.some.call(group.querySelectorAll('.setrow'), function (row) { return row.style.display !== 'none'; });
+        group.style.display = any ? '' : 'none';
+      });
+    });
+  }
+
   // Chat is implemented in assistant_chat.js.
 })();

@@ -201,3 +201,38 @@ def test_unreadable_times_fail_loudly_and_a_gap_is_caught_up_quickly(sync, fake,
     session.add(SalesShift(sh_id="old", location_id=alpha.id, opened_at=__import__("datetime").datetime.combine(t - timedelta(days=9), __import__("datetime").time(8, 0)), closed_at=None))
     session.commit()
     assert alpha.name in sales_shifts.behind(session)
+
+
+def test_status_filter_splits_open_and_closed_shifts(client, sync, fake, session):
+    seeded(sync, fake, session)
+    alpha = session.scalar(select(Location).where(Location.storehub_id == "S_A"))
+    today = today_local()
+    stamp = f"{today:%m/%d/%Y}"
+    sales_shifts.apply(
+        session,
+        [
+            row("open1", f"{stamp} 06:00", "", alpha.name, n="40", total="5000.00"),
+            row("closed1", f"{stamp} 06:01", f"{stamp} 14:12", alpha.name, n="82", total="12266.00"),
+        ],
+        {
+            "open1": PAGE.replace("Torniado Jennifer", "Reyes Ana").replace("12,266.00", "5,000.00"),
+            "closed1": PAGE,
+        },
+    )
+    session.commit()
+    add_user(session, "boss", "admin")
+    login(client, "boss")
+
+    open_only = client.get(f"/sales/shifts?loc={alpha.id}&days=7&status=open")
+    assert open_only.status_code == 200
+    assert "Reyes Ana" in open_only.text and "Torniado Jennifer" not in open_only.text
+    assert "Open (1)" in open_only.text and "Closed (1)" in open_only.text
+
+    closed_only = client.get(f"/sales/shifts?loc={alpha.id}&days=7&status=closed")
+    assert closed_only.status_code == 200
+    assert "Torniado Jennifer" in closed_only.text and "Reyes Ana" not in closed_only.text
+
+    open_csv = client.get(f"/sales/shifts?loc={alpha.id}&days=7&status=open&export=csv")
+    assert open_csv.status_code == 200
+    assert "Reyes Ana" in open_csv.text and "Torniado Jennifer" not in open_csv.text
+

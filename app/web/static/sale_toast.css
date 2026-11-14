@@ -1,27 +1,331 @@
-/* Sale notice, top centre: a small receipt card (sale_toast.js). */
-.sale-toasts{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;max-width:calc(100vw - 24px)}
-.sale-toast{position:relative;pointer-events:auto;display:flex;align-items:center;gap:12px;box-sizing:border-box;min-width:min(330px,calc(100vw - 24px));max-width:100%;padding:10px 16px 10px 10px;border:1px solid var(--line2);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 14px 34px rgba(15,23,42,.16),0 2px 6px rgba(15,23,42,.06);animation:sale-toast-in .4s cubic-bezier(.16,.84,.24,1) backwards;transition:transform .18s,box-shadow .18s,border-color .18s}
-.sale-toast.is-link{cursor:pointer}
-.sale-toast.is-link:hover{transform:translateY(-2px);border-color:#9db8f5;box-shadow:0 18px 38px rgba(37,99,235,.2),0 2px 6px rgba(15,23,42,.06)}
-.sale-toast:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
-.sale-toast-av{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#2563eb;color:#fff;font-size:17px;font-weight:800}
-.sale-toast-main{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
-.sale-toast-main small{font-size:12px;font-weight:600;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sale-toast-main strong{font-size:20px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
-.sale-toast-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:12px;font-weight:600;color:var(--mute)}
-.sale-toast-side em{font-style:normal;padding:1px 9px;border-radius:999px;background:#dbe7ff;color:#1d4ed8;font-size:11.5px;font-weight:800}
-.sale-toast-side em[data-pay=cash]{background:#dcfce7;color:#15803d}
-/* the site gives every button a minimum height, padding and a fill: reset them so this stays a small round button */
-.sale-toast-x{position:absolute;top:-9px;right:-9px;box-sizing:border-box;flex:none;width:24px;height:24px;min-width:0;min-height:0;padding:0;gap:0;display:grid;place-items:center;border:1px solid var(--line2);border-radius:50%;background:var(--surface);color:var(--mute);font:inherit;font-size:0;line-height:0;box-shadow:0 2px 6px rgba(15,23,42,.14);cursor:pointer;opacity:0;transform:scale(.8);transition:opacity .15s,transform .15s,background-color .15s,color .15s}
-.sale-toast-x svg{display:block;pointer-events:none}
-.sale-toast:hover .sale-toast-x,.sale-toast:focus-within .sale-toast-x{opacity:1;transform:none}
-.sale-toast .sale-toast-x:hover{background:var(--surface2);color:var(--ink);transform:scale(1.08)}
-/* leaving: slide up and fade while the card's height and the gap shrink, so the cards below glide up into its place */
-.sale-toast.out{overflow:hidden;pointer-events:none;height:0!important;min-height:0;padding-top:0;padding-bottom:0;margin-bottom:-10px;border-width:0;opacity:0;transform:translateY(-16px) scale(.94);box-shadow:none;animation:none;transition:height .38s cubic-bezier(.4,0,.2,1),padding .38s cubic-bezier(.4,0,.2,1),margin .38s cubic-bezier(.4,0,.2,1),opacity .26s ease,transform .38s cubic-bezier(.4,0,.2,1),box-shadow .2s}
-@keyframes sale-toast-in{from{opacity:0;transform:translateY(-14px) scale(.96)}to{opacity:1;transform:none}}
-html[data-theme=dark] .sale-toast{box-shadow:0 14px 34px rgba(0,0,0,.55)}
-html[data-theme=dark] .sale-toast.is-link:hover{border-color:#3b82f6;box-shadow:0 18px 38px rgba(0,0,0,.6)}
-html[data-theme=dark] .sale-toast-side em{background:rgba(96,165,250,.18);color:#bcd2ff}
-html[data-theme=dark] .sale-toast-side em[data-pay=cash]{background:rgba(34,197,94,.18);color:#86efac}
-@media(hover:none){.sale-toast-x{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.sale-toast,.sale-toast.out,.sale-toast-x{animation:none;transition:none}}
+/* Sale notice, top centre: a thermal POS receipt slip feeding from a top bezel slot (sale_toast.js). */
+.sale-toasts {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+  max-width: calc(100vw - 24px);
+}
+
+.sale-toast {
+  --toast-paper: #ffffff;
+  --toast-border: #cbd5e1;
+  --toast-dash: #cbd5e1;
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: min(372px, calc(100vw - 24px));
+  max-width: 100%;
+  padding-bottom: 7px;
+  color: var(--ink);
+  filter: drop-shadow(0 16px 28px rgba(15, 23, 42, .16)) drop-shadow(0 2px 6px rgba(15, 23, 42, .06));
+  animation: sale-toast-in .38s cubic-bezier(.16, .84, .24, 1) backwards;
+  transform-origin: top center;
+  transition: transform .18s, filter .18s;
+}
+
+.sale-toast.is-link {
+  cursor: pointer;
+}
+.sale-toast.is-link:hover {
+  transform: translateY(1px);
+  filter: drop-shadow(0 20px 34px rgba(37, 99, 235, .18)) drop-shadow(0 3px 8px rgba(15, 23, 42, .08));
+}
+.sale-toast:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+/* Top bezel slot the receipt feeds out of */
+.sale-toast-slot {
+  display: block;
+  width: 100%;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(15, 23, 42, .22);
+  flex: none;
+}
+
+/* Thermal paper slip */
+.sale-toast-paper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: calc(100% - 16px);
+  margin-top: -2px;
+  padding: 11px 15px 12px;
+  background: var(--toast-paper);
+  border-left: 1px solid var(--toast-border);
+  border-right: 1px solid var(--toast-border);
+  border-top: 1px solid var(--toast-border);
+}
+
+/* Zig-zag sawtooth tear-off bottom edge */
+.sale-toast-paper::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: -7px;
+  height: 7px;
+  background:
+    linear-gradient(135deg, var(--toast-paper) 33.33%, transparent 33.33%) 0 0 / 10px 7px,
+    linear-gradient(225deg, var(--toast-paper) 33.33%, transparent 33.33%) 0 0 / 10px 7px;
+  pointer-events: none;
+}
+
+/* 1. Top monospace receipt header row */
+.sale-toast-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px dashed var(--toast-dash);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--mute);
+  line-height: 1.2;
+}
+.sale-toast-head-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.sale-toast-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex: none;
+}
+.sale-toast-av {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 9.5px;
+  font-weight: 800;
+  flex: none;
+}
+.sale-toast-rec {
+  color: var(--ink);
+  font-weight: 750;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sale-toast-head-r {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.sale-toast-time {
+  color: var(--mute);
+}
+.sale-toast-pay {
+  font-style: normal;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink);
+  padding-left: 6px;
+  border-left: 1px solid var(--line);
+}
+
+/* Inline close button inside receipt header */
+.sale-toast-x {
+  box-sizing: border-box;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: -2px -4px -2px 2px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--mute);
+  font: inherit;
+  font-size: 0;
+  line-height: 0;
+  box-shadow: none;
+  cursor: pointer;
+  opacity: .75;
+  transition: opacity .15s, background-color .15s, color .15s, border-color .15s;
+}
+.sale-toast-x svg {
+  display: block;
+  pointer-events: none;
+}
+.sale-toast:hover .sale-toast-x,
+.sale-toast:focus-within .sale-toast-x {
+  opacity: 1;
+}
+.sale-toast .sale-toast-x:hover {
+  background: var(--surface2);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/* 2. Middle store + amount row */
+.sale-toast-mid {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0 8px;
+}
+.sale-toast-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+.sale-toast-store {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sale-toast-sub {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sale-toast-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+.sale-toast-amt {
+  font-size: 19px;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  color: #1d4ed8;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.sale-toast-open {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: .03em;
+  color: var(--mute);
+  text-transform: uppercase;
+}
+
+/* 3. Bottom perforation footer with barcode ticks */
+.sale-toast-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--toast-dash);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--mute);
+}
+.sale-toast-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  height: 11px;
+  opacity: .42;
+}
+.sale-toast-bars i {
+  display: block;
+  width: 1.5px;
+  height: 100%;
+  background: var(--ink);
+}
+.sale-toast-bars i.w {
+  width: 3px;
+}
+
+/* Leaving: retract upward and fade while cards below glide up */
+.sale-toast.out {
+  overflow: hidden;
+  pointer-events: none;
+  height: 0 !important;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: -14px;
+  border-width: 0;
+  opacity: 0;
+  transform: translateY(-16px) scaleY(.92);
+  filter: none;
+  animation: none;
+  transition: height .38s cubic-bezier(.4, 0, .2, 1), padding .38s cubic-bezier(.4, 0, .2, 1), margin .38s cubic-bezier(.4, 0, .2, 1), opacity .26s ease, transform .38s cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes sale-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scaleY(.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dark theme adjustments */
+html[data-theme="dark"] .sale-toast {
+  --toast-paper: #111622;
+  --toast-border: #334155;
+  --toast-dash: #334155;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, .6));
+}
+html[data-theme="dark"] .sale-toast-slot {
+  background: rgba(255, 255, 255, .22);
+}
+html[data-theme="dark"] .sale-toast-amt {
+  color: #60a5fa;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sale-toast,
+  .sale-toast.out,
+  .sale-toast-x {
+    animation: none;
+    transition: none;
+  }
+}

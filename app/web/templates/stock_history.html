@@ -93,3 +93,4 @@
 </table></div>
 <div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} / {{ pages }} · {{ total }} {{ t('changes') }}</span>{% if page < pages %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
 {% endblock %}
+{% block scripts %}<script src="/static/stock_history_search.js?v={{ asset_v('stock_history_search.js') }}"></script>{% endblock %}

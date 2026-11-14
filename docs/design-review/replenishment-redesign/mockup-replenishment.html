@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Auto Replenishment — Redesign Concepts</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-soft: #eef2f6;
+    --ok: #10b981;
+    --ok-ink: #047857;
+    --ok-soft: #ecfdf5;
+    --ok-line: #a7f3d0;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --blue-line: #bfdbfe;
+    --amber: #f59e0b;
+    --amber-ink: #b45309;
+    --amber-soft: #fffbeb;
+    --amber-line: #fde68a;
+    --red-ink: #be123c;
+    --red-soft: #fff1f2;
+    --red-line: #fecdd3;
+    --violet-ink: #6d28d9;
+    --violet-soft: #f5f3ff;
+    --sh1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+    --sh2: 0 10px 28px rgba(15, 23, 42, 0.14);
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .frame {
+    max-width: 1280px;
+    margin: 0 auto 48px;
+    background: var(--bg);
+    padding: 28px;
+    border-radius: 22px;
+    border: 1px solid #dde3ed;
+  }
+  .concept-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .concept-tag span {
+    background: var(--ink);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  /* Header */
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px 10px;
+    flex-wrap: wrap;
+  }
+  .title-wrap h1 {
+    margin: 0;
+    font-size: 23px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 25px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .pill.info { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue-ink); }
+  .pill.ok { background: var(--ok-soft); border-color: var(--ok-line); color: var(--ok-ink); }
+  .pill.warn { background: var(--amber-soft); border-color: var(--amber-line); color: var(--amber-ink); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+  .actions { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 650;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    box-shadow: var(--sh1);
+  }
+  .btn.primary {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .btn.emerald {
+    background: var(--ok-ink);
+    border-color: var(--ok-ink);
+    color: #fff;
+  }
+
+  /* Toolbar & Segmented Controls */
+  .toolbar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 12px;
+    box-shadow: var(--sh1);
+    display: flex;
+    align-items: center;
+    gap: 8px 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    background: #eef2f7;
+    padding: 3px;
+    border-radius: 11px;
+    height: 36px;
+    gap: 2px;
+  }
+  .seg a {
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .seg a.on {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.10);
+  }
+  .seg a b {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .seg a.on b { background: var(--ink); color: #fff; }
+  .search-box {
+    flex: 1 1 200px;
+    min-width: 180px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  .chip-sel {
+    height: 36px;
+    padding: 0 11px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip-sel span.lbl { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+
+  /* KPI Grid */
+  .kpi-4 {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1.1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: var(--sh1);
+  }
+  .kpi.hero {
+    background: linear-gradient(155deg, #ecfdf5 0%, #ffffff 74%);
+    border-color: var(--ok-line);
+  }
+  .kpi.alert {
+    background: linear-gradient(155deg, #fffbeb 0%, #ffffff 78%);
+    border-color: var(--amber-line);
+  }
+  .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .kpi-val {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+  .kpi-sub {
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .split-bar {
+    height: 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    margin: 9px 0 6px;
+  }
+
+  /* Matrix Table */
+  .card-table {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--sh1);
+    overflow: hidden;
+  }
+  table.mat {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  table.mat th {
+    text-align: left;
+    padding: 10px 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.045em;
+    color: var(--muted);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.mat th.c, table.mat td.c { text-align: center; }
+  table.mat th.r, table.mat td.r { text-align: right; }
+  table.mat td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+  table.mat tr:last-child td { border-bottom: 0; }
+  table.mat tr.tot td {
+    background: var(--surface2);
+    border-top: 1px solid var(--line);
+    font-weight: 750;
+  }
+  table.mat tr.active-row td { background: #f0f7ff; }
+  .chk {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 1.5px solid #cbd5e1;
+    display: inline-block;
+    background: #fff;
+    vertical-align: middle;
+  }
+  .chk.on {
+    background: var(--ink);
+    border-color: var(--ink);
+    position: relative;
+  }
+  .chk.on::after {
+    content: "✓";
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    position: absolute;
+    inset: -1px 0 0 2px;
+  }
+  .prod-name {
+    font-weight: 650;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .why-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .prod-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .qty-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .qty-box.urg { background: var(--red-soft); border-color: var(--red-line); color: var(--red-ink); }
+  .qty-box.zero { border-style: dashed; color: #94a3b8; background: transparent; font-weight: 500; }
+  .qty-box.edited { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14); }
+  .wh-tag {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 12px;
+    background: var(--surface2);
+    color: var(--ink);
+  }
+  .wh-tag.short { background: var(--red-soft); color: var(--red-ink); }
+  .act-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .act-pill.send { background: var(--ok-soft); color: var(--ok-ink); }
+  .act-pill.order { background: var(--red-soft); color: var(--red-ink); }
+  .act-pill.mix { background: var(--amber-soft); color: var(--amber-ink); }
+
+  /* Floating Dock preview inside Opt 2 */
+  .dock {
+    margin-top: 12px;
+    background: #0f172a;
+    color: #fff;
+    border-radius: 14px;
+    padding: 11px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: var(--sh2);
+  }
+
+  /* OPTION 2: Triage Flow Cards */
+  .triage-stack { display: flex; flex-direction: column; gap: 10px; }
+  .triage-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 16px;
+    box-shadow: var(--sh1);
+    display: grid;
+    grid-template-columns: 24px 245px 90px 1fr 195px;
+    align-items: center;
+    gap: 14px;
+  }
+  .triage-card.selected { border-color: var(--ink); background: #f8fafc; }
+  .store-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .s-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 9px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--line);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .s-chip strong {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 2px 8px;
+    color: var(--ink);
+    font-size: 12.5px;
+    font-weight: 750;
+  }
+  .s-chip.urg strong { background: var(--red-soft); border-color: var(--red-line); color: var(--red-ink); }
+
+  /* OPTION 3: Split Inspector */
+  .split-desk {
+    display: grid;
+    grid-template-columns: 1fr 330px;
+    gap: 14px;
+    align-items: start;
+  }
+  .inspector {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--sh1);
+  }
+  .insp-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 12px;
+  }
+  .insp-store-box {
+    background: var(--surface2);
+    border: 1px solid var(--line-soft);
+    border-radius: 11px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .insp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-top: 4px;
+    color: var(--muted);
+  }
+  .insp-row strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ==================== OPTION 1 ==================== -->
+<section class="frame" id="opt1">
+  <div class="concept-tag"><span>Option 1</span> Studio Bento + Precision Matrix (Suite Match)</div>
+
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Auto replenishment</h1>
+      <span class="pill info">Sales-only · 7d cover</span>
+      <span class="pill ok"><span class="dot"></span> 07:45 run OK</span>
+    </div>
+    <div class="actions">
+      <a class="btn" href="#">↻ Refresh</a>
+      <a class="btn" href="#">Order batches</a>
+      <a class="btn" href="#">List view</a>
+      <a class="btn emerald" href="#">✓ Create batches (20)</a>
+    </div>
+  </div>
+
+  <div class="kpi-4">
+    <div class="kpi hero">
+      <div class="kpi-top"><span>Total to move or order</span><span class="pill" style="height:20px;font-size:11px">128 SKUs</span></div>
+      <div class="kpi-val num">₱148,420.00</div>
+      <div class="kpi-sub num">1,840 units across 4 stores</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>Warehouse send</span><span class="num" style="color:var(--ok-ink);font-weight:700">62%</span></div>
+      <div class="kpi-val num">₱92,150.00</div>
+      <div class="split-bar"><span style="width:62%;background:#10b981"></span><span style="width:38%;background:#f59e0b"></span></div>
+    </div>
+    <div class="kpi alert">
+      <div class="kpi-top"><span>Supplier order needed</span><span class="pill warn" style="height:20px;font-size:11px">18 short</span></div>
+      <div class="kpi-val num">₱56,270.00</div>
+      <div class="kpi-sub num">Missing from WH stock</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>Review status</span><span>Today</span></div>
+      <div class="kpi-val num">96 <span style="font-size:13px;font-weight:600;color:var(--muted)">ready</span></div>
+      <div class="kpi-sub num">12 needs review · 20 decided</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">Ready <b>96</b></a>
+      <a href="#">Review <b>12</b></a>
+      <a href="#">Decided <b>20</b></a>
+      <a href="#">All</a>
+    </div>
+    <div class="search-box">🔍 Product name or barcode</div>
+    <div class="chip-sel"><span class="lbl">Store</span> All stores ▾</div>
+    <div class="chip-sel"><span class="lbl">Action</span> All ▾</div>
+    <div class="chip-sel"><span class="lbl">Supplier</span> All suppliers ▾</div>
+  </div>
+
+  <div class="card-table">
+    <table class="mat">
+      <thead>
+        <tr>
+          <th style="width:34px"><span class="chk"></span></th>
+          <th>Product</th>
+          <th class="r">WH stock</th>
+          <th class="c">Getafe</th>
+          <th class="c">Talibon</th>
+          <th class="c">Tagbilaran</th>
+          <th class="c">Ubay</th>
+          <th class="r">Stores need</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="chk on"></span></td>
+          <td>
+            <div class="prod-name">Bear Brand Powdered Milk 33g <span class="why-dot">i</span></div>
+            <div class="prod-meta">4800361410816 · Nestle PH</div>
+          </td>
+          <td class="r num"><span class="wh-tag">120</span></td>
+          <td class="c num"><span class="qty-box urg">18</span></td>
+          <td class="c num"><span class="qty-box">12</span></td>
+          <td class="c num"><span class="qty-box edited">16</span></td>
+          <td class="c num"><span class="qty-box zero">0</span></td>
+          <td class="r num"><strong>46</strong></td>
+          <td><span class="act-pill send">Send 46</span></td>
+        </tr>
+        <tr>
+          <td><span class="chk"></span></td>
+          <td>
+            <div class="prod-name">Coca-Cola Zero Sugar 500ml <span class="why-dot">i</span></div>
+            <div class="prod-meta">5449000131805 · Coca-Cola Beverages</div>
+          </td>
+          <td class="r num"><span class="wh-tag short">14</span></td>
+          <td class="c num"><span class="qty-box">12</span></td>
+          <td class="c num"><span class="qty-box">10</span></td>
+          <td class="c num"><span class="qty-box">8</span></td>
+          <td class="c num"><span class="qty-box">6</span></td>
+          <td class="r num"><strong>36</strong></td>
+          <td><span class="act-pill mix">Send 14 · Order 22</span></td>
+        </tr>
+        <tr>
+          <td><span class="chk"></span></td>
+          <td>
+            <div class="prod-name">Yakult Cultured Milk 5-Pack <span class="why-dot">i</span></div>
+            <div class="prod-meta">4800092110421 · Yakult PH</div>
+          </td>
+          <td class="r num"><span class="wh-tag short">0</span></td>
+          <td class="c num"><span class="qty-box">8</span></td>
+          <td class="c num"><span class="qty-box zero">0</span></td>
+          <td class="c num"><span class="qty-box">10</span></td>
+          <td class="c num"><span class="qty-box">6</span></td>
+          <td class="r num"><strong>24</strong></td>
+          <td><span class="act-pill order">Order 24</span></td>
+        </tr>
+        <tr class="tot">
+          <td></td>
+          <td>Total · 128 products</td>
+          <td></td>
+          <td class="c num">412</td>
+          <td class="c num">318</td>
+          <td class="c num">640</td>
+          <td class="c num">470</td>
+          <td class="r num">1,840</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== OPTION 2 ==================== -->
+<section class="frame" id="opt2">
+  <div class="concept-tag"><span>Option 2</span> Action-Split Triage Workspace (Transfer vs. PO Execution)</div>
+
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Auto replenishment</h1>
+      <span class="pill">96 ready · 12 review · 20 decided</span>
+    </div>
+    <div class="actions">
+      <a class="btn" href="#">↻ Refresh</a>
+      <a class="btn" href="#">Order batches (4)</a>
+      <a class="btn primary" href="#">Create batches</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">All actions <b>128</b></a>
+      <a href="#">Send from WH <b>74</b></a>
+      <a href="#">Order supplier <b>36</b></a>
+      <a href="#">Split <b>18</b></a>
+    </div>
+    <div class="search-box">🔍 Product, SKU, or supplier</div>
+    <div class="chip-sel"><span class="lbl">Status</span> Ready (96) ▾</div>
+    <div class="chip-sel"><span class="lbl">Supplier</span> All suppliers ▾</div>
+  </div>
+
+  <div class="triage-stack">
+    <div class="triage-card selected">
+      <div><span class="chk on"></span></div>
+      <div>
+        <div class="prod-name">Bear Brand Powdered Milk 33g <span class="why-dot">i</span></div>
+        <div class="prod-meta">Nestle PH · ₱11.61 / unit · Total ₱534.06</div>
+      </div>
+      <div class="num"><span class="wh-tag">WH: 120</span></div>
+      <div class="store-chips num">
+        <span class="s-chip urg">Getafe <strong>18</strong></span>
+        <span class="s-chip">Talibon <strong>12</strong></span>
+        <span class="s-chip">Tagbilaran <strong>16</strong></span>
+      </div>
+      <div style="text-align:right">
+        <span class="act-pill send">Send 46 from WH</span>
+      </div>
+    </div>
+
+    <div class="triage-card">
+      <div><span class="chk on"></span></div>
+      <div>
+        <div class="prod-name">Coca-Cola Zero Sugar 500ml <span class="why-dot">i</span></div>
+        <div class="prod-meta">Coca-Cola Beverages · ₱28.50 / unit · ₱1,026.00</div>
+      </div>
+      <div class="num"><span class="wh-tag short">WH: 14</span></div>
+      <div class="store-chips num">
+        <span class="s-chip">Getafe <strong>12</strong></span>
+        <span class="s-chip">Talibon <strong>10</strong></span>
+        <span class="s-chip">Tagbilaran <strong>8</strong></span>
+        <span class="s-chip">Ubay <strong>6</strong></span>
+      </div>
+      <div style="text-align:right">
+        <span class="act-pill mix">Send 14 · Order 22</span>
+      </div>
+    </div>
+
+    <div class="triage-card">
+      <div><span class="chk"></span></div>
+      <div>
+        <div class="prod-name">Yakult Cultured Milk 5-Pack <span class="why-dot">i</span></div>
+        <div class="prod-meta">Yakult PH · ₱46.00 / unit · ₱1,104.00</div>
+      </div>
+      <div class="num"><span class="wh-tag short">WH: 0</span></div>
+      <div class="store-chips num">
+        <span class="s-chip">Getafe <strong>8</strong></span>
+        <span class="s-chip">Tagbilaran <strong>10</strong></span>
+        <span class="s-chip">Ubay <strong>6</strong></span>
+      </div>
+      <div style="text-align:right">
+        <span class="act-pill order">Order 24 from supplier</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <div>
+      <strong class="num" style="font-size:14px">2 products selected</strong>
+      <span style="color:#94a3b8;font-size:12.5px;margin-left:10px" class="num">₱1,560.06 · Transfer 60 · Order 22</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a class="btn" style="background:transparent;border-color:#334155;color:#cbd5e1" href="#">Clear</a>
+      <a class="btn emerald" href="#">Create Stock Transfer &amp; PO →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 3 ==================== -->
+<section class="frame" id="opt3" style="margin-bottom:0">
+  <div class="concept-tag"><span>Option 3</span> Split-Inspector Merchandising Desk (Live "Why" Breakdown Panel)</div>
+
+  <div class="head">
+    <div class="title-wrap">
+      <h1>Auto replenishment</h1>
+      <span class="pill info">₱148,420.00 planned</span>
+      <span class="pill warn">₱56,270.00 to order</span>
+    </div>
+    <div class="actions">
+      <a class="btn" href="#">↻ Refresh</a>
+      <a class="btn" href="#">Order batches</a>
+      <a class="btn primary" href="#">Create Stock Transfer (1)</a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg">
+      <a class="on" href="#">Ready <b>96</b></a>
+      <a href="#">Review <b>12</b></a>
+      <a href="#">Decided <b>20</b></a>
+    </div>
+    <div class="search-box">🔍 Search SKU or barcode</div>
+    <div class="chip-sel"><span class="lbl">Store</span> All stores ▾</div>
+    <div class="chip-sel"><span class="lbl">Supplier</span> All ▾</div>
+  </div>
+
+  <div class="split-desk">
+    <div class="card-table">
+      <table class="mat">
+        <thead>
+          <tr>
+            <th style="width:32px"><span class="chk"></span></th>
+            <th>Product</th>
+            <th class="r">WH</th>
+            <th class="c">Getafe</th>
+            <th class="c">Talibon</th>
+            <th class="c">Tagb.</th>
+            <th class="r">Need</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="active-row">
+            <td><span class="chk on"></span></td>
+            <td>
+              <div class="prod-name">Bear Brand Powdered Milk 33g</div>
+              <div class="prod-meta">Nestle PH · 4800361410816</div>
+            </td>
+            <td class="r num"><span class="wh-tag">120</span></td>
+            <td class="c num"><span class="qty-box urg">18</span></td>
+            <td class="c num"><span class="qty-box">12</span></td>
+            <td class="c num"><span class="qty-box">16</span></td>
+            <td class="r num"><strong>46</strong></td>
+            <td><span class="act-pill send">Send 46</span></td>
+          </tr>
+          <tr>
+            <td><span class="chk"></span></td>
+            <td>
+              <div class="prod-name">Coca-Cola Zero Sugar 500ml</div>
+              <div class="prod-meta">Coca-Cola Beverages · 5449000131805</div>
+            </td>
+            <td class="r num"><span class="wh-tag short">14</span></td>
+            <td class="c num"><span class="qty-box">12</span></td>
+            <td class="c num"><span class="qty-box">10</span></td>
+            <td class="c num"><span class="qty-box">8</span></td>
+            <td class="r num"><strong>30</strong></td>
+            <td><span class="act-pill mix">Send 14 · Ord 16</span></td>
+          </tr>
+          <tr>
+            <td><span class="chk"></span></td>
+            <td>
+              <div class="prod-name">Yakult Cultured Milk 5-Pack</div>
+              <div class="prod-meta">Yakult PH · 4800092110421</div>
+            </td>
+            <td class="r num"><span class="wh-tag short">0</span></td>
+            <td class="c num"><span class="qty-box">8</span></td>
+            <td class="c num"><span class="qty-box zero">0</span></td>
+            <td class="c num"><span class="qty-box">10</span></td>
+            <td class="r num"><strong>18</strong></td>
+            <td><span class="act-pill order">Order 18</span></td>
+          </tr>
+          <tr>
+            <td><span class="chk"></span></td>
+            <td>
+              <div class="prod-name">Lucky Me Pancit Canton Orig.</div>
+              <div class="prod-meta">Monde Nissin · 4807770270017</div>
+            </td>
+            <td class="r num"><span class="wh-tag">240</span></td>
+            <td class="c num"><span class="qty-box">24</span></td>
+            <td class="c num"><span class="qty-box">18</span></td>
+            <td class="c num"><span class="qty-box">24</span></td>
+            <td class="r num"><strong>66</strong></td>
+            <td><span class="act-pill send">Send 66</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="inspector">
+      <div class="insp-head">
+        <div>
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Why this number</div>
+          <div style="font-size:15px;font-weight:800;margin-top:2px">Bear Brand Milk 33g</div>
+          <div style="font-size:11.5px;color:var(--muted)">Nestle PH · Cost ₱11.61</div>
+        </div>
+        <span class="wh-tag">WH: 120</span>
+      </div>
+
+      <div class="insp-store-box">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12.5px">
+          <span>Getafe</span><span class="num" style="color:var(--ok-ink)">Suggested: 18</span>
+        </div>
+        <div class="insp-row num"><span>Daily sales rate</span><strong>3.1 / day</strong></div>
+        <div class="insp-row num"><span>Target (7d cover)</span><strong>22 units</strong></div>
+        <div class="insp-row num"><span>Already incoming</span><strong>−4 units</strong></div>
+      </div>
+
+      <div class="insp-store-box">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12.5px">
+          <span>Talibon</span><span class="num">Suggested: 12</span>
+        </div>
+        <div class="insp-row num"><span>Daily sales rate</span><strong>1.7 / day</strong></div>
+        <div class="insp-row num"><span>Target (7d cover)</span><strong>12 units</strong></div>
+      </div>
+
+      <div class="insp-store-box" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12.5px">
+          <span>Tagbilaran</span><span class="num">Suggested: 16</span>
+        </div>
+        <div class="insp-row num"><span>Daily sales rate</span><strong>2.3 / day</strong></div>
+        <div class="insp-row num"><span>Target (7d cover)</span><strong>16 units</strong></div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <a class="btn" style="flex:1;justify-content:center" href="#">Skip row</a>
+        <a class="btn emerald" style="flex:1.4;justify-content:center" href="#">✓ Approve 46</a>
+      </div>
+    </aside>
+  </div>
+</section>
+
+</body>
+</html>

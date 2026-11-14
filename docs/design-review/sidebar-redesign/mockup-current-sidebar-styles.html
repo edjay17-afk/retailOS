@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Current Sidebar Visual Styling Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --sh: 0 1px 2px rgba(15,23,42,.05);
+    --sh-fly: 0 14px 36px rgba(15,23,42,.12), 0 0 0 1px rgba(15,23,42,.05);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.15);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,.14);
+    --sh: 0 1px 3px rgba(0,0,0,.35);
+    --sh-fly: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  .top {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .top h1 { margin: 0; font-size: 16px; font-weight: 750; letter-spacing: -0.02em; }
+  .top p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+  .controls { display: flex; align-items: center; gap: 10px; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); gap: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--mute); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+
+  .wrap { max-width: 1580px; margin: 0 auto; padding: 22px 28px 48px; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;
+    align-items: stretch;
+  }
+  @media (max-width: 1320px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--sh); display: flex; flex-direction: column;
+  }
+  .meta { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 5px; }
+  .badge {
+    display: inline-flex; align-self: flex-start; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--mute);
+  }
+  .badge.rec { background: var(--blue-soft); color: var(--blue-ink); padding: 3px 8px; border-radius: 999px; }
+  .badge.old { background: var(--surface2); color: var(--mute); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .meta h2 { margin: 0; font-size: 14.5px; font-weight: 750; letter-spacing: -0.015em; }
+  .meta p { margin: 0; font-size: 12px; color: var(--mute); line-height: 1.4; }
+
+  .stage {
+    flex: 1; display: flex; background: var(--bg); position: relative; min-height: 700px;
+  }
+
+  .ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Right preview sliver of Today page so colors are judged in real context */
+  .context-sliver {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg);
+  }
+  .ctx-bar {
+    height: 46px; padding: 0 12px; background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ctx-pill { font-size: 10px; font-weight: 650; padding: 4px 8px; border-radius: 7px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+  .ctx-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .ctx-title { font-size: 15px; font-weight: 750; letter-spacing: -0.02em; }
+  .ctx-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .ctx-kpi small { font-size: 10px; color: var(--mute); display: block; }
+  .ctx-kpi b { font-size: 14px; font-weight: 800; display: block; margin: 2px 0 6px; }
+  .ctx-bars { display: flex; align-items: flex-end; gap: 2px; height: 26px; }
+  .ctx-bars i { flex: 1; background: var(--line); border-radius: 2px; display: block; }
+  .ctx-bars i.on { background: var(--blue); }
+
+  /* Flyout floating popover preview */
+  .flyout-demo {
+    margin: 8px; padding: 7px; width: calc(100% - 16px); max-width: 158px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px;
+    box-shadow: var(--sh-fly);
+  }
+  .fly-h {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--mute2); padding: 4px 8px 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px;
+  }
+  .fly-a {
+    display: block; padding: 5px 8px; border-radius: 7px; font-size: 12px; font-weight: 550;
+    color: var(--ink2); text-decoration: none;
+  }
+  .fly-a:hover { background: var(--surface2); color: var(--ink); }
+  .fly-a.on { background: var(--blue-soft); color: var(--blue-ink); font-weight: 650; }
+
+  /* ==============================================================
+     SHARED CURRENT-SIDEBAR STRUCTURAL SKELETON (Width & Sections)
+     ============================================================== */
+  .sb {
+    width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 16px 12px 12px;
+  }
+  .sb.cur-sb { width: 244px; padding: 20px 12px 14px; }
+
+  .sb-head { display: flex; align-items: center; gap: 11px; padding: 2px 6px 14px; }
+  .sb.cur-sb .sb-head { padding: 4px 6px 20px; gap: 12px; }
+  .sb-mark {
+    width: 38px; height: 38px; border-radius: 11px; background: var(--blue); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 18px; flex: none;
+  }
+  .sb.cur-sb .sb-mark { width: 48px; height: 48px; border-radius: 14px; font-size: 22px; }
+  .sb-brand b { display: block; font-size: 16px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; }
+  .sb.cur-sb .sb-brand b { font-size: 20px; }
+  .sb-brand small { display: block; font-size: 11.5px; color: var(--mute); font-weight: 550; margin-top: 2px; }
+
+  .sb-nav { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .sb-sec {
+    font-size: 10.5px; font-weight: 680; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--mute2); padding: 12px 10px 4px;
+  }
+  .sb.cur-sb .sb-sec { color: #6b82ad; padding: 14px 10px 5px; }
+
+  .sb-row {
+    position: relative; width: 100%; border: 0; background: transparent;
+    display: flex; align-items: center; gap: 10px; padding: 7.5px 10px; border-radius: 9px;
+    font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink2); cursor: pointer; text-align: left;
+  }
+  .sb-lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb-cnt {
+    font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 7px; line-height: 1.45; flex: none;
+  }
+  .sb-foot { margin-top: auto; padding-top: 10px; }
+  .sb-user {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--surface2);
+  }
+  .sb-av {
+    position: relative; width: 32px; height: 32px; border-radius: 9px;
+    display: grid; place-items: center; font-weight: 750; font-size: 13px; flex: none;
+  }
+  .sb-dot {
+    position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%;
+    background: #16a34a; border: 2px solid var(--surface2);
+  }
+  .sb-user-meta { flex: 1; min-width: 0; }
+  .sb-user-meta b { display: block; font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .sb-user-meta small { display: block; font-size: 11px; color: var(--mute); font-weight: 550; }
+  .sb-exit {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid transparent; background: transparent;
+    color: var(--mute); display: grid; place-items: center; cursor: pointer; flex: none;
+  }
+
+  /* ---- BEFORE (CURRENT) ---- */
+  .sb.cur-sb .sb-row { font-size: 14px; font-weight: 650; color: #1e293b; border-radius: 11px; padding: 8px 11px; }
+  .sb.cur-sb .sb-row .ico { color: #111827; stroke-width: 2; }
+  .sb.cur-sb .sb-row.on { background: #2563eb; color: #fff; }
+  .sb.cur-sb .sb-row.on .ico { color: #fff; }
+  .sb.cur-sb .sb-cnt { background: #facc15; color: #3b2e00; font-weight: 750; }
+  .sb.cur-sb .sb-av { width: 38px; height: 38px; border-radius: 12px; background: #2563eb; color: #fff; font-size: 15px; }
+  .sb.cur-sb .sb-exit { background: #fff; border-color: #cbd5e1; width: 34px; height: 34px; border-radius: 10px; }
+  html[data-theme="dark"] .sb.cur-sb .sb-row { color: #e2e8f0; }
+  html[data-theme="dark"] .sb.cur-sb .sb-row .ico { color: #e5e7eb; }
+  html[data-theme="dark"] .sb.cur-sb .sb-exit { background: rgba(255,255,255,.06); border-color: #334155; }
+
+  /* ---- STYLE A: Soft Tint + Red Alerts Only (Matches Today & Sales) ---- */
+  .sb.style-a .sb-head { border-bottom: 1px solid var(--line); margin-bottom: 6px; padding-bottom: 12px; }
+  .sb.style-a .sb-row .ico { color: var(--mute); stroke-width: 1.7; }
+  .sb.style-a .sb-row:hover { background: var(--surface2); color: var(--ink); }
+  .sb.style-a .sb-row.on { background: var(--blue-soft); color: var(--blue-ink); font-weight: 680; }
+  .sb.style-a .sb-row.on .ico { color: var(--blue-ink); }
+  .sb.style-a .sb-row.on::before {
+    content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px;
+    border-radius: 0 3px 3px 0; background: var(--blue);
+  }
+  .sb.style-a .sb-row.fly-on { background: var(--surface2); color: var(--ink); }
+  .sb.style-a .sb-cnt { background: var(--surface2); color: var(--mute); border: 1px solid var(--line); font-weight: 650; }
+  .sb.style-a .sb-cnt.alert { background: var(--red-soft); color: var(--red); border-color: transparent; font-weight: 700; }
+  .sb.style-a .sb-chev { width: 13px; height: 13px; color: var(--mute2); flex: none; }
+  .sb.style-a .sb-av { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+
+  /* ---- STYLE B: Refined Blue Pill + Quiet Neutral Counts ---- */
+  .sb.style-b .sb-head { border-bottom: 1px solid var(--line); margin-bottom: 6px; padding-bottom: 12px; }
+  .sb.style-b .sb-row { border-radius: 10px; font-weight: 600; }
+  .sb.style-b .sb-row .ico { color: var(--mute); stroke-width: 1.75; }
+  .sb.style-b .sb-row:hover { background: var(--surface2); color: var(--ink); }
+  .sb.style-b .sb-row.on { background: var(--blue); color: #fff; font-weight: 680; }
+  .sb.style-b .sb-row.on .ico { color: #fff; }
+  .sb.style-b .sb-row.fly-on { background: var(--blue-soft); color: var(--blue-ink); }
+  .sb.style-b .sb-row.fly-on .ico { color: var(--blue-ink); }
+  .sb.style-b .sb-cnt { background: var(--surface2); color: var(--mute); font-weight: 650; }
+  .sb.style-b .sb-cnt.alert { background: var(--red-soft); color: var(--red); font-weight: 700; }
+  .sb.style-b .sb-chev { width: 13px; height: 13px; color: var(--mute2); flex: none; }
+  .sb.style-b .sb-av { background: var(--blue-soft); color: var(--blue-ink); }
+
+  /* ---- STYLE C: Architectural Hairline + Plain Numbers ---- */
+  .sb.style-c .sb-row { font-size: 13px; font-weight: 550; color: var(--mute); padding: 7px 10px; border-radius: 8px; }
+  .sb.style-c .sb-row .ico { color: var(--mute2); stroke-width: 1.65; }
+  .sb.style-c .sb-row:hover { background: var(--surface2); color: var(--ink); }
+  .sb.style-c .sb-row:hover .ico { color: var(--ink); }
+  .sb.style-c .sb-row.on { background: var(--surface2); color: var(--ink); font-weight: 700; box-shadow: inset 0 0 0 1px var(--line); }
+  .sb.style-c .sb-row.on .ico { color: var(--blue); }
+  .sb.style-c .sb-row.fly-on { background: var(--surface2); color: var(--ink); }
+  .sb.style-c .sb-cnt { background: transparent; color: var(--mute); padding: 0 3px; font-size: 11.5px; font-weight: 600; }
+  .sb.style-c .sb-cnt.alert { color: var(--red); font-weight: 750; }
+  .sb.style-c .sb-chev { width: 12px; height: 12px; color: var(--mute2); flex: none; }
+  .sb.style-c .sb-user { background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 10px 4px 2px; }
+  .sb.style-c .sb-av { background: var(--ink); color: var(--surface); border-radius: 999px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>Current Sidebar — Visual Design Refinements</h1>
+    <p>Exact same sidebar idea, section order, counts, flyout groups &amp; footer card — redesigned cleanly to match your Today &amp; Sales pages</p>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group">
+      <button type="button" class="active" onclick="setTheme('light', this)">Light</button>
+      <button type="button" onclick="setTheme('dark', this)">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- 0. CURRENT (BEFORE) -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge old">Current (Before)</span>
+        <h2>Heavy yellow tags + oversized header</h2>
+        <p>52px logo, pure black thick icons, bright yellow pills (#facc15), and bulky bordered footer.</p>
+      </div>
+      <div class="stage">
+        <aside class="sb cur-sb" data-sb></aside>
+        <div class="context-sliver" data-ctx="before"></div>
+      </div>
+    </section>
+
+    <!-- A. RECOMMENDED -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge rec">Style A · Recommended</span>
+        <h2>Monochrome + Soft Blue Tint</h2>
+        <p>Matches Today &amp; Sales directly: cool slate icons, soft blue active pill + 3px bar, muted counts (red for Problems only), subtle chevrons on groups.</p>
+      </div>
+      <div class="stage">
+        <aside class="sb style-a" data-sb="refined"></aside>
+        <div class="context-sliver" data-ctx="fly"></div>
+      </div>
+    </section>
+
+    <!-- B. REFINED BLUE PILL -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Style B</span>
+        <h2>Refined Blue Pill + Muted Counts</h2>
+        <p>Keeps the signature solid blue active pill (sleeker &amp; tighter), swaps yellow badges for quiet neutral pills + red alert count.</p>
+      </div>
+      <div class="stage">
+        <aside class="sb style-b" data-sb="refined"></aside>
+        <div class="context-sliver" data-ctx="fly"></div>
+      </div>
+    </section>
+
+    <!-- C. ARCHITECTURAL LINE -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Style C</span>
+        <h2>Architectural Quiet Monochrome</h2>
+        <p>Minimal hairline active card with blue icon accent, bare right-aligned tabular numbers (zero badge boxes), ultra-clean flat bottom user strip.</p>
+      </div>
+      <div class="stage">
+        <aside class="sb style-c" data-sb="refined"></aside>
+        <div class="context-sliver" data-ctx="fly"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  alert: '<path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  clip: '<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4h6v2H9zM9 11h6M9 15h4"/>',
+  shield: '<path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 8.2 12 13l8.7-4.8M12 22V13"/>',
+  sync: '<path d="M17 3l4 4-4 4M3 7h18M7 21l-4-4 4-4M21 17H3"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+  trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+  chev: '<path d="m9 18 6-6-6-6"/>'
+};
+
+function renderSidebar(el) {
+  const refined = el.dataset.sb === 'refined';
+  const row = (ico, lbl, opts={}) => `
+    <button type="button" class="sb-row ${opts.on?'on':''} ${opts.flyOn?'fly-on':''}">
+      <svg class="ico" viewBox="0 0 24 24">${ICONS[ico]}</svg>
+      <span class="sb-lbl">${lbl}</span>
+      ${opts.cnt ? `<em class="sb-cnt ${opts.alert?'alert':''}" style="font-style:normal">${opts.cnt}</em>` : ''}
+      ${refined && opts.fly ? `<svg class="ico sb-chev" viewBox="0 0 24 24">${ICONS.chev}</svg>` : ''}
+    </button>`;
+
+  el.innerHTML = `
+    <div class="sb-head">
+      <span class="sb-mark">R</span>
+      <span class="sb-brand"><b>Retail OS</b><small>The Daily Centro</small></span>
+    </div>
+    <div class="sb-nav">
+      ${row('home', 'Today', {on:true})}
+      <div class="sb-sec">Run the stores</div>
+      ${row('alert', 'Problems', {cnt:'92', alert:true})}
+      ${row('clip', 'Inspections')}
+      ${row('shield', 'Permits')}
+      ${row('grid', 'Planogram')}
+      <div class="sb-sec">Stock</div>
+      ${row('box', 'Inventory', {cnt:'809', fly:true, flyOn: refined})}
+      ${row('sync', 'Transfers', {fly:true})}
+      ${row('file', 'Purchasing', {cnt:'13', fly:true})}
+      ${row('trend', 'Auto replenishment', {cnt:'312'})}
+      <div class="sb-sec">Insight</div>
+      ${row('chart', 'Sales', {fly:true})}
+      ${row('user', 'Team', {fly:true})}
+      ${row('gear', 'Settings', {fly:true})}
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <span class="sb-av">A<i class="sb-dot"></i></span>
+        <span class="sb-user-meta"><b>Admin</b></span>
+        <button type="button" class="sb-exit" title="Sign out">
+          <svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24">${ICONS.logout}</svg>
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderCtx(el) {
+  const fly = el.dataset.ctx === 'fly';
+  el.innerHTML = `
+    <div class="ctx-bar"><span class="ctx-pill">Daily Centro</span></div>
+    <div class="ctx-body">
+      <div class="ctx-title">Today</div>
+      <div class="ctx-kpi">
+        <small>All stores, net</small>
+        <b>PHP 7,380</b>
+        <div class="ctx-bars"><i style="height:45%"></i><i style="height:75%"></i><i style="height:55%"></i><i class="on" style="height:68%"></i></div>
+      </div>
+    </div>
+    ${fly ? `
+      <div class="flyout-demo" title="Desktop hover/click flyout preserved">
+        <div class="fly-h">Inventory flyout</div>
+        <a class="fly-a on" href="javascript:void(0)">Inventory</a>
+        <a class="fly-a" href="javascript:void(0)">Cycle counts</a>
+        <a class="fly-a" href="javascript:void(0)">Stock events</a>
+        <a class="fly-a" href="javascript:void(0)">Wastage</a>
+        <a class="fly-a" href="javascript:void(0)">Expiry</a>
+      </div>` : ''}`;
+}
+
+document.querySelectorAll('[data-sb]').forEach(renderSidebar);
+document.querySelectorAll('[data-ctx]').forEach(renderCtx);
+
+function setTheme(theme, btn) {
+  document.documentElement.dataset.theme = theme;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+</script>
+</body>
+</html>

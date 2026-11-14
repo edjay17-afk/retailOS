@@ -38,6 +38,7 @@ def store_cards(db: Session, stores: list[dict], today, stock_health) -> list[di
         done = sum(v for k, v in insp.items() if k in DONE)
         h = stock_health([lid])["health"]
         peak = max(s["series"]) if s["series"] else 0
+        gap = biggest_gap(db, [lid], today) if h["out"] else None
         out.append({
             "id": lid, "name": s["name"].replace("The Daily Centro - ", ""), "today": s["today"], "yesterday": s["yesterday"], "accent": ACCENTS[n % len(ACCENTS)],
             "has_sales": bool(any(s["series"]) or s["today"]), "top": lid == top_id and s["today"] > 0, "closed": bool(getattr(db.get(Location, lid), "closed", False)),
@@ -45,7 +46,7 @@ def store_cards(db: Session, stores: list[dict], today, stock_health) -> list[di
             "share": round(s["today"] / total_today * 100) if total_today > 0 else 0, "tx": tx_today.get(lid, 0),
             "register": shift.register if shift else "", "shift_open": bool(shift and shift.closed_at is None),
             "shift_time": (shift.opened_at if shift and shift.closed_at is None else (shift.closed_at if shift else None)),
-            "health": h, "out_of_stock": h["out"],
+            "health": h, "out_of_stock": h["out"], "gap": gap,
             "health_pct": {k: (round(h[k] / h["total"] * 100) if h["total"] else 0) for k in ("ok", "low", "out")},
             "orders": db.scalar(select(func.count()).select_from(Recommendation).where(Recommendation.location_id == lid, Recommendation.business_date == today,
                                                                                       Recommendation.status == "pending")) or 0,
@@ -67,18 +68,25 @@ def hourly(db: Session, ids: list[int], today) -> list[dict]:
     return [{"hour": h, "label": f"{(h % 12) or 12}{'am' if h < 12 else 'pm'}", "n": counts.get(h, 0)} for h in range(first, last + 1)]
 
 
-def biggest_gap(db: Session, ids: list[int], today) -> dict | None:
-    """Of the products that are out of stock in these stores and sold in the last 30 days, the one that sells the most per day."""
+def stock_gaps(db: Session, ids: list[int], today, limit: int = 4) -> list[dict]:
+    """Top products out of stock in `ids` ordered by 30-day average units sold per day."""
     since = today - timedelta(days=30)
     out_ids = set(db.scalars(select(InventoryCurrent.product_id).where(InventoryCurrent.location_id.in_(ids or [0]), InventoryCurrent.on_hand <= 0)))
     if not out_ids:
-        return None
-    row = db.execute(select(SalesDayProduct.product_id, func.sum(SalesDayProduct.units).label("u")).where(
+        return []
+    rows = db.execute(select(SalesDayProduct.product_id, func.sum(SalesDayProduct.units).label("u")).where(
         SalesDayProduct.location_id.in_(ids or [0]), SalesDayProduct.product_id.in_(out_ids), SalesDayProduct.business_date > since, SalesDayProduct.units > 0)
-        .group_by(SalesDayProduct.product_id).order_by(func.sum(SalesDayProduct.units).desc()).limit(1)).first()
-    if not row:
-        return None
-    return {"name": db.get(Product, row[0]).name, "per_day": round(float(row[1]) / 30, 1)}
+        .group_by(SalesDayProduct.product_id).order_by(func.sum(SalesDayProduct.units).desc()).limit(limit)).all()
+    if not rows:
+        return []
+    top = float(rows[0][1]) or 1.0
+    return [{"name": db.get(Product, pid).name, "per_day": round(float(u) / 30, 1), "pct": round(float(u) / top * 100)} for pid, u in rows]
+
+
+def biggest_gap(db: Session, ids: list[int], today) -> dict | None:
+    """Of the products that are out of stock in these stores and sold in the last 30 days, the one that sells the most per day."""
+    gaps = stock_gaps(db, ids, today, limit=1)
+    return gaps[0] if gaps else None
 
 
 def best_sellers_today(db: Session, ids: list[int], today, limit: int = 4) -> list[dict]:
@@ -128,10 +136,11 @@ def overview(db: Session, cards: list[dict], stores: list[dict], today, wjobs: l
     jobs = [{"key": j["key"], "n": j["n"]} for j in wjobs]
     if can("issue.view"):
         jobs.append({"key": "issues", "n": open_issues})
+    gaps = stock_gaps(db, open_ids, today, limit=4)
     return {
         "tx": tx, "avg_basket": round(total_today / tx, 2) if tx else 0, "hourly": hrs,
         "out_total": out_total, "out_by_store": [{"name": c["name"], "n": c["out_of_stock"], "pct": round(c["out_of_stock"] / most * 100) if most else 0} for c in open_cards],
-        "gap": biggest_gap(db, open_ids, today),
+        "gap": gaps[0] if gaps else None, "gaps": gaps,
         "jobs": jobs, "jobs_total": sum(j["n"] for j in jobs),
         "checks_total": checks_total, "checks_done": checks_total - checks_left, "checks_pct": round((checks_total - checks_left) / checks_total * 100) if checks_total else 0,
         "best": best_sellers_today(db, ids, today),

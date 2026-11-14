@@ -55,7 +55,8 @@
       var boxes = el('div', 'drp-boxes'), a = el('input'), z = el('input');
       a.type = z.type = 'text'; a.inputMode = z.inputMode = 'numeric'; a.placeholder = z.placeholder = 'MM/DD/YYYY'; a.value = dFrom ? us(dFrom) : ''; z.value = dTo ? us(dTo) : '';
       a.setAttribute('aria-label', tx.from || 'From'); z.setAttribute('aria-label', tx.to || 'To');
-      boxes.appendChild(a); boxes.appendChild(el('span', 'drp-dash', '–')); boxes.appendChild(z);
+      function field(input, text) { var f = el('div', 'drp-field'); f.appendChild(el('span', 'drp-cap', text)); f.appendChild(input); return f; }
+      boxes.appendChild(field(a, tx.from || 'From')); boxes.appendChild(el('span', 'drp-dash', '→')); boxes.appendChild(field(z, tx.to || 'To'));
       function typed(box, which) {
         box.addEventListener('change', function () {
           var t = fromUS(box.value);
@@ -127,6 +128,8 @@
         dFrom = enteredFrom; dTo = enteredTo;
         form.elements.days.value = 'custom'; form.elements.frm.value = iso(dFrom); form.elements.to.value = iso(dTo); form.submit();
       });
+      // the range being picked, written out, so it can be read at a glance before applying
+      foot.appendChild(el('span', 'drp-sum', dFrom == null ? '' : (dTo != null && dTo !== dFrom ? fmtShort(dFrom, lang) + ' – ' + fmtShort(dTo, lang) : fmtShort(dFrom, lang))));
       foot.appendChild(cancel); foot.appendChild(ok);
       pop.appendChild(body); pop.appendChild(foot);
     }

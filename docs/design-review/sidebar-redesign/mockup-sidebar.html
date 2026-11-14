@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Sidebar Redesign Visual Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --rail-bg: #f4f5f7;
+    --shadow: 0 1px 2px rgba(15,23,42,.05);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.14);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,.14);
+    --rail-bg: #0f141e;
+    --shadow: 0 1px 3px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Showcase Header */
+  .studio-bar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 14px 28px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .studio-title h1 { margin: 0; font-size: 16px; font-weight: 750; letter-spacing: -0.02em; }
+  .studio-title p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+  .studio-controls { display: flex; align-items: center; gap: 10px; }
+  .seg {
+    display: inline-flex; padding: 3px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--line); gap: 2px;
+  }
+  .seg button {
+    border: 0; background: transparent; color: var(--mute); font: inherit;
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+  }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 24px 28px 48px; }
+
+  .grid-concepts {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 1200px) { .grid-concepts { grid-template-columns: 1fr; } }
+
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  }
+  .concept-meta {
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .concept-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .concept-badge {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--mute);
+  }
+  .concept-badge.rec {
+    background: var(--blue-soft); color: var(--blue-ink);
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .concept-meta h2 { margin: 0; font-size: 15.5px; font-weight: 750; letter-spacing: -0.015em; }
+  .concept-meta p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.45; }
+  .bullet-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    font-size: 11px; font-weight: 600; color: var(--ink2); background: var(--surface2);
+    border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px;
+  }
+
+  /* Frame Stage showing Sidebar + Mini Today Dashboard Context */
+  .stage {
+    display: flex; min-height: 675px; background: var(--bg);
+    position: relative; overflow: hidden;
+  }
+
+  .ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+  .mini-main {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg);
+  }
+  .mini-topbar {
+    height: 48px; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .mini-tabs { display: flex; gap: 3px; background: var(--surface2); border: 1px solid var(--line); padding: 2px; border-radius: 8px; }
+  .mini-tabs span { font-size: 10.5px; font-weight: 650; padding: 4px 8px; border-radius: 6px; color: var(--mute); white-space: nowrap; }
+  .mini-tabs span.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .mini-user { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--ink2); }
+  .mini-av { width: 22px; height: 22px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+
+  .mini-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; opacity: .88; }
+  .mini-h { display: flex; align-items: baseline; justify-content: space-between; }
+  .mini-h b { font-size: 15px; font-weight: 750; letter-spacing: -0.02em; }
+  .mini-h small { font-size: 10.5px; color: var(--mute); }
+  .mini-kpi {
+    display: grid; grid-template-columns: 1.2fr 1fr;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px; overflow: hidden;
+  }
+  .mini-cell { padding: 11px 12px; border-right: 1px solid var(--line); }
+  .mini-cell:last-child { border-right: 0; }
+  .mini-cell .lbl { font-size: 10px; color: var(--mute); font-weight: 600; }
+  .mini-cell .val { font-size: 15px; font-weight: 800; margin: 2px 0 6px; letter-spacing: -0.02em; }
+  .mini-bars { display: flex; align-items: flex-end; gap: 2px; height: 26px; }
+  .mini-bars i { flex: 1; background: var(--line); border-radius: 2px; display: block; }
+  .mini-bars i.on { background: var(--blue); }
+  .mini-stores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mini-sc {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+  }
+  .mini-sc b { font-size: 11px; font-weight: 700; display: block; }
+  .mini-sc span { font-size: 13px; font-weight: 800; display: block; margin: 3px 0 6px; }
+  .mini-line { height: 3px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .mini-line i { display: block; height: 100%; width: 65%; background: var(--blue); border-radius: 99px; }
+
+  /* =========================================================
+     OPTION 1: Quiet Hairline + Tinted Active Pill (Recommended)
+     ========================================================= */
+  .sb1 {
+    width: 244px; flex: none; background: var(--surface); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 14px 10px 12px; transition: width .2s ease;
+  }
+  .sb1.collapsed { width: 66px; align-items: center; padding: 14px 8px 12px; }
+  .sb1-brand {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 2px 6px 12px;
+  }
+  .sb1.collapsed .sb1-brand { flex-direction: column; justify-content: center; gap: 8px; padding: 2px 0 10px; }
+  .sb1-logo { display: flex; align-items: center; gap: 9px; min-width: 0; text-decoration: none; color: inherit; }
+  .sb1-mark {
+    width: 32px; height: 32px; border-radius: 9px; background: var(--blue); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 15px; flex: none;
+  }
+  .sb1-title { min-width: 0; }
+  .sb1-title b { display: block; font-size: 14px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; }
+  .sb1-title small { display: block; font-size: 11px; color: var(--mute); font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb1.collapsed .sb1-title,
+  .sb1.collapsed .sb1-search,
+  .sb1.collapsed .sb1-sec,
+  .sb1.collapsed .sb1-lbl,
+  .sb1.collapsed .sb1-cnt,
+  .sb1.collapsed .sb1-chev,
+  .sb1.collapsed .sb1-sub,
+  .sb1.collapsed .sb1-grp.open .sb1-sub,
+  .sb1.collapsed .sb1-foot-txt { display: none; }
+
+  .rail-btn {
+    width: 26px; height: 26px; border-radius: 7px; border: 1px solid transparent;
+    background: transparent; color: var(--mute); cursor: pointer; display: grid; place-items: center; flex: none;
+  }
+  .rail-btn:hover { background: var(--surface2); border-color: var(--line); color: var(--ink); }
+
+  .sb1-search {
+    display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 9px; margin: 0 2px 10px;
+    background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; color: var(--mute);
+  }
+  .sb1-search input {
+    border: 0; background: transparent; outline: none; font: inherit; font-size: 12px; color: var(--ink); width: 100%; min-width: 0;
+  }
+  .sb1-search input::placeholder { color: var(--mute2); }
+  .sb1-search kbd {
+    font: inherit; font-size: 10px; font-weight: 650; color: var(--mute);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+  }
+
+  .sb-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+  .sb1-sec {
+    font-size: 10.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--mute2); padding: 10px 10px 4px;
+  }
+  .sb1-item {
+    position: relative; width: 100%; border: 0; background: transparent; color: var(--ink2);
+    display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
+    font: inherit; font-size: 13px; font-weight: 550; cursor: pointer; text-align: left;
+  }
+  .sb1.collapsed .sb1-item { justify-content: center; padding: 8px; }
+  .sb1-item:hover { background: var(--surface2); color: var(--ink); }
+  .sb1-item .ico { color: var(--mute); }
+  .sb1-item.on {
+    background: var(--blue-soft); color: var(--blue-ink); font-weight: 650;
+  }
+  .sb1-item.on .ico { color: var(--blue-ink); }
+  .sb1-item.on::before {
+    content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
+    border-radius: 0 3px 3px 0; background: var(--blue);
+  }
+  .sb1.collapsed .sb1-item.on::before { display: none; }
+  .sb1-lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb1-cnt {
+    font-size: 11px; font-weight: 650; color: var(--mute);
+    background: var(--surface2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 1px 7px; line-height: 1.35; flex: none;
+  }
+  .sb1-cnt.alert {
+    color: var(--red); background: var(--red-soft); border-color: transparent;
+  }
+  .sb1-chev { width: 13px; height: 13px; color: var(--mute2); transition: transform .15s; flex: none; }
+  .sb1-grp.open .sb1-chev { transform: rotate(90deg); }
+
+  .sb1-sub {
+    margin: 2px 0 4px 18px; padding-left: 10px; border-left: 1px solid var(--line);
+    display: none; flex-direction: column; gap: 1px;
+  }
+  .sb1-grp.open .sb1-sub { display: flex; }
+  .sb1-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 8px; border-radius: 6px; font-size: 12.5px; font-weight: 500;
+    color: var(--mute); text-decoration: none;
+  }
+  .sb1-sub a:hover { background: var(--surface2); color: var(--ink); }
+  .sb1-sub a.sub-on { color: var(--blue-ink); font-weight: 650; background: var(--blue-soft); }
+
+  .sb1-foot {
+    margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline: 6px;
+  }
+  .sb1.collapsed .sb1-foot { justify-content: center; padding-inline: 0; }
+  .sb1-sync { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--mute); font-weight: 550; }
+  .sb1-sync i { width: 7px; height: 7px; border-radius: 99px; background: #16a34a; display: block; flex: none; }
+
+  /* =========================================================
+     OPTION 2: Slate Rail + Elevated White Active Card
+     ========================================================= */
+  .sb2-duo { display: flex; flex: none; }
+  .sb2 {
+    width: 214px; flex: none; background: var(--rail-bg); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 14px 10px 12px;
+  }
+  .sb2-rail {
+    width: 58px; flex: none; background: var(--rail-bg); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; padding: 14px 6px 12px; gap: 4px;
+  }
+  .sb2-rail-tag {
+    font-size: 9.5px; font-weight: 700; color: var(--mute2); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 6px;
+  }
+  .sb2-item {
+    width: 100%; border: 1px solid transparent; background: transparent; color: var(--ink2);
+    display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
+    font: inherit; font-size: 13px; font-weight: 550; cursor: pointer; text-align: left;
+  }
+  .sb2-item:hover { background: rgba(148,163,184,.12); color: var(--ink); }
+  .sb2-item .ico { color: var(--mute); }
+  .sb2-item.on {
+    background: var(--surface); border-color: var(--line); color: var(--ink); font-weight: 700;
+    box-shadow: var(--shadow);
+  }
+  .sb2-item.on .ico { color: var(--blue); }
+  .sb2-cnt { font-size: 11px; font-weight: 600; color: var(--mute); margin-left: auto; }
+  .sb2-cnt.alert { color: var(--red); font-weight: 700; }
+  .sb2-rail-btn {
+    position: relative; width: 38px; height: 38px; border-radius: 9px; border: 1px solid transparent;
+    background: transparent; color: var(--mute); display: grid; place-items: center; cursor: pointer;
+  }
+  .sb2-rail-btn.on {
+    background: var(--surface); border-color: var(--line); color: var(--blue); box-shadow: var(--shadow);
+  }
+  .sb2-rail-dot {
+    position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; border-radius: 99px; background: var(--red);
+  }
+
+  /* =========================================================
+     OPTION 3: Dual-Pane Icon Dock + Minimal Flat Index
+     ========================================================= */
+  .sb3-shell { display: flex; flex: none; background: var(--surface); border-right: 1px solid var(--line); }
+  .sb3-dock {
+    width: 56px; background: var(--rail-bg); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; padding: 14px 0 12px; gap: 6px;
+  }
+  .sb3-dock-btn {
+    position: relative; width: 38px; height: 38px; border-radius: 10px; border: 0;
+    background: transparent; color: var(--mute); display: grid; place-items: center; cursor: pointer;
+  }
+  .sb3-dock-btn:hover { background: rgba(148,163,184,.14); color: var(--ink); }
+  .sb3-dock-btn.on { background: var(--surface); color: var(--blue-ink); box-shadow: var(--shadow); }
+  .sb3-dock-btn .pip {
+    position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 99px; background: var(--red);
+  }
+  .sb3-pane {
+    width: 192px; padding: 14px 10px 12px; display: flex; flex-direction: column;
+  }
+  .sb3-pane-h {
+    padding: 2px 8px 10px; border-bottom: 1px solid var(--line); margin-bottom: 10px;
+  }
+  .sb3-pane-h b { display: block; font-size: 13.5px; font-weight: 750; }
+  .sb3-pane-h small { display: block; font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .sb3-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 9px; border-radius: 7px; font-size: 12.5px; font-weight: 550;
+    color: var(--ink2); text-decoration: none; margin-bottom: 1px;
+  }
+  .sb3-link:hover { background: var(--surface2); color: var(--ink); }
+  .sb3-link.on { background: var(--blue-soft); color: var(--blue-ink); font-weight: 650; }
+  .sb3-num { font-size: 11px; color: var(--mute); font-weight: 600; }
+  .sb3-num.alert { color: var(--red); }
+
+  /* Before-vs-After Summary Table */
+  .compare-strip {
+    margin-top: 24px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .compare-strip h3 { margin: 0 0 12px; font-size: 14px; font-weight: 750; }
+  .diff-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 900px) { .diff-grid { grid-template-columns: 1fr 1fr; } }
+  .diff-box { background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .diff-box b { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .diff-box span { display: block; font-size: 11.5px; color: var(--mute); line-height: 1.45; }
+  .diff-box em { font-style: normal; color: var(--blue-ink); font-weight: 650; }
+</style>
+</head>
+<body>
+
+<header class="studio-bar">
+  <div class="studio-title">
+    <h1>RetailOS Sidebar — Visual Redesign Concepts</h1>
+    <p>Monochrome structure, single blue active accent, tabular neutral counts (red dot/count reserved for genuine alerts like Problems)</p>
+  </div>
+  <div class="studio-controls">
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" class="active" onclick="setTheme('light', this)">Light</button>
+      <button type="button" onclick="setTheme('dark', this)">Dark</button>
+    </div>
+    <div class="seg" role="group" aria-label="Option 1 Rail State">
+      <button type="button" class="active" onclick="setRail(false, this)">Expanded</button>
+      <button type="button" onclick="setRail(true, this)">Collapsed rail</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid-concepts">
+
+    <!-- ======================================================= -->
+    <!-- OPTION 1                                                -->
+    <!-- ======================================================= -->
+    <section class="concept-card">
+      <div class="concept-meta">
+        <div class="concept-top">
+          <span class="concept-badge rec">Option 1 · Recommended</span>
+        </div>
+        <h2>Quiet Hairline + Tinted Pill</h2>
+        <p>Matches your Today &amp; Sales pages directly: white surface, 32px compact brand header, quick-filter search, soft blue-tinted active pill with 3px bar, muted counts, and inline expandable groups.</p>
+        <div class="bullet-row">
+          <span class="chip">244px → 66px rail</span>
+          <span class="chip">Inline sub-menus</span>
+          <span class="chip">Zero yellow pills</span>
+          <span class="chip">Drops duplicate bottom profile</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <aside class="sb1" id="sb1">
+          <div class="sb1-brand">
+            <a class="sb1-logo" href="javascript:void(0)">
+              <span class="sb1-mark">R</span>
+              <span class="sb1-title">
+                <b>Retail OS</b>
+                <small>The Daily Centro</small>
+              </span>
+            </a>
+            <button class="rail-btn" type="button" title="Collapse sidebar" onclick="toggleSb1()">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+            </button>
+          </div>
+
+          <label class="sb1-search">
+            <svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="text" placeholder="Jump to page…" oninput="filterSb1(this.value)">
+            <kbd>/</kbd>
+          </label>
+
+          <div class="sb-scroll" id="sb1-nav">
+            <button class="sb1-item on" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+              <span class="sb1-lbl">Today</span>
+            </button>
+
+            <div class="sb1-sec">Run the stores</div>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+              <span class="sb1-lbl">Problems</span>
+              <span class="sb1-cnt alert">92</span>
+            </button>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4h6v2H9zM9 11h6M9 15h4"/></svg>
+              <span class="sb1-lbl">Inspections</span>
+            </button>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/></svg>
+              <span class="sb1-lbl">Permits</span>
+            </button>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              <span class="sb1-lbl">Planogram</span>
+            </button>
+
+            <div class="sb1-sec">Stock</div>
+            <div class="sb1-grp open">
+              <button class="sb1-item" type="button" onclick="this.parentElement.classList.toggle('open')">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 8.2 12 13l8.7-4.8M12 22V13"/></svg>
+                <span class="sb1-lbl">Inventory</span>
+                <span class="sb1-cnt">809</span>
+                <svg class="ico sb1-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <div class="sb1-sub">
+                <a href="javascript:void(0)">Overview</a>
+                <a href="javascript:void(0)">Cycle counts</a>
+                <a href="javascript:void(0)">Stock events</a>
+                <a href="javascript:void(0)">Expiry</a>
+              </div>
+            </div>
+            <div class="sb1-grp">
+              <button class="sb1-item" type="button" onclick="this.parentElement.classList.toggle('open')">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4M3 7h18M7 21l-4-4 4-4M21 17H3"/></svg>
+                <span class="sb1-lbl">Transfers</span>
+                <svg class="ico sb1-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <div class="sb1-sub">
+                <a href="javascript:void(0)">Transfer sheet</a>
+                <a href="javascript:void(0)">Stock transfers</a>
+              </div>
+            </div>
+            <div class="sb1-grp">
+              <button class="sb1-item" type="button" onclick="this.parentElement.classList.toggle('open')">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+                <span class="sb1-lbl">Purchasing</span>
+                <span class="sb1-cnt">13</span>
+                <svg class="ico sb1-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <div class="sb1-sub">
+                <a href="javascript:void(0)">Purchase orders</a>
+                <a href="javascript:void(0)">New purchase order</a>
+                <a href="javascript:void(0)">New product</a>
+              </div>
+            </div>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
+              <span class="sb1-lbl">Auto replenishment</span>
+              <span class="sb1-cnt">312</span>
+            </button>
+
+            <div class="sb1-sec">Insight</div>
+            <div class="sb1-grp">
+              <button class="sb1-item" type="button" onclick="this.parentElement.classList.toggle('open')">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+                <span class="sb1-lbl">Sales</span>
+                <svg class="ico sb1-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <div class="sb1-sub">
+                <a href="javascript:void(0)">Sales overview</a>
+                <a href="javascript:void(0)">Sales by product</a>
+                <a href="javascript:void(0)">Transactions</a>
+                <a href="javascript:void(0)">Z-Reading Reports</a>
+              </div>
+            </div>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+              <span class="sb1-lbl">Team</span>
+            </button>
+            <button class="sb1-item" type="button" onclick="selectSb1(this)">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+              <span class="sb1-lbl">Settings</span>
+            </button>
+          </div>
+
+          <div class="sb1-foot">
+            <span class="sb1-sync"><i></i><span class="sb1-foot-txt">POS synced · just now</span></span>
+          </div>
+        </aside>
+
+        <div class="mini-main">
+          <div class="mini-topbar">
+            <div class="mini-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+            <div class="mini-user"><span class="mini-av">A</span><span>Admin</span></div>
+          </div>
+          <div class="mini-body">
+            <div class="mini-h"><b>Today</b><small>Fri 13 Nov · 2/3 open</small></div>
+            <div class="mini-kpi">
+              <div class="mini-cell">
+                <div class="lbl">All stores, net sales</div>
+                <div class="val">PHP 7,380</div>
+                <div class="mini-bars"><i style="height:45%"></i><i style="height:60%"></i><i style="height:82%"></i><i style="height:50%"></i><i class="on" style="height:65%"></i></div>
+              </div>
+              <div class="mini-cell">
+                <div class="lbl">Transactions</div>
+                <div class="val">91</div>
+                <div class="mini-bars"><i style="height:30%"></i><i style="height:40%"></i><i class="on" style="height:70%"></i><i class="on" style="height:90%"></i></div>
+              </div>
+            </div>
+            <div class="mini-stores">
+              <div class="mini-sc"><b>Bantayan</b><span>PHP 2,446</span><div class="mini-line"><i style="width:33%"></i></div></div>
+              <div class="mini-sc"><b>Getafe</b><span>PHP 4,934</span><div class="mini-line"><i style="width:67%"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- OPTION 2                                                -->
+    <!-- ======================================================= -->
+    <section class="concept-card">
+      <div class="concept-meta">
+        <div class="concept-top">
+          <span class="concept-badge">Option 2</span>
+        </div>
+        <h2>Cool Slate Rail + White Active Card</h2>
+        <p>Keeps the soft gray rail identity (shown in both Expanded &amp; Collapsed icon-rail states) but strips visual clutter: elevated white active card replaces the heavy blue gradient block, and numbers sit silently on the right.</p>
+        <div class="bullet-row">
+          <span class="chip">Tactile white pill</span>
+          <span class="chip">58px icon rail preview</span>
+          <span class="chip">Plain right-aligned counts</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="sb2-duo">
+          <aside class="sb2" style="width: 214px;">
+            <div class="sb1-brand">
+              <a class="sb1-logo" href="javascript:void(0)">
+                <span class="sb1-mark" style="background:var(--ink);color:var(--surface)">R</span>
+                <span class="sb1-title">
+                  <b>Retail OS</b>
+                  <small>The Daily Centro</small>
+                </span>
+              </a>
+            </div>
+
+            <div class="sb-scroll">
+              <button class="sb2-item on" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+                <span class="sb1-lbl">Today</span>
+              </button>
+
+              <div class="sb1-sec">Operations</div>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                <span class="sb1-lbl">Problems</span>
+                <span class="sb2-cnt alert">92</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4h6v2H9zM9 11h6"/></svg>
+                <span class="sb1-lbl">Inspections</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/></svg>
+                <span class="sb1-lbl">Permits</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span class="sb1-lbl">Planogram</span>
+              </button>
+
+              <div class="sb1-sec">Stock</div>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 8.2 12 13l8.7-4.8M12 22V13"/></svg>
+                <span class="sb1-lbl">Inventory</span>
+                <span class="sb2-cnt">809</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4M3 7h18M7 21l-4-4 4-4M21 17H3"/></svg>
+                <span class="sb1-lbl">Transfers</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg>
+                <span class="sb1-lbl">Purchasing</span>
+                <span class="sb2-cnt">13</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/></svg>
+                <span class="sb1-lbl">Replenishment</span>
+                <span class="sb2-cnt">312</span>
+              </button>
+
+              <div class="sb1-sec">Insight</div>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7"/></svg>
+                <span class="sb1-lbl">Sales</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                <span class="sb1-lbl">Team</span>
+              </button>
+              <button class="sb2-item" type="button">
+                <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                <span class="sb1-lbl">Settings</span>
+              </button>
+            </div>
+          </aside>
+
+          <div class="sb2-rail" title="Collapsed icon rail state">
+            <div class="sb2-rail-tag">Rail</div>
+            <button class="sb2-rail-btn on" type="button" title="Today">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            </button>
+            <button class="sb2-rail-btn" type="button" title="Problems (92)">
+              <span class="sb2-rail-dot"></span>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            </button>
+            <button class="sb2-rail-btn" type="button" title="Inspections">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4h6v2H9z"/></svg>
+            </button>
+            <button class="sb2-rail-btn" type="button" title="Inventory">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/></svg>
+            </button>
+            <button class="sb2-rail-btn" type="button" title="Sales">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7"/></svg>
+            </button>
+            <button class="sb2-rail-btn" type="button" title="Settings" style="margin-top:auto">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="mini-main">
+          <div class="mini-topbar">
+            <div class="mini-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+            <div class="mini-user"><span class="mini-av">A</span><span>Admin</span></div>
+          </div>
+          <div class="mini-body">
+            <div class="mini-h"><b>Today</b><small>More content width</small></div>
+            <div class="mini-kpi">
+              <div class="mini-cell">
+                <div class="lbl">Net sales</div>
+                <div class="val">PHP 7,380</div>
+                <div class="mini-bars"><i style="height:45%"></i><i style="height:75%"></i><i class="on" style="height:62%"></i></div>
+              </div>
+              <div class="mini-cell">
+                <div class="lbl">Tx</div>
+                <div class="val">91</div>
+                <div class="mini-bars"><i style="height:35%"></i><i class="on" style="height:85%"></i></div>
+              </div>
+            </div>
+            <div class="mini-stores">
+              <div class="mini-sc"><b>Bantayan</b><span>PHP 2,446</span><div class="mini-line"><i style="width:33%"></i></div></div>
+              <div class="mini-sc"><b>Getafe</b><span>PHP 4,934</span><div class="mini-line"><i style="width:67%"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- OPTION 3                                                -->
+    <!-- ======================================================= -->
+    <section class="concept-card">
+      <div class="concept-meta">
+        <div class="concept-top">
+          <span class="concept-badge">Option 3</span>
+        </div>
+        <h2>Dual-Pane Domain Dock + Index</h2>
+        <p>Left primary dock picks the workspace (Today, Operations, Stock, Sales, Admin); the inner white column keeps only the current domain's pages visible—zero long vertical scrolling or hover popups.</p>
+        <div class="bullet-row">
+          <span class="chip">Zero hover flyouts</span>
+          <span class="chip">All subpages visible</span>
+          <span class="chip">Click icons on dock to switch</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="sb3-shell">
+          <div class="sb3-dock" id="sb3-dock">
+            <span class="sb1-mark" style="width:32px;height:32px;margin-bottom:8px">R</span>
+            <button class="sb3-dock-btn on" type="button" title="Today &amp; Operations" onclick="switchDock('ops', this)">
+              <span class="pip"></span>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            </button>
+            <button class="sb3-dock-btn" type="button" title="Stock &amp; Purchasing" onclick="switchDock('stock', this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 8.2 12 13l8.7-4.8M12 22V13"/></svg>
+            </button>
+            <button class="sb3-dock-btn" type="button" title="Sales &amp; Reports" onclick="switchDock('sales', this)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            </button>
+            <button class="sb3-dock-btn" type="button" title="Team &amp; Settings" onclick="switchDock('admin', this)" style="margin-top:auto">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            </button>
+          </div>
+
+          <div class="sb3-pane" id="sb3-pane"></div>
+        </div>
+
+        <div class="mini-main">
+          <div class="mini-topbar">
+            <div class="mini-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+            <div class="mini-user"><span class="mini-av">A</span><span>Admin</span></div>
+          </div>
+          <div class="mini-body">
+            <div class="mini-h"><b>Today</b><small>Click dock icons left ◀</small></div>
+            <div class="mini-kpi">
+              <div class="mini-cell">
+                <div class="lbl">Net sales</div>
+                <div class="val">PHP 7,380</div>
+                <div class="mini-bars"><i style="height:45%"></i><i style="height:75%"></i><i class="on" style="height:62%"></i></div>
+              </div>
+              <div class="mini-cell">
+                <div class="lbl">Tx</div>
+                <div class="val">91</div>
+                <div class="mini-bars"><i style="height:35%"></i><i class="on" style="height:85%"></i></div>
+              </div>
+            </div>
+            <div class="mini-stores">
+              <div class="mini-sc"><b>Bantayan</b><span>PHP 2,446</span><div class="mini-line"><i style="width:33%"></i></div></div>
+              <div class="mini-sc"><b>Getafe</b><span>PHP 4,934</span><div class="mini-line"><i style="width:67%"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <section class="compare-strip">
+    <h3>What gets fixed vs. the current sidebar</h3>
+    <div class="diff-grid">
+      <div class="diff-box">
+        <b>Color restraint</b>
+        <span>Removes all <em>loud yellow pills (#facc15)</em> and heavy black icons; uses cool slate neutrals with red reserved strictly for <em>Problems (92)</em>.</span>
+      </div>
+      <div class="diff-box">
+        <b>Tighter proportions</b>
+        <span>Shrinks the oversized 52px brand header to a crisp <em>32px mark</em> and narrows width from 276px to <em>214–244px</em>, giving tables &amp; branch cards more horizontal room.</span>
+      </div>
+      <div class="diff-box">
+        <b>No duplicate account block</b>
+        <span>Removes the bulky bottom <em>Admin + green dot + signout box</em> card since your top-right header already has the <em>Admin &gt;</em> menu.</span>
+      </div>
+      <div class="diff-box">
+        <b>Working collapse &amp; search</b>
+        <span>Un-hides the rail collapse button so laptop users can tuck the sidebar down to a <em>66px icon rail</em> whenever needed.</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+function setTheme(theme, btn) {
+  document.documentElement.dataset.theme = theme;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+function setRail(collapsed, btn) {
+  document.getElementById('sb1').classList.toggle('collapsed', collapsed);
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+function toggleSb1() {
+  document.getElementById('sb1').classList.toggle('collapsed');
+}
+function selectSb1(el) {
+  document.querySelectorAll('#sb1 .sb1-item').forEach(i => i.classList.remove('on'));
+  el.classList.add('on');
+}
+function filterSb1(q) {
+  const s = q.trim().toLowerCase();
+  document.querySelectorAll('#sb1-nav .sb1-item').forEach(btn => {
+    const lbl = btn.querySelector('.sb1-lbl')?.textContent.toLowerCase() || '';
+    const grp = btn.closest('.sb1-grp');
+    const subMatch = grp ? Array.from(grp.querySelectorAll('.sb1-sub a')).some(a => a.textContent.toLowerCase().includes(s)) : false;
+    const match = !s || lbl.includes(s) || subMatch;
+    if (grp) {
+      grp.style.display = match ? '' : 'none';
+      if (s && subMatch) grp.classList.add('open');
+    } else {
+      btn.style.display = match ? '' : 'none';
+    }
+  });
+}
+
+const DOCK_DATA = {
+  ops: {
+    title: 'Today & Operations',
+    sub: 'Daily store execution',
+    sections: [
+      { h: 'Overview', items: [['Today', '', true]] },
+      { h: 'Run the stores', items: [['Problems', '92', false, true], ['Inspections', ''], ['Permits', ''], ['Planogram', '']] }
+    ]
+  },
+  stock: {
+    title: 'Stock & Supply',
+    sub: 'Inventory, purchasing & movement',
+    sections: [
+      { h: 'Inventory', items: [['Overview', '809', true], ['Cycle counts', ''], ['Stock events', ''], ['Wastage', ''], ['Expiry', ''], ['Traceability', '']] },
+      { h: 'Replenish & PO', items: [['Auto replenishment', '312'], ['Purchase orders', '13'], ['New purchase order', ''], ['Transfer sheet', ''], ['Stock transfers', '']] }
+    ]
+  },
+  sales: {
+    title: 'Sales & Insights',
+    sub: 'POS performance & Z-readings',
+    sections: [
+      { h: 'Reporting', items: [['Sales overview', '', true], ['Sales by product', ''], ['Transactions', ''], ['Sales by employee', ''], ['Sales by shift', ''], ['Z-Reading Reports', '']] }
+    ]
+  },
+  admin: {
+    title: 'Team & Settings',
+    sub: 'People, sync & audit',
+    sections: [
+      { h: 'Team', items: [['Employees', '', true], ['Performance', '']] },
+      { h: 'System', items: [['General settings', ''], ['Users', ''], ['Sync status', ''], ['Data quality', ''], ['Audit log', '']] }
+    ]
+  }
+};
+
+function switchDock(key, btn) {
+  document.querySelectorAll('.sb3-dock-btn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  const d = DOCK_DATA[key];
+  const pane = document.getElementById('sb3-pane');
+  let html = `<div class="sb3-pane-h"><b>${d.title}</b><small>${d.sub}</small></div><div class="sb-scroll">`;
+  for (const sec of d.sections) {
+    html += `<div class="sb1-sec" style="padding-left:6px">${sec.h}</div>`;
+    for (const [label, cnt, on, alert] of sec.items) {
+      html += `<a href="javascript:void(0)" class="sb3-link ${on ? 'on' : ''}">${label}${cnt ? `<span class="sb3-num ${alert ? 'alert' : ''}">${cnt}</span>` : ''}</a>`;
+    }
+  }
+  html += `</div>`;
+  pane.innerHTML = html;
+}
+switchDock('ops', document.querySelector('.sb3-dock-btn'));
+</script>
+</body>
+</html>

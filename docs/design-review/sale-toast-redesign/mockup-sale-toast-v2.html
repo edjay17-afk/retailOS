@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Signature Live Sale Notification Concepts (v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --green: #16a34a;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sh: 0 1px 2px rgba(15,23,42,.05);
+    --sh-float: 0 18px 42px -8px rgba(15,23,42,.16), 0 4px 12px -2px rgba(15,23,42,.08);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --surface3: #1e293b;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --line2: #334155;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.15);
+    --green: #22c55e;
+    --sh: 0 1px 3px rgba(0,0,0,.35);
+    --sh-float: 0 22px 48px -8px rgba(0,0,0,.65), 0 4px 14px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Studio Bar */
+  .top {
+    position: sticky; top: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .top h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.025em; }
+  .top p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); gap: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--mute); font: inherit; font-size: 12px; font-weight: 650; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+  .replay-btn {
+    border: 1px solid var(--blue); background: var(--blue); color: #fff;
+    font: inherit; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 9px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .replay-btn:hover { opacity: .92; }
+
+  .wrap { max-width: 1600px; margin: 0 auto; padding: 22px 28px 56px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px;
+  }
+  @media (max-width: 1120px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--sh); display: flex; flex-direction: column;
+  }
+  .meta {
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .meta-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .badge {
+    font-size: 10.5px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--mute);
+  }
+  .badge.star {
+    background: var(--blue-soft); color: var(--blue-ink);
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .meta h2 { margin: 0; font-size: 15.5px; font-weight: 800; letter-spacing: -0.02em; }
+  .meta p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.45; }
+
+  /* Simulated Viewport Stage */
+  .stage {
+    position: relative; background: var(--bg); min-height: 295px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .vp-bar {
+    height: 52px; padding: 0 18px; background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .vp-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--line); }
+  .vp-tabs span { font-size: 11px; font-weight: 650; padding: 4px 10px; border-radius: 6px; color: var(--mute); }
+  .vp-tabs span.on { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+  .vp-user { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 650; color: var(--mute); }
+  .vp-av { width: 23px; height: 23px; border-radius: 99px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 10.5px; font-weight: 750; }
+  .vp-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; opacity: .55; pointer-events: none; }
+  .vp-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .vp-grid { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .vp-cell { padding: 12px 14px; border-right: 1px solid var(--line); }
+  .vp-cell:last-child { border-right: 0; }
+  .vp-cell small { font-size: 10.5px; color: var(--mute); display: block; }
+  .vp-cell b { font-size: 16px; font-weight: 800; display: block; margin-top: 3px; }
+
+  .center-mount {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 30; display: flex; flex-direction: column; align-items: center;
+    width: max-content; max-width: calc(100% - 24px);
+  }
+
+  @keyframes springIn {
+    0% { opacity: 0; transform: translateY(-18px) scale(.92); }
+    70% { opacity: 1; transform: translateY(2px) scale(1.01); }
+    100% { opacity: 1; transform: none; }
+  }
+  .anim-in { animation: springIn .42s cubic-bezier(.16,1,.3,1); }
+
+  /* Ring Close Button */
+  .ring-x {
+    position: relative; width: 26px; height: 26px; border: 0; background: transparent;
+    color: var(--mute); display: grid; place-items: center; cursor: pointer; padding: 0; flex: none;
+    border-radius: 50%;
+  }
+  .ring-x:hover { color: var(--ink); background: var(--surface3); }
+  .ring-svg { position: absolute; inset: 0; width: 26px; height: 26px; transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 1.75; }
+  .ring-prog { fill: none; stroke: var(--blue); stroke-width: 1.75; stroke-dasharray: 69; stroke-dashoffset: 18; stroke-linecap: round; }
+
+  /* =========================================================================
+     CONCEPT 5: 3D Stacked Deck + Live Odometer + Countdown Ring (Apple/Stripe)
+     ========================================================================= */
+  .deck-wrap {
+    position: relative; padding-bottom: 24px; cursor: pointer;
+  }
+  .deck-back-2 {
+    position: absolute; left: 18px; right: 18px; top: 16px; height: 64px;
+    background: var(--surface2); border: 1px solid var(--line2); border-radius: 16px;
+    transform: scale(.92); opacity: .65; z-index: 1; box-shadow: var(--sh);
+    transition: all .25s cubic-bezier(.16,1,.3,1);
+  }
+  .deck-back-1 {
+    position: absolute; left: 9px; right: 9px; top: 8px; height: 64px;
+    background: var(--surface); border: 1px solid var(--line2); border-radius: 16px;
+    transform: scale(.96); opacity: .88; z-index: 2; box-shadow: var(--sh);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 6px 16px; font-size: 10.5px; font-weight: 650; color: var(--mute);
+    transition: all .25s cubic-bezier(.16,1,.3,1);
+  }
+  .deck-front {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; gap: 13px;
+    min-width: 396px; padding: 11px 13px 11px 14px;
+    background: var(--surface); border: 1px solid var(--line2); border-radius: 16px;
+    box-shadow: var(--sh-float);
+  }
+  /* Hover fans the deck out */
+  .deck-wrap:hover .deck-back-1 {
+    transform: translateY(62px) scale(1); opacity: 1; height: 52px; align-items: center;
+  }
+  .deck-wrap:hover .deck-back-2 {
+    transform: translateY(118px) scale(1); opacity: .95; height: 48px;
+  }
+  .d5-badge {
+    position: relative; width: 40px; height: 40px; border-radius: 11px;
+    background: var(--surface2); border: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none;
+  }
+  .d5-badge b { font-size: 14px; font-weight: 850; color: var(--ink); line-height: 1; }
+  .d5-badge small { font-size: 8.5px; font-weight: 750; color: var(--blue-ink); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+  .d5-live-dot {
+    position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--green); border: 2px solid var(--surface);
+  }
+  .d5-body { flex: 1; min-width: 0; }
+  .d5-top { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 650; color: var(--mute); }
+  .d5-top strong { color: var(--ink); font-weight: 750; }
+  .d5-stack-pill {
+    font-size: 10px; font-weight: 750; color: var(--blue-ink); background: var(--blue-soft);
+    padding: 1px 6px; border-radius: 999px;
+  }
+  .d5-price-row { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+  .d5-curr { font-size: 11.5px; font-weight: 750; color: var(--mute); }
+  .d5-amt { font-size: 20px; font-weight: 850; letter-spacing: -0.03em; color: var(--ink); line-height: 1.1; }
+  .d5-sub { font-size: 11.5px; font-weight: 550; color: var(--mute); }
+  .d5-hint {
+    margin-top: 18px; font-size: 11px; font-weight: 600; color: var(--mute);
+    background: var(--surface); border: 1px solid var(--line); padding: 3px 10px; border-radius: 999px;
+  }
+
+  /* =========================================================================
+     CONCEPT 6: Tactile Thermal POS Receipt Slip (Sawtooth Tear-Off Edge)
+     ========================================================================= */
+  .pos-slip-wrap {
+    position: relative; top: -10px; /* Feeds right out of the top bezel! */
+    filter: drop-shadow(0 16px 28px rgba(15,23,42,.15));
+  }
+  .pos-bezel-slot {
+    width: 376px; height: 5px; border-radius: 99px;
+    background: var(--ink); opacity: .22; margin: 0 auto;
+  }
+  .pos-slip {
+    width: 356px; margin: -2px auto 0;
+    background: var(--surface); color: var(--ink);
+    border-left: 1px solid var(--line2); border-right: 1px solid var(--line2);
+    padding: 12px 16px 14px;
+    position: relative;
+  }
+  /* Zig-zag sawtooth tear-off bottom edge */
+  .pos-slip::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 7px;
+    background:
+      linear-gradient(135deg, var(--surface) 33.33%, transparent 33.33%) 0 0 / 10px 7px,
+      linear-gradient(225deg, var(--surface) 33.33%, transparent 33.33%) 0 0 / 10px 7px;
+  }
+  .pos-top {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--mute);
+    padding-bottom: 7px; border-bottom: 1px dashed var(--line2);
+  }
+  .pos-top b { color: var(--ink); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+  .pos-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .pos-mid {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 9px 0 7px;
+  }
+  .pos-store { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+  .pos-store small { display: block; font-family: var(--mono); font-size: 10.5px; font-weight: 500; color: var(--mute); margin-top: 2px; }
+  .pos-total { text-align: right; }
+  .pos-total strong { display: block; font-size: 20px; font-weight: 850; letter-spacing: -0.025em; color: var(--blue-ink); line-height: 1; }
+  .pos-total span { font-family: var(--mono); font-size: 10px; color: var(--mute); font-weight: 600; }
+  .pos-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 7px; border-top: 1px dashed var(--line2);
+    font-family: var(--mono); font-size: 10px; color: var(--mute);
+  }
+  /* Faux mini barcode */
+  .pos-bars {
+    display: inline-flex; align-items: center; gap: 1.5px; height: 11px; opacity: .45;
+  }
+  .pos-bars i { display: block; height: 100%; background: var(--ink); width: 1.5px; }
+  .pos-bars i.w { width: 3px; }
+
+  /* =========================================================================
+     CONCEPT 7: Dynamic Island Hardware Capsule (Compact + Expanded Morph)
+     ========================================================================= */
+  .island-pair { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .island-compact {
+    display: flex; align-items: center; gap: 12px;
+    height: 40px; padding: 0 14px;
+    background: #090d16; color: #f8fafc;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 14px 32px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.12);
+    cursor: pointer;
+  }
+  .isl-live {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+  .isl-wave { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+  .isl-wave i { width: 2.5px; border-radius: 2px; background: #3b82f6; display: block; }
+  .isl-amt {
+    font-size: 14.5px; font-weight: 800; letter-spacing: -0.02em; color: #60a5fa;
+  }
+  .isl-meta { font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+  .island-expanded {
+    width: 392px; padding: 12px 15px;
+    background: #090d16; color: #f8fafc;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 20px 44px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.12);
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .isl-exp-top { display: flex; align-items: center; justify-content: space-between; }
+  .isl-exp-store { display: flex; align-items: center; gap: 8px; }
+  .isl-exp-av {
+    width: 26px; height: 26px; border-radius: 8px; background: #2563eb; color: #fff;
+    display: grid; place-items: center; font-size: 12px; font-weight: 800;
+  }
+  .isl-exp-store b { font-size: 13px; font-weight: 750; }
+  .isl-exp-store small { font-size: 11px; color: #94a3b8; margin-left: 4px; }
+  .isl-exp-main {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 8px 11px; border-radius: 12px; background: rgba(255,255,255,.05);
+  }
+  .isl-exp-main strong { font-size: 20px; font-weight: 850; letter-spacing: -0.025em; color: #fff; }
+  .isl-exp-main span { font-size: 11.5px; color: #94a3b8; font-weight: 600; }
+  .isl-exp-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: #94a3b8; padding: 0 2px;
+  }
+  .isl-exp-foot a { color: #60a5fa; text-decoration: none; font-weight: 650; }
+
+  /* =========================================================================
+     CONCEPT 8: Mechanical Split-Register Board (Recessed Price Well)
+     ========================================================================= */
+  .split-board {
+    display: flex; align-items: stretch;
+    min-width: 396px; padding: 5px;
+    background: var(--surface); border: 1px solid var(--line2); border-radius: 16px;
+    box-shadow: var(--sh-float); gap: 6px;
+  }
+  .sb-left-zone {
+    flex: 1; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  }
+  .sb-stamp-row { display: flex; align-items: center; gap: 6px; }
+  .sb-stamp {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 6px; border-radius: 5px;
+    background: var(--surface3); color: var(--ink);
+  }
+  .sb-pay-stamp {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--mute);
+  }
+  .sb-store-h { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+  .sb-items-sub { font-size: 11.5px; font-weight: 550; color: var(--mute); }
+
+  .sb-well {
+    background: #0f172a; color: #fff;
+    border-radius: 11px; padding: 9px 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.35);
+  }
+  html[data-theme="dark"] .sb-well { background: #070a10; border: 1px solid rgba(255,255,255,.08); }
+  .sb-digits { text-align: right; }
+  .sb-digits small { display: block; font-family: var(--mono); font-size: 9.5px; font-weight: 700; color: #60a5fa; letter-spacing: .06em; }
+  .sb-digits strong { display: block; font-family: var(--mono); font-size: 19px; font-weight: 700; letter-spacing: -0.03em; color: #fff; line-height: 1.1; margin-top: 1px; }
+
+  /* =========================================================================
+     CONCEPT 9: Live Store Pulse Toast (With Branch Daily Progress Meter)
+     ========================================================================= */
+  .pulse-card {
+    min-width: 396px; padding: 12px 15px;
+    background: var(--surface); border: 1px solid var(--line2); border-radius: 15px;
+    box-shadow: var(--sh-float); display: flex; flex-direction: column; gap: 9px;
+  }
+  .pc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .pc-left { display: flex; align-items: center; gap: 10px; }
+  .pc-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--blue-soft); color: var(--blue-ink);
+    display: grid; place-items: center; font-weight: 800; font-size: 14px;
+  }
+  .pc-title b { display: block; font-size: 14px; font-weight: 780; color: var(--ink); }
+  .pc-title small { display: block; font-size: 11.5px; color: var(--mute); font-weight: 550; margin-top: 1px; }
+  .pc-right { display: flex; align-items: center; gap: 10px; }
+  .pc-delta {
+    text-align: right;
+  }
+  .pc-delta strong { display: block; font-size: 18px; font-weight: 850; letter-spacing: -0.025em; color: var(--blue-ink); line-height: 1.1; }
+  .pc-delta span { font-size: 10.5px; font-weight: 650; color: var(--mute); }
+  .pc-meter-box {
+    background: var(--surface2); border: 1px solid var(--line); border-radius: 9px;
+    padding: 7px 10px; display: flex; flex-direction: column; gap: 5px;
+  }
+  .pc-meter-lbl {
+    display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--mute);
+  }
+  .pc-meter-lbl b { color: var(--ink); font-weight: 700; }
+  .pc-track { height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; display: flex; }
+  .pc-fill-base { height: 100%; width: 61%; background: var(--ink2); opacity: .35; }
+  .pc-fill-new { height: 100%; width: 7%; background: var(--blue); }
+
+  /* =========================================================================
+     CONCEPT 10: Minimalist Editorial Ticker Tape (Monospace Keycap Bar)
+     ========================================================================= */
+  .ticker-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 38px; padding: 0 8px 0 12px;
+    background: var(--surface); border: 1px solid var(--ink);
+    border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.12);
+    font-size: 12.5px;
+  }
+  .tb-tag {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    background: var(--ink); color: var(--surface);
+    padding: 2px 6px; border-radius: 4px; letter-spacing: .03em;
+  }
+  .tb-store { font-weight: 750; color: var(--ink); }
+  .tb-dot { color: var(--mute2); }
+  .tb-amt { font-family: var(--mono); font-weight: 700; font-size: 13.5px; color: var(--blue-ink); }
+  .tb-meta { font-size: 11.5px; color: var(--mute); font-weight: 550; }
+  .tb-kbd {
+    margin-left: 4px; font-family: var(--mono); font-size: 10px; font-weight: 650;
+    color: var(--mute); background: var(--surface2); border: 1px solid var(--line2);
+    padding: 2px 6px; border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>RetailOS — Signature Live Sales Notification Concepts (Batch 2)</h1>
+    <p>6 high-craft designs: 3D stacked wallet deck, sawtooth thermal POS slip, Dynamic Island morph, mechanical register well, live store-share meter, and editorial ticker</p>
+  </div>
+  <div class="controls">
+    <button type="button" class="replay-btn" onclick="replayAnim()">&#8635; Replay entrance animation</button>
+    <div class="seg" role="group">
+      <button type="button" class="active" onclick="setTheme('light', this)">Light</button>
+      <button type="button" onclick="setTheme('dark', this)">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 5: 3D Stacked Deck + Countdown Ring                       -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge star">Option 5 · Tactile 3D Deck</span>
+        </div>
+        <h2>3D Stacked Wallet Deck + Circular Countdown Ring</h2>
+        <p>Multiple sales never clutter the screen vertically—older cards tuck behind the newest sale in a 3D perspective stack (hover to fan them out), paired with a circular SVG timer ring around the close button.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount">
+          <div class="deck-wrap anim-target">
+            <div class="deck-back-2"></div>
+            <div class="deck-back-1">
+              <span>Bantayan · 1 item · GCash</span>
+              <strong>+ PHP 85.00</strong>
+            </div>
+            <div class="deck-front">
+              <div class="d5-badge">
+                <span class="d5-live-dot"></span>
+                <b>G</b>
+                <small> Cash</small>
+              </div>
+              <div class="d5-body">
+                <div class="d5-top">
+                  <strong>Getafe</strong>
+                  <span>· Register 2</span>
+                  <span class="d5-stack-pill">+2 queued</span>
+                </div>
+                <div class="d5-price-row">
+                  <span class="d5-curr">PHP</span>
+                  <span class="d5-amt">215.50</span>
+                  <span class="d5-sub">· 3 items</span>
+                </div>
+              </div>
+              <button class="ring-x" type="button" title="Dismiss (6.5s)">
+                <svg class="ring-svg" viewBox="0 0 26 26"><circle class="ring-track" cx="13" cy="13" r="11"/><circle class="ring-prog" cx="13" cy="13" r="11"/></svg>
+                <svg viewBox="0 0 12 12" width="9" height="9"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <span class="d5-hint">Hover the deck in browser to see it fan out &#8597;</span>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 6: Thermal POS Receipt Slip (Sawtooth Edge)               -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge star">Option 6 · Authentic Retail Craft</span>
+        </div>
+        <h2>Thermal POS Receipt Slip (Feeds from Top Bezel)</h2>
+        <p>Slides down directly out of a subtle top slot like a real thermal receipt tape, complete with monospace register metadata, dashed perforation rules, barcode ticks, and a sawtooth tear-off bottom edge.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount" style="top: 8px;">
+          <div class="pos-slip-wrap anim-target">
+            <div class="pos-bezel-slot"></div>
+            <div class="pos-slip">
+              <div class="pos-top">
+                <b><span class="pos-dot"></span> LIVE RECEIPT #10492</b>
+                <span>13:29 · CASH</span>
+              </div>
+              <div class="pos-mid">
+                <div class="pos-store">
+                  Getafe Branch
+                  <small>3 items · Register 2</small>
+                </div>
+                <div class="pos-total">
+                  <strong>+PHP 215.50</strong>
+                  <span>TAP TO OPEN &#8599;</span>
+                </div>
+              </div>
+              <div class="pos-foot">
+                <span>DAILY CENTRO POS</span>
+                <span class="pos-bars"><i class="w"></i><i></i><i></i><i class="w"></i><i></i><i class="w"></i><i></i><i></i><i class="w"></i><i></i></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 7: Dynamic Island Morphing Capsule                        -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge star">Option 7 · Dynamic Island HUD</span>
+        </div>
+        <h2>Obsidian Dynamic Island (Compact Pill → Hover Breakdown)</h2>
+        <p>Stays ultra-compact at top-center with a live mini pace waveform (`40px` tall); hovering smoothly expands the island to reveal register details, item count, and direct receipt link.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount" style="top: 8px;">
+          <div class="island-pair anim-target">
+            <!-- Compact state -->
+            <div class="island-compact">
+              <span class="isl-live">
+                <span class="pos-dot"></span>
+                Getafe
+              </span>
+              <span class="isl-wave">
+                <i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:100%"></i>
+              </span>
+              <span class="isl-amt">+ PHP 215.50</span>
+              <span class="isl-meta">3 items · Cash</span>
+            </div>
+
+            <!-- Expanded hover state shown below -->
+            <div class="island-expanded">
+              <div class="isl-exp-top">
+                <div class="isl-exp-store">
+                  <span class="isl-exp-av">G</span>
+                  <div><b>Getafe</b><small>· Register 2 · Just now</small></div>
+                </div>
+                <span class="isl-meta">Cash payment</span>
+              </div>
+              <div class="isl-exp-main">
+                <strong>+ PHP 215.50</strong>
+                <span>3 items sold</span>
+              </div>
+              <div class="isl-exp-foot">
+                <span>Getafe today: PHP 5,149.50 (58 tx)</span>
+                <a href="javascript:void(0)">Open receipt &#8594;</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 8: Mechanical Split-Register Price Well                   -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge">Option 8 · Industrial FinTech</span>
+        </div>
+        <h2>Split-Register Board with Recessed Price Well</h2>
+        <p>Pairs a crisp white store stamp on the left with a recessed dark digital register readout well on the right—giving the peso amount unmistakable hardware contrast without using extra colors.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount" style="top: 14px;">
+          <div class="split-board anim-target">
+            <div class="sb-left-zone">
+              <div class="sb-stamp-row">
+                <span class="sb-stamp">LIVE SALE</span>
+                <span class="sb-pay-stamp">CASH · 3 ITEMS</span>
+              </div>
+              <div class="sb-store-h">Getafe Branch</div>
+            </div>
+            <div class="sb-well">
+              <div class="sb-digits">
+                <small>NET TOTAL</small>
+                <strong>+215.50</strong>
+              </div>
+              <button class="ring-x" type="button" style="color:#94a3b8">
+                <svg class="ring-svg" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.75"/><circle class="ring-prog" cx="13" cy="13" r="11"/></svg>
+                <svg viewBox="0 0 12 12" width="9" height="9"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 9: Live Store Pulse Toast (With Branch Progress Bar)      -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge">Option 9 · Contextual Pulse</span>
+        </div>
+        <h2>Store Pulse Card with Live Share Meter</h2>
+        <p>Shows not just the individual receipt (+PHP 215.50) but also a two-tone progress bar beneath it illustrating how much that sale just nudged the branch's share of today's revenue.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount" style="top: 12px;">
+          <div class="pulse-card anim-target">
+            <div class="pc-top">
+              <div class="pc-left">
+                <span class="pc-icon">G</span>
+                <div class="pc-title">
+                  <b>Getafe</b>
+                  <small>3 items · Paid in Cash</small>
+                </div>
+              </div>
+              <div class="pc-right">
+                <div class="pc-delta">
+                  <strong>+ PHP 215.50</strong>
+                  <span>Receipt #10492</span>
+                </div>
+                <button class="ring-x" type="button">
+                  <svg class="ring-svg" viewBox="0 0 26 26"><circle class="ring-track" cx="13" cy="13" r="11"/><circle class="ring-prog" cx="13" cy="13" r="11"/></svg>
+                  <svg viewBox="0 0 12 12" width="9" height="9"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="pc-meter-box">
+              <div class="pc-meter-lbl">
+                <span>Getafe today: <b>PHP 5,149.50</b></span>
+                <span><b>68%</b> of all-store sales</span>
+              </div>
+              <div class="pc-track">
+                <i class="pc-fill-base"></i>
+                <i class="pc-fill-new"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- CONCEPT 10: Minimalist Editorial Ticker Tape                      -->
+    <!-- ================================================================= -->
+    <section class="card">
+      <div class="meta">
+        <div class="meta-top">
+          <span class="badge">Option 10 · Ultra-Minimal Editorial</span>
+        </div>
+        <h2>Architectural Monospace Ticker Strip</h2>
+        <p>Crisp 1px ink-bordered ribbon (`38px` tall) with an inverted `[+1 SALE]` stamp, monospace amount, and keyboard shortcut hint—zero visual bulk.</p>
+      </div>
+      <div class="stage">
+        <div class="center-mount" style="top: 14px;">
+          <div class="ticker-bar anim-target">
+            <span class="tb-tag">+1 SALE</span>
+            <span class="tb-store">Getafe</span>
+            <span class="tb-dot">·</span>
+            <span class="tb-amt">PHP 215.50</span>
+            <span class="tb-dot">·</span>
+            <span class="tb-meta">3 items (Cash)</span>
+            <span class="tb-kbd">Open &#8629;</span>
+          </div>
+        </div>
+
+        <div class="vp-bar">
+          <div class="vp-tabs"><span class="on">Daily Centro</span><span>Steamy Co.</span></div>
+          <div class="vp-user"><span class="vp-av">A</span><span>Admin</span></div>
+        </div>
+        <div class="vp-body">
+          <div class="vp-title">Today</div>
+          <div class="vp-grid">
+            <div class="vp-cell"><small>All stores, net sales</small><b>PHP 7,595.50</b></div>
+            <div class="vp-cell"><small>Transactions</small><b>92</b></div>
+            <div class="vp-cell"><small>Out of stock</small><b>542</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+function setTheme(theme, btn) {
+  document.documentElement.dataset.theme = theme;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+function replayAnim() {
+  document.querySelectorAll('.anim-target').forEach(el => {
+    el.classList.remove('anim-in');
+    void el.offsetWidth;
+    el.classList.add('anim-in');
+  });
+}
+replayAnim();
+</script>
+</body>
+</html>

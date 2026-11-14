@@ -1,47 +1,283 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Sales by employee') }}{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="/static/sales_employee_filters.css?v={{ asset_v('sales_employee_filters.css') }}">
+<link rel="stylesheet" href="/static/daterange.css?v={{ asset_v('daterange.css') }}">
+<link rel="stylesheet" href="/static/sales_employees.css?v={{ asset_v('sales_employees.css') }}">
 {% set qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) %}
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
-<div class="page-head"><div><h1>{{ t('Sales by employee') }}</h1>
-  <p class="page-desc">{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }} {% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
-  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}">{{ t('Transactions') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
+{% set loc_name = (locations|selectattr('id', 'equalto', loc)|map(attribute='name')|first) if loc else none %}
+{% macro delta(now, before) %}{% if before %}{% set p = (now - before) / before * 100 %}<span class="delta {{ 'up' if p >= 0.05 else ('down' if p <= -0.05 else 'flat') }}" tabindex="0" data-tip="{{ t('Against the previous period') }}">{{ '▲' if p >= 0.05 else ('▼' if p <= -0.05 else '') }} {{ '%.1f'|format(p|abs) }}%</span>{% endif %}{% endmacro %}
 
-<form novalidate class="filters employee-sales-filters" method="get">
-  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
-  <div><label>{{ t('Period') }}</label><select name="days" onchange="var cr=document.getElementById('custom-range'); if(this.value==='custom'){cr.style.display='flex'; cr.querySelector('input').focus();} else {cr.style.display='none'; this.form.submit();}">{% for d, label in ((1, 'Today'), (7, 'Last 7 days'), (14, 'Last 14 days'), (30, 'Last 30 days'), (60, 'Last 60 days'), (90, 'Last 90 days')) %}<option value="{{ d }}" {{ 'selected' if not custom and d == days }}>{{ t(label) }}</option>{% endfor %}<option value="custom" {{ 'selected' if custom }}>{{ t('Custom range…') }}</option></select></div>
-  <div id="custom-range" style="display:{{ 'flex' if custom else 'none' }};gap:8px;align-items:flex-end">
-    <div><label>{{ t('From') }}</label><input type="date" name="frm" value="{{ frm }}"></div>
-    <div><label>{{ t('To') }}</label><input type="date" name="to" value="{{ to }}"></div>
-    <div><label>&nbsp;</label><button class="sec">{{ t('Apply') }}</button></div>
+<div class="emp-page" data-panel-url="/sales/employees/panel?{{ qs }}">
+  <div class="page-head">
+    <div>
+      <h1>{{ t('Sales by employee') }}</h1>
+      <p>
+        {{ loc_name if loc_name else t('All stores') }} &middot;
+        {% if custom %}{{ frm }} &rarr; {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %} &middot;
+        <span class="emp-sync">{{ t('Last synced') }} {{ fr.last_success|ago }}</span>
+        <span class="emp-info" tabindex="0" role="note" data-tip="{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }}" aria-label="{{ t('Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures.') }}">i</span>
+      </p>
+    </div>
+    <div class="row">
+      <a class="btn sec sm" href="/sales?{{ qs }}">{{ t('Daily sales') }}</a>
+      <a class="btn sec sm" href="/sales/transactions?{{ qs }}">{{ t('Transactions') }}</a>
+      <a class="btn sm" href="/sales/employees?{{ qs }}&export=csv">{{ t('Download CSV') }}</a>
+    </div>
   </div>
-</form>
 
-{% if stats %}
-<div class="grid g4" style="margin-bottom:14px">
-  <div class="card stat"><div><div class="label">{{ t('Employees with sales') }}</div><div class="value">{{ stats|length }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Transactions') }}</div><div class="value">{{ totals.txs|num(0) }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Items sold') }}</div><div class="value">{{ totals.units|num(0) }}</div></div></div>
-  <div class="card stat"><div><div class="label">{{ t('Net sales') }}</div><div class="value">{{ totals.net|money }}</div></div></div>
+  <form novalidate class="emp-toolbar" id="emp-filter-form" method="get">
+    <div class="emp-field loc">
+      <label for="emp-loc">{{ t('Location') }}</label>
+      <select id="emp-loc" name="loc">
+        <option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>
+        {% for l in locations %}
+        <option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="emp-field">
+      <label>{{ t('Period') }}</label>
+      <div class="sales-seg">
+        {% for d, lab in ((1, t('Today')), (7, t('7 days')), (14, t('14 days')), (30, t('30 days'))) %}
+        <a class="{{ 'on' if not custom and days == d }}" href="/sales/employees?loc={{ loc }}&days={{ d }}">{{ lab }}</a>
+        {% endfor %}
+        <input type="hidden" name="days" value="{{ 'custom' if custom else days }}">
+        <input type="hidden" name="frm" value="{{ frm }}">
+        <input type="hidden" name="to" value="{{ to }}">
+        <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}" style="--lbl:'{{ t('Custom') }}'" {{ 'data-on' if custom or days not in (1, 7, 14, 30) }}
+             data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div>
+      </div>
+    </div>
+
+    <div class="emp-field emp-search">
+      <label for="emp-search">{{ t('Find employee or store') }}</label>
+      <input type="search" id="emp-search" data-search placeholder="{{ t('Name, StoreHub ID, or store…') }}" autocomplete="off">
+    </div>
+
+    <div class="emp-toolbar-meta" id="emp-shown">{{ stats|length }} {{ t('cashier shown') if stats|length == 1 else t('cashiers shown') }}</div>
+  </form>
+
+  {% if stats %}
+  <div class="card emp-strip">
+    <div class="emp-stat">
+      <div class="lab">{{ t('Net sales') }}</div>
+      <div class="val-row"><span class="val">{{ totals.net|money }}</span>{{ delta(totals.net, prev_totals.net if prev_totals else none) }}</div>
+      {% if days > 1 %}<div class="sub">{{ t('Avg / day') }}: <b>{{ totals.avg_per_day|money }}</b></div>{% endif %}
+    </div>
+    <div class="emp-stat">
+      <div class="lab">{{ t('Transactions') }}</div>
+      <div class="val-row"><span class="val">{{ totals.txs|num(0) }}</span>{{ delta(totals.txs, prev_totals.txs if prev_totals else none) }}</div>
+      <div class="sub">{{ t('Cancelled') }}: <b>{{ totals.cancelled }}</b> ({{ '%.1f'|format(totals.cancel_rate) }}%)</div>
+    </div>
+    <div class="emp-stat">
+      <div class="lab">{{ t('Items sold') }}</div>
+      <div class="val-row"><span class="val">{{ totals.units|num(0) if totals.units == totals.units|round(0) else totals.units|num(2) }}</span>{{ delta(totals.units, prev_totals.units if prev_totals else none) }}</div>
+      <div class="sub">{{ t('Units / tx') }}: <b>{{ '%.1f'|format(totals.units_per_tx) }}</b></div>
+    </div>
+    <div class="emp-stat">
+      <div class="lab">{{ t('Average basket') }}</div>
+      <div class="val-row"><span class="val">{{ totals.avg|money }}</span>{{ delta(totals.avg, prev_totals.avg if prev_totals else none) }}</div>
+      {% if prev_totals and prev_totals.avg %}<div class="sub">{{ t('Prev period') }}: <b>{{ prev_totals.avg|money }}</b></div>{% endif %}
+    </div>
+    <div class="emp-stat">
+      <div class="lab">{{ t('Employees with sales') }}</div>
+      <div class="val-row">
+        <span class="val">{{ stats|length }}</span>
+        <span class="emp-pill">{{ active_staff }} {{ t('on roster') }}</span>
+      </div>
+      <div class="sub">{{ t('Top 3 share') }}: <b>{{ '%.1f'|format(totals.top3_share) }}%</b></div>
+    </div>
+  </div>
+
+  {% set mx = stats|map(attribute='net')|max %}
+  <div class="emp-insights">
+    <section class="card">
+      <div class="card-head">
+        <h2>{{ t('Performance comparison') }}</h2>
+        <div class="emp-chips" role="group" aria-label="{{ t('Comparison metric') }}">
+          <button type="button" class="emp-chip-btn on" data-emp-metric="net">{{ t('Net sales') }}</button>
+          <button type="button" class="emp-chip-btn" data-emp-metric="txs">{{ t('Transactions') }}</button>
+          <button type="button" class="emp-chip-btn" data-emp-metric="avg">{{ t('Avg basket') }}</button>
+          <button type="button" class="emp-chip-btn" data-emp-metric="upt">{{ t('Items / tx') }}</button>
+        </div>
+      </div>
+      <div class="emp-hbar-list" id="emp-hbar-list">
+        {% for s in stats[:8] %}
+        <button type="button" class="emp-hbar-item{{ ' top' if loop.first }}"
+                data-emp-open="{{ s.emp_key }}"
+                data-emp-name="{{ s.name }}"
+                data-emp-init="{{ s.initials }}"
+                data-emp-stores="{{ s.stores|join(' · ') }}"
+                data-href="/sales/transactions?{{ qs }}&emp={{ s.sh_id or '' }}"
+                data-search="{{ (s.name ~ ' ' ~ (s.sh_id or '') ~ ' ' ~ (s.stores|join(' ')))|lower }}"
+                data-net="{{ '%.2f'|format(s.net) }}"
+                data-txs="{{ s.txs }}"
+                data-avg="{{ '%.2f'|format(s.avg) }}"
+                data-upt="{{ '%.2f'|format(s.units_per_tx) }}">
+          <span class="emp-hbar-name"><span class="emp-hbar-rank">{{ loop.index }}</span><span>{{ s.name }}</span></span>
+          <span class="emp-hbar-track"><span class="emp-hbar-fill" style="width:{{ (s.net / mx * 100)|round(1) if mx else 0 }}%"></span></span>
+          <span class="emp-hbar-val">{{ s.net|money }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card emp-side-stack">
+      <div>
+        <div class="card-head" style="margin-bottom:10px">
+          <h2>{{ t('By store') }}</h2>
+          <span class="tw-sub">{{ t('Share of period net sales') }}</span>
+        </div>
+        <div class="emp-store-list">
+          {% for st in store_stats %}
+          <div class="emp-store-row">
+            <span class="s-name">{{ st.name }}</span>
+            <span class="s-val">{{ st.net|money }} <span>({{ '%.0f'|format(st.share) }}%)</span></span>
+            <span class="s-bar"><i style="width:{{ st.bar_pct|round(1) }}%"></i></span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="emp-watch-box">
+        <div class="emp-watch-title">{{ t('Operational checks') }}</div>
+        {% if checks %}
+          {% for chk in checks %}
+          {% set ce = chk.emp %}
+          {% if chk.type == 'cancel' %}
+          <a class="emp-watch-item warn" href="/sales/transactions?{{ qs }}&emp={{ ce.sh_id or '' }}"
+             data-emp-open="{{ ce.emp_key }}" data-emp-name="{{ ce.name }}" data-emp-init="{{ ce.initials }}" data-emp-stores="{{ ce.stores|join(' · ') }}">
+            <span><b>{{ ce.name }}</b> &middot; {{ '%.1f'|format(ce.cancel_rate) }}% {{ t('cancelled rate') }} ({{ ce.cancelled }} {{ t('of') }} {{ ce.txs }})</span>
+            <span class="badge">{{ t('Review') }}</span>
+          </a>
+          {% else %}
+          <a class="emp-watch-item" href="/sales/transactions?{{ qs }}"
+             data-emp-open="__none__" data-emp-name="{{ t('Unassigned POS sales') }}" data-emp-init="—" data-emp-stores="{{ ce.stores|join(' · ') }}">
+            <span><b>{{ t('Unassigned POS sales (—)') }}</b> &middot; {{ ce.txs }} txs ({{ ce.net|money }})</span>
+            <span class="badge">{{ ce.stores|join(', ') if ce.stores else t('Review') }}</span>
+          </a>
+          {% endif %}
+          {% endfor %}
+        {% else %}
+        <div class="emp-watch-item ok">
+          <span><b>{{ t('All cashiers normal') }}</b> &middot; {{ '%.1f'|format(totals.cancel_rate) }}% {{ t('period cancellation rate') }}</span>
+          <span class="badge">{{ t('Healthy') }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <section class="tw emp-tw">
+    <div class="tw-head">
+      <div>
+        <h2>{{ t('All employees') }}</h2>
+        <span class="tw-sub">{{ t('Click a column header to sort, or select any employee to inspect daily trend and recent receipts.') }}</span>
+      </div>
+    </div>
+    <table id="emp-table" data-keep-table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="emp-sort" data-k="name">{{ t('Employee') }}<span class="sort-dir"></span></th>
+            <th>{{ t('Store') }}</th>
+            <th class="right emp-sort" data-k="txs">{{ t('Transactions') }}<span class="sort-dir"></span></th>
+            <th class="right emp-sort" data-k="units">{{ t('Items sold') }}<span class="sort-dir"></span></th>
+            <th class="right emp-sort emp-net-col on" data-k="net">{{ t('Net sales') }}<span class="sort-dir"> ↓</span></th>
+            <th>{{ t('Share') }}</th>
+            <th class="right emp-sort" data-k="avg">{{ t('Average basket') }}<span class="sort-dir"></span></th>
+            <th class="right emp-sort" data-k="cancelled">{{ t('Cancelled') }}<span class="sort-dir"></span></th>
+            <th class="right">{{ t('Last sale') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in stats %}
+          <tr data-href="/sales/transactions?{{ qs }}&emp={{ s.sh_id or '' }}"
+              data-emp-open="{{ s.emp_key }}"
+              data-emp-name="{{ s.name }}"
+              data-emp-init="{{ s.initials }}"
+              data-emp-stores="{{ s.stores|join(' · ') }}"
+              data-search="{{ (s.name ~ ' ' ~ (s.sh_id or '') ~ ' ' ~ (s.stores|join(' ')))|lower }}"
+              data-name="{{ s.name }}"
+              data-txs="{{ s.txs }}"
+              data-units="{{ s.units }}"
+              data-net="{{ s.net }}"
+              data-avg="{{ s.avg }}"
+              data-cancelled="{{ s.cancelled }}">
+            <td class="mute emp-rank">{{ loop.index }}</td>
+            <td>
+              <div class="emp-cell">
+                <span class="emp-av" aria-hidden="true">{{ s.initials }}</span>
+                <div>
+                  <div class="emp-name">{{ s.name }}</div>
+                  <div class="emp-sub">{% if s.sh_id %}{{ s.sh_id }} &middot; {% endif %}{{ '%.1f'|format(s.units_per_tx) }} {{ t('items/tx') }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="emp-store-pills">
+                {% for st in s.stores %}<span class="emp-pill">{{ st }}</span>{% else %}<span class="mute small">—</span>{% endfor %}
+              </div>
+            </td>
+            <td class="right">{{ s.txs|num(0) }}</td>
+            <td class="right">{{ s.units|num(0) if s.units == s.units|round(0) else s.units|num(2) }}</td>
+            <td class="right"><b>{{ s.net|money }}</b></td>
+            <td>
+              <div class="emp-share-wrap">
+                <div class="emp-share-bar" data-tip="{{ '%.1f'|format(s.share) }}{{ t('% of net sales') }}"><i style="width:{{ (s.net / mx * 100)|round(1) if mx else 0 }}%"></i></div>
+                <span class="small mute">{{ '%.1f'|format(s.share) }}%</span>
+              </div>
+            </td>
+            <td class="right">{{ s.avg|money }}</td>
+            <td class="right">
+              {% if s.cancelled %}
+              <span class="emp-cx {{ 'hi' if s.cancel_rate >= 3.0 else 'ok' }}">{{ s.cancelled }} ({{ '%.1f'|format(s.cancel_rate) }}%)</span>
+              {% else %}
+              <span class="mute">0</span>
+              {% endif %}
+            </td>
+            <td class="right nowrap small mute">{{ s.last|ago }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">{{ t('Total') }} ({{ stats|length }})</td>
+            <td class="right">{{ totals.txs|num(0) }}</td>
+            <td class="right">{{ totals.units|num(0) if totals.units == totals.units|round(0) else totals.units|num(2) }}</td>
+            <td class="right">{{ totals.net|money }}</td>
+            <td>100.0%</td>
+            <td class="right">{{ totals.avg|money }}</td>
+            <td class="right">{{ totals.cancelled }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+    </table>
+  </section>
+  {% else %}
+  <div class="card empty">{{ t('No sales found for this selection. Warehouses record no sales, so choose a store or all locations.') }}</div>
+  {% endif %}
 </div>
-{% set mx = stats|map(attribute='net')|max %}
-<div class="tw"><table>
-  <tr><th>#</th><th>{{ t('Employee') }}</th><th>{{ t('Store') }}</th><th class="right">{{ t('Transactions') }}</th><th class="right">{{ t('Items sold') }}</th><th class="right">{{ t('Net sales') }}</th><th>{{ t('Share') }}</th><th class="right">{{ t('Average basket') }}</th><th class="right">{{ t('Last sale') }}</th></tr>
-  {% for s in stats %}
-  <tr data-href="/sales/transactions?{{ qs }}&emp={{ s.sh_id }}"><td class="mute">{{ loop.index }}</td>
-    <td><b>{{ s.name }}</b>{% if s.cancelled %}<div class="small mute">{{ s.cancelled }} {{ t('cancelled') }}</div>{% endif %}</td>
-    <td class="small">{{ s.stores|join(', ') }}</td>
-    <td class="right">{{ s.txs|num(0) }}</td>
-    <td class="right">{{ s.units|num(0) if s.units == s.units|round(0) else s.units|num(2) }}</td>
-    <td class="right"><b>{{ s.net|money }}</b></td>
-    <td style="min-width:110px"><div class="bar" data-tip="{{ '%.1f'|format(s.net / totals.net * 100 if totals.net else 0) }}{{ t('% of net sales') }}"><i style="width:{{ (s.net / mx * 100)|round(1) if mx else 0 }}%"></i></div><div class="small mute">{{ '%.1f'|format(s.net / totals.net * 100 if totals.net else 0) }}%</div></td>
-    <td class="right">{{ s.avg|money }}</td>
-    <td class="right nowrap small mute">{{ s.last|ago }}</td>
-  </tr>
-  {% endfor %}
-</table></div>
-{% else %}
-<div class="card empty">{{ t('No sales found for this selection. Warehouses record no sales, so choose a store or all locations.') }}</div>
-{% endif %}
+
+<div class="drawer-scrim" id="emp-drawer-scrim" hidden></div>
+<dialog class="drawer emp-drawer" id="emp-drawer" aria-labelledby="emp-drawer-title" hidden>
+  <div class="drawer-head">
+    <div class="emp-dr-title">
+      <div class="emp-av" id="emp-drawer-av">—</div>
+      <div>
+        <h2 id="emp-drawer-title"></h2>
+        <p id="emp-drawer-sub"></p>
+      </div>
+    </div>
+    <button type="button" class="iconbtn" id="emp-drawer-close" aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="drawer-body" id="emp-drawer-body"></div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/daterange.js?v={{ asset_v('daterange.js') }}"></script>
+<script src="/static/sales_employees.js?v={{ asset_v('sales_employees.js') }}"></script>
 {% endblock %}

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetailOS — Business / POS Source Switcher Visual Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --ink: #0f172a;
+    --ink2: #334155;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --blue: #2563eb;
+    --blue-ink: #1d4ed8;
+    --blue-soft: #eff6ff;
+    --blue-ring: #bfdbfe;
+    --green: #16a34a;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sh: 0 1px 2px rgba(15,23,42,.05);
+    --sh-thumb: 0 1px 3px rgba(15,23,42,.12), 0 0 0 1px rgba(15,23,42,.05);
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #111622;
+    --surface2: #171e2e;
+    --surface3: #1e293b;
+    --ink: #f1f5f9;
+    --ink2: #cbd5e1;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #1e293b;
+    --line2: #334155;
+    --blue: #3b82f6;
+    --blue-ink: #60a5fa;
+    --blue-soft: rgba(59,130,246,.16);
+    --blue-ring: rgba(59,130,246,.38);
+    --green: #22c55e;
+    --sh: 0 1px 3px rgba(0,0,0,.35);
+    --sh-thumb: 0 2px 6px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+    font-variant-numeric: tabular-nums;
+  }
+
+  .top {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .top h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.025em; }
+  .top p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+  .controls { display: flex; align-items: center; gap: 10px; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); gap: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--mute); font: inherit; font-size: 12px; font-weight: 650; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--sh); }
+
+  .wrap { max-width: 1580px; margin: 0 auto; padding: 20px 28px 52px; }
+
+  /* Current (Before) Bar */
+  .before-box {
+    margin-bottom: 20px; padding: 14px 20px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+  .before-info h3 { margin: 0; font-size: 13.5px; font-weight: 750; }
+  .before-info p { margin: 3px 0 0; font-size: 12px; color: var(--mute); }
+  .cur-switch {
+    display: inline-flex; align-items: center; height: 42px; padding: 3px;
+    border: 1px solid var(--line); border-radius: 13px; background: var(--surface3);
+  }
+  .cur-switch button {
+    height: 34px; padding: 0 15px; border: 0; border-radius: 10px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .cur-switch button.on {
+    background: var(--surface); color: var(--ink); font-weight: 800;
+    box-shadow: 0 1px 3px rgba(15,23,42,.16), 0 0 0 1px rgba(15,23,42,.04);
+  }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;
+  }
+  @media (max-width: 1150px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--sh); display: flex; flex-direction: column;
+  }
+  .meta { padding: 15px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+  .badge {
+    align-self: flex-start; font-size: 10.5px; font-weight: 750; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .badge.rec { background: var(--blue-soft); color: var(--blue-ink); padding: 3px 8px; border-radius: 999px; }
+  .meta h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+  .meta p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.45; }
+
+  /* Simulated Topbar Stage */
+  .stage {
+    background: var(--bg); padding: 20px 18px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .topbar-mock {
+    min-height: 62px; padding: 0 18px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    box-shadow: var(--sh);
+  }
+  .tb-right { display: flex; align-items: center; gap: 8px; flex: none; }
+  .tb-lang {
+    font-size: 11px; font-weight: 750; padding: 5px 8px; border-radius: 7px;
+    background: var(--surface2); border: 1px solid var(--line); color: var(--ink2);
+  }
+  .tb-av {
+    width: 26px; height: 26px; border-radius: 99px; background: var(--blue); color: #fff;
+    display: grid; place-items: center; font-size: 11px; font-weight: 750;
+  }
+
+  /* =====================================================================
+     OPTION 1: Tactile Monogram Chips + Live Sync Dot (Recommended)
+     ===================================================================== */
+  .sw1 {
+    display: inline-flex; align-items: center; gap: 2px;
+    height: 40px; padding: 3px;
+    background: var(--surface2); border: 1px solid var(--line); border-radius: 11px;
+  }
+  .sw1-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 32px; padding: 0 11px 0 7px; border: 0; border-radius: 8px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 13px; font-weight: 650;
+    cursor: pointer; transition: all .16s ease; white-space: nowrap;
+  }
+  .sw1-btn:hover { color: var(--ink); }
+  .sw1-chip {
+    width: 20px; height: 20px; border-radius: 5px;
+    background: var(--surface3); border: 1px solid var(--line);
+    color: var(--mute); font-size: 9.5px; font-weight: 800; letter-spacing: -0.02em;
+    display: grid; place-items: center; transition: all .16s ease;
+  }
+  .sw1-btn.on {
+    background: var(--surface); color: var(--ink); font-weight: 750;
+    box-shadow: var(--sh-thumb);
+  }
+  .sw1-btn.on .sw1-chip {
+    background: var(--blue); border-color: var(--blue); color: #fff;
+  }
+  .sw1-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    display: none; margin-left: 1px;
+  }
+  .sw1-btn.on .sw1-dot { display: inline-block; }
+  .sw1-sep { width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
+
+  /* =====================================================================
+     OPTION 2: Architectural Flush Header Tabs (Sliding 2.5px Blue Line)
+     ===================================================================== */
+  .topbar-mock.flush { align-items: stretch; padding-top: 0; padding-bottom: 0; }
+  .sw2 {
+    display: inline-flex; align-items: stretch; gap: 4px;
+  }
+  .sw2-btn {
+    position: relative; display: inline-flex; align-items: center; gap: 7px;
+    padding: 0 12px; border: 0; background: transparent;
+    color: var(--mute); font: inherit; font-size: 13.5px; font-weight: 650;
+    cursor: pointer; white-space: nowrap;
+  }
+  .sw2-btn:hover { color: var(--ink); }
+  .sw2-btn.on { color: var(--ink); font-weight: 780; }
+  .sw2-btn.on::after {
+    content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px;
+    height: 2.5px; border-radius: 2px 2px 0 0; background: var(--blue);
+  }
+  .sw2-pip {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--line2);
+  }
+  .sw2-btn.on .sw2-pip { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .sw2-ext { font-size: 10px; color: var(--mute2); font-family: var(--mono); }
+
+  /* =====================================================================
+     OPTION 3: Two-Line Operational Deck (Brand + POS Engine Subtitle)
+     ===================================================================== */
+  .sw3 {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .sw3-btn {
+    position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    padding: 5px 13px; border: 0; border-radius: 9px;
+    background: transparent; color: var(--mute); font: inherit; cursor: pointer; text-align: left;
+    min-width: 96px;
+  }
+  .sw3-btn b { font-size: 12.5px; font-weight: 700; color: inherit; line-height: 1.15; }
+  .sw3-btn small {
+    font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .04em;
+    color: var(--mute2); text-transform: uppercase; margin-top: 1px;
+  }
+  .sw3-btn.on {
+    background: var(--surface); color: var(--ink);
+    box-shadow: var(--sh-thumb);
+  }
+  .sw3-btn.on b { font-weight: 800; color: var(--ink); }
+  .sw3-btn.on small { color: var(--blue-ink); font-weight: 700; }
+
+  /* =====================================================================
+     OPTION 4: Mechanical Keycap Rail with Shortcut Index (1–5)
+     ===================================================================== */
+  .sw4 {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px; background: var(--surface3); border: 1px solid var(--line2); border-radius: 10px;
+  }
+  .sw4-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 32px; padding: 0 11px 0 8px;
+    border: 1px solid transparent; border-radius: 7px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 12.5px; font-weight: 650;
+    cursor: pointer; white-space: nowrap;
+  }
+  .sw4-kbd {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    width: 17px; height: 17px; border-radius: 4px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--mute2);
+    display: grid; place-items: center;
+  }
+  .sw4-btn.on {
+    background: var(--surface); border-color: var(--line2); color: var(--ink); font-weight: 750;
+    box-shadow: 0 2px 0 var(--line2); transform: translateY(-1px);
+  }
+  .sw4-btn.on .sw4-kbd {
+    background: var(--blue-soft); border-color: var(--blue-ring); color: var(--blue-ink);
+  }
+
+  /* =====================================================================
+     OPTION 5: Split Label Stamp + Soft Blue Active Tint
+     ===================================================================== */
+  .sw5 {
+    display: inline-flex; align-items: center;
+    height: 38px; background: var(--surface); border: 1px solid var(--line2); border-radius: 10px;
+    overflow: hidden; box-shadow: var(--sh);
+  }
+  .sw5-label {
+    height: 100%; padding: 0 11px; background: var(--surface2); border-right: 1px solid var(--line);
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--mute);
+  }
+  .sw5-label i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .sw5-track { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px; }
+  .sw5-btn {
+    height: 30px; padding: 0 12px; border: 1px solid transparent; border-radius: 7px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 13px; font-weight: 650;
+    cursor: pointer; white-space: nowrap;
+  }
+  .sw5-btn:hover { color: var(--ink); background: var(--surface2); }
+  .sw5-btn.on {
+    background: var(--blue-soft); border-color: var(--blue-ring);
+    color: var(--blue-ink); font-weight: 750;
+  }
+
+  /* =====================================================================
+     OPTION 6: Dark Obsidian Pill Contrast Track
+     ===================================================================== */
+  .sw6 {
+    display: inline-flex; align-items: center; gap: 2px;
+    height: 38px; padding: 3px;
+    background: var(--surface); border: 1px solid var(--line2); border-radius: 999px;
+    box-shadow: var(--sh);
+  }
+  .sw6-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 13px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--mute); font: inherit; font-size: 13px; font-weight: 650;
+    cursor: pointer; white-space: nowrap;
+  }
+  .sw6-btn:hover { color: var(--ink); }
+  .sw6-btn.on {
+    background: var(--ink); color: var(--surface); font-weight: 750;
+  }
+  .sw6-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; display: none;
+  }
+  .sw6-btn.on .sw6-dot { display: inline-block; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>RetailOS — Business / POS Source Switcher Concepts</h1>
+    <p>6 ways to redesign the top-left business switcher (Daily Centro · Steamy Co. · Publico · SipStop · 7-Eleven) — click any business tab to test</p>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group">
+      <button type="button" class="active" onclick="setTheme('light', this)">Light</button>
+      <button type="button" onclick="setTheme('dark', this)">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Current (Before) Reference -->
+  <section class="before-box">
+    <div class="before-info">
+      <h3>Current Business Switcher (Before)</h3>
+      <p>Plain grey trough with identical text buttons—no brand monograms, live status indicator, or visual distinction for 7-Eleven.</p>
+    </div>
+    <div class="cur-switch">
+      <button type="button" class="on">Daily Centro</button>
+      <button type="button">Steamy Co.</button>
+      <button type="button">Publico</button>
+      <button type="button">SipStop</button>
+      <button type="button">7-Eleven</button>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <!-- OPTION 1 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge rec">Option 1 · Recommended</span>
+        <h2>Tactile Monogram Chips + Live Sync Dot</h2>
+        <p>Adds a 20px monogram badge (`DC`, `SC`, `PB`, `SS`, `7E`) to each tab: the active business lights up in signature blue with a live green dot, and 7-Eleven sits cleanly after a subtle divider.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock">
+          <div class="sw1" data-group>
+            <button type="button" class="sw1-btn on" onclick="pick(this)"><span class="sw1-chip">DC</span>Daily Centro<i class="sw1-dot"></i></button>
+            <button type="button" class="sw1-btn" onclick="pick(this)"><span class="sw1-chip">SC</span>Steamy Co.<i class="sw1-dot"></i></button>
+            <button type="button" class="sw1-btn" onclick="pick(this)"><span class="sw1-chip">PB</span>Publico<i class="sw1-dot"></i></button>
+            <button type="button" class="sw1-btn" onclick="pick(this)"><span class="sw1-chip">SS</span>SipStop<i class="sw1-dot"></i></button>
+            <span class="sw1-sep"></span>
+            <button type="button" class="sw1-btn" onclick="pick(this)"><span class="sw1-chip">7E</span>7-Eleven<i class="sw1-dot"></i></button>
+          </div>
+          <div class="tb-right"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 2 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Option 2 · Architectural Flush</span>
+        <h2>Flush Topbar Tabs + Sliding Blue Underline</h2>
+        <p>Removes the heavy grey box entirely—businesses sit flush in the header bar with a glowing status dot and a crisp 2.5px blue bottom bar that slides along the header border.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock flush">
+          <div class="sw2" data-group>
+            <button type="button" class="sw2-btn on" onclick="pick(this)"><i class="sw2-pip"></i>Daily Centro</button>
+            <button type="button" class="sw2-btn" onclick="pick(this)"><i class="sw2-pip"></i>Steamy Co.</button>
+            <button type="button" class="sw2-btn" onclick="pick(this)"><i class="sw2-pip"></i>Publico</button>
+            <button type="button" class="sw2-btn" onclick="pick(this)"><i class="sw2-pip"></i>SipStop</button>
+            <button type="button" class="sw2-btn" onclick="pick(this)"><i class="sw2-pip"></i>7-Eleven<span class="sw2-ext">&#8599;</span></button>
+          </div>
+          <div class="tb-right" style="align-self:center"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 3 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Option 3 · Operational Context</span>
+        <h2>Two-Line POS Engine Deck</h2>
+        <p>Pairs each business name with a micro monospace subtitle (`STOREHUB · LIVE`, `LOYVERSE`, `REPORT`) so you always see which POS source backs each brand.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock">
+          <div class="sw3" data-group>
+            <button type="button" class="sw3-btn on" onclick="pick(this)"><b>Daily Centro</b><small>&#9679; StoreHub</small></button>
+            <button type="button" class="sw3-btn" onclick="pick(this)"><b>Steamy Co.</b><small>Loyverse</small></button>
+            <button type="button" class="sw3-btn" onclick="pick(this)"><b>Publico</b><small>Loyverse</small></button>
+            <button type="button" class="sw3-btn" onclick="pick(this)"><b>SipStop</b><small>Loyverse</small></button>
+            <button type="button" class="sw3-btn" onclick="pick(this)"><b>7-Eleven</b><small>Workspace &#8599;</small></button>
+          </div>
+          <div class="tb-right"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 4 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Option 4 · Tactile Hardware</span>
+        <h2>Mechanical Keycap Bar with Shortcut Index (1–5)</h2>
+        <p>Gives each business a raised physical keycap feel with a numbered index badge (`1`–`5`) for fast scanning and optional keyboard switching.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock">
+          <div class="sw4" data-group>
+            <button type="button" class="sw4-btn on" onclick="pick(this)"><span class="sw4-kbd">1</span>Daily Centro</button>
+            <button type="button" class="sw4-btn" onclick="pick(this)"><span class="sw4-kbd">2</span>Steamy Co.</button>
+            <button type="button" class="sw4-btn" onclick="pick(this)"><span class="sw4-kbd">3</span>Publico</button>
+            <button type="button" class="sw4-btn" onclick="pick(this)"><span class="sw4-kbd">4</span>SipStop</button>
+            <button type="button" class="sw4-btn" onclick="pick(this)"><span class="sw4-kbd">5</span>7-Eleven</button>
+          </div>
+          <div class="tb-right"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 5 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Option 5 · Unified Instrument Bar</span>
+        <h2>Split `POS` Stamp + Soft Blue Active Pill</h2>
+        <p>Replaces the grey trough with a crisp white bordered bar, a left `POS` status stamp, and the exact soft-blue active pill (`#eff6ff`) used on your Today &amp; Sales filters.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock">
+          <div class="sw5">
+            <span class="sw5-label"><i></i>POS</span>
+            <div class="sw5-track" data-group>
+              <button type="button" class="sw5-btn on" onclick="pick(this)">Daily Centro</button>
+              <button type="button" class="sw5-btn" onclick="pick(this)">Steamy Co.</button>
+              <button type="button" class="sw5-btn" onclick="pick(this)">Publico</button>
+              <button type="button" class="sw5-btn" onclick="pick(this)">SipStop</button>
+              <button type="button" class="sw5-btn" onclick="pick(this)">7-Eleven</button>
+            </div>
+          </div>
+          <div class="tb-right"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION 6 -->
+    <section class="card">
+      <div class="meta">
+        <span class="badge">Option 6 · High-Contrast Capsule</span>
+        <h2>White Capsule Track + Dark Ink Active Pill</h2>
+        <p>Inverts the current grey track: crisp white outer capsule with a high-contrast dark slate active pill (`#0f172a`) and a single blue indicator dot.</p>
+      </div>
+      <div class="stage">
+        <div class="topbar-mock">
+          <div class="sw6" data-group>
+            <button type="button" class="sw6-btn on" onclick="pick(this)"><i class="sw6-dot"></i>Daily Centro</button>
+            <button type="button" class="sw6-btn" onclick="pick(this)"><i class="sw6-dot"></i>Steamy Co.</button>
+            <button type="button" class="sw6-btn" onclick="pick(this)"><i class="sw6-dot"></i>Publico</button>
+            <button type="button" class="sw6-btn" onclick="pick(this)"><i class="sw6-dot"></i>SipStop</button>
+            <button type="button" class="sw6-btn" onclick="pick(this)"><i class="sw6-dot"></i>7-Eleven</button>
+          </div>
+          <div class="tb-right"><span class="tb-lang">EN</span><span class="tb-av">A</span></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+function pick(btn) {
+  const grp = btn.closest('[data-group]');
+  grp.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+}
+function setTheme(theme, btn) {
+  document.documentElement.dataset.theme = theme;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+</script>
+</body>
+</html>

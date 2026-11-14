@@ -157,3 +157,35 @@ def test_report_pages_csv_and_access_control(client, sync, fake, session):
 def test_report_pages_need_a_sign_in(client):
     response = client.get("/sales/zreadings")
     assert response.status_code == 303 and response.headers["location"].startswith("/login")
+
+
+def test_csv_carries_every_field_of_the_receipt(client, sync, fake, session):
+    import csv as csvmod
+    import io
+    seeded(sync, fake, session)
+    alpha = session.scalar(select(Location).where(Location.storehub_id == "S_A"))
+    stamp = f"{today_local():%m/%d/%Y} 23:59"
+    full = {"sections": [
+        {"title": "General", "tables": [{"rows": [["Beg. SI #:", "00400000702"], ["End. SI #:", "00400000711"], ["Cash in Drawer:", "1,000.00"], ["GCASH:", "50.00"],
+                                                  ["VATABLE SALES:", "686.61"], ["Net Amount:", "769.00"], ["Total Discount:", "0.00"]]}]},
+        {"title": "Collections Summary", "tables": [{"rows": [["Payment Method", "Trans", "Amount"], ["Cash", "9", "719.00"], ["GCash", "1", "50.00"],
+                                                              ["Total Collection", "10", "769.00"]]}]}],
+        "source_text": "Store Name:\nThe Daily Centro - Alpha\nOperated By:\nDaily Centro Inc\nPTU:\nFP-123\nS/N:\nSN-9\nZ Count No.:\n4\nReport Date:\n10/25/2026\n"}
+    zreadings.apply(session, [row("z1", stamp, alpha.name, z_count="4", register="5"), row("z2", stamp, alpha.name, z_count="5", register="6")], {"z1": full})
+    session.commit()
+    add_user(session, "boss", "admin")
+    login(client, "boss")
+    text = client.get(f"/sales/zreadings?loc={alpha.id}&days=7&export=csv").text
+    table = list(csvmod.reader(io.StringIO(text.lstrip("﻿"))))
+    head, body = table[0], {r[6]: r for r in table[1:]}
+    def cell(sid, column):
+        return body[sid][head.index(column)]
+    assert head[:8] == ["Close Time", "Z-Count", "Store", "Register", "Total Transactions", "Gross Sales (PHP)", "StoreHub Report ID", "Note"]
+    assert cell("z1", "Store Name (on receipt)") == "The Daily Centro - Alpha" and cell("z1", "Operated By") == "Daily Centro Inc"
+    assert cell("z1", "PTU") == "FP-123" and cell("z1", "S/N") == "SN-9" and cell("z1", "Z Count No.") == "4"
+    assert cell("z1", "Beg. SI #") == "00400000702" and cell("z1", "Breakdown of Sales: Net Amount") == "769.00"
+    assert cell("z1", "Transaction Summary: Cash in Drawer") == "1,000.00" and cell("z1", "Transaction Summary: GCASH") == "50.00"
+    assert cell("z1", "Collections: Cash Trans") == "9" and cell("z1", "Collections: GCash Amount") == "50.00"
+    assert cell("z1", "Collections: Total Collection Amount") == "769.00"
+    assert all(len(r) == len(head) for r in table[1:])                       # every row lines up with the header
+    assert cell("z2", "Operated By") == "" and cell("z2", "Collections: Cash Amount") == ""   # not read yet: blank, but still listed

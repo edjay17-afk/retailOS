@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales by employee — redesign mockup</title>
+<style>
+  :root{
+    --bg:#f8f7f5;--surface:#ffffff;--surface2:#f8f9fc;--line:#e6e8f1;--line2:#d6d9e6;
+    --ink:#0f172a;--mute:#64748b;--mute2:#94a3b8;
+    --primary:#2563eb;--primary-h:#1d4ed8;--primary-soft:#e8efff;
+    --ok:#047857;--ok-soft:#d9f7ea;--warn:#a85a00;--warn-soft:#fff1d1;--bad:#c62828;--bad-soft:#fde4e4;
+    --gold:#b45309;--gold-soft:#fef3c7;--silver:#475569;--silver-soft:#f1f5f9;--bronze:#9a3412;--bronze-soft:#ffedd5;
+    --r:14px;--r2:10px;
+    --sh1:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.05);
+    --font:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 var(--font);font-weight:600;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:22px 26px 60px}
+  h1{font-size:25px;margin:0;font-weight:750;letter-spacing:-.01em}
+  h2{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+  .crumbs{font-size:13px;color:var(--mute);margin-bottom:6px}
+  .crumbs b{color:var(--ink)}
+  .page-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .desc{font-size:13px;color:var(--mute);margin:6px 0 0;max-width:640px;font-weight:500}
+  .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+  .filters{display:flex;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;width:fit-content;max-width:100%;margin-bottom:16px;box-shadow:var(--sh1)}
+  .filters label{display:block;font-size:12px;font-weight:650;color:var(--mute);margin:0 0 5px}
+  .filters select{min-height:40px;padding:0 34px 0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);font:inherit;font-size:13.5px;color:var(--ink)}
+  .filters .l1{width:250px}.filters .l2{width:170px}
+  .filters select{width:100%}
+
+  /* KPI strip */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh1)}
+  .kpi .lab{font-size:12px;font-weight:650;color:var(--mute);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .kpi .val{font-size:24px;font-weight:750;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi.hero{border-color:#c7d7fb;background:linear-gradient(180deg,#f6f9ff,#fff)}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:750;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .delta.up{background:var(--ok-soft);color:var(--ok)}
+  .delta.down{background:var(--bad-soft);color:var(--bad)}
+  .delta.flat{background:var(--surface2);color:var(--mute)}
+
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin:0 0 10px}
+  .sec-head .sub{font-size:12.5px;color:var(--mute);font-weight:500}
+
+  /* podium */
+  .podium{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px;margin-bottom:24px}
+  .poc{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh1);cursor:pointer;transition:box-shadow .15s,transform .15s}
+  .poc:hover{box-shadow:0 8px 22px rgba(15,23,42,.09);transform:translateY(-1px)}
+  .poc.first{border:1px solid #f2d493;background:linear-gradient(180deg,#fffdf5,#fff)}
+  .poc .who{display:flex;align-items:center;gap:11px}
+  .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:750;background:var(--primary-soft);color:var(--primary);flex:none}
+  .poc.first .av{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff}
+  .poc .nm{font-size:14.5px;font-weight:700}
+  .poc .st{font-size:11.5px;color:var(--mute);font-weight:550}
+  .medal{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;flex:none}
+  .m1{background:var(--gold-soft);color:var(--gold)}
+  .m2{background:var(--silver-soft);color:var(--silver)}
+  .m3{background:var(--bronze-soft);color:var(--bronze)}
+  .tag{position:absolute;top:14px;right:14px;font-size:10.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--gold-soft);color:var(--gold)}
+  .poc .net{font-size:24px;font-weight:750;letter-spacing:-.02em;margin:12px 0 2px;font-variant-numeric:tabular-nums}
+  .poc.first .net{font-size:27px}
+  .poc .share{display:flex;align-items:center;gap:9px;margin:8px 0 10px}
+  .sbar{flex:1;height:7px;border-radius:99px;background:var(--line);overflow:hidden}
+  .sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),#60a5fa)}
+  .share b{font-size:12.5px;font-variant-numeric:tabular-nums}
+  .poc .mini{display:flex;gap:14px;font-size:12px;color:var(--mute);font-weight:550;margin-bottom:8px}
+  .poc .mini b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .poc .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  .poc .go{font-size:12.5px;font-weight:700;color:var(--primary);white-space:nowrap}
+  .spark{flex:none}
+
+  /* ranking table */
+  .board{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden}
+  .row{display:grid;grid-template-columns:40px minmax(190px,1.5fr) minmax(120px,1fr) 70px 64px minmax(132px,auto) minmax(140px,1fr) 92px 86px 24px;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid var(--line);cursor:pointer}
+  .row:hover{background:var(--surface2)}
+  .row.hd{border-top:none;background:var(--surface2);cursor:default;padding:8px 18px;font-size:11.5px;font-weight:700;color:var(--mute);letter-spacing:.02em}
+  .row.hd .r{text-align:right}
+  .rk{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-size:12.5px;font-weight:750;color:var(--mute)}
+  .rk.m1{background:var(--gold-soft);color:var(--gold)}
+  .rk.m2{background:var(--silver-soft);color:var(--silver)}
+  .rk.m3{background:var(--bronze-soft);color:var(--bronze)}
+  .emp{display:flex;align-items:center;gap:10px;min-width:0}
+  .av.sm{width:32px;height:32px;font-size:11px}
+  .emp .nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .emp .cx{font-size:11px;color:var(--mute2);font-weight:550}
+  .chip{display:inline-block;font-size:11px;font-weight:650;color:var(--mute);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin:1px 3px 1px 0;white-space:nowrap}
+  .chip.more{color:var(--mute2)}
+  .num{text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap}
+  .num.strong{font-weight:750}
+  .num.net .dlt{display:inline-block;margin:1px 0 0 4px}
+  .shr{display:flex;align-items:center;gap:8px}
+  .shr .sbar{height:6px}
+  .shr b{font-size:12px;min-width:38px;text-align:right}
+  .last{font-size:12px;color:var(--mute);text-align:right;white-space:nowrap;font-weight:550}
+  .chev{color:var(--mute2);font-size:16px;text-align:right}
+  .dlt{font-size:11px;font-weight:750;margin-left:6px;padding:1px 6px;border-radius:99px}
+  .dlt.up{color:var(--ok);background:var(--ok-soft)}
+  .dlt.down{color:var(--bad);background:var(--bad-soft)}
+
+  @media (max-width:860px){
+    .wrap{padding:16px 14px 50px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .kpi.hero{grid-column:1/-1}
+    .podium{grid-template-columns:1fr}
+    .row{grid-template-columns:34px 1fr auto;grid-template-areas:"rk emp num" "rk bar bar" "rk meta meta";row-gap:6px;padding:13px 16px}
+    .row .rk{grid-area:rk}
+    .row .emp{grid-area:emp}
+    .row .num.net{grid-area:num;font-size:15px}
+    .row .shr{grid-area:bar}
+    .row .meta{grid-area:meta;display:flex;gap:12px;font-size:12px;color:var(--mute);font-weight:550;flex-wrap:wrap}
+    .row.hd,.row .chipset,.row .num.txs,.row .num.items,.row .num.avg,.row .last,.row .chev{display:none}
+  }
+  @media (min-width:861px){ .row .meta{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumbs">Dashboard &nbsp;›&nbsp; <b>Sales by employee</b></div>
+  <div class="page-head">
+    <div>
+      <h1>Sales by employee</h1>
+      <p class="desc">Who sold what in the period, from StoreHub transactions. Cancelled sales are excluded from the figures. Last synced 4 minutes ago.</p>
+    </div>
+    <div class="actions">
+      <a class="btn">Daily sales</a><a class="btn">Transactions</a><a class="btn">Download CSV</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="l1"><label>Location</label><select><option>All my locations</option></select></div>
+    <div class="l2"><label>Period</label><select><option>Last 14 days</option></select></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi hero"><div class="lab">Net sales <span class="delta up">▲ 8.2%</span></div><div class="val">₱326,173.28</div></div>
+    <div class="kpi"><div class="lab">Transactions <span class="delta up">▲ 3.1%</span></div><div class="val">1,586</div></div>
+    <div class="kpi"><div class="lab">Items sold <span class="delta up">▲ 5.4%</span></div><div class="val">7,837</div></div>
+    <div class="kpi"><div class="lab">Average basket <span class="delta up">▲ 4.9%</span></div><div class="val">₱205.70</div></div>
+    <div class="kpi"><div class="lab">Employees with sales <span class="delta flat">± 0</span></div><div class="val">8</div></div>
+  </div>
+
+  <div class="sec-head"><h2>Top performers</h2><span class="sub">vs previous 14 days</span></div>
+  <div class="podium" id="podium"></div>
+
+  <div class="sec-head"><h2>Everyone</h2><span class="sub">8 employees · ranked by net sales · click a row for their transactions</span></div>
+  <div class="board">
+    <div class="row hd">
+      <span>#</span><span>Employee</span><span>Store</span>
+      <span class="r">Transactions</span><span class="r">Items</span><span class="r">Net sales</span>
+      <span>Share</span><span class="r">Avg basket</span><span class="r">Last sale</span><span></span>
+    </div>
+    <div id="rows"></div>
+  </div>
+</div>
+
+<script>
+const P = (v) => "₱" + v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const staff = [
+  {n:"Maria Santos", st:["Bantayan","Getafe","ZENWOK Balamban"], tx:430, it:2134, net:89031.75, share:27.3, avg:209.98, cx:6, last:"just now", dlt:"+12%", up:true,  sp:[42,48,45,55,61,58,66,72,69,78,84,80,92,98]},
+  {n:"Jose Reyes", st:["Bantayan","Getafe","ZENWOK Balamban"], tx:252, it:1328, net:52541.01, share:16.1, avg:208.50, cx:0, last:"2 hours ago", dlt:"+6%", up:true, sp:[30,36,33,40,44,42,47,50,48,55,52,58,56,61]},
+  {n:"Ana Cruz", st:["Bantayan","Getafe","ZENWOK Balamban"], tx:205, it:1028, net:42084.77, share:12.9, avg:211.48, cx:6, last:"2 hours ago", dlt:"−3%", up:false, sp:[38,40,36,34,39,33,31,35,30,33,29,32,30,28]},
+  {n:"Mark Villanueva", st:["Bantayan","Getafe"], tx:199, it:976, net:39981.65, share:12.3, avg:202.95, cx:2, last:"just now", dlt:"+2%", up:true, sp:[22,26,24,28,25,30,27,31,29,33,30,34,32,35]},
+  {n:"Jenny Lim", st:["ZENWOK Balamban","Bantayan"], tx:184, it:899, net:37759.82, share:11.6, avg:208.62, cx:3, last:"just now", dlt:"−8%", up:false, sp:[30,28,31,27,29,25,26,23,25,22,24,21,23,20]},
+  {n:"Paolo Dizon", st:["Bantayan"], tx:143, it:622, net:29218.32, share:9.0, avg:213.27, cx:6, last:"just now", dlt:"+4%", up:true, sp:[15,18,16,19,17,21,19,22,20,23,21,24,22,25]},
+  {n:"Kim Torres", st:["ZENWOK Balamban"], tx:101, it:513, net:21034.51, share:6.4, avg:210.35, cx:1, last:"2 hours ago", dlt:"−15%", up:false, sp:[18,16,17,14,15,12,13,11,12,10,11,9,10,8]},
+  {n:"Rita Gomez", st:["Getafe"], tx:72, it:337, net:14521.44, share:4.5, avg:210.46, cx:3, last:"2 hours ago", dlt:"+1%", up:true, sp:[8,9,7,10,8,9,10,9,11,10,11,10,12,11]},
+];
+const initials = (n)=>n.split(" ").map(w=>w[0]).slice(0,2).join("");
+
+function spark(vals, w=110, h=36, color="#2563eb"){
+  const lo=Math.min(...vals), hi=Math.max(...vals), span=(hi-lo)||1, pad=3;
+  const step=(w-2*pad)/(vals.length-1);
+  const pts=vals.map((v,i)=>[pad+i*step, h-pad-(v-lo)/span*(h-2*pad)]);
+  let d=`M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=`C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  const gid="g"+Math.random().toString(36).slice(2,8);
+  const last=pts[pts.length-1];
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d} L${last[0].toFixed(1)},${h} L${pts[0][0].toFixed(1)},${h} Z" fill="url(#${gid})"/>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.8" fill="${color}"/></svg>`;
+}
+
+const medals=["m1","m2","m3"];
+document.getElementById("podium").innerHTML = staff.slice(0,3).map((s,i)=>`
+  <div class="poc ${i===0?'first':''}">
+    ${i===0?'<span class="tag">Top seller</span>':''}
+    <div class="who"><span class="medal ${medals[i]}">${i+1}</span><span class="av">${initials(s.n)}</span>
+      <div><div class="nm">${s.n}</div><div class="st">${s.st.join(" · ")}</div></div></div>
+    <div class="net">${P(s.net)} <span class="dlt ${s.up?'up':'down'}">${s.dlt}</span></div>
+    <div class="share"><div class="sbar"><i style="width:${s.share*3.4}%"></i></div><b>${s.share}%</b></div>
+    <div class="mini"><span><b>${s.tx}</b> transactions</span><span><b>${s.it.toLocaleString()}</b> items</span><span><b>${P(s.avg)}</b> avg basket</span></div>
+    <div class="foot">${spark(s.sp)}<span class="go">View sales →</span></div>
+  </div>`).join("");
+
+document.getElementById("rows").innerHTML = staff.map((s,i)=>`
+  <div class="row">
+    <span class="rk ${medals[i]||''}">${i+1}</span>
+    <div class="emp"><span class="av sm">${initials(s.n)}</span>
+      <div style="min-width:0"><div class="nm">${s.n}</div>${s.cx?`<div class="cx">${s.cx} cancelled</div>`:''}</div></div>
+    <span class="chipset"><span class="chip">${s.st[0]}</span>${s.st.length>1?`<span class="chip more">+${s.st.length-1}</span>`:''}</span>
+    <span class="num txs">${s.tx}</span>
+    <span class="num items">${s.it.toLocaleString()}</span>
+    <span class="num net strong">${P(s.net)}<span class="dlt ${s.up?'up':'down'}">${s.dlt}</span></span>
+    <span class="shr"><span class="sbar"><i style="width:${s.share*3.4}%"></i></span><b>${s.share}%</b></span>
+    <span class="num avg">${P(s.avg)}</span>
+    <span class="last">${s.last}</span>
+    <span class="chev">›</span>
+    <div class="meta"><span><b>${s.tx}</b> transactions</span><span><b>${s.it.toLocaleString()}</b> items</span><span>avg <b>${P(s.avg)}</b></span><span>${s.last}</span></div>
+  </div>`).join("");
+</script>
+</body>
+</html>

@@ -83,7 +83,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
         "/performance": ("盘点准确率", "确认用时中位数"),
         "/data-quality": ("发现的问题", "首次发现"),
         "/sync": ("最近成功", "备份", "任务"),
-        "/settings": ("地点与规则", "规则与限制", "库存数据超过此分钟数后视为过期"),
+        "/settings": ("地点与规则", "数据新鲜度", "库存数据超过此分钟数后视为过期"),
         "/suppliers": ("填写供应商真实名称", "联系方式"),
         "/products": ("商品设置", "每箱数量"),
         "/users": ("添加用户", "门店经理", "新密码"),
@@ -102,7 +102,7 @@ def test_chinese_content_on_list_forms_and_detail_pages(client, session, sync, f
             assert label in content, (path, label)
         assert 'lang="zh"' in response.text
     client.cookies.set("lang", "en")
-    for path, label in (("/inventory?view=list", "Stock now"), ("/settings", "Rules and limits"), ("/issues/new", "Add problem")):
+    for path, label in (("/inventory?view=list", "Stock now"), ("/settings", "Data freshness"), ("/issues/new", "Add problem")):
         assert label in client.get(path).text
 
 

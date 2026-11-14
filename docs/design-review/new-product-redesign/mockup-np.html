@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New Product — 3 Redesign Options</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px;font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;background:#e5e7eb;color:#0f172a}
+  .opt{width:1360px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;overflow:hidden;box-shadow:0 16px 40px rgba(15,23,42,.12);margin-bottom:44px}
+  .topbar{height:54px;background:#fff;border-bottom:1px solid #e2e8f0;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+  .top-left{display:flex;align-items:center;gap:14px}
+  .brand-pill{display:inline-flex;align-items:center;gap:8px;font-weight:750;font-size:14px}
+  .brand-r{width:28px;height:28px;border-radius:8px;background:#2563eb;color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px}
+  .seg{display:inline-flex;background:#f1f5f9;padding:3px;border-radius:10px;border:1px solid #e2e8f0;font-size:12.5px;font-weight:700}
+  .seg span{padding:5px 12px;border-radius:7px;color:#64748b}
+  .seg span.on{background:#fff;color:#0f172a;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .opt-tag{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;padding:4px 10px;border-radius:999px}
+  .wrap{padding:22px 26px 26px}
+  .crumb{font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .head h1{margin:0;font-size:23px;font-weight:800;letter-spacing:-.025em}
+  .head p{margin:4px 0 0;font-size:13px;color:#64748b}
+  .btn-row{display:flex;gap:8px;align-items:center}
+  .btn{height:36px;padding:0 14px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font:650 12.5px/1 inherit;color:#0f172a;display:inline-flex;align-items:center;gap:6px}
+  .btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+  .btn.dark{background:#0f172a;border-color:#0f172a;color:#fff}
+  .btn.soft{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .mono{font-family:"JetBrains Mono","Consolas",monospace}
+  .num{font-variant-numeric:tabular-nums}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .chip.ok{background:#ecfdf5;color:#047857}
+  .chip.blue{background:#eff6ff;color:#1d4ed8}
+  .chip.warn{background:#fffbeb;color:#b45309}
+  .chip.slate{background:#f1f5f9;color:#475569}
+
+  /* Option 1 */
+  .o1-grid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:15px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  .o1-scan{padding:18px}
+  .scan-box{display:flex;gap:8px;margin-top:10px}
+  .inp{height:40px;width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:0 12px;font-size:13px;background:#fff;color:#0f172a;display:flex;align-items:center}
+  .inp.focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .scan-ic{width:40px;height:40px;border-radius:10px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;display:grid;place-items:center;font-weight:800;flex:none}
+  .lbl{font-size:11.5px;font-weight:700;color:#475569;margin-bottom:5px;display:flex;justify-content:space-between}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .full{grid-column:1/-1}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:11px 14px}
+  .kpi small{font-size:11.5px;font-weight:600;color:#64748b;display:block}
+  .kpi b{font-size:20px;font-weight:800;margin-top:3px;display:block}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;color:#64748b;background:#f8fafc;padding:9px 14px;text-align:left;border-bottom:1px solid #e2e8f0}
+  td{padding:11px 14px;border-top:1px solid #f1f5f9;font-size:12.5px;vertical-align:middle}
+  .footbar{margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+
+  /* Option 2 */
+  .o2-grid{display:grid;grid-template-columns:410px 1fr;gap:18px;align-items:start}
+  .o2-hero{background:#0f172a;color:#fff;padding:16px 18px;border-radius:15px 15px 0 0}
+  .o2-hero .inp{background:#1e293b;border-color:#334155;color:#fff}
+  .o2-body{padding:16px 18px}
+  .profit-strip{margin-top:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:11px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#065f46;font-weight:700}
+  .stage-card{padding:13px 16px;border-bottom:1px solid #f1f5f9;display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center}
+
+  /* Option 3 */
+  .o3-grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  .o3-sec{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#64748b;margin:12px 0 6px}
+  .o3-row{display:grid;grid-template-columns:1.5fr 1fr .9fr .8fr 60px auto;gap:10px;padding:10px 14px;border-top:1px solid #f1f5f9;align-items:center;font-size:12.5px}
+</style>
+</head>
+<body>
+
+<!-- OPTION 1 -->
+<section id="opt1" class="opt">
+  <div class="topbar">
+    <div class="top-left">
+      <div class="brand-pill"><span class="brand-r">R</span> Retail OS · Daily Centro</div>
+      <div class="seg"><span class="on">Daily Centro</span><span>7-Eleven</span></div>
+    </div>
+    <span class="opt-tag">Option 1 · Studio Catalog Intake Workbench</span>
+  </div>
+  <div class="wrap">
+    <div class="crumb">Dashboard › New product</div>
+    <div class="head">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px"><h1>New product</h1><span class="chip blue">Draft NP Batch</span><span class="chip ok">StoreHub ready on save</span></div>
+        <p>Scan a barcode, check live web lookup and gross margin, stage SKUs in your batch, then export Excel or push directly to StoreHub.</p>
+      </div>
+      <div class="btn-row"><span class="btn">Saved lists (1)</span><span class="btn">Discard</span></div>
+    </div>
+    <div class="o1-grid">
+      <div class="card o1-scan">
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14.5px">Scan &amp; stage SKU</b><span class="chip ok">Found on web</span></div>
+        <div class="scan-box"><div class="inp focus mono">4800016645123</div><div class="scan-ic">⊞</div></div>
+        <div style="margin-top:8px;font-size:11.5px;color:#047857;font-weight:600">✓ Matched online — verify against the pack before adding</div>
+        <div style="border-top:1px solid #e2e8f0;margin:12px 0;padding-top:12px">
+          <div class="lbl"><span>Product name</span><span class="mono" style="color:#64748b">4800016645123</span></div>
+          <div class="inp">Lucky Me Pancit Canton Calamansi 60g</div>
+          <div class="fgrid">
+            <div><div class="lbl">Supplier</div><div class="inp">Monde Nissin Corp.</div></div>
+            <div><div class="lbl">Category</div><div class="inp">Snacks</div></div>
+            <div><div class="lbl">Quantity (pcs)</div><div class="inp num">24</div></div>
+            <div><div class="lbl">Est. Margin</div><div class="inp" style="background:#f8fafc;color:#047857;font-weight:750">+26.7% (₱4.80)</div></div>
+            <div><div class="lbl">Selling price</div><div class="inp num">₱18.00</div></div>
+            <div><div class="lbl">Supplier cost</div><div class="inp num">₱13.20</div></div>
+          </div>
+          <div class="btn pri" style="width:100%;justify-content:center;margin-top:14px;height:40px">Add to batch</div>
+        </div>
+      </div>
+      <div>
+        <div class="kpis">
+          <div class="kpi"><small>Staged SKUs</small><b class="num">2</b></div>
+          <div class="kpi"><small>Total Units</small><b class="num">36 pcs</b></div>
+          <div class="kpi"><small>Batch Retail Value</small><b class="num">₱1,176.00</b></div>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <div style="padding:13px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:14.5px">On the list</b><span class="chip slate">2 products · 36 pcs</span>
+          </div>
+          <table>
+            <thead><tr><th>Product</th><th>Supplier · Category</th><th>Cost / Price</th><th style="text-align:right">Qty</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>Oishi Prawn Crackers Spicy 60g</b><div class="mono" style="font-size:11px;color:#64748b">4800194156201</div></td>
+                <td>Acme Foods<div style="font-size:11px;color:#64748b">Snacks</div></td>
+                <td class="num"><b>₱28.00</b><div style="font-size:11px;color:#047857">Cost ₱19.50 · 30%</div></td>
+                <td style="text-align:right;font-weight:800;font-size:14px" class="num">12</td>
+                <td style="text-align:right"><span class="btn" style="height:28px;padding:0 10px;font-size:11px">Remove</span></td>
+              </tr>
+              <tr>
+                <td><b>C2 Green Tea Apple 500ml</b><div class="mono" style="font-size:11px;color:#64748b">4800092113044</div></td>
+                <td>Universal Robina Corp.<div style="font-size:11px;color:#64748b">Drinks</div></td>
+                <td class="num"><b>₱35.00</b><div style="font-size:11px;color:#047857">Cost ₱24.00 · 31%</div></td>
+                <td style="text-align:right;font-weight:800;font-size:14px" class="num">24</td>
+                <td style="text-align:right"><span class="btn" style="height:28px;padding:0 10px;font-size:11px">Remove</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+          <div><b style="font-size:13px">Recent StoreHub Push · Jack 'n Jill Piattos Cheese 85g</b><div style="font-size:11.5px;color:#64748b">4800016644201 · ₱42.00 · Pushed by np_admin</div></div>
+          <span class="chip blue">NP-00001</span>
+        </div>
+      </div>
+    </div>
+    <div class="footbar">
+      <div style="font-size:13px;font-weight:700">2 products · 36 pcs ready for RPA Excel &amp; StoreHub push</div>
+      <div class="btn pri">Save and make Excel</div>
+    </div>
+  </div>
+</section>
+
+<!-- OPTION 2 -->
+<section id="opt2" class="opt">
+  <div class="topbar">
+    <div class="top-left">
+      <div class="brand-pill"><span class="brand-r">R</span> Retail OS · Daily Centro</div>
+      <div class="seg"><span class="on">Daily Centro</span><span>7-Eleven</span></div>
+    </div>
+    <span class="opt-tag" style="color:#065f46;background:#ecfdf5;border-color:#a7f3d0">Option 2 · Merchandising Pricing &amp; Margin Studio</span>
+  </div>
+  <div class="wrap">
+    <div class="crumb">Dashboard › New product</div>
+    <div class="head">
+      <div><h1>New product</h1><p>Verify cost, retail price, and profit margin before batching new items for StoreHub.</p></div>
+      <div class="btn-row"><span class="btn soft">Saved lists · 1</span><span class="btn">Discard draft</span></div>
+    </div>
+    <div class="o2-grid">
+      <div class="card" style="overflow:hidden">
+        <div class="o2-hero">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">Barcode Intake</b><span class="chip ok" style="background:rgba(16,185,129,.2);color:#6ee7b7">Auto lookup active</span></div>
+          <div class="scan-box"><div class="inp mono">4800016645123</div><div class="scan-ic" style="background:#2563eb;color:#fff;border-color:#2563eb">⊞</div></div>
+        </div>
+        <div class="o2-body">
+          <div class="lbl"><span>Product Name</span><span class="chip slate">New SKU</span></div>
+          <div class="inp">Lucky Me Pancit Canton Calamansi 60g</div>
+          <div class="fgrid">
+            <div><div class="lbl">Supplier</div><div class="inp">Monde Nissin Corp.</div></div>
+            <div><div class="lbl">Category</div><div class="inp">Snacks</div></div>
+            <div><div class="lbl">Initial Qty</div><div class="inp num">24</div></div>
+            <div><div class="lbl">Selling Price</div><div class="inp num">₱18.00</div></div>
+            <div class="full"><div class="lbl"><span>Supplier Cost (optional)</span><span style="color:#64748b">Used for StoreHub cost tracking</span></div><div class="inp num">₱13.20</div></div>
+          </div>
+          <div class="profit-strip"><span>Unit Profit: ₱4.80</span><span>Gross Margin: 26.7%</span></div>
+          <div class="btn pri" style="width:100%;justify-content:center;margin-top:12px;height:42px;font-size:13.5px">+ Stage Product to Batch</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+            <div><b style="font-size:15px">Current Draft Staging</b><div style="font-size:12px;color:#64748b">Priced items sync straight to StoreHub on save</div></div>
+            <div class="btn-row"><span class="chip blue">2 SKUs</span><span class="chip ok">36 pcs</span></div>
+          </div>
+          <div class="stage-card">
+            <div><b>Oishi Prawn Crackers Spicy 60g</b><div style="font-size:12px;color:#64748b;margin-top:2px"><span class="mono">4800194156201</span> · Acme Foods · Snacks</div></div>
+            <div style="text-align:right"><b class="num">₱28.00</b> <span style="font-size:11.5px;color:#64748b">(cost ₱19.50)</span><div><span class="chip ok">30.4% margin</span></div></div>
+            <div class="btn-row"><span class="chip slate num" style="font-size:13px;padding:5px 11px">12 pcs</span><span class="btn" style="height:30px;padding:0 10px;font-size:11.5px">Remove</span></div>
+          </div>
+          <div class="stage-card">
+            <div><b>C2 Green Tea Apple 500ml</b><div style="font-size:12px;color:#64748b;margin-top:2px"><span class="mono">4800092113044</span> · Universal Robina Corp. · Drinks</div></div>
+            <div style="text-align:right"><b class="num">₱35.00</b> <span style="font-size:11.5px;color:#64748b">(cost ₱24.00)</span><div><span class="chip ok">31.4% margin</span></div></div>
+            <div class="btn-row"><span class="chip slate num" style="font-size:13px;padding:5px 11px">24 pcs</span><span class="btn" style="height:30px;padding:0 10px;font-size:11.5px">Remove</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;padding:14px 18px">
+          <div style="font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:8px">Added to StoreHub</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><b>Jack 'n Jill Piattos Cheese 85g</b><span style="color:#64748b;font-size:12px"> · 4800016644201 · ₱42.00</span></div>
+            <span class="chip blue">NP-00001 · 13:52</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footbar">
+      <div style="font-size:13px;font-weight:700">2 products · 36 pcs · Total Cost ₱810.00 → Retail ₱1,176.00</div>
+      <div class="btn pri">Save and make Excel</div>
+    </div>
+  </div>
+</section>
+
+<!-- OPTION 3 -->
+<section id="opt3" class="opt">
+  <div class="topbar">
+    <div class="top-left">
+      <div class="brand-pill"><span class="brand-r">R</span> Retail OS · Daily Centro</div>
+      <div class="seg"><span class="on">Daily Centro</span><span>7-Eleven</span></div>
+    </div>
+    <span class="opt-tag" style="color:#0f172a;background:#f1f5f9;border-color:#cbd5e1">Option 3 · Rapid POS Receiving &amp; Onboarding Terminal</span>
+  </div>
+  <div class="wrap">
+    <div class="crumb">Dashboard › New product</div>
+    <div class="head">
+      <div><h1>New product</h1><p>High-speed barcode registration for POS onboarding and RPA Excel export.</p></div>
+      <div class="btn-row"><span class="btn">Saved lists</span><span class="btn">Discard</span></div>
+    </div>
+    <div class="o3-grid">
+      <div class="card" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13.5px">BARCODE SCANNER</b><span class="chip blue mono">ENTER TO CHECK</span></div>
+        <div class="scan-box"><div class="inp focus mono">4800016645123</div><div class="scan-ic">⊞</div></div>
+        <div class="o3-sec">SKU Identity &amp; Sourcing</div>
+        <div class="inp" style="height:36px">Lucky Me Pancit Canton Calamansi 60g</div>
+        <div class="fgrid" style="margin-top:8px">
+          <div class="inp" style="height:36px">Monde Nissin Corp.</div>
+          <div class="inp" style="height:36px">Snacks</div>
+        </div>
+        <div class="o3-sec">Stock &amp; POS Pricing</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div><div class="lbl">Qty</div><div class="inp num" style="height:36px">24</div></div>
+          <div><div class="lbl">Price</div><div class="inp num" style="height:36px">18.00</div></div>
+          <div><div class="lbl">Cost</div><div class="inp num" style="height:36px">13.20</div></div>
+        </div>
+        <div class="btn dark" style="width:100%;justify-content:center;margin-top:12px;height:38px">Add SKU to Batch</div>
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+          <b style="font-size:14px">Batch Queue</b><span class="num" style="font-size:12px;font-weight:700;color:#475569">2 products · 36 pcs</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr .9fr .8fr 60px auto;gap:10px;padding:8px 14px;background:#f8fafc;font-size:10.5px;font-weight:750;color:#64748b;text-transform:uppercase">
+          <span>Product</span><span>Supplier / Cat</span><span>Price / Cost</span><span>POS Mode</span><span style="text-align:right">Qty</span><span></span>
+        </div>
+        <div class="o3-row">
+          <div><b>Oishi Prawn Crackers 60g</b><div class="mono" style="font-size:11px;color:#64748b">4800194156201</div></div>
+          <div>Acme Foods<div style="font-size:11px;color:#64748b">Snacks</div></div>
+          <div class="num"><b>₱28.00</b><div style="font-size:11px;color:#64748b">Cost ₱19.50</div></div>
+          <div><span class="chip ok">StoreHub + XL</span></div>
+          <div class="num" style="text-align:right;font-weight:800">12</div>
+          <span class="btn" style="height:26px;padding:0 8px;font-size:11px">Remove</span>
+        </div>
+        <div class="o3-row">
+          <div><b>C2 Green Tea Apple 500ml</b><div class="mono" style="font-size:11px;color:#64748b">4800092113044</div></div>
+          <div>Universal Robina<div style="font-size:11px;color:#64748b">Drinks</div></div>
+          <div class="num"><b>₱35.00</b><div style="font-size:11px;color:#64748b">Cost ₱24.00</div></div>
+          <div><span class="chip ok">StoreHub + XL</span></div>
+          <div class="num" style="text-align:right;font-weight:800">24</div>
+          <span class="btn" style="height:26px;padding:0 8px;font-size:11px">Remove</span>
+        </div>
+        <div class="o3-row">
+          <div><b>Sample Unpriced Promo Item</b><div class="mono" style="font-size:11px;color:#64748b">4800999000112</div></div>
+          <div>Acme Foods<div style="font-size:11px;color:#64748b">Snacks</div></div>
+          <div class="num" style="color:#64748b">No price set</div>
+          <div><span class="chip slate">Excel only</span></div>
+          <div class="num" style="text-align:right;font-weight:800">6</div>
+          <span class="btn" style="height:26px;padding:0 8px;font-size:11px">Remove</span>
+        </div>
+      </div>
+    </div>
+    <div class="footbar">
+      <div style="font-size:13px;font-weight:700">2 products · 36 pcs</div>
+      <div class="btn pri">Save and make Excel</div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

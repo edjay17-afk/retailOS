@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales — Redesign Mockup · RetailOS</title>
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --ink: #0f172a;
+    --mute: #64748b;
+    --mute2: #94a3b8;
+    --line: #e2e8f0;
+    --line2: #cbd5e1;
+    --primary: #2563eb;
+    --primary-h: #1d4ed8;
+    --primary-soft: rgba(37, 99, 235, 0.10);
+    --ok: #16a34a;
+    --ok-soft: rgba(22, 163, 74, 0.12);
+    --warn: #d97706;
+    --warn-soft: rgba(217, 119, 6, 0.12);
+    --bad: #dc2626;
+    --bad-soft: rgba(220, 38, 38, 0.11);
+    --purple: #7c3aed;
+    --sh1: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --sh2: 0 14px 36px rgba(15, 23, 42, 0.14);
+    --r: 14px;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0d12;
+    --surface: #13161f;
+    --surface2: #1b202c;
+    --ink: #f1f5f9;
+    --mute: #94a3b8;
+    --mute2: #64748b;
+    --line: #242a38;
+    --line2: #333c50;
+    --primary: #3b82f6;
+    --primary-h: #60a5fa;
+    --primary-soft: rgba(59, 130, 246, 0.16);
+    --ok: #22c55e;
+    --ok-soft: rgba(34, 197, 94, 0.16);
+    --warn: #f59e0b;
+    --warn-soft: rgba(245, 158, 11, 0.16);
+    --bad: #ef4444;
+    --bad-soft: rgba(239, 68, 68, 0.16);
+    --purple: #a78bfa;
+    --sh1: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --sh2: 0 18px 44px rgba(0, 0, 0, 0.65);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, select, input { font-family: inherit; }
+
+  /* App shell */
+  .shell { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 16px;
+  }
+  .brand-name b { display: block; font-size: 14px; font-weight: 750; letter-spacing: -0.02em; }
+  .brand-name small { display: block; font-size: 11.5px; color: var(--mute); }
+  .nav-sec { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute2); padding: 0 10px 6px; }
+  .nav-list { display: flex; flex-direction: column; gap: 2px; }
+  .nav-a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 9px;
+    color: var(--mute); text-decoration: none; font-weight: 550; font-size: 13.5px;
+  }
+  .nav-a:hover { background: var(--surface2); color: var(--ink); }
+  .nav-a.on { background: var(--primary-soft); color: var(--primary); font-weight: 650; }
+  .nav-sub { margin-left: 24px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--line); padding-left: 10px; margin-top: 2px; }
+  .nav-sub a { font-size: 12.5px; padding: 5px 8px; border-radius: 7px; color: var(--mute); text-decoration: none; }
+  .nav-sub a.on { color: var(--primary); font-weight: 650; background: var(--primary-soft); }
+  .nav-sub a:hover:not(.on) { color: var(--ink); }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    height: 58px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 0 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .source-pills { display: inline-flex; background: var(--surface2); padding: 3px; border-radius: 10px; gap: 2px; }
+  .source-pills span { padding: 5px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 650; color: var(--mute); }
+  .source-pills span.on { background: var(--surface); color: var(--ink); box-shadow: var(--sh1); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .iconbtn {
+    height: 34px; padding: 0 11px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  }
+  .iconbtn:hover { background: var(--surface2); }
+  .avatar-chip { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; }
+  .avatar-chip i { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 11px; }
+
+  /* Content */
+  .content { padding: 24px 28px 56px; max-width: 1400px; width: 100%; margin: 0 auto; }
+
+  .crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mute); margin-bottom: 6px; }
+  .crumbs a { color: var(--mute); text-decoration: none; }
+  .crumbs a:hover { color: var(--primary); }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .page-head h1 { margin: 0; font-size: 25px; font-weight: 780; letter-spacing: -0.025em; }
+  .head-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 5px; font-size: 12.5px; color: var(--mute); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .info-pill {
+    display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--line2); font-size: 10px; font-weight: 750; color: var(--mute); cursor: help;
+  }
+  .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line2);
+    background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 620;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--line2); }
+  .btn.pri { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.pri:hover { background: var(--primary-h); border-color: var(--primary-h); }
+
+  /* Export dropdown */
+  .dl-wrap { position: relative; }
+  .dl-menu {
+    position: absolute; right: 0; top: calc(100% + 6px); min-width: 248px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--sh2); padding: 6px; z-index: 30; display: none;
+  }
+  .dl-wrap.open .dl-menu { display: block; }
+  .dl-menu a {
+    display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 8px;
+    color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 600;
+  }
+  .dl-menu a small { color: var(--mute); font-weight: 450; font-size: 11.5px; }
+  .dl-menu a:hover { background: var(--surface2); }
+
+  /* Filter toolbar */
+  .toolbar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    box-shadow: var(--sh1);
+  }
+  .tb-left { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mute); }
+  .select-box {
+    height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2);
+    background: var(--surface); color: var(--ink); font-size: 13.5px; font-weight: 600; min-width: 190px;
+  }
+  .seg {
+    display: inline-flex; align-items: center; background: var(--surface2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 3px; height: 38px; gap: 2px;
+  }
+  .seg button {
+    height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent;
+    color: var(--mute); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--surface); color: var(--primary); font-weight: 700; box-shadow: var(--sh1); }
+
+  .tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .toggle-pill {
+    display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--surface2);
+    font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer;
+  }
+  .toggle-pill .sw {
+    width: 28px; height: 16px; border-radius: 999px; background: var(--line2); position: relative; transition: background .15s;
+  }
+  .toggle-pill .sw::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px;
+    border-radius: 50%; background: #fff; transition: transform .15s;
+  }
+  .toggle-pill.on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .toggle-pill.on .sw { background: var(--primary); }
+  .toggle-pill.on .sw::after { transform: translateX(12px); }
+
+  /* 5-Card KPI Strip */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--sh1);
+  }
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .kpi {
+    padding: 16px 18px;
+    border-right: 1px solid var(--line);
+    min-width: 0;
+  }
+  .kpi:last-child { border-right: 0; }
+  .kpi-lbl { font-size: 12px; font-weight: 600; color: var(--mute); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .kpi-val-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 8px; margin: 7px 0 5px; }
+  .kpi-val { font-size: 25px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .kpi-sub { font-size: 12px; color: var(--mute); line-height: 1.45; }
+  .kpi-sub b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+  .delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .delta.up { background: var(--ok-soft); color: var(--ok); }
+  .delta.down { background: var(--bad-soft); color: var(--bad); }
+  .delta.flat { background: var(--surface2); color: var(--mute); }
+
+  /* Payment Mix Stacked Bar */
+  .mix-bar {
+    height: 8px; border-radius: 999px; background: var(--surface2);
+    display: flex; overflow: hidden; margin: 9px 0 8px; gap: 2px;
+  }
+  .mix-seg { height: 100%; border-radius: 999px; }
+  .mix-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); }
+  .mix-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .mix-legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  /* Primary Grid: Trajectory + Store Split / Highlights */
+  .grid-main { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+  .panel { padding: 18px 20px; min-width: 0; display: flex; flex-direction: column; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .panel-title h2 { margin: 0; font-size: 15.5px; font-weight: 730; letter-spacing: -0.015em; }
+  .panel-title small { display: block; font-size: 12px; color: var(--mute); margin-top: 2px; }
+  .chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .chip-btn {
+    height: 29px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--mute); font-size: 12px; font-weight: 620; cursor: pointer;
+  }
+  .chip-btn:hover { color: var(--ink); border-color: var(--line2); }
+  .chip-btn.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 700; }
+
+  /* Interactive SVG Chart */
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-svg { width: 100%; height: 245px; display: block; overflow: visible; }
+  .chart-tooltip {
+    position: absolute; pointer-events: none; background: var(--ink); color: #fff;
+    padding: 8px 11px; border-radius: 9px; font-size: 12px; box-shadow: var(--sh2);
+    opacity: 0; transform: translate(-50%, -100%); transition: opacity .1s; z-index: 15; min-width: 152px;
+  }
+  html[data-theme="dark"] .chart-tooltip { background: #f8fafc; color: #0f172a; }
+  .chart-tooltip.show { opacity: 1; }
+  .chart-tooltip b { display: block; font-size: 13px; margin-bottom: 3px; }
+  .chart-tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; opacity: 0.9; font-variant-numeric: tabular-nums; }
+  .chart-foot {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; color: var(--mute);
+  }
+  .legend-items { display: flex; align-items: center; gap: 16px; }
+  .legend-items span { display: inline-flex; align-items: center; gap: 6px; }
+  .lg-sq { width: 10px; height: 10px; border-radius: 3px; background: var(--primary); display: inline-block; }
+  .lg-dash { width: 16px; height: 0; border-top: 2px dashed var(--mute2); display: inline-block; }
+
+  /* Store comparison list + Insights */
+  .store-list { display: flex; flex-direction: column; gap: 12px; }
+  .store-row {
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px;
+    cursor: pointer; transition: border-color .12s, background-color .12s;
+  }
+  .store-row:hover { border-color: var(--primary); background: var(--surface2); }
+  .store-row.active { border-color: var(--primary); background: var(--primary-soft); }
+  .store-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .store-top b { font-size: 13.5px; font-weight: 700; }
+  .store-top span { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .store-bar { height: 7px; border-radius: 999px; background: var(--surface2); overflow: hidden; margin-bottom: 6px; }
+  .store-bar i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+  .store-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); }
+
+  .signals-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .signals-lbl { font-size: 11px; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
+  .signal-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 11px; border-radius: 10px; font-size: 12.5px; margin-bottom: 7px;
+  }
+  .signal-item:last-child { margin-bottom: 0; }
+  .signal-item.good { background: var(--ok-soft); color: var(--ink); border: 1px solid rgba(22, 163, 74, 0.25); }
+  .signal-item.warn { background: var(--warn-soft); color: var(--ink); border: 1px solid rgba(217, 119, 6, 0.25); }
+  .signal-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; text-decoration: none; }
+
+  /* Secondary Grid: Top Products + Weekday Rhythm */
+  .grid-sub { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+  .prod-list { display: flex; flex-direction: column; gap: 9px; }
+  .prod-row { display: grid; grid-template-columns: 24px minmax(0, 1.3fr) minmax(70px, 1fr) auto; align-items: center; gap: 10px; font-size: 13px; }
+  .prod-rank { width: 22px; height: 22px; border-radius: 7px; background: var(--surface2); color: var(--mute); font-size: 11.5px; font-weight: 700; display: grid; place-items: center; }
+  .prod-name { min-width: 0; }
+  .prod-name b { display: block; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prod-name small { color: var(--mute); font-size: 11.5px; }
+  .prod-track { height: 7px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+  .prod-track i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+  .prod-val { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+
+  /* Weekday rhythm chart */
+  .dow-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 154px; padding-top: 14px; }
+  .dow-col { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .dow-val { font-size: 11px; font-weight: 650; color: var(--mute); font-variant-numeric: tabular-nums; }
+  .dow-bar-wrap { width: 100%; max-width: 44px; flex: 1; display: flex; align-items: flex-end; background: var(--surface2); border-radius: 9px; overflow: hidden; padding: 3px; }
+  .dow-bar { width: 100%; border-radius: 6px; background: var(--primary); opacity: 0.72; transition: opacity .15s; }
+  .dow-col.peak .dow-bar { opacity: 1; background: var(--ok); }
+  .dow-col.peak .dow-val { color: var(--ok); font-weight: 750; }
+  .dow-lbl { font-size: 12px; font-weight: 650; color: var(--ink); }
+  .dow-summary {
+    margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--surface2);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px;
+  }
+
+  /* Daily breakdown table */
+  .tw { overflow: hidden; }
+  .tw-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .tw-head h2 { margin: 0; font-size: 15.5px; font-weight: 730; }
+  .tw-sub { font-size: 12.5px; color: var(--mute); display: block; margin-top: 2px; }
+  .tw-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th {
+    text-align: left; font-size: 11px; font-weight: 700; color: var(--mute);
+    background: var(--surface2); padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  th.sort { cursor: pointer; user-select: none; }
+  th.sort:hover { color: var(--ink); }
+  th.right, td.right { text-align: right; }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tbody tr { cursor: pointer; transition: background-color .1s; }
+  tbody tr:hover td { background: var(--surface2); }
+  tbody tr.selected td { background: var(--primary-soft); }
+  tfoot td { font-weight: 750; background: var(--surface2); border-bottom: 0; }
+  .day-cell { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .day-cell b { font-weight: 700; }
+  .day-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .day-badge.today { background: var(--primary-soft); color: var(--primary); }
+  .day-badge.peak { background: var(--ok-soft); color: var(--ok); }
+  .day-badge.cx { background: var(--warn-soft); color: var(--warn); }
+  .net-cell { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .mini-bar { width: 32px; height: 5px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+  .mini-bar i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+
+  /* Slide-over Drawer */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.42);
+    z-index: 60; opacity: 0; pointer-events: none; transition: opacity .18s;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw);
+    background: var(--surface); border-left: 1px solid var(--line); box-shadow: var(--sh2);
+    z-index: 70; display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform .2s cubic-bezier(.22, 1, .36, 1);
+  }
+  .drawer.open { transform: translateX(0); }
+  .dr-head {
+    padding: 18px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .dr-head h3 { margin: 0; font-size: 18px; font-weight: 760; }
+  .dr-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--mute); }
+  .dr-body { padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px; }
+  .dr-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dr-kpi { padding: 12px; border-radius: 11px; background: var(--surface2); }
+  .dr-kpi span { display: block; font-size: 11.5px; color: var(--mute); font-weight: 600; }
+  .dr-kpi b { display: block; font-size: 19px; font-weight: 800; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .dr-sec-lbl { font-size: 11.5px; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
+  .dr-bars { display: flex; align-items: flex-end; gap: 4px; height: 78px; padding-top: 8px; }
+  .dr-bars div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .dr-bars i { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; display: block; min-height: 4px; }
+  .dr-bars span { font-size: 10px; color: var(--mute); }
+  .dr-list { border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+  .dr-list-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .dr-list-row:last-child { border-bottom: 0; }
+  .dr-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Responsive */
+  @media (max-width: 1120px) {
+    .kpi-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kpi { border-bottom: 1px solid var(--line); }
+    .grid-main { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 840px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .content { padding: 16px 14px 48px; }
+    .grid-sub { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi:first-child { grid-column: 1 / -1; }
+    .topbar { padding: 0 14px; }
+    .toolbar { padding: 12px; }
+    .tb-left, .field, .select-box, .seg { width: 100%; }
+    .seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .seg button { padding: 0 4px; font-size: 12px; }
+    .mini-bar { display: none; }
+    .chart-x-lbl.alt-hide { display: none; }
+    .tw-scroll thead { display: none; }
+    .tw-scroll table, .tw-scroll tbody, .tw-scroll tfoot { display: block; width: 100%; }
+    .tw-scroll tbody tr {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px;
+      padding: 12px 14px; border-bottom: 1px solid var(--line);
+    }
+    .tw-scroll tbody td {
+      display: block; padding: 0; border: 0; text-align: left !important; white-space: normal;
+    }
+    .tw-scroll tbody td:first-child { grid-column: 1 / -1; margin-bottom: 2px; }
+    .tw-scroll tbody td[data-lbl]::before {
+      content: attr(data-lbl); display: block; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.03em; color: var(--mute); margin-bottom: 1px;
+    }
+    .tw-scroll tfoot tr {
+      display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: space-between;
+      padding: 12px 14px; background: var(--surface2);
+    }
+    .tw-scroll tfoot td { padding: 0; border: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-name"><b>Retail OS</b><small>The Daily Centro</small></div>
+    </div>
+    <div>
+      <div class="nav-sec">Run the stores</div>
+      <div class="nav-list">
+        <a class="nav-a" href="#">Today</a>
+        <a class="nav-a" href="#">Problems</a>
+        <a class="nav-a" href="#">Inspections</a>
+        <a class="nav-a" href="#">Planogram</a>
+      </div>
+    </div>
+    <div>
+      <div class="nav-sec">Stock</div>
+      <div class="nav-list">
+        <a class="nav-a" href="#">Inventory</a>
+        <a class="nav-a" href="#">Transfers</a>
+        <a class="nav-a" href="#">Purchasing</a>
+      </div>
+    </div>
+    <div>
+      <div class="nav-sec">Insight</div>
+      <div class="nav-list">
+        <a class="nav-a on" href="#">Sales</a>
+        <div class="nav-sub">
+          <a class="on" href="#">Daily overview</a>
+          <a href="#">By product</a>
+          <a href="#">By employee</a>
+          <a href="#">Transactions</a>
+          <a href="#">Shifts</a>
+        </div>
+        <a class="nav-a" href="#">Team</a>
+        <a class="nav-a" href="#">Settings</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="source-pills">
+        <span class="on">Daily Centro</span>
+        <span>7-Eleven</span>
+      </div>
+      <div class="topbar-right">
+        <button class="iconbtn" id="theme-btn" type="button">Theme: Light</button>
+        <div class="avatar-chip"><i>JL</i><span>Justin Lim</span></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="crumbs"><a href="#">Dashboard</a> <span>&rsaquo;</span> <span>Sales</span></div>
+
+      <div class="page-head">
+        <div>
+          <h1>Sales</h1>
+          <div class="head-meta">
+            <span id="meta-loc">All stores</span> &middot;
+            <span id="meta-range">14 days</span> &middot;
+            <span><i class="live-dot"></i> Last synced 2m ago</span>
+            <span class="info-pill" title="Philippine business days; cancelled sales excluded, returns subtracted.">i</span>
+          </div>
+        </div>
+        <div class="head-actions">
+          <a class="btn" href="#">By product</a>
+          <a class="btn" href="#">By employee</a>
+          <a class="btn" href="#">Transactions</a>
+          <div class="dl-wrap" id="dl-wrap">
+            <button class="btn pri" id="dl-btn" type="button">Export &#9662;</button>
+            <div class="dl-menu">
+              <a href="#">Download CSV<small>Selected stores &amp; date range</small></a>
+              <a href="#">Download Excel workbook<small>Full store history (monthly sheets)</small></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter toolbar -->
+      <div class="toolbar">
+        <div class="tb-left">
+          <div class="field">
+            <label for="loc-sel">Location</label>
+            <select class="select-box" id="loc-sel">
+              <option value="all">All stores (3 branches)</option>
+              <option value="bantayan">The Daily Centro - Bantayan</option>
+              <option value="madridejos">The Daily Centro - Madridejos</option>
+              <option value="santafe">The Daily Centro - Santa Fe</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Period</label>
+            <div class="seg" id="period-seg">
+              <button type="button" data-p="1">Today</button>
+              <button type="button" data-p="7">7 days</button>
+              <button type="button" class="on" data-p="14">14 days</button>
+              <button type="button" data-p="30">30 days</button>
+              <button type="button" data-p="custom">Custom</button>
+            </div>
+          </div>
+        </div>
+        <div class="tb-right">
+          <button type="button" class="toggle-pill on" id="cmp-toggle">
+            <span class="sw"></span> Compare prior period
+          </button>
+        </div>
+      </div>
+
+      <!-- 5-Card KPI Strip -->
+      <section class="card kpi-strip" id="kpi-strip"></section>
+
+      <!-- Main Row: Trajectory + Store Split & Insights -->
+      <section class="grid-main">
+        <div class="card panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2 id="chart-title">Net sales per day</h2>
+              <small id="chart-sub">Hover any bar or point to inspect daily performance vs prior period</small>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div class="chips" id="metric-chips">
+                <button type="button" class="chip-btn on" data-m="net">Net sales</button>
+                <button type="button" class="chip-btn" data-m="tx">Transactions</button>
+                <button type="button" class="chip-btn" data-m="basket">Avg basket</button>
+              </div>
+              <div class="chips" id="mode-chips">
+                <button type="button" class="chip-btn on" data-mode="bars">Bars</button>
+                <button type="button" class="chip-btn" data-mode="line">Line</button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <svg class="chart-svg" id="main-chart" viewBox="0 0 760 245" preserveAspectRatio="none"></svg>
+            <div class="chart-tooltip" id="chart-tip"></div>
+          </div>
+          <div class="chart-foot">
+            <div class="legend-items">
+              <span><i class="lg-sq"></i> This period</span>
+              <span id="prev-legend"><i class="lg-dash"></i> Previous period</span>
+            </div>
+            <span id="chart-note">Click a day below in the table to open its receipt &amp; product breakdown</span>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <div class="panel-head" style="margin-bottom:10px">
+            <div class="panel-title">
+              <h2>Store contribution</h2>
+              <small>Click a branch to filter the dashboard</small>
+            </div>
+          </div>
+          <div class="store-list" id="store-list"></div>
+
+          <div class="signals-box">
+            <div class="signals-lbl">Period signals</div>
+            <div class="signal-item good">
+              <span><strong>Peak day:</strong> Sat 7 Nov hit PHP 42,810 (+27% vs avg)</span>
+              <a class="signal-tag" href="#" data-open-day="2026-11-07">Inspect</a>
+            </div>
+            <div class="signal-item warn">
+              <span><strong>Cancellations:</strong> 7 orders voided in Bantayan (1.4%)</span>
+              <a class="signal-tag" href="#">Review</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Secondary Bento Row: Top Products + Day-of-Week Pattern -->
+      <section class="grid-sub">
+        <div class="card panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Top products</h2>
+              <small>Best-performing SKUs in the selected window</small>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="chips" id="prod-sort">
+                <button type="button" class="chip-btn on" data-ps="rev">Revenue</button>
+                <button type="button" class="chip-btn" data-ps="units">Units</button>
+              </div>
+              <a class="btn" style="height:29px;padding:0 10px;font-size:12px" href="#">All products</a>
+            </div>
+          </div>
+          <div class="prod-list" id="prod-list"></div>
+        </div>
+
+        <div class="card panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Trading pattern by weekday</h2>
+              <small>Average daily net sales to guide promo timing &amp; staffing</small>
+            </div>
+          </div>
+          <div class="dow-grid" id="dow-grid"></div>
+          <div class="dow-summary">
+            <span><strong>Strongest day:</strong> Saturday (PHP 39,940 avg)</span>
+            <span style="color:var(--mute)">Softest: Tuesday (PHP 28,120 avg)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Daily Table -->
+      <section class="card tw">
+        <div class="tw-head">
+          <div>
+            <h2>By day</h2>
+            <span class="tw-sub">Click any row to open the daily summary drawer with hourly curve, payment split, and top SKUs.</span>
+          </div>
+          <span class="tw-sub" id="table-count">14 days shown</span>
+        </div>
+        <div class="tw-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="sort" data-sk="date">Date</th>
+                <th class="right sort" data-sk="net">Net sales</th>
+                <th class="right sort" data-sk="tx">Transactions</th>
+                <th class="right sort" data-sk="basket">Avg basket</th>
+                <th class="right">Cash</th>
+                <th class="right">GCash / Maya</th>
+                <th class="right">Card</th>
+                <th class="right">Returns</th>
+                <th class="right">Tax</th>
+                <th class="right">Cancelled</th>
+              </tr>
+            </thead>
+            <tbody id="days-tbody"></tbody>
+            <tfoot id="days-tfoot"></tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Slide-over Day Detail Drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dr-head">
+    <div>
+      <h3 id="dr-title">Thu 12 Nov 2026</h3>
+      <p id="dr-sub">All stores &middot; 362 completed receipts</p>
+    </div>
+    <button class="iconbtn" id="dr-close" type="button">&#10005;</button>
+  </div>
+  <div class="dr-body" id="dr-body"></div>
+  <div class="dr-foot">
+    <a class="btn" href="#">View products sold</a>
+    <a class="btn pri" href="#">View receipts</a>
+  </div>
+</aside>
+
+<script>
+const DAYS_14 = [
+  { date: "2026-11-13", label: "13 Nov", dow: "Fri", today: true,  net: 21450, prevNet: 19820, gross: 21780, returns: 330,  tx: 214, prevTx: 201, cash: 14160, gcash: 5240, card: 2050, tax: 2298, cx: 1 },
+  { date: "2026-11-12", label: "12 Nov", dow: "Thu", today: false, net: 35890, prevNet: 32900, gross: 36320, returns: 430,  tx: 362, prevTx: 339, cash: 24410, gcash: 8340, card: 3140, tax: 3845, cx: 2 },
+  { date: "2026-11-11", label: "11 Nov", dow: "Wed", today: false, net: 33410, prevNet: 31150, gross: 33710, returns: 300,  tx: 341, prevTx: 320, cash: 22380, gcash: 7920, card: 3110, tax: 3579, cx: 1 },
+  { date: "2026-11-10", label: "10 Nov", dow: "Tue", today: false, net: 28940, prevNet: 29400, gross: 29290, returns: 350,  tx: 298, prevTx: 305, cash: 19680, gcash: 6780, card: 2480, tax: 3101, cx: 2 },
+  { date: "2026-11-09", label: "09 Nov", dow: "Mon", today: false, net: 31280, prevNet: 30110, gross: 31500, returns: 220,  tx: 318, prevTx: 312, cash: 21270, gcash: 7310, card: 2700, tax: 3351, cx: 1 },
+  { date: "2026-11-08", label: "08 Nov", dow: "Sun", today: false, net: 39120, prevNet: 36840, gross: 39720, returns: 600,  tx: 388, prevTx: 371, cash: 25430, gcash: 9840, card: 3850, tax: 4191, cx: 3 },
+  { date: "2026-11-07", label: "07 Nov", dow: "Sat", today: false, net: 42810, prevNet: 38120, gross: 43260, returns: 450,  tx: 419, prevTx: 385, cash: 27830, gcash: 10910, card: 4070, tax: 4587, cx: 2, peak: true },
+  { date: "2026-11-06", label: "06 Nov", dow: "Fri", today: false, net: 36480, prevNet: 34200, gross: 36910, returns: 430,  tx: 367, prevTx: 348, cash: 24080, gcash: 8920, card: 3480, tax: 3908, cx: 1 },
+  { date: "2026-11-05", label: "05 Nov", dow: "Thu", today: false, net: 32900, prevNet: 31450, gross: 33190, returns: 290,  tx: 334, prevTx: 324, cash: 22370, gcash: 7690, card: 2840, tax: 3525, cx: 1 },
+  { date: "2026-11-04", label: "04 Nov", dow: "Wed", today: false, net: 30620, prevNet: 29890, gross: 30910, returns: 290,  tx: 315, prevTx: 309, cash: 20510, gcash: 7420, card: 2690, tax: 3281, cx: 0 },
+  { date: "2026-11-03", label: "03 Nov", dow: "Tue", today: false, net: 27300, prevNet: 28110, gross: 27650, returns: 350,  tx: 282, prevTx: 294, cash: 18560, gcash: 6390, card: 2350, tax: 2925, cx: 2 },
+  { date: "2026-11-02", label: "02 Nov", dow: "Mon", today: false, net: 31850, prevNet: 29980, gross: 32120, returns: 270,  tx: 322, prevTx: 307, cash: 21340, gcash: 7680, card: 2830, tax: 3412, cx: 1 },
+  { date: "2026-11-01", label: "01 Nov", dow: "Sun", today: false, net: 37410, prevNet: 35100, gross: 37890, returns: 480,  tx: 375, prevTx: 356, cash: 24310, gcash: 9410, card: 3690, tax: 4008, cx: 2 },
+  { date: "2026-10-31", label: "31 Oct", dow: "Sat", today: false, net: 37070, prevNet: 35410, gross: 37590, returns: 520,  tx: 373, prevTx: 358, cash: 24100, gcash: 9290, card: 3680, tax: 3972, cx: 3 }
+];
+
+const STORES = [
+  { id: "bantayan",   name: "Bantayan",   share: 0.44, delta: +8.2, tx: 2090, basket: 100.3 },
+  { id: "madridejos", name: "Madridejos", share: 0.31, delta: +4.6, tx: 1471, basket: 100.4 },
+  { id: "santafe",    name: "Santa Fe",   share: 0.25, delta: -1.4, tx: 1187, basket: 100.5 }
+];
+
+const PRODUCTS = [
+  { name: "Iced Caramel Macchiato 16oz", cat: "Beverages", rev: 41280, units: 344 },
+  { name: "Classic Pork Siomai (4pcs)",  cat: "Hot Food",  rev: 34920, units: 776 },
+  { name: "Daily Brew Americano",        cat: "Beverages", rev: 28650, units: 382 },
+  { name: "Bottled Water 500ml",         cat: "Drinks",    rev: 21840, units: 1092 },
+  { name: "Spicy Chicken Rice Bowl",     cat: "Meals",     rev: 19950, units: 210 },
+  { name: "Cheesy Beef Shawarma Wrap",   cat: "Meals",     rev: 17420, units: 198 },
+  { name: "Choco Fudge Brownie",         cat: "Bakery",    rev: 14110, units: 256 }
+];
+
+const state = {
+  loc: "all",
+  period: "14",
+  compare: true,
+  metric: "net",
+  mode: "bars",
+  prodSort: "rev",
+  sortCol: "date",
+  sortDir: "desc"
+};
+
+const fmt = (n) => "PHP " + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtShort = (n) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const fmtMoney0 = (n) => "PHP " + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+
+function scaleFactor() {
+  if (state.loc === "all") return 1;
+  const s = STORES.find(x => x.id === state.loc);
+  return s ? s.share : 1;
+}
+
+function getRows() {
+  const f = scaleFactor();
+  let n = state.period === "today" || state.period === "1" ? 1 : state.period === "7" ? 7 : state.period === "30" ? 14 : 14;
+  return DAYS_14.slice(0, n).map(r => {
+    const net = Math.round(r.net * f);
+    const prevNet = Math.round(r.prevNet * f);
+    const tx = Math.max(1, Math.round(r.tx * f));
+    const prevTx = Math.max(1, Math.round(r.prevTx * f));
+    const cash = Math.round(r.cash * f);
+    const gcash = Math.round(r.gcash * f);
+    const card = Math.max(0, net - cash - gcash);
+    const returns = Math.round(r.returns * f);
+    const gross = net + returns;
+    const tax = Math.round(r.tax * f);
+    const cx = Math.round(r.cx * f);
+    return { ...r, net, prevNet, gross, returns, tx, prevTx, cash, gcash, card, tax, cx, basket: net / tx, prevBasket: prevNet / prevTx };
+  });
+}
+
+function renderKPIs(rows) {
+  const net = rows.reduce((a, r) => a + r.net, 0);
+  const prevNet = rows.reduce((a, r) => a + r.prevNet, 0);
+  const tx = rows.reduce((a, r) => a + r.tx, 0);
+  const prevTx = rows.reduce((a, r) => a + r.prevTx, 0);
+  const cash = rows.reduce((a, r) => a + r.cash, 0);
+  const gcash = rows.reduce((a, r) => a + r.gcash, 0);
+  const card = rows.reduce((a, r) => a + r.card, 0);
+  const returns = rows.reduce((a, r) => a + r.returns, 0);
+  const tax = rows.reduce((a, r) => a + r.tax, 0);
+  const cx = rows.reduce((a, r) => a + r.cx, 0);
+  const basket = net / tx;
+  const prevBasket = prevNet / prevTx;
+  const gp = net * 0.342;
+  const cashPct = Math.round(cash / net * 100);
+  const gcashPct = Math.round(gcash / net * 100);
+  const cardPct = Math.max(0, 100 - cashPct - gcashPct);
+
+  const deltaPill = (now, prev) => {
+    const p = ((now - prev) / prev) * 100;
+    const cls = p >= 0.05 ? "up" : p <= -0.05 ? "down" : "flat";
+    const arrow = p >= 0.05 ? "&#9650;" : p <= -0.05 ? "&#9660;" : "";
+    return `<span class="delta ${cls}">${arrow} ${Math.abs(p).toFixed(1)}%</span>`;
+  };
+
+  document.getElementById("kpi-strip").innerHTML = `
+    <div class="kpi">
+      <div class="kpi-lbl">Net sales (${rows.length === 1 ? "Today" : rows.length + " days"})</div>
+      <div class="kpi-val-row"><span class="kpi-val">${fmtMoney0(net)}</span>${deltaPill(net, prevNet)}</div>
+      <div class="kpi-sub">Avg / day: <b>${fmtMoney0(net / rows.length)}</b> &middot; Prev: <b>${fmtMoney0(prevNet)}</b></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Transactions</div>
+      <div class="kpi-val-row"><span class="kpi-val">${fmtShort(tx)}</span>${deltaPill(tx, prevTx)}</div>
+      <div class="kpi-sub">Cancelled: <b>${cx}</b> (${(cx / (tx + cx) * 100).toFixed(1)}%) &middot; Returns: <b>${fmtMoney0(returns)}</b></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Average basket</div>
+      <div class="kpi-val-row"><span class="kpi-val">${fmt(basket)}</span>${deltaPill(basket, prevBasket)}</div>
+      <div class="kpi-sub">Prev period: <b>${fmt(prevBasket)}</b> &middot; 2.4 items / tx</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Est. gross profit &amp; tax</div>
+      <div class="kpi-val-row"><span class="kpi-val">${fmtMoney0(gp)}</span><span class="delta up">34.2% margin</span></div>
+      <div class="kpi-sub">VAT / Tax: <b>${fmtMoney0(tax)}</b> &middot; Gross: <b>${fmtMoney0(net + returns)}</b></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Payment mix <b>${cashPct}% cash</b></div>
+      <div class="mix-bar">
+        <span class="mix-seg" style="width:${cashPct}%;background:var(--ok)"></span>
+        <span class="mix-seg" style="width:${gcashPct}%;background:var(--primary)"></span>
+        <span class="mix-seg" style="width:${cardPct}%;background:var(--purple)"></span>
+      </div>
+      <div class="mix-legend">
+        <span><i style="background:var(--ok)"></i>Cash <b>${cashPct}%</b></span>
+        <span><i style="background:var(--primary)"></i>GCash/Maya <b>${gcashPct}%</b></span>
+        <span><i style="background:var(--purple)"></i>Card <b>${cardPct}%</b></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderChart(rows) {
+  const ordered = [...rows].reverse();
+  const hourlyMode = ordered.length === 1;
+  const pts = hourlyMode
+    ? ["7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm"].map((lbl, idx) => {
+        const w = [0.04,0.08,0.11,0.10,0.09,0.12,0.11,0.08,0.07,0.07,0.07,0.06][idx];
+        const cur = Math.round(ordered[0].net * w);
+        const prv = Math.round(ordered[0].prevNet * w * (0.94 + (idx % 3) * 0.05));
+        return { label: lbl, val: state.metric === "tx" ? Math.round(ordered[0].tx * w) : state.metric === "basket" ? ordered[0].basket * (0.9 + (idx % 4) * 0.05) : cur, prev: state.metric === "tx" ? Math.round(ordered[0].prevTx * w) : prv, date: ordered[0].date };
+      })
+    : ordered.map(r => ({
+        label: r.label,
+        val: state.metric === "tx" ? r.tx : state.metric === "basket" ? r.basket : r.net,
+        prev: state.metric === "tx" ? r.prevTx : state.metric === "basket" ? r.prevBasket : r.prevNet,
+        date: r.date
+      }));
+
+  document.getElementById("chart-title").textContent = hourlyMode ? "Sales by hour (Today)" : (state.metric === "tx" ? "Transactions per day" : state.metric === "basket" ? "Average basket per day" : "Net sales per day");
+  document.getElementById("prev-legend").style.display = state.compare ? "inline-flex" : "none";
+
+  const svg = document.getElementById("main-chart");
+  const W = 760, H = 245, padL = 56, padR = 14, padT = 16, padB = 30;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const maxV = Math.max(...pts.flatMap(p => state.compare ? [p.val, p.prev] : [p.val]), 1) * 1.12;
+  const fmtY = v => state.metric === "tx" ? Math.round(v) : v >= 1000 ? Math.round(v / 1000) + "k" : Math.round(v);
+
+  let html = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (ih * i / 4);
+    const val = maxV * (1 - i / 4);
+    html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    html += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--mute)">${fmtY(val)}</text>`;
+  }
+
+  const slot = iw / pts.length;
+  const bw = Math.min(30, slot * 0.54);
+
+  if (state.mode === "bars") {
+    pts.forEach((p, i) => {
+      const cx = padL + slot * (i + 0.5);
+      const bh = (p.val / maxV) * ih;
+      const y = padT + ih - bh;
+      html += `<rect data-idx="${i}" x="${cx - bw / 2}" y="${y}" width="${bw}" height="${Math.max(2, bh)}" rx="5" fill="var(--primary)" opacity="0.9"/>`;
+      html += `<text class="chart-x-lbl ${i % 2 === 1 ? "alt-hide" : ""}" x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--mute)">${p.label}</text>`;
+    });
+    if (state.compare) {
+      const d = pts.map((p, i) => {
+        const cx = padL + slot * (i + 0.5);
+        const y = padT + ih - (p.prev / maxV) * ih;
+        return (i === 0 ? "M" : "L") + `${cx.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+      html += `<path d="${d}" fill="none" stroke="var(--mute2)" stroke-width="2" stroke-dasharray="5 4"/>`;
+    }
+  } else {
+    const coords = pts.map((p, i) => [padL + slot * (i + 0.5), padT + ih - (p.val / maxV) * ih]);
+    const areaD = `M${coords[0][0]},${padT + ih} ` + coords.map(c => `L${c[0]},${c[1]}`).join(" ") + ` L${coords[coords.length-1][0]},${padT + ih} Z`;
+    const lineD = coords.map((c, i) => (i === 0 ? "M" : "L") + `${c[0]},${c[1]}`).join(" ");
+    html += `<path d="${areaD}" fill="var(--primary)" opacity="0.14"/>`;
+    if (state.compare) {
+      const prevD = pts.map((p, i) => {
+        const cx = padL + slot * (i + 0.5);
+        const y = padT + ih - (p.prev / maxV) * ih;
+        return (i === 0 ? "M" : "L") + `${cx},${y}`;
+      }).join(" ");
+      html += `<path d="${prevD}" fill="none" stroke="var(--mute2)" stroke-width="2" stroke-dasharray="5 4"/>`;
+    }
+    html += `<path d="${lineD}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>`;
+    coords.forEach(([cx, cy], i) => {
+      html += `<circle data-idx="${i}" cx="${cx}" cy="${cy}" r="4.5" fill="var(--primary)" stroke="var(--surface)" stroke-width="2"/>`;
+      html += `<text class="chart-x-lbl ${i % 2 === 1 ? "alt-hide" : ""}" x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--mute)">${pts[i].label}</text>`;
+    });
+  }
+
+  // Hover targets
+  pts.forEach((p, i) => {
+    const x = padL + slot * i;
+    html += `<rect class="chart-hit" data-idx="${i}" x="${x}" y="${padT}" width="${slot}" height="${ih}" fill="transparent" style="cursor:pointer"/>`;
+  });
+
+  svg.innerHTML = html;
+  const tip = document.getElementById("chart-tip");
+  svg.querySelectorAll(".chart-hit").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      const i = +el.dataset.idx;
+      const p = pts[i];
+      const vFmt = state.metric === "tx" ? fmtShort(p.val) + " tx" : state.metric === "basket" ? fmt(p.val) : fmtMoney0(p.val);
+      const pFmt = state.metric === "tx" ? fmtShort(p.prev) + " tx" : state.metric === "basket" ? fmt(p.prev) : fmtMoney0(p.prev);
+      const diff = ((p.val - p.prev) / p.prev * 100);
+      tip.innerHTML = `<b>${p.label}</b><div class="tt-row"><span>This period</span><strong>${vFmt}</strong></div>` +
+        (state.compare ? `<div class="tt-row"><span>Previous</span><span>${pFmt} (${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%)</span></div>` : "");
+      const box = svg.getBoundingClientRect();
+      const xPct = (i + 0.5) / pts.length;
+      tip.style.left = Math.round(box.width * (0.08 + xPct * 0.88)) + "px";
+      tip.style.top = "28px";
+      tip.classList.add("show");
+    });
+    el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    el.addEventListener("click", () => openDrawer(pts[+el.dataset.idx].date));
+  });
+}
+
+function renderStores(rows) {
+  const totalNet = rows.reduce((a, r) => a + r.net, 0) / scaleFactor();
+  document.getElementById("store-list").innerHTML = STORES.map(s => {
+    const active = state.loc === s.id;
+    const rev = Math.round(totalNet * s.share);
+    const dCls = s.delta >= 0 ? "up" : "down";
+    const arrow = s.delta >= 0 ? "&#9650;" : "&#9660;";
+    return `
+      <div class="store-row ${active ? "active" : ""}" data-store="${s.id}">
+        <div class="store-top">
+          <b>${s.name}</b>
+          <span>${fmtMoney0(rev)} &nbsp;<em class="delta ${dCls}" style="font-style:normal">${arrow} ${Math.abs(s.delta).toFixed(1)}%</em></span>
+        </div>
+        <div class="store-bar"><i style="width:${Math.round(s.share * 100)}%"></i></div>
+        <div class="store-meta">
+          <span>${Math.round(s.share * 100)}% of net sales</span>
+          <span>${fmtShort(s.tx)} tx &middot; PHP ${s.basket.toFixed(0)} basket</span>
+        </div>
+      </div>`;
+  }).join("");
+
+  document.querySelectorAll(".store-row").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.store;
+      state.loc = state.loc === id ? "all" : id;
+      document.getElementById("loc-sel").value = state.loc;
+      renderAll();
+    });
+  });
+}
+
+function renderProducts() {
+  const f = scaleFactor();
+  const list = [...PRODUCTS].map(p => ({ ...p, rev: Math.round(p.rev * f), units: Math.max(1, Math.round(p.units * f)) }))
+    .sort((a, b) => state.prodSort === "units" ? b.units - a.units : b.rev - a.rev);
+  const mx = Math.max(...list.map(x => state.prodSort === "units" ? x.units : x.rev), 1);
+  document.getElementById("prod-list").innerHTML = list.map((p, idx) => {
+    const val = state.prodSort === "units" ? p.units : p.rev;
+    const pct = Math.round(val / mx * 100);
+    return `
+      <div class="prod-row">
+        <div class="prod-rank">${idx + 1}</div>
+        <div class="prod-name"><b>${p.name}</b><small>${p.cat} &middot; ${fmtShort(p.units)} units</small></div>
+        <div class="prod-track"><i style="width:${pct}%"></i></div>
+        <div class="prod-val">${state.prodSort === "units" ? fmtShort(p.units) + " pcs" : fmtMoney0(p.rev)}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderDOW() {
+  const f = scaleFactor();
+  const dowData = [
+    { d: "Mon", v: 31565 },
+    { d: "Tue", v: 28120 },
+    { d: "Wed", v: 32015 },
+    { d: "Thu", v: 34395 },
+    { d: "Fri", v: 36480 },
+    { d: "Sat", v: 39940, peak: true },
+    { d: "Sun", v: 38265 }
+  ].map(x => ({ ...x, v: Math.round(x.v * f) }));
+  const mx = Math.max(...dowData.map(x => x.v), 1);
+  document.getElementById("dow-grid").innerHTML = dowData.map(x => `
+    <div class="dow-col ${x.peak ? "peak" : ""}">
+      <div class="dow-val">${(x.v / 1000).toFixed(1)}k</div>
+      <div class="dow-bar-wrap"><div class="dow-bar" style="height:${Math.round(x.v / mx * 100)}%"></div></div>
+      <div class="dow-lbl">${x.d}</div>
+    </div>`).join("");
+}
+
+function renderTable(rows) {
+  const sorted = [...rows].sort((a, b) => {
+    const av = state.sortCol === "date" ? a.date : a[state.sortCol];
+    const bv = state.sortCol === "date" ? b.date : b[state.sortCol];
+    if (av === bv) return 0;
+    const cmp = av > bv ? 1 : -1;
+    return state.sortDir === "asc" ? cmp : -cmp;
+  });
+  const mx = Math.max(...rows.map(r => r.net), 1);
+  document.getElementById("table-count").textContent = `${rows.length} ${rows.length === 1 ? "day" : "days"} shown`;
+  document.getElementById("days-tbody").innerHTML = sorted.map(r => `
+    <tr data-date="${r.date}">
+      <td>
+        <div class="day-cell">
+          <b>${r.dow} ${r.label}</b>
+          ${r.today ? '<span class="day-badge today">Today</span>' : ""}
+          ${r.peak ? '<span class="day-badge peak">Peak</span>' : ""}
+        </div>
+      </td>
+      <td class="right" data-lbl="Net sales"><span class="net-cell"><span class="mini-bar"><i style="width:${Math.round(r.net / mx * 100)}%"></i></span><b>${fmtNum(r.net)}</b></span></td>
+      <td class="right" data-lbl="Transactions">${fmtShort(r.tx)}</td>
+      <td class="right" data-lbl="Avg basket">${fmtNum(r.basket)}</td>
+      <td class="right" data-lbl="Cash">${fmtNum(r.cash)}</td>
+      <td class="right" data-lbl="GCash / Maya">${fmtNum(r.gcash)}</td>
+      <td class="right" data-lbl="Card">${fmtNum(r.card)}</td>
+      <td class="right" data-lbl="Returns">${r.returns ? fmtNum(r.returns) : "0.00"}</td>
+      <td class="right" data-lbl="Tax">${fmtNum(r.tax)}</td>
+      <td class="right" data-lbl="Cancelled">${r.cx >= 3 ? `<span class="day-badge cx">${r.cx}</span>` : r.cx}</td>
+    </tr>`).join("");
+
+  const net = rows.reduce((a, r) => a + r.net, 0);
+  const tx = rows.reduce((a, r) => a + r.tx, 0);
+  document.getElementById("days-tfoot").innerHTML = rows.length > 1 ? `
+    <tr>
+      <td>Total (${rows.length} days)</td>
+      <td class="right">${fmtNum(net)}</td>
+      <td class="right">${fmtShort(tx)}</td>
+      <td class="right">${fmtNum(net / tx)}</td>
+      <td class="right">${fmtNum(rows.reduce((a, r) => a + r.cash, 0))}</td>
+      <td class="right">${fmtNum(rows.reduce((a, r) => a + r.gcash, 0))}</td>
+      <td class="right">${fmtNum(rows.reduce((a, r) => a + r.card, 0))}</td>
+      <td class="right">${fmtNum(rows.reduce((a, r) => a + r.returns, 0))}</td>
+      <td class="right">${fmtNum(rows.reduce((a, r) => a + r.tax, 0))}</td>
+      <td class="right">${rows.reduce((a, r) => a + r.cx, 0)}</td>
+    </tr>` : "";
+
+  document.querySelectorAll("#days-tbody tr").forEach(tr => {
+    tr.addEventListener("click", () => openDrawer(tr.dataset.date));
+  });
+}
+
+function openDrawer(dateStr) {
+  const rows = getRows();
+  const r = rows.find(x => x.date === dateStr) || rows[0];
+  document.querySelectorAll("#days-tbody tr").forEach(tr => tr.classList.toggle("selected", tr.dataset.date === r.date));
+  document.getElementById("dr-title").textContent = `${r.dow} ${r.label} 2026`;
+  const locText = state.loc === "all" ? "All stores" : STORES.find(s => s.id === state.loc).name;
+  document.getElementById("dr-sub").textContent = `${locText} · ${fmtShort(r.tx)} completed receipts · ${r.cx} cancelled`;
+
+  const hours = [6,11,16,14,12,18,15,10,9,11,13,8];
+  const lbls = ["8a","9a","10a","11a","12p","1p","2p","3p","4p","5p","6p","7p"];
+  const mxH = Math.max(...hours);
+
+  document.getElementById("dr-body").innerHTML = `
+    <div class="dr-kpis">
+      <div class="dr-kpi"><span>Net sales</span><b>${fmt(r.net)}</b></div>
+      <div class="dr-kpi"><span>Transactions / Basket</span><b>${r.tx} &middot; ${fmt(r.basket)}</b></div>
+      <div class="dr-kpi"><span>Gross sales / Returns</span><b style="font-size:17px">${fmtMoney0(r.gross)} &middot; -${fmtShort(r.returns)}</b></div>
+      <div class="dr-kpi"><span>Tax collected</span><b>${fmt(r.tax)}</b></div>
+    </div>
+    <div>
+      <div class="dr-sec-lbl">Hourly sales rhythm</div>
+      <div class="dr-bars">
+        ${hours.map((h, i) => `<div><i style="height:${Math.round(h / mxH * 100)}%"></i><span>${lbls[i]}</span></div>`).join("")}
+      </div>
+    </div>
+    <div>
+      <div class="dr-sec-lbl">Payment breakdown</div>
+      <div class="dr-list">
+        <div class="dr-list-row"><span>Cash (${Math.round(r.cash / r.net * 100)}%)</span><b>${fmt(r.cash)}</b></div>
+        <div class="dr-list-row"><span>GCash / Maya (${Math.round(r.gcash / r.net * 100)}%)</span><b>${fmt(r.gcash)}</b></div>
+        <div class="dr-list-row"><span>Card / Other (${Math.round(r.card / r.net * 100)}%)</span><b>${fmt(r.card)}</b></div>
+      </div>
+    </div>
+    <div>
+      <div class="dr-sec-lbl">Top products sold that day</div>
+      <div class="dr-list">
+        ${PRODUCTS.slice(0, 4).map(p => `<div class="dr-list-row"><span>${p.name}</span><b>${fmtMoney0(Math.round(p.rev / 14 * scaleFactor()))}</b></div>`).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById("scrim").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+}
+
+function closeDrawer() {
+  document.getElementById("scrim").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+}
+
+function renderAll() {
+  const locText = state.loc === "all" ? "All stores" : "The Daily Centro - " + STORES.find(s => s.id === state.loc).name;
+  const pText = state.period === "1" ? "Today" : state.period === "custom" ? "Custom range" : state.period + " days";
+  document.getElementById("meta-loc").textContent = locText;
+  document.getElementById("meta-range").textContent = pText;
+  const rows = getRows();
+  renderKPIs(rows);
+  renderChart(rows);
+  renderStores(rows);
+  renderProducts();
+  renderDOW();
+  renderTable(rows);
+}
+
+// Event bindings
+document.getElementById("theme-btn").addEventListener("click", (e) => {
+  const html = document.documentElement;
+  const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  html.setAttribute("data-theme", next);
+  e.target.textContent = "Theme: " + (next === "dark" ? "Dark" : "Light");
+});
+document.getElementById("dl-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  document.getElementById("dl-wrap").classList.toggle("open");
+});
+document.addEventListener("click", () => document.getElementById("dl-wrap").classList.remove("open"));
+document.getElementById("loc-sel").addEventListener("change", (e) => { state.loc = e.target.value; renderAll(); });
+document.querySelectorAll("#period-seg button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#period-seg button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  state.period = b.dataset.p;
+  renderAll();
+}));
+document.getElementById("cmp-toggle").addEventListener("click", (e) => {
+  state.compare = !state.compare;
+  e.currentTarget.classList.toggle("on", state.compare);
+  renderChart(getRows());
+});
+document.querySelectorAll("#metric-chips button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#metric-chips button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  state.metric = b.dataset.m;
+  renderChart(getRows());
+}));
+document.querySelectorAll("#mode-chips button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#mode-chips button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  state.mode = b.dataset.mode;
+  renderChart(getRows());
+}));
+document.querySelectorAll("#prod-sort button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#prod-sort button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  state.prodSort = b.dataset.ps;
+  renderProducts();
+}));
+document.querySelectorAll("th.sort").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.sk;
+  state.sortDir = state.sortCol === k && state.sortDir === "desc" ? "asc" : "desc";
+  state.sortCol = k;
+  renderTable(getRows());
+}));
+document.querySelectorAll("[data-open-day]").forEach(a => a.addEventListener("click", (e) => {
+  e.preventDefault();
+  openDrawer(a.dataset.openDay);
+}));
+document.getElementById("scrim").addEventListener("click", closeDrawer);
+document.getElementById("dr-close").addEventListener("click", closeDrawer);
+
+renderAll();
+</script>
+</body>
+</html>

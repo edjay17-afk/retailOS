@@ -31,6 +31,9 @@ def import_error(c, error):
     return c.t(error.key, **values)
 
 
+LATE_DAYS = 4   # a shipped transfer older than this is marked as long on the way
+
+
 def visible(c):
     return or_(StockTransfer.source_location_id.in_(c.location_ids or [0]), StockTransfer.target_location_id.in_(c.location_ids or [0]))
 
@@ -78,14 +81,20 @@ def transfer_list(q: str = "", status: str = "", loc: int = 0, page: int = 1, ex
     page = min(max(page, 1), max(1, (total + PAGE - 1) // PAGE))
     rows = list(c.db.scalars(stmt.order_by(StockTransfer.created_sh.desc(), StockTransfer.id.desc()).offset((page-1)*PAGE).limit(PAGE)
                             .options(selectinload(StockTransfer.lines), selectinload(StockTransfer.last_import))))
-    count_stmt = select(StockTransfer.status, func.count()).where(scope)
+    count_stmt = select(StockTransfer.status, func.count(), func.coalesce(func.sum(StockTransfer.total), 0)).where(scope)
     if loc:
         count_stmt = count_stmt.where(or_(StockTransfer.source_location_id == loc, StockTransfer.target_location_id == loc))
-    counts = dict(c.db.execute(count_stmt.group_by(StockTransfer.status)).all())
+    by_status = {s: (n, value) for s, n, value in c.db.execute(count_stmt.group_by(StockTransfer.status)).all()}
+    counts = {s: n for s, (n, _) in by_status.items()}
+    in_transit = [by_status.get(s, (0, 0)) for s in ("Created", "Shipped")]   # not yet arrived
+    # shipped but still not completed after LATE_DAYS: flagged on the row so it gets chased
+    days_out = {t.id: (now_utc() - t.created_sh).days for t in rows if t.status == "Shipped" and t.created_sh}
+    late = {tid: d for tid, d in days_out.items() if d >= LATE_DAYS}
     receipts = {r.transfer_id: r for r in c.db.scalars(select(StockTransferReceipt).where(StockTransferReceipt.transfer_id.in_([t.id for t in rows] or [0])))}
     last_import = transfer_inbox.last_import_at(c.db)
     return render(c, "stock_transfers.html", rows=rows, q=q, status=status, loc=loc, page=page, total=total, per=PAGE,
                   locations=c.locations(), statuses=stock_transfers.STATUSES, counts=counts, receipts=receipts, history=history,
+                  open_count=sum(n for n, _ in in_transit), open_value=sum(v for _, v in in_transit), late=late,
                   last_import=last_import, import_stale=bool(last_import and now_utc() - last_import > timedelta(hours=float(cfg.get(c.db, "transfers.stale_hours")))))
 
 

@@ -9,85 +9,122 @@
 {% if custom %}{% set qs = qs ~ '&frm=' ~ frm ~ '&to=' ~ to %}{% endif %}
 {% if shift %}{% set qs = qs ~ "&shift_id=" ~ shift.id %}{% endif %}
 {% set base_qs = 'loc=' ~ loc ~ '&days=' ~ ('custom' if custom else days) ~ '&emp=' ~ emp ~ '&q=' ~ (q|urlencode) ~ ('&frm=' ~ frm ~ '&to=' ~ to if custom else '') ~ ('&shift_id=' ~ shift.id if shift else '') %}
-{% macro pay_kind(m) %}{% set l = (m or '')|lower %}{{ 'cash' if l == 'cash' else 'gcash' if 'gcash' in l else 'card' if ('card' in l or 'visa' in l or 'master' in l or 'debit' in l or 'credit' in l) else 'other' }}{% endmacro %}
-<div class="tx-desk tx-top">
-  <div class="tx-hero">
-    <h1 class="tx-kicker">{{ t('Transactions') }} &middot; {{ range_from }} &ndash; {{ range_to }}</h1>
-    <p class="tx-big"><span>PHP</span><b>{{ summary.net|money }}</b></p>
-    <p class="tx-facts"><span><b>{{ summary.count|num(0) }}</b> {{ t('transactions') }}</span><span>{{ t('average basket') }} <b>PHP {{ summary.avg|money }}</b></span><span><b>{{ summary.cash_pct }}%</b> {{ t('paid in cash') }}</span></p>
-    <p class="tx-sync">{{ t('Last synced') }} {{ fr.last_success|ago }}.{% if summary.cancelled %} {{ summary.cancelled }} {{ t('Cancelled')|lower }}.{% endif %}{% if summary.returned %} {{ summary.returned }} {{ t('Return')|lower }}.{% endif %}</p>
+{% macro pay_kind(m) %}{% set l = (m or '')|lower %}{{ 'k-cash' if l == 'cash' else 'k-gcash' if 'gcash' in l or 'maya' in l else 'k-card' if ('card' in l or 'visa' in l or 'master' in l or 'debit' in l or 'credit' in l) else 'k-other' }}{% endmacro %}
+{% macro delta(now, before) %}{% if before %}{% set p = (now - before) / before * 100 %}<span class="delta {{ 'up' if p >= 0.05 else ('down' if p <= -0.05 else 'flat') }}" tabindex="0" data-tip="{{ t('Against the previous period') }}">{{ '▲' if p >= 0.05 else ('▼' if p <= -0.05 else '') }} {{ '%.1f'|format(p|abs) }}%</span>{% endif %}{% endmacro %}
+{% macro segurl(d) %}?loc={{ loc }}&amp;days={{ d }}&amp;emp={{ emp }}&amp;q={{ q|urlencode }}&amp;pay={{ pay|urlencode }}{% endmacro %}
+
+<div class="tx-head">
+  <div>
+    <h1>{{ t('Transactions') }}</h1>
+    <div class="tx-meta">
+      <span>{{ loc_names[loc] if loc and loc in loc_names else t('All my locations') }}</span> &middot;
+      <span>{% if custom %}{{ frm }} &rarr; {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %}</span> &middot;
+      <span><i class="tx-syncdot"></i> {{ t('Last synced') }} {{ fr.last_success|ago }}</span>
+      <span class="tx-info" tabindex="0" role="note" data-tip="{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }}" aria-label="{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }}">i</span>
+    </div>
   </div>
   <div class="tx-actions">
-    <a class="tx-pill" href="/sales">{{ t('Daily sales') }}</a>
-    <a class="tx-pill" href="/sales/employees?{{ qs }}">{{ t('By employee') }}</a>
-    <a class="tx-pill" href="/sales/transactions?{{ qs }}&export=csv"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>{{ t('Download CSV') }}</a>
+    <a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a>
+    <a class="btn sec sm" href="/sales/employees?{{ qs }}">{{ t('By employee') }}</a>
+    <a class="btn pri sm" href="/sales/transactions?{{ qs }}&amp;export=csv"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>{{ t('Download CSV') }}</a>
   </div>
 </div>
-<div class="page-head tx-phone"><div><h1>{{ t('Transactions') }}</h1>
-  <p><span class="page-desc">{{ t('Every sale, exactly as synced from StoreHub. Open a row to see the items sold and how it was paid.') }} </span>{% if custom %}{{ t('Period:') }} <b>{{ frm }}</b> {{ t('to') }} <b>{{ to }}</b>. {% endif %}{{ t('Last synced') }} {{ fr.last_success|ago }}.</p></div>
-  <div class="row"><a class="btn sec sm" href="/sales">{{ t('Daily sales') }}</a><a class="btn sec sm" href="/sales/employees?{{ qs }}">{{ t('By employee') }}</a><a class="btn sec sm" href="/sales/transactions?{{ qs }}&export=csv">{{ t('Download CSV') }}</a></div></div>
 
-{% if shift %}<div class="card tx-shift" style="margin-bottom:14px"><strong>{{ shift.cashier }}</strong> &middot; {{ loc_names.get(shift.location_id, '') }}<br><span>{{ t('Opened') }}: {{ shift.opened_at.strftime('%d %b %Y %H:%M') }} &rarr; {{ t('Closed') if shift.closed_at else t('Open') }}: {{ shift_end.strftime('%d %b %Y %H:%M') }} (Asia/Manila)</span></div>{% endif %}
-<form novalidate class="tx-desk tx-filters" method="get">
+{% if shift %}<div class="card tx-shift"><strong>{{ shift.cashier }}</strong> &middot; {{ loc_names.get(shift.location_id, '') }}<br><span>{{ t('Opened') }}: {{ shift.opened_at.strftime('%d %b %Y %H:%M') }} &rarr; {{ t('Closed') if shift.closed_at else t('Open') }}: {{ shift_end.strftime('%d %b %Y %H:%M') }} (Asia/Manila)</span></div>{% endif %}
+
+<form novalidate class="tx-toolbar" method="get">
   <input type="hidden" name="pay" value="{{ pay }}">
-  {% if shift %}<input type="hidden" name="shift_id" value="{{ shift.id }}">{% else %}
-  <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
-  <div class="tx-paytabs" role="group" aria-label="{{ t('Payment') }}">
-    <a href="?{{ base_qs }}&pay=" class="{{ 'on' if not pay }}">{{ t('All payments') }}</a>
-    <a href="?{{ base_qs }}&pay=cash" class="{{ 'on' if pay == 'cash' }}"><i class="cash"></i>{{ t('Cash') }}</a>
-    <a href="?{{ base_qs }}&pay=!cash" class="{{ 'on' if pay == '!cash' }}">{{ t('Not cash') }}</a>
-    {% for key, label in pay_options %}<a href="?{{ base_qs }}&pay={{ key|urlencode }}" class="{{ 'on' if pay == key }}"><i class="{{ pay_kind(label) }}"></i>{{ label }}</a>{% endfor %}
+  {% if shift %}<input type="hidden" name="shift_id" value="{{ shift.id }}">{% endif %}
+  <div class="tx-tb-row">
+    {% if not shift %}
+    <label class="tx-chip-sel"><span>{{ t('Store') }}</span><b>{{ loc_names[loc] if loc and loc in loc_names else t('All my locations') }}</b><select name="loc" aria-label="{{ t('Location') }}" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></label>
+    <label class="tx-chip-sel"><span>{{ t('Employee') }}</span><b>{% if emp %}{% for sh_id, name in employees %}{% if sh_id == emp %}{{ name }}{% endif %}{% endfor %}{% else %}{{ t('All employees') }}{% endif %}</b><select name="emp" aria-label="{{ t('Employee') }}" onchange="this.form.submit()"><option value="">{{ t('All employees') }}</option>{% for sh_id, name in employees %}<option value="{{ sh_id }}" {{ 'selected' if sh_id == emp }}>{{ name }}</option>{% endfor %}</select></label>
+    <div class="tx-seg">
+      {% for d, lab in ((1, 'Today'), (7, '7 days'), (14, '14 days')) %}
+      <a href="{{ segurl(d) }}" class="{{ 'on' if not custom and days == d }}">{{ t(lab) }}</a>
+      {% endfor %}
+      <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
+      <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}" {{ 'data-on' if custom }}
+           data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div>
+    </div>
+    {% endif %}
+    <label class="tx-search"><svg class="i" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" name="q" value="{{ q }}" placeholder="{{ t('Invoice number') }}" aria-label="{{ t('Search') }}"></label>
   </div>
-  <label class="tx-search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" name="q" value="{{ q }}" placeholder="{{ t('Invoice number') }}" aria-label="{{ t('Search') }}"></label>
-  <label class="tx-chip"><span>{{ t('Store') }}</span><b>{{ loc_names[loc] if loc and loc in loc_names else t('All my locations') }}</b><select name="loc" aria-label="{{ t('Location') }}" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></label>
-  <label class="tx-chip"><span>{{ t('Employee') }}</span><b>{% if emp %}{% for sh_id, name in employees %}{% if sh_id == emp %}{{ name }}{% endif %}{% endfor %}{% else %}{{ t('All employees') }}{% endif %}</b><select name="emp" aria-label="{{ t('Employee') }}" onchange="this.form.submit()"><option value="">{{ t('All employees') }}</option>{% for sh_id, name in employees %}<option value="{{ sh_id }}" {{ 'selected' if sh_id == emp }}>{{ name }}</option>{% endfor %}</select></label>
-  <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}"
-       data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div>
-  {% endif %}
+  <div class="tx-tb-row tx-tb-payrow">
+    <div class="tx-tb-paygrp">
+      <span class="tx-tb-lab">{{ t('Payment') }}</span>
+      <div class="tx-payseg" role="group" aria-label="{{ t('Payment') }}">
+        <a href="?{{ base_qs }}&amp;pay=" class="{{ 'on' if not pay }}">{{ t('All payments') }}</a>
+        <a href="?{{ base_qs }}&amp;pay=cash" class="{{ 'on' if pay == 'cash' }}"><i class="pd k-cash"></i>{{ t('Cash') }}</a>
+        <a href="?{{ base_qs }}&amp;pay=!cash" class="{{ 'on' if pay == '!cash' }}">{{ t('Not cash') }}</a>
+        {% for key, label in pay_options %}<a href="?{{ base_qs }}&amp;pay={{ key|urlencode }}" class="{{ 'on' if pay == key }}"><i class="pd {{ pay_kind(label) }}"></i>{{ label }}</a>{% endfor %}
+      </div>
+    </div>
+    <div class="tx-tb-meta">
+      {% if total is defined %}<span class="tx-tb-count">{{ t('Showing') }} <b>{{ total|num(0) }}</b> {{ t('matching') if (loc or emp or q or pay or custom) else (t('transaction') if total == 1 else t('transactions')) }}</span>{% endif %}
+      {% if loc or emp or q or pay or custom %}<a class="tx-tb-reset" href="/sales/transactions">{{ t('Reset') }}</a>{% endif %}
+    </div>
+  </div>
 </form>
-<form novalidate class="filters transaction-filters tx-phone" method="get" style="margin-bottom:14px">
-  {% if shift %}<input type="hidden" name="shift_id" value="{{ shift.id }}">{% else %}
-  <div><label>{{ t('Location') }}</label><select name="loc" onchange="this.form.submit()"><option value="0" {{ 'selected' if not loc }}>{{ t('All my locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == loc }}>{{ l.name }}</option>{% endfor %}</select></div>
-  <div><label>{{ t('Period') }}</label>
-    <input type="hidden" name="days" value="{{ 'custom' if custom else days }}"><input type="hidden" name="frm" value="{{ frm }}"><input type="hidden" name="to" value="{{ to }}">
-    <div class="drp" data-from="{{ range_from }}" data-to="{{ range_to }}" data-today="{{ today_iso }}"
-         data-i18n='{{ {"today": t("Today"), "yesterday": t("Yesterday"), "thisWeek": t("This week"), "lastWeek": t("Last week"), "last7": t("Last 7 days"), "last14": t("Last 2 weeks"), "thisMonth": t("This month"), "lastMonth": t("Last month"), "last": t("Last"), "months": t("Months"), "thisYear": t("This year"), "lastYear": t("Last year"), "cancel": t("Cancel"), "apply": t("Apply"), "from": t("From"), "to": t("To")}|tojson|forceescape }}'></div></div>
-  <div><label>{{ t('Employee') }}</label><select name="emp" onchange="this.form.submit()"><option value="">{{ t('All employees') }}</option>{% for sh_id, name in employees %}<option value="{{ sh_id }}" {{ 'selected' if sh_id == emp }}>{{ name }}</option>{% endfor %}</select></div>
-  {% endif %}
-  <div><label>{{ t('Payment') }}</label><select name="pay" onchange="this.form.submit()"><option value="">{{ t('All payments') }}</option><option value="cash" {{ 'selected' if pay == 'cash' }}>{{ t('Cash') }}</option><option value="!cash" {{ 'selected' if pay == '!cash' }}>{{ t('Not cash (GCash, apps, cards)') }}</option>{% for key, label in pay_options %}<option value="{{ key }}" {{ 'selected' if pay == key }}>{{ label }}</option>{% endfor %}</select></div>
-  <div class="transaction-search"><label>{{ t('Search') }}</label><input name="q" value="{{ q }}" placeholder="{{ t('Invoice number') }}"></div>
-  <div><label>&nbsp;</label><button class="sec">{{ t('Search') }}</button></div>
-</form>
+
+{% if summary %}
+{% set sp = summary.split %}
+{% set paid_total = sp.cash + sp.ewallet + sp.card %}
+<section class="tx-strip" aria-label="{{ t('Sales summary') }}">
+  <div class="tx-stat tx-stat-hero">
+    <div class="tx-stat-lab">{{ t('Net sales (') }}{% if custom %}{{ frm }} → {{ to }}{% elif days == 1 %}{{ t('Today') }}{% else %}{{ days }} {{ t('days') }}{% endif %})</div>
+    <div class="tx-stat-row"><span class="tx-stat-val">₱{{ summary.net|money }}</span>{% if prev_summary %}{{ delta(summary.net, prev_summary.net) }}{% endif %}</div>
+    <div class="tx-stat-sub">{% if days > 1 %}{{ t('Avg / day') }}: <b>₱{{ (summary.net / days)|money }}</b>{% if prev_summary %} &middot; {{ t('Prev') }}: <b>₱{{ prev_summary.net|money }}</b>{% endif %}{% else %}{{ t('Net sales per transaction') }}{% endif %}</div>
+  </div>
+  <div class="tx-stat">
+    <div class="tx-stat-lab">{{ t('Transactions') }}</div>
+    <div class="tx-stat-row"><span class="tx-stat-val">{{ summary.count|num(0) }}</span>{% if prev_summary %}{{ delta(summary.count, prev_summary.count) }}{% endif %}</div>
+    <div class="tx-stat-sub">{{ t('Cancelled') }}: <b>{{ summary.cancelled }}</b>{% if summary.count or summary.cancelled %} ({{ '%.1f'|format(summary.cx_pct) }}%){% endif %}</div>
+  </div>
+  <div class="tx-stat">
+    <div class="tx-stat-lab">{{ t('Average basket') }}</div>
+    <div class="tx-stat-row"><span class="tx-stat-val">₱{{ summary.avg|money }}</span>{% if prev_summary %}{{ delta(summary.avg, prev_summary.avg) }}{% endif %}</div>
+    <div class="tx-stat-sub">{% if prev_summary %}{{ t('prev period') }}: <b>₱{{ prev_summary.avg|money }}</b>{% else %}{{ t('Net sales per transaction') }}{% endif %}</div>
+  </div>
+  <div class="tx-stat tx-stat-mix">
+    <div class="tx-stat-lab tx-stat-lab-split"><span>{{ t('Cash share') }}</span>{% if paid_total > 0 %}<b>{{ summary.cash_pct }}%</b>{% endif %}</div>
+    {% if paid_total > 0 %}
+    <div class="tx-mix" role="img" aria-label="{{ t('Cash') }} {{ summary.cash_pct }}%">
+      <i style="width:{{ (sp.cash / paid_total * 100)|round(1) }}%;background:var(--ok)"></i>{% if sp.ewallet > 0 %}<i style="width:{{ (sp.ewallet / paid_total * 100)|round(1) }}%;background:var(--primary)"></i>{% endif %}{% if sp.card > 0 %}<i style="width:{{ (sp.card / paid_total * 100)|round(1) }}%;background:var(--sd-purple, #7c3aed)"></i>{% endif %}
+    </div>
+    <div class="tx-mixlg">
+      <span><i style="background:var(--ok)"></i>{{ t('Cash') }} <b>₱{{ sp.cash|money }}</b></span>
+      {% if sp.ewallet > 0 %}<span><i style="background:var(--primary)"></i>GCash/Maya <b>₱{{ sp.ewallet|money }}</b></span>{% endif %}
+      {% if sp.card > 0 %}<span><i style="background:var(--sd-purple, #7c3aed)"></i>{{ t('Other') if sp.ewallet == 0 else t('Card') }} <b>₱{{ sp.card|money }}</b></span>{% endif %}
+    </div>
+    {% else %}
+    <div class="tx-stat-row"><span class="tx-stat-val">-</span></div>
+    <div class="tx-stat-sub">{{ t('No payments in this selection.') }}</div>
+    {% endif %}
+  </div>
+  <div class="tx-stat{{ ' tx-stat-warn' if summary.returned or summary.cancelled }}">
+    <div class="tx-stat-lab">{{ t('Returns & cancelled') }}</div>
+    <div class="tx-stat-row"><span class="tx-stat-val{{ ' tx-warn' if summary.returned or summary.cancelled }}">₱{{ summary.returns_amt|money }}</span></div>
+    <div class="tx-stat-sub"><b>{{ summary.returned }}</b> {{ t('returns') }} &middot; <b>{{ summary.cancelled }}</b> {{ t('cancelled') }}</div>
+  </div>
+</section>
+{% endif %}
 
 {% if txs %}
-<section class="tx-desk tx-feed" aria-label="{{ t('Transactions') }}">
+<section class="tx-board" aria-label="{{ t('Transactions') }}">
   {% for g in groups %}
-  <div class="tx-day"><div><b>{% if g.rel %}{{ t(g.rel) }}{% elif lang != 'zh' %}{{ g.date.strftime('%A') }}{% endif %}</b><span>{% if lang == 'zh' %}{{ g.date.month }}月{{ g.date.day }}日{% else %}{{ g.date.day }} {{ g.date.strftime('%b') }}{% endif %} &middot; {{ g.count|num(0) }} {{ t('transaction') if g.count == 1 else t('transactions') }}</span></div><b class="tx-day-n">PHP {{ g.net|money }}</b></div>
+  <div class="tx-dayhead"><div class="l"><b>{% if g.rel %}{{ t(g.rel) }}{% elif lang != 'zh' %}{{ g.date.strftime('%A') }}{% endif %}</b><span>{% if lang == 'zh' %}{{ g.date.month }}月{{ g.date.day }}日{% else %}{{ g.date.day }} {{ g.date.strftime('%b') }}{% endif %} &middot; {{ g.count|num(0) }} {{ t('transaction') if g.count == 1 else t('transactions') }}</span></div><b class="n">₱{{ g.net|money }}</b></div>
   {% for x in g.rows %}{% set ret = x.tx_type == 'Return' %}
   <a class="tx-row{{ ' is-cancelled' if x.cancelled }}{{ ' is-return' if ret }}" href="/sales/tx/{{ x.id }}" data-href="/sales/tx/{{ x.id }}" data-invoice="{{ x.invoice_no or '' }}">
     <span class="tx-time">{{ x.tx_time|clock }}</span>
     <span class="tx-main"><b>{{ x.invoice_no or '—' }}{% if x.cancelled %}<em class="tx-tag bad">{{ t('Cancelled') }}</em>{% endif %}{% if ret %}<em class="tx-tag warn">{{ t('Return') }}</em>{% endif %}</b><small>{{ loc_names.get(x.location_id, '') }} &middot; {{ names.get(x.employee_sh_id, '—') if x.employee_sh_id else '—' }} &middot; {{ units.get(x.id, 0)|num(2) }} {{ t('item') if units.get(x.id, 0) == 1 else t('Items')|lower }}</small></span>
-    <span class="tx-pays">{% for m, a in pays.get(x.id, []) %}<span class="tx-pay"><i class="{{ pay_kind(m) }}"></i>{{ m }}</span>{% else %}<span class="tx-pay">—</span>{% endfor %}</span>
-    <span class="tx-total">{{ '−' if ret }}PHP {{ x.total|money }}</span>
+    <span class="tx-pays">{% for m, a in pays.get(x.id, []) %}<span class="tx-pay"><i class="pd {{ pay_kind(m) }}"></i>{{ m }}</span>{% else %}<span class="tx-pay">—</span>{% endfor %}</span>
+    <span class="tx-total">{{ '−' if ret }}₱{{ x.total|money }}</span>
+    <span class="tx-chev"><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></span>
   </a>
   {% endfor %}
   {% endfor %}
 </section>
-<div class="tw tx-phone"><table class="wide">
-  <tr><th>{{ t('Time') }}</th><th>{{ t('Invoice') }}</th><th>{{ t('Store') }}</th><th>{{ t('Employee') }}</th><th class="right">{{ t('Items') }}</th><th>{{ t('Payment') }}</th><th class="right">{{ t('Total') }}</th><th></th></tr>
-  {% for x in txs %}
-  <tr data-href="/sales/tx/{{ x.id }}">
-    <td class="nowrap"><b>{{ x.tx_time|clock }}</b><div class="small mute">{{ x.tx_time|local('%d %b') }}</div></td>
-    <td class="nowrap">{{ x.invoice_no or '—' }}{% if x.cancelled %} <span class="badge b-bad">{{ t('Cancelled') }}</span>{% endif %}{% if x.tx_type == 'Return' %} <span class="badge b-warn">{{ t('Return') }}</span>{% endif %}</td>
-    <td class="small">{{ loc_names.get(x.location_id, '') }}</td>
-    <td>{{ names.get(x.employee_sh_id, '—') if x.employee_sh_id else '—' }}</td>
-    <td class="right">{{ units.get(x.id, 0)|num(0) if units.get(x.id, 0) == units.get(x.id, 0)|round(0) else units.get(x.id, 0)|num(2) }}</td>
-    <td class="small">{% for m, a in pays.get(x.id, []) %}{{ m }}{% if not loop.last %}, {% endif %}{% else %}—{% endfor %}</td>
-    <td class="right"><b>{{ x.total|money }}</b></td>
-    <td class="right"><svg class="i" style="width:15px;height:15px;color:var(--mute2)"><use href="#i-arrow"/></svg></td>
-  </tr>
-  {% endfor %}
-</table></div>
 <div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page - 1 }}">{{ t('Previous') }}</a>{% endif %}
   <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + per - 1) // per) or 1 }} {{ t('· showing') }} {{ offset + 1 }}&ndash;{{ offset + txs|length }} {{ t('of') }} {{ total }} {{ t('transactions') }}</span>
   {% if page * per < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page + 1 }}">{{ t('Next') }}</a>{% endif %}</div>

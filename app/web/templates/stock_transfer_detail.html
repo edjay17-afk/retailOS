@@ -2,18 +2,30 @@
 {% block title %}{{ t('Stock transfer') }} {{ rec.reference }}{% endblock %}
 {% block content %}
 
-<div class="page-head"><div><h1>{{ t('Stock transfer') }} {{ rec.reference }}</h1><p>{{ rec.source_name }} &rarr; {{ rec.target_name }}</p></div><a class="btn sec" href="/stock-transfers">{{ t('Back to stock transfers') }}</a></div>
-<div class="card">
-  <div class="row" style="justify-content:space-between;align-items:center">
-    <div><span class="badge {{ 'b-ok' if rec.status == 'Completed' else 'b-bad' if rec.status == 'Cancelled' else '' }}">{{ (t('Transfer created') if lang == 'zh' and rec.status == 'Created' else t(rec.status)) }}</span>{% if not rec.source_location_id or not rec.target_location_id %}<span class="badge b-warn">{{ t('Location mapping needed') }}</span>{% endif %}</div>
-    <div style="text-align:right"><b style="font-size:18px">PHP {{ rec.total|money }}</b><div class="small mute">{{ rec.lines|length }} {{ t('Items') }}</div></div>
+<link rel="stylesheet" href="/static/stock_transfer_list.css?v={{ asset_v('stock_transfer_list.css') }}">
+{% macro short(name) %}{{ (name or '')|replace('The Daily Centro - ', '')|replace('TheDailyCentro ', '') }}{% endmacro %}
+<div class="st-top">
+  <div>
+    <a class="st-back noprint" href="/stock-transfers">&larr; {{ t('Back to stock transfers') }}</a>
+    <div class="st-hero"><h1>{{ t('Stock transfer') }} {{ rec.reference }}</h1>
+      <span class="st-pill {{ rec.status|lower }}"><i></i>{{ (t('Transfer created') if lang == 'zh' and rec.status == 'Created' else t(rec.status)) }}</span>
+      {% if not rec.source_location_id or not rec.target_location_id %}<span class="st-pill late">{{ t('Location mapping needed') }}</span>{% endif %}
+      {% if receipt %}<span class="st-pill {{ 'ok' if receipt.differences == 0 else 'diff' }}">{{ t('Store confirmed') if receipt.differences == 0 else t('Differences') ~ ': ' ~ receipt.differences }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+<div class="st-sum">
+  <div class="st-sum-cells">
+    <div class="st-sum-cell wide"><span>{{ t('From / to') }}</span><b class="st-route"><span class="{{ 'unmapped' if not rec.source_location_id }}" title="{{ rec.source_name }}">{{ short(rec.source_name) }}</span><i>&rarr;</i><span class="{{ 'unmapped' if not rec.target_location_id }}" title="{{ rec.target_name }}">{{ short(rec.target_name) }}</span></b></div>
+    <div class="st-sum-cell"><span>{{ t('Items') }}</span><b>{{ rec.lines|length }}</b></div>
+    <div class="st-sum-cell"><span>{{ t('Total') }} (PHP)</span><b>{{ rec.total|money }}</b></div>
   </div>
   <div class="tsteps">
     <div class="tstep done"><b>{{ t('Created') }}</b>{{ rec.created_sh|local }}</div>
     <div class="tstep {{ 'done' if rec.shipped_at }}"><b>{{ t('Shipped') }}</b>{{ rec.shipped_at|local or '—' }}</div>
     <div class="tstep {{ 'done' if receipt }}"><b>{{ t('Store confirmed') }}</b>{{ receipt.counted_at|local if receipt else t('Waiting') }}</div>
   </div>
-  <details class="small mute"><summary>{{ t('Details') }}</summary>
+  <details class="st-more small mute"><summary>{{ t('Details') }}</summary>
     <p style="margin:8px 0 0">{{ t('Sent by') }}: {{ rec.sent_by or '—' }} · {{ t('Received in StoreHub') }}: {{ rec.received_at|local or '—' }}{% if rec.received_by %} ({{ rec.received_by }}){% endif %}</p>
     {% if rec.cancelled_at or rec.cancelled_by %}<p>{{ t('Cancelled') }}: {{ rec.cancelled_at|local or '—' }} {{ rec.cancelled_by }}</p>{% endif %}
     <p>{{ t('Source file') }}: {{ rec.last_import.filename }} · {{ t('Imported') }}: {{ rec.last_import.imported_at|local }}</p>
@@ -21,7 +33,7 @@
   </details>
 </div>
 
-<div class="card"><h2>{{ t('Store receipt confirmation') }}</h2>
+<div class="card st-card"><h2>{{ t('Store receipt confirmation') }}</h2>
 {% if receipt %}
   <p><span class="badge {{ 'b-ok' if receipt.differences == 0 else 'b-warn' }}">{{ t('Store confirmed — matches what was sent') if receipt.differences == 0 else t('Store confirmed with {n} difference(s)', n=receipt.differences) }}</span></p>
   <p class="small mute">{{ t('Counted by') }} <b>{{ receipt.counter.full_name or receipt.counter.username if receipt.counter else '—' }}</b> · {{ receipt.counted_at|local }}{% if receipt.note %} · {{ receipt.note }}{% endif %}</p>

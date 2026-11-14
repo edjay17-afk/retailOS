@@ -1,8 +1,94 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Settings') }}{% endblock %}
 {% block content %}
-<h1>{{ t('Settings') }}</h1>
-<div class="tabs"><a href="/settings" class="on">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
+<style>
+  .set-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .tabs-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs-row .tabs{margin-bottom:0}
+  .set-filter{margin-left:auto;width:230px;padding:8px 12px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:13.5px;background:var(--surface)}
+  .setrow{display:flex;align-items:center;gap:18px;padding:12px 2px;border-top:1px solid var(--line)}
+  .setrow:first-of-type{border-top:none}
+  .setlab{flex:1;min-width:0}
+  .setlab>b{display:block;font-size:13.5px}
+  .setlab .sub{font-size:12.5px;color:var(--mute);font-weight:500}
+  .setlab .meta{font-size:11.5px;color:var(--mute2);margin-top:2px;font-weight:500}
+  .setctl{display:flex;align-items:flex-start;gap:10px;flex:none}
+  .setctl input[type=number]{width:96px;text-align:right}
+  .setctl input[type=text]{width:220px}
+  .setctl select{min-width:180px}
+  .setctl textarea{width:300px;min-height:84px;font-size:12.5px;line-height:1.6}
+  .setchanged{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--warn-soft);color:var(--warn);border:1px solid #f0dfb0;white-space:nowrap}
+  .setchanged::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn)}
+  .setreset{border:none;background:none;color:var(--primary);cursor:pointer;font-size:12px;font-weight:650;padding:4px 0}
+  .setreset:hover{text-decoration:underline}
+  .card.danger{border-color:#f0c4c4}
+  .card.danger>.card-head h2{color:var(--bad)}
+  .danger-note{font-size:12.5px;color:var(--bad);background:var(--bad-soft);border:1px solid #f0c4c4;border-radius:10px;padding:9px 13px;margin-top:10px;font-weight:600}
+  /* toggle (scoped under .setctl so the global label:has(>input[type=checkbox]) rule in workspace.css cannot stretch it) */
+  .setctl .tgl{position:relative;display:inline-block;width:42px;height:24px;min-height:0;margin:5px 0 0;flex:none;line-height:1;cursor:pointer}
+  .setctl .tgl input{position:absolute;opacity:0;width:0;height:0;margin:0}
+  .setctl .tgl span{position:absolute;inset:0;border-radius:999px;background:#c9cedb;transition:background .15s;cursor:pointer}
+  .setctl .tgl span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.3);transition:left .15s}
+  .setctl .tgl input:checked+span{background:var(--primary)}
+  .setctl .tgl input:checked+span::after{left:21px}
+  .setctl .tgl input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+  /* sla grid */
+  .sla{display:grid;grid-template-columns:auto 96px 96px;gap:6px 10px;align-items:center}
+  .sla .hd{font-size:11.5px;color:var(--mute);font-weight:700}
+  .sla input{width:96px;text-align:right}
+</style>
+<div class="set-head">
+  <h1>{{ t('Settings') }}</h1>
+</div>
+<div class="tabs-row">
+  <div class="tabs"><a href="/settings" class="on">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
+  <input id="settings-filter" class="set-filter" type="search" placeholder="{{ t('Filter settings…') }}" aria-label="{{ t('Filter settings') }}">
+</div>
+
+{% for g in groups %}
+<div class="card setgroup{{ ' danger' if g.danger else '' }}" id="setgroup-{{ g.id }}">
+  <div class="card-head"><h2>{{ t(g.title) }}</h2>{% if g.sub %}<span class="small mute">{{ t(g.sub) }}</span>{% endif %}</div>
+  {% for r in g.rows %}
+  <div class="setrow" data-search="{{ (r.key ~ ' ' ~ (r.meta.label or '') ~ ' ' ~ r.desc)|lower }}">
+    <div class="setlab">
+      <b>{{ t(r.meta.label or r.desc) }}</b>
+      <div class="sub">{{ t(r.desc) }}</div>
+      <div class="meta"><code>{{ r.key }}</code>{% if r.changed %} · <span class="setchanged">{{ t('changed from default') }}</span>{% endif %}{% if r.last %} · {{ t('Last changed by') }} {{ r.last.by }} · {{ r.last.ts|local }}{% endif %}{% if r.changed %} · <button class="setreset" form="freset{{ g.id }}{{ loop.index }}">{{ t('Reset to default') }}</button>{% endif %}</div>
+    </div>
+    <div class="setctl">
+      <form id="fset{{ g.id }}{{ loop.index }}" method="post" action="/settings/value" style="display:none"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ r.key }}"></form>
+      {% if r.changed %}<form id="freset{{ g.id }}{{ loop.index }}" method="post" action="/settings/reset" style="display:none"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ r.key }}"></form>{% endif %}
+      {% set fid = 'fset' ~ g.id ~ loop.index %}
+      {% if r.meta.type == 'bool' %}
+        <label class="tgl"><input form="{{ fid }}" type="checkbox" name="value" value="1" {{ 'checked' if r.value }} aria-label="{{ t(r.desc) }}"><span></span></label>
+      {% elif r.meta.type == 'select' %}
+        <select form="{{ fid }}" name="value">{% for o in r.meta.options %}<option value="{{ o }}" {{ 'selected' if r.value == o }}>{{ o }}</option>{% endfor %}</select>
+      {% elif r.meta.type == 'lines' %}
+        <textarea form="{{ fid }}" name="value" rows="4" spellcheck="false" placeholder="{{ t('One per line') }}">{% for x in r.value %}{{ x }}
+{% endfor %}</textarea>
+      {% elif r.meta.type == 'sla' %}
+        <div class="sla">
+          <span class="hd"></span><span class="hd">{{ t('Ack (min)') }}</span><span class="hd">{{ t('Due (hours)') }}</span>
+          {% for sev in ['P0', 'P1', 'P2', 'P3'] %}
+          <span class="badge dot" style="{{ 'color:var(--bad)' if sev == 'P0' else 'color:var(--warn)' if sev == 'P1' else '' }}">{{ sev }}</span>
+          <input form="{{ fid }}" type="number" min="0" name="{{ sev|lower }}_ack" value="{{ r.value[sev][0] }}" aria-label="{{ sev }} {{ t('acknowledge minutes') }}">
+          <input form="{{ fid }}" type="number" min="1" name="{{ sev|lower }}_due" value="{{ r.value[sev][1] }}" aria-label="{{ sev }} {{ t('due hours') }}">
+          {% endfor %}
+        </div>
+      {% elif r.meta.type == 'date' %}
+        <input form="{{ fid }}" type="date" name="value" value="{{ r.value }}">
+      {% elif r.meta.type == 'str' %}
+        <input form="{{ fid }}" type="text" name="value" value="{{ r.value }}">
+      {% else %}
+        <input form="{{ fid }}" type="number" name="value" value="{{ r.value }}"{% if r.meta.min is not none %} min="{{ r.meta.min }}"{% endif %}{% if r.meta.max is not none %} max="{{ r.meta.max }}"{% endif %} step="{{ 'any' if r.meta.type == 'float' else '1' }}">
+      {% endif %}
+      <button form="{{ fid }}" class="sm sec"{% if r.meta.danger %} data-confirm="{{ t(r.desc) }}. {{ t('This change applies immediately and is written to the audit log.') }}"{% endif %}>{{ t('Save') }}</button>
+    </div>
+  </div>
+  {% endfor %}
+  {% if g.danger %}<div class="danger-note">{{ t('These settings change how the system behaves for everyone. Each change is confirmed and written to the audit log.') }}</div>{% endif %}
+</div>
+{% endfor %}
 
 <h2>{{ t('Locations') }}</h2>
 <p class="small mute">{{ t('Only monitored locations are synced and shown. Stores are topped up from the warehouse; set the transfer lead time per store if it is not the default.') }}</p>
@@ -15,11 +101,4 @@
 <td><select form="floc{{ loop.index }}" name="manager"><option value="0">-</option>{% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if l.manager_user_id == m.id }}>{{ m.full_name or m.username }}</option>{% endfor %}</select></td>
 <td><input form="floc{{ loop.index }}" type="number" step="0.5" min="0" name="lead" value="{{ l.lead_time_days if l.lead_time_days is not none else '' }}" style="width:80px" inputmode="decimal"></td>
 <td><input form="floc{{ loop.index }}" name="opens" value="{{ l.opens_at }}" style="width:70px"></td><td><input form="floc{{ loop.index }}" name="closes" value="{{ l.closes_at }}" style="width:70px"></td><td><button form="floc{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>{% endfor %}</table></div>
-
-<h2>{{ t('Rules and limits') }}</h2>
-<div class="tw editable-table"><table><tr><th>{{ t('Setting') }}</th><th>{{ t('Value') }}</th><th>{{ t('What it does') }}</th></tr>
-{% for key, val, desc, complex in rows %}<tr><td style="display:none"><form novalidate id="fset{{ loop.index }}" method="post" action="/settings/value"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ key }}"></form></td>
-<td class="small"><code>{{ key }}</code></td>
-<td>{% if complex %}<textarea class="resize-none" form="fset{{ loop.index }}" name="value" style="min-width:260px;min-height:50px">{{ val|tojson }}</textarea>{% else %}<input form="fset{{ loop.index }}" name="value" value="{{ val }}" style="width:170px">{% endif %} <button form="fset{{ loop.index }}" class="sm sec">{{ t('Save') }}</button></td>
-<td class="small mute">{{ t(desc) }}</td></tr>{% endfor %}</table></div>
 {% endblock %}

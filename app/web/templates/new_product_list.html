@@ -2,31 +2,74 @@
 {% block title %}{{ t('New product') }} NP-{{ '%05d' % lst.id }}{% endblock %}
 {% block content %}
 <style>#chat-fab{display:none}</style>
-<div class="page-head">
-  <div><div class="eyebrow">{{ company }} / {{ t('Stock and ordering') }}</div><h1>NP-{{ '%05d' % lst.id }}</h1>
-    <p>{{ (lst.saved_at or lst.created_at)|local }} · {{ lst.creator.full_name or lst.creator.username if lst.creator else '—' }} · {{ summary['items'] }} {{ t('Products') }} · {{ summary.qty|num }}</p></div>
-  <div class="row noprint">
-    <a class="btn sm sec" href="/new-product">{{ t('New product') }}</a>
-    <form novalidate method="post" action="/new-product/lists/{{ lst.id }}/delete" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Delete this list?') }}">{{ t('Delete') }}</button></form>
+<link rel="stylesheet" href="/static/new_product.css?v={{ asset_v('new_product.css') }}">
+<div class="np-detail-page">
+  <div class="np-head">
+    <div>
+      <div class="np-title-row">
+        <h1>NP-{{ '%05d' % lst.id }}</h1>
+        {% if batch_stats.created %}<span class="np-pill ok">{{ batch_stats.created }} {{ t('Created') }}</span>{% endif %}
+        {% if batch_stats.failed %}<span class="np-pill bad">{{ batch_stats.failed }} {{ t('Failed') }}</span>{% endif %}
+        {% if batch_stats.pending %}<span class="np-pill warn">{{ batch_stats.pending }} {{ t('Pending') }}</span>{% endif %}
+      </div>
+      <p class="page-desc">{{ (lst.saved_at or lst.created_at)|local }} · {{ lst.creator.full_name or lst.creator.username if lst.creator else '—' }}</p>
+    </div>
+    <div class="row noprint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <a class="np-btn primary" href="/new-product/lists/{{ lst.id }}/excel">{{ t('Download Excel') }}</a>
+      {% if can_push %}<form novalidate method="post" action="/new-product/lists/{{ lst.id }}/push" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="np-btn" style="border-color:var(--ok);color:var(--ok)" data-confirm="{{ t('Create the priced products in StoreHub now?') }}">{{ t('Push to StoreHub') }}</button></form>{% endif %}
+      <a class="np-btn" href="/new-product">{{ t('New product') }}</a>
+      <form novalidate method="post" action="/new-product/lists/{{ lst.id }}/delete" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="np-btn" style="color:var(--bad)" data-confirm="{{ t('Delete this list?') }}">{{ t('Delete') }}</button></form>
+    </div>
+  </div>
+
+  <div class="np-kpis four">
+    <div class="np-kpi"><div class="lbl">{{ t('Items') }}</div><div class="val">{{ summary['items']|num(0) }}</div></div>
+    <div class="np-kpi"><div class="lbl">{{ t('Total Units') }}</div><div class="val">{{ summary.qty|num(0) }} {{ t('pcs') }}</div></div>
+    <div class="np-kpi"><div class="lbl">{{ t('Created in StoreHub') }}</div><div class="val ok">{{ batch_stats.created }}</div></div>
+    <div class="np-kpi"><div class="lbl">{{ t('Pending / Failed') }}</div><div class="val {% if batch_stats.failed %}warn{% endif %}">{{ batch_stats.pending + batch_stats.failed }}</div></div>
+  </div>
+
+  <div class="np-detail-card">
+    <div class="np-detail-head">
+      <b>{{ t('On the list') }} · NP-{{ '%05d' % lst.id }}</b>
+      <span class="np-pill slate np-num">₱{{ batch_stats.retail_value|money }}</span>
+    </div>
+    <div class="tw" style="border:0;box-shadow:none;margin:0">
+      <table class="np-detail-tbl">
+        <thead>
+          <tr>
+            <th>{{ t('Product') }}</th>
+            <th>{{ t('Supplier') }}</th>
+            <th>{{ t('Category') }}</th>
+            <th class="r">{{ t('Quantity') }}</th>
+            <th class="r">{{ t('Price') }}</th>
+            <th>{{ t('StoreHub') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in lst.items %}
+          <tr>
+            <td class="rc-title"><b>{{ i.name }}</b><div class="small mute np-mono">{{ i.barcode }}</div></td>
+            <td data-label="{{ t('Supplier') }}">{{ i.supplier_name }}</td>
+            <td data-label="{{ t('Category') }}">{{ i.category }}</td>
+            <td class="r" data-label="{{ t('Quantity') }}">{{ i.qty|num }}</td>
+            <td class="r" data-label="{{ t('Price') }}">
+              {% if i.price is not none %}
+                <b>₱{{ i.price|num }}</b>
+                {% if i.cost is not none %}<div class="small mute">Cost ₱{{ i.cost|num }}</div>{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td data-label="{{ t('StoreHub') }}">
+              {% if i.status == 'created' %}<span class="np-pill ok">{{ t('Created') }}</span>
+              {% elif i.status == 'failed' %}<details class="np-fail"><summary style="cursor:pointer;list-style:none"><span class="np-pill bad" title="{{ i.push_error }}">{{ t('Failed') }} ▾</span></summary><div class="small" style="word-break:break-word;max-width:420px;margin-top:4px">{{ i.push_error }}</div></details>
+              {% elif i.price is none %}<span class="np-pill slate">{{ t('Excel only') }}</span>
+              {% else %}<span class="np-pill warn">{{ t('Pending') }}</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
-<div class="ts-files noprint">
-  <a class="btn ok ts-big" href="/new-product/lists/{{ lst.id }}/excel">{{ t('Download Excel') }}</a>
-  {% if can_push %}<form novalidate method="post" action="/new-product/lists/{{ lst.id }}/push" style="margin:0"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm ok" data-confirm="{{ t('Create the priced products in StoreHub now?') }}">{{ t('Push to StoreHub') }}</button></form>{% endif %}
-</div>
-<div class="tw"><table class="wide rcards"><thead><tr><th>{{ t('Product') }}</th><th>{{ t('Supplier') }}</th><th>{{ t('Category') }}</th><th class="right">{{ t('Quantity') }}</th><th class="right">{{ t('Price') }}</th><th>{{ t('StoreHub') }}</th></tr></thead><tbody>
-{% for i in lst.items %}<tr>
-<td class="rc-title"><b>{{ i.name }}</b><div class="small mute">{{ i.barcode }}</div></td>
-<td data-label="{{ t('Supplier') }}">{{ i.supplier_name }}</td>
-<td data-label="{{ t('Category') }}">{{ i.category }}</td>
-<td class="right" data-label="{{ t('Quantity') }}">{{ i.qty|num }}</td>
-<td class="right" data-label="{{ t('Price') }}">{% if i.price is not none %}₱{{ i.price|num }}{% else %}—{% endif %}</td>
-<td data-label="{{ t('StoreHub') }}">
-  {% if i.status == 'created' %}<span class="badge b-ok">{{ t('Created') }}</span>
-  {% elif i.status == 'failed' %}<details class="np-fail"><summary style="cursor:pointer;list-style:none"><span class="badge b-bad" title="{{ i.push_error }}">{{ t('Failed') }} ▾</span></summary><div class="small" style="word-break:break-word;max-width:420px;margin-top:4px">{{ i.push_error }}</div></details>
-  {% elif i.price is none %}<span class="badge">{{ t('Excel only') }}</span>
-  {% else %}<span class="badge b-warn">{{ t('Pending') }}</span>{% endif %}
-</td>
-</tr>{% endfor %}
-</tbody></table></div>
 {% endblock %}

@@ -1,0 +1,126 @@
+/* Z-Reading Reports & Details: Option 3 — Store Compliance Register + Live 80mm Official Thermal Receipt Preview */
+.zr-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:2px 0 14px}
+.zr-title-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.zr-title-wrap h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+.zr-meta-pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--mute);box-shadow:var(--sh1)}
+.zr-meta-pill.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent);color:var(--warn)}
+.zr-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.zr-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:12.5px/1 var(--font);font-weight:700;text-decoration:none;cursor:pointer;box-shadow:var(--sh1);transition:background-color .12s,border-color .12s,filter .12s;white-space:nowrap}
+.zr-btn:hover{background:var(--surface2);text-decoration:none}
+.zr-btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.zr-btn.primary:hover{filter:brightness(.94);color:#fff}
+.zr-btn.dark{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.zr-btn.dark:hover{opacity:.9;color:var(--surface)}
+.zr-btn.sm{height:28px;padding:0 8px;font-size:11.5px;border-radius:8px}
+.zr-btn.is-active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+.zr-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 10px;box-shadow:var(--sh1);margin:0 0 14px}
+.zr-filter-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;flex:1}
+.zr-chip{position:relative;display:inline-flex;align-items:center;gap:6px;height:36px;margin:0;padding:0 28px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:12.5px;font-weight:650;cursor:pointer}
+.zr-chip>span{color:var(--mute);font-size:12px;font-weight:550}
+.zr-chip>b{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.zr-chip::after{content:"";position:absolute;right:10px;top:50%;width:10px;height:10px;margin-top:-5px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.zr-chip select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;border:0}
+.zr-chip:hover{border-color:var(--primary)}
+.zr-seg{display:inline-flex;gap:3px;padding:3px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);margin-left:auto}
+.zr-seg button{border:0;background:transparent;color:var(--mute);font:12px/1 var(--font);font-weight:650;height:28px;padding:0 10px;border-radius:7px;cursor:pointer}
+.zr-seg button.on{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,23,42,.1)}
+
+.zr-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.zr-kpis.four{grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 14px}
+.zr-kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 15px;box-shadow:var(--sh1)}
+.zr-kpi .lbl{font-size:12px;font-weight:600;color:var(--mute)}
+.zr-kpi .val{font-size:23px;font-weight:800;letter-spacing:-.025em;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.zr-kpi .sub{font-size:11.5px;color:var(--mute);margin-top:3px}
+.zr-kpi.sm .val{font-size:19px}
+.zr-kpi .val.ok{color:var(--ok)}
+
+.zr-workbench{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px;align-items:start}
+.zr-register{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+.zr-store-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh1);overflow:hidden}
+.zr-store-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.zr-store-head-left{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.zr-store-head-left b{font-size:14.5px;font-weight:800;color:var(--ink)}
+.zr-store-head-left span{font-size:12px;color:var(--mute);font-weight:500}
+.zr-store-pill{display:inline-flex;align-items:center;height:25px;padding:0 10px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:750;font-variant-numeric:tabular-nums}
+
+.zr-table-wrap{overflow-x:auto}
+.zr-tbl{width:100%;border-collapse:collapse}
+.zr-tbl th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);background:var(--surface2);border-bottom:1px solid var(--line);white-space:nowrap}
+.zr-tbl td{padding:9px 10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink);vertical-align:middle}
+.zr-tbl tbody tr:first-child td{border-top:0}
+.zr-tbl tbody tr:hover td{background:var(--surface2)}
+.zr-tbl tbody tr.is-inspecting td{background:color-mix(in srgb,var(--primary-soft) 58%,var(--surface))}
+.zr-tbl tbody tr.is-inspecting td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+.zr-tbl tbody tr.zr-interim td{opacity:.72}
+.zr-tbl tbody tr.zr-interim td:first-child{opacity:1}
+.zr-tbl th.r,.zr-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+
+.zr-dt-link{font-weight:750;color:var(--ink);text-decoration:none;font-variant-numeric:tabular-nums;white-space:nowrap}
+.zr-dt-link:hover{color:var(--primary)}
+.zr-sub{display:block;font-size:11.5px;color:var(--mute);font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.zr-badge{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.zr-badge.warn{background:var(--warn-soft);color:var(--warn)}
+.zr-badge.muted{background:var(--surface2);border:1px solid var(--line);color:var(--mute)}
+
+.zr-mix{display:flex;height:6px;width:80px;border-radius:999px;overflow:hidden;background:var(--line)}
+.zr-mix i{display:block;height:100%}
+.zr-mix i.cash{background:#059669}
+.zr-mix i.ewallet{background:#2563eb}
+.zr-mix i.other{background:#64748b}
+.zr-mix-lbl{display:block;font-size:11px;color:var(--mute);margin-top:3px;white-space:nowrap}
+
+.zr-row-acts{display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;white-space:nowrap}
+.zr-period-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;font-size:13px;font-weight:750;box-shadow:var(--sh1)}
+
+/* Right-hand 80mm Receipt Slip Preview */
+.zr-preview-col{position:sticky;top:76px;min-width:0;padding-bottom:68px}
+.zr-slip-shell{display:flex;flex-direction:column;gap:8px}
+.zr-slip-eyebrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px}
+.zr-slip-eyebrow span:first-child{font-size:11px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--primary);background:var(--primary-soft);border-radius:6px;padding:3px 8px}
+.zr-slip-id{font-size:12px;font-weight:700;color:var(--mute)}
+
+.zr-receipt-80{background:#fff;color:#0f172a;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-family:"JetBrains Mono","Consolas","Courier New",monospace;font-size:10px;line-height:1.28;box-shadow:var(--sh2)}
+.r80-c{text-align:center}
+.r80-b{font-weight:700}
+.r80-title{margin:3px 0 2px;font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.r80-sec{font-size:9.5px;font-weight:700;margin-bottom:2px}
+.r80-dash{border-top:1px dashed #94a3b8;margin:4px 0}
+.r80-row{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
+.r80-row span:first-child{color:#334155}
+.r80-row b,.r80-row span:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.r80-actions{display:flex;gap:8px;margin-top:8px;font-family:var(--font)}
+.r80-actions .zr-btn{flex:1}
+.zr-receipt-empty{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 18px;text-align:center;box-shadow:var(--sh1)}
+.zr-receipt-empty b{display:block;font-size:14px;margin-bottom:6px}
+.zr-receipt-empty p{margin:0 0 12px;font-size:12.5px;color:var(--mute)}
+
+/* Detail page structured tables + sticky slip */
+.zrd-grid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px;align-items:start}
+.zrd-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.zrd-sec-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh1);overflow:hidden}
+.zrd-sec-head{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--line);font-size:13px;font-weight:750;color:var(--ink)}
+.zrd-kv{width:100%;border-collapse:collapse}
+.zrd-kv td{padding:7px 14px;border-top:1px solid var(--line);font-size:12.5px}
+.zrd-kv tr:first-child td{border-top:0}
+.zrd-kv td.right{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+.zr-note{font-size:12px;color:var(--mute);margin:10px 0 0}
+
+/* Dark theme adjustments */
+html[data-theme="dark"] .zr-btn.dark{background:var(--btn,#2563eb);border-color:var(--btn,#2563eb);color:#fff}
+html[data-theme="dark"] .zr-chip::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23a5a5ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E")}
+html[data-theme="dark"] .zr-receipt-80{background:#12141a;color:#eef2f8;border-color:var(--line2)}
+html[data-theme="dark"] .zr-receipt-80 .r80-row span:first-child{color:#a8b3c4}
+html[data-theme="dark"] .zr-receipt-80 .r80-dash{border-top-color:#475569}
+
+@media(max-width:1100px){
+  .zr-workbench,.zrd-grid{grid-template-columns:1fr}
+  .zr-preview-col{position:static}
+}
+@media(max-width:700px){
+  .zr-kpis,.zr-kpis.four{grid-template-columns:1fr 1fr}
+  .zr-seg{margin-left:0}
+}

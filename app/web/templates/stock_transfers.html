@@ -2,20 +2,59 @@
 {% block title %}{{ t('Stock transfers') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/stock_transfer_list.css?v={{ asset_v('stock_transfer_list.css') }}">
-<div class="page-head"><div><div class="eyebrow">StoreHub {{ t('/ Export records') }}</div><h1>{{ t('Stock transfers') }}</h1><p class="page-desc">{{ t('View warehouse-to-store transfers from StoreHub CSV exports. Upload a fresh export to update this list.') }}</p></div><div class="transfer-list-actions noprint"><a class="btn sec" href="/replenishment/batches">{{ t('Order batches') }}</a>{% if can('transfer.import') %}<button type="button" class="sec" data-modal="transfer-import">{{ t('Upload') }} CSV</button>{% endif %}<button type="button" data-export-form="stock-transfer-filters" data-export="csv">{{ t('Export CSV') }}</button></div></div>
-<p class="small" style="margin:0 0 12px">{% if last_import %}<span class="badge dot {{ 'b-bad' if import_stale else 'b-ok' }}">{{ t('Last import from StoreHub') }}: {{ last_import|ago }}</span>{% else %}<span class="badge dot b-warn">{{ t('No StoreHub export imported yet') }}</span>{% endif %}</p>
-<p class="small mute">{{ t("All imported history") if history else t("Latest StoreHub export only") }}</p>
-<div class="statgrid">{% for s in statuses %}<a class="statcard {{ 'on' if status == s }}" href="?status={{ s }}&history={{ 1 if history else 0 }}&loc={{ loc }}"><div><span class="v">{{ counts.get(s, 0) }}</span><div class="l">{{ (t('Transfer created') if lang == 'zh' and s == 'Created' else t(s)) }}</div></div></a>{% endfor %}</div>
+{% macro status_label(s) %}{{ t('Transfer created') if lang == 'zh' and s == 'Created' else t(s) }}{% endmacro %}
+{% macro short(name) %}{{ (name or '')|replace('The Daily Centro - ', '')|replace('TheDailyCentro ', '') }}{% endmacro %}
+{% set keep %}history={{ 1 if history else 0 }}&loc={{ loc }}{% if q %}&q={{ q|urlencode }}{% endif %}{% endset %}
+<div class="st-top">
+  <div>
+    <div class="st-hero"><h1>{{ t('Stock transfers') }}</h1><span class="st-meta-pill">{{ open_count }} {{ t('in transit') }} · {{ open_value|money }} {{ t('on the way') }}</span></div>
+    <div class="st-meta">{% if last_import %}<span><i class="st-dot {{ 'bad' if import_stale }}"></i>{{ t('Last import from StoreHub') }}: {{ last_import|ago }}</span>{% else %}<span><i class="st-dot warn"></i>{{ t('No StoreHub export imported yet') }}</span>{% endif %}</div>
+  </div>
+  <div class="transfer-list-actions noprint"><a class="btn sec" href="/replenishment/batches">{{ t('Order batches') }}</a>{% if can('transfer.import') %}<button type="button" class="sec" data-modal="transfer-import">{{ t('Upload') }} CSV</button>{% endif %}<button type="button" data-export-form="stock-transfer-filters" data-export="csv">{{ t('Export CSV') }}</button></div>
+</div>
 {% if can('transfer.import') %}
 <dialog id="transfer-import" class="modal transfer-import" aria-labelledby="transfer-import-title"><div class="transfer-import-head"><h2 id="transfer-import-title">{{ t('Import StoreHub export') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div><p class="small mute">{{ t('In StoreHub Backoffice, open Stock Transfers, choose Export to CSV and select Include item details for the date range you need. Upload that file here, review the preview, then confirm the import.') }}</p>
 <form novalidate method="post" action="/stock-transfers/import/preview" enctype="multipart/form-data" class="transfer-import-form"><input type="hidden" name="csrf" value="{{ csrf }}"><div><label for="transfer-file">{{ t('Stock-transfer CSV (up to 5 MB)') }}</label><input id="transfer-file" type="file" name="file" accept=".csv,text/csv" required></div><button>{{ t('Preview import') }}</button></form>
 <p class="small mute" style="margin:10px 0 0">{{ t('Repeat imports do not duplicate transfers. Older lifecycle statuses are skipped. Upload the newest export; changes made in StoreHub are visible here after import.') }}</p></dialog>
 {% endif %}
-<p class="small mute">{{ t('StoreHub export status is a system record. It does not replace a physical receiving count or change inventory.') }}</p>
-<form id="stock-transfer-filters" novalidate method="get" action="/stock-transfers" class="filters toolbar"><div><label for="transfer-history">{{ t('View') }}</label><select id="transfer-history" name="history"><option value="0" {{ 'selected' if not history }}>{{ t('Latest StoreHub export only') }}</option><option value="1" {{ 'selected' if history }}>{{ t('All imported history') }}</option></select></div><div><label for="tq">{{ t('Search') }}</label><input id="tq" name="q" value="{{ q }}" placeholder="{{ t('Transfer ID, product or location') }}"></div><div><label for="ts">{{ t('StoreHub status') }}</label><select id="ts" name="status"><option value="">{{ t('All') }}</option>{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == status }}>{{ (t('Transfer created') if lang == 'zh' and s == 'Created' else t(s)) }}</option>{% endfor %}</select></div>{% if locations|length > 1 %}<div><label for="tl">{{ t('Location') }}</label><select id="tl" name="loc"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></div>{% endif %}<button class="sec">{{ t('Apply filters') }}</button></form>
-<div class="tw"><table class="wide"><thead><tr><th>{{ t('Transfer ID') }}</th><th>{{ t('From / to') }}</th><th>{{ t('StoreHub status') }}</th><th>{{ t('Created') }}</th><th>{{ t('Items') }}</th><th class="right">{{ t('Total') }}(PHP)</th><th></th></tr></thead><tbody>
-{% for r in rows %}<tr><td><a href="/stock-transfers/{{ r.id }}"><b>{{ r.reference }}</b></a>{% if not r.source_location_id or not r.target_location_id %}<div class="small" style="color:var(--warn)">{{ t('Location mapping needed') }}</div>{% endif %}</td><td>{{ r.source_name }}<div class="small mute">&rarr; {{ r.target_name }}</div></td><td><span class="badge {{ 'b-ok' if r.status == 'Completed' else 'b-bad' if r.status == 'Cancelled' else 'b-warn' }}">{{ (t('Transfer created') if lang == 'zh' and r.status == 'Created' else t(r.status)) }}</span>{% set rp = receipts.get(r.id) %}{% if rp %} <span class="badge {{ 'b-ok' if rp.differences == 0 else 'b-warn' }}">{{ t('Store confirmed') if rp.differences == 0 else t('Differences') ~ ': ' ~ rp.differences }}</span>{% endif %}</td><td class="small nowrap">{{ r.created_sh|local }}</td><td>{{ r.lines|length }}</td><td class="right nowrap">{{ r.total|money }}</td><td><a class="btn sm sec" href="/stock-transfers/{{ r.id }}">{{ t('View') }}</a></td></tr>
-{% else %}<tr><td colspan="7"><div class="empty">{{ t('No stock transfers found. Import a StoreHub export to get started.') }}</div></td></tr>{% endfor %}</tbody></table></div>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?q={{ q|urlencode }}&status={{ status }}&loc={{ loc }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="small mute">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total+per-1)//per) or 1 }} &middot; {{ total }} {{ t('stock transfers') }}</span>{% if page*per < total %}<a class="btn sec sm" href="?q={{ q|urlencode }}&status={{ status }}&loc={{ loc }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+
+<div class="st-toolbar noprint">
+  <div class="st-tabs" role="group" aria-label="{{ t('StoreHub status') }}">
+    <a href="?{{ keep }}" class="{{ 'on' if not status }}">{{ t('All') }}<span>{{ counts.values()|sum }}</span></a>
+    {% for s in statuses %}<a href="?status={{ s }}&{{ keep }}" class="{{ 'on' if status == s }}">{{ status_label(s) }}<span>{{ counts.get(s, 0) }}</span></a>{% endfor %}
+  </div>
+  <form id="stock-transfer-filters" novalidate method="get" action="/stock-transfers" class="st-filters">
+    <input type="hidden" name="status" value="{{ status }}">
+    <label class="st-search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" name="q" value="{{ q }}" placeholder="{{ t('Transfer ID, product or location') }}" aria-label="{{ t('Search') }}" autocomplete="off"></label>
+    <label class="st-chip"><span>{{ t('View') }}</span><b>{{ t('All imported history') if history else t('Latest StoreHub export only') }}</b>
+      <select name="history" aria-label="{{ t('View') }}" onchange="this.form.submit()"><option value="0" {{ 'selected' if not history }}>{{ t('Latest StoreHub export only') }}</option><option value="1" {{ 'selected' if history }}>{{ t('All imported history') }}</option></select></label>
+    {% if locations|length > 1 %}<label class="st-chip"><span>{{ t('Location') }}</span><b>{% if loc %}{% for l in locations %}{% if l.id == loc %}{{ l.name|replace('The Daily Centro - ', '') }}{% endif %}{% endfor %}{% else %}{{ t('All locations') }}{% endif %}</b>
+      <select name="loc" aria-label="{{ t('Location') }}" onchange="this.form.submit()"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if loc == l.id }}>{{ l.name }}</option>{% endfor %}</select></label>{% endif %}
+    {% if q or status or loc %}<a class="st-clear" href="?history={{ 1 if history else 0 }}">{{ t('Clear filters') }}</a>{% endif %}
+  </form>
+</div>
+
+<section class="st-list" aria-label="{{ t('Stock transfers') }}">
+  {% if rows %}<div class="st-cols"><span>{{ t('Transfer ID') }}</span><span>{{ t('From / to') }}</span><span>{{ t('StoreHub status') }}</span><span>{{ t('Items') }}</span><span class="r">{{ t('Total') }}</span></div>{% endif %}
+  {% for r in rows %}{% set rp = receipts.get(r.id) %}
+  <a class="st-row {{ 'cancelled' if r.status == 'Cancelled' }}" href="/stock-transfers/{{ r.id }}">
+    <div class="st-id"><b>{{ r.reference }}</b><small>{{ r.created_sh|local }}</small></div>
+    <div class="st-route"><span class="{{ 'unmapped' if not r.source_location_id }}">{{ short(r.source_name) }}</span><i>&rarr;</i><span class="{{ 'unmapped' if not r.target_location_id }}">{{ short(r.target_name) }}</span></div>
+    <div class="st-pills">
+      <span class="st-pill {{ r.status|lower }}"><i></i>{{ status_label(r.status) }}</span>
+      {% if r.id in late %}<span class="st-pill late">{{ t('{n} days on the way', n=late[r.id]) }}</span>{% endif %}
+      {% if not r.source_location_id or not r.target_location_id %}<span class="st-pill late">{{ t('Location mapping needed') }}</span>{% endif %}
+      {% if rp %}<span class="st-pill {{ 'ok' if rp.differences == 0 else 'diff' }}">{{ t('Store confirmed') if rp.differences == 0 else t('Differences') ~ ': ' ~ rp.differences }}</span>{% endif %}
+    </div>
+    <div class="st-items">{{ r.lines|length }} {{ t('items') }}</div>
+    <div class="st-total">{{ r.total|money }}</div>
+  </a>
+  {% else %}<div class="st-empty">{{ t('No stock transfers found. Import a StoreHub export to get started.') }}</div>{% endfor %}
+</section>
+
+<div class="st-foot">
+  <div class="st-foot-note"><span class="st-info" aria-hidden="true">i</span><span>{{ t('StoreHub export status is a system record. It does not replace a physical receiving count or change inventory.') }}</span></div>
+  <div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?status={{ status }}&{{ keep }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="small mute">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total+per-1)//per) or 1 }} &middot; {{ total }} {{ t('stock transfers') }}</span>{% if page*per < total %}<a class="btn sec sm" href="?status={{ status }}&{{ keep }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+</div>
 <script src="/static/export_buttons.js?v={{ asset_v('export_buttons.js') }}" defer></script>
 {% endblock %}

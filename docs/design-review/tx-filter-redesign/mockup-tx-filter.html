@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transactions Filter &amp; Statuses Redesign Options</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    background: #eef2f6;
+    color: #0f172a;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .board {
+    max-width: 1220px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+  .shot {
+    background: #f8fafc;
+    border: 1px solid #dde3ec;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+  }
+  .shot-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 16px;
+  }
+  .shot-label h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: -.01em;
+  }
+  .shot-label span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  /* Shared tiny primitives */
+  .badge-up {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .d-cash { background: #16a34a; }
+  .d-gcash { background: #2563eb; }
+  .d-card { background: #7c3aed; }
+  .d-other { background: #94a3b8; }
+
+  /* =========================================================
+     OPTION 1: Studio Bento (Command Bar + 5 Separated Cards)
+     ========================================================= */
+  .o1-bar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .o1-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .o1-sel {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: #0f172a;
+  }
+  .o1-sel small { font-size: 12px; font-weight: 550; color: #64748b; }
+  .o1-search {
+    flex: 1 1 200px;
+    height: 36px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #94a3b8;
+  }
+  .o1-seg {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .o1-seg span {
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #64748b;
+  }
+  .o1-seg span.on {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .1);
+  }
+  .o1-bot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .o1-pays {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .o1-pay-lab {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #94a3b8;
+    margin-right: 4px;
+  }
+  .o1-chip {
+    height: 29px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #475569;
+  }
+  .o1-chip.on {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    font-weight: 700;
+  }
+  .o1-meta-r {
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .o1-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1fr 1.25fr 1fr;
+    gap: 12px;
+  }
+  .o1-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .o1-card.hero {
+    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    border-color: #bbf7d0;
+  }
+  .o1-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 650;
+    color: #64748b;
+  }
+  .o1-card-val {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -.025em;
+    margin: 6px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .o1-card-sub {
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 550;
+  }
+  .o1-card-sub b { color: #0f172a; }
+  .o1-bar-mix {
+    height: 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    margin: 12px 0 8px;
+    gap: 2px;
+  }
+  .o1-bar-mix i { display: block; height: 100%; border-radius: 999px; }
+
+  /* =========================================================
+     OPTION 2: Split-Hero Bento (1 Hero Left + 2x2 / 4x1 Grid)
+     ========================================================= */
+  .o2-bar {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .o2-pill {
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #dbe2ec;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 650;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+  }
+  .o2-pill small { color: #64748b; font-weight: 550; }
+  .o2-search {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #dbe2ec;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #94a3b8;
+  }
+  .o2-subbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .o2-paytabs {
+    display: inline-flex;
+    background: #e9eef5;
+    padding: 3px;
+    border-radius: 11px;
+    gap: 2px;
+  }
+  .o2-paytabs span {
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #64748b;
+  }
+  .o2-paytabs span.on {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .12);
+  }
+  .o2-cards {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr 1fr 1.25fr 1fr;
+    gap: 10px;
+  }
+  .o2-hero {
+    background: #ffffff;
+    border: 1px solid #dbe2ec;
+    border-left: 4px solid #16a34a;
+    border-radius: 14px;
+    padding: 15px 18px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+  }
+  .o2-hero .k { font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+  .o2-hero .v { font-size: 27px; font-weight: 850; letter-spacing: -.03em; margin: 4px 0 6px; display: flex; align-items: center; gap: 9px; }
+  .o2-hero .s { font-size: 12px; color: #64748b; }
+  .o2-hero .s b { color: #0f172a; }
+  .o2-tile {
+    background: #ffffff;
+    border: 1px solid #dbe2ec;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .o2-tile-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 650;
+    color: #64748b;
+  }
+  .o2-ico {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .ico-blue { background: #eff6ff; color: #2563eb; }
+  .ico-amber { background: #fef3c7; color: #b45309; }
+  .ico-green { background: #dcfce7; color: #15803d; }
+  .ico-slate { background: #f1f5f9; color: #475569; }
+
+  /* =========================================================
+     OPTION 3: Soft Rail Filter + Dark-Anchor Net Sales Card
+     ========================================================= */
+  .o3-wrap {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .o3-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .o3-pill {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 9px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 650;
+  }
+  .o3-pill small { color: #64748b; font-weight: 500; }
+  .o3-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr 1.25fr 1fr;
+    gap: 10px;
+  }
+  .o3-dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc;
+    border-radius: 14px;
+    padding: 15px 18px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .o3-dark .k { font-size: 11.5px; font-weight: 650; color: #94a3b8; }
+  .o3-dark .v { font-size: 26px; font-weight: 800; letter-spacing: -.025em; margin: 5px 0; display: flex; align-items: center; gap: 8px; }
+  .o3-dark .badge-up { background: rgba(34, 197, 94, .2); color: #4ade80; }
+  .o3-dark .s { font-size: 11.5px; color: #94a3b8; }
+  .o3-dark .s b { color: #f8fafc; }
+  .o3-light {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <!-- OPTION 1 -->
+  <section class="shot" id="opt1">
+    <div class="shot-label">
+      <h2>Option 1 &mdash; Clean Studio Bento (Command Filter Bar + 5 Separated Cards)</h2>
+      <span>Recommended &middot; Balanced Hierarchy</span>
+    </div>
+
+    <div class="o1-bar">
+      <div class="o1-top">
+        <div class="o1-sel"><small>Store</small> All my locations &#9662;</div>
+        <div class="o1-sel"><small>Employee</small> All employees &#9662;</div>
+        <div class="o1-search">&#128269; Search invoice number...</div>
+        <div class="o1-seg">
+          <span>Today</span>
+          <span>7d</span>
+          <span class="on">14d</span>
+          <span>&#128197; 31 Oct &ndash; 13 Nov</span>
+        </div>
+      </div>
+      <div class="o1-bot">
+        <div class="o1-pays">
+          <span class="o1-pay-lab">Payment</span>
+          <span class="o1-chip on">All payments</span>
+          <span class="o1-chip"><i class="dot d-cash"></i>Cash</span>
+          <span class="o1-chip">Not cash</span>
+          <span class="o1-chip"><i class="dot d-gcash"></i>GCash</span>
+        </div>
+        <div class="o1-meta-r">Showing <b>4,813</b> matching results</div>
+      </div>
+    </div>
+
+    <div class="o1-grid">
+      <div class="o1-card hero">
+        <div class="o1-card-top"><span>Net sales &middot; 14d</span></div>
+        <div class="o1-card-val">&#8369;478,691.45 <span class="badge-up">&#9650; 38.5%</span></div>
+        <div class="o1-card-sub">Avg / day <b>&#8369;34,192.25</b> &middot; Prev <b>&#8369;345,635.55</b></div>
+      </div>
+      <div class="o1-card">
+        <div class="o1-card-top"><span>Transactions</span></div>
+        <div class="o1-card-val">4,813 <span class="badge-up">&#9650; 36.3%</span></div>
+        <div class="o1-card-sub">Cancelled: <b>0</b> (0.0%)</div>
+      </div>
+      <div class="o1-card">
+        <div class="o1-card-top"><span>Average basket</span></div>
+        <div class="o1-card-val">&#8369;99.46 <span class="badge-up">&#9650; 1.6%</span></div>
+        <div class="o1-card-sub">Prev period: <b>&#8369;97.86</b></div>
+      </div>
+      <div class="o1-card">
+        <div class="o1-card-top"><span>Cash share</span><b style="color:#0f172a">96%</b></div>
+        <div class="o1-bar-mix"><i style="width:96%;background:#16a34a"></i><i style="width:4%;background:#2563eb"></i></div>
+        <div class="o1-card-sub" style="display:flex;gap:10px;flex-wrap:wrap">
+          <span><i class="dot d-cash"></i> Cash <b>&#8369;478,691.45</b></span>
+        </div>
+      </div>
+      <div class="o1-card">
+        <div class="o1-card-top"><span>Returns &amp; voids</span></div>
+        <div class="o1-card-val">&#8369;0.00</div>
+        <div class="o1-card-sub"><b>0</b> returns &middot; <b>0</b> cancelled</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTION 2 -->
+  <section class="shot" id="opt2">
+    <div class="shot-label">
+      <h2>Option 2 &mdash; Detached Filter Pills + Accent-Edge Metrics</h2>
+      <span>Airy &amp; Minimal Container Chrome</span>
+    </div>
+
+    <div class="o2-bar">
+      <div class="o2-pill"><small>Store</small> All my locations &#9662;</div>
+      <div class="o2-pill"><small>Staff</small> All employees &#9662;</div>
+      <div class="o2-search">&#128269; Search invoice number...</div>
+      <div class="o1-seg" style="background:#e9eef5">
+        <span>Today</span>
+        <span>7 days</span>
+        <span class="on">14 days</span>
+        <span>&#128197; 31 Oct &ndash; 13 Nov</span>
+      </div>
+    </div>
+    <div class="o2-subbar">
+      <div class="o2-paytabs">
+        <span class="on">All payments</span>
+        <span><i class="dot d-cash"></i> Cash</span>
+        <span>Not cash</span>
+        <span><i class="dot d-gcash"></i> GCash</span>
+      </div>
+      <div class="o1-meta-r">14 days &middot; Prev comparison active</div>
+    </div>
+
+    <div class="o2-cards">
+      <div class="o2-hero">
+        <div class="k">Net sales (14 days)</div>
+        <div class="v">&#8369;478,691.45 <span class="badge-up">&#9650; 38.5%</span></div>
+        <div class="s">Avg / day <b>&#8369;34,192.25</b> &middot; Prev <b>&#8369;345,635.55</b></div>
+      </div>
+      <div class="o2-tile">
+        <div class="o2-tile-head"><span>Transactions</span><span class="o2-ico ico-blue">#</span></div>
+        <div class="o1-card-val">4,813 <span class="badge-up">&#9650; 36.3%</span></div>
+        <div class="o1-card-sub">Cancelled: <b>0</b> (0.0%)</div>
+      </div>
+      <div class="o2-tile">
+        <div class="o2-tile-head"><span>Average basket</span><span class="o2-ico ico-amber">&#8369;</span></div>
+        <div class="o1-card-val">&#8369;99.46 <span class="badge-up">&#9650; 1.6%</span></div>
+        <div class="o1-card-sub">Prev period: <b>&#8369;97.86</b></div>
+      </div>
+      <div class="o2-tile">
+        <div class="o2-tile-head"><span>Cash share</span><span class="o2-ico ico-green">96%</span></div>
+        <div class="o1-bar-mix"><i style="width:96%;background:#16a34a"></i><i style="width:4%;background:#2563eb"></i></div>
+        <div class="o1-card-sub"><i class="dot d-cash"></i> Cash <b>&#8369;478,691.45</b></div>
+      </div>
+      <div class="o2-tile">
+        <div class="o2-tile-head"><span>Returns &amp; voids</span><span class="o2-ico ico-slate">0</span></div>
+        <div class="o1-card-val">&#8369;0.00</div>
+        <div class="o1-card-sub"><b>0</b> returns &middot; <b>0</b> cancelled</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTION 3 -->
+  <section class="shot" id="opt3">
+    <div class="shot-label">
+      <h2>Option 3 &mdash; Soft-Rail Filter + High-Contrast Net Sales Anchor</h2>
+      <span>Executive POS Contrast</span>
+    </div>
+
+    <div class="o3-wrap">
+      <div class="o3-row">
+        <div class="o3-pill"><small>Store</small> All my locations &#9662;</div>
+        <div class="o3-pill"><small>Employee</small> All employees &#9662;</div>
+        <div class="o1-seg" style="background:#e2e8f0">
+          <span>Today</span>
+          <span>7 days</span>
+          <span class="on">14 days</span>
+          <span>&#128197; 31 Oct &ndash; 13 Nov</span>
+        </div>
+        <div class="o3-pill" style="flex:1;min-width:180px;color:#94a3b8;font-weight:500">&#128269; Invoice number</div>
+      </div>
+      <div class="o3-row" style="justify-content:space-between">
+        <div class="o1-pays">
+          <span class="o1-pay-lab" style="color:#64748b">Pay</span>
+          <span class="o1-chip on" style="background:#0f172a;border-color:#0f172a;color:#ffffff">All payments</span>
+          <span class="o1-chip"><i class="dot d-cash"></i>Cash</span>
+          <span class="o1-chip">Not cash</span>
+          <span class="o1-chip"><i class="dot d-gcash"></i>GCash</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="o3-grid">
+      <div class="o3-dark">
+        <div class="k">Net sales (14 days)</div>
+        <div class="v">&#8369;478,691.45 <span class="badge-up">&#9650; 38.5%</span></div>
+        <div class="s">Avg/day <b>&#8369;34,192.25</b> &middot; Prev <b>&#8369;345,635.55</b></div>
+      </div>
+      <div class="o3-light">
+        <div class="o1-card-top"><span>Transactions</span></div>
+        <div class="o1-card-val">4,813 <span class="badge-up">&#9650; 36.3%</span></div>
+        <div class="o1-card-sub">Cancelled: <b>0</b> (0.0%)</div>
+      </div>
+      <div class="o3-light">
+        <div class="o1-card-top"><span>Average basket</span></div>
+        <div class="o1-card-val">&#8369;99.46 <span class="badge-up">&#9650; 1.6%</span></div>
+        <div class="o1-card-sub">Prev period: <b>&#8369;97.86</b></div>
+      </div>
+      <div class="o3-light">
+        <div class="o1-card-top"><span>Cash share</span><b style="color:#0f172a">96%</b></div>
+        <div class="o1-bar-mix"><i style="width:96%;background:#16a34a"></i><i style="width:4%;background:#2563eb"></i></div>
+        <div class="o1-card-sub"><i class="dot d-cash"></i> Cash <b>&#8369;478,691.45</b></div>
+      </div>
+      <div class="o3-light">
+        <div class="o1-card-top"><span>Returns &amp; cancelled</span></div>
+        <div class="o1-card-val">&#8369;0.00</div>
+        <div class="o1-card-sub"><b>0</b> returns &middot; <b>0</b> cancelled</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

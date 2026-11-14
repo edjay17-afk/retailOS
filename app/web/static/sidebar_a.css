@@ -128,13 +128,13 @@ html[data-theme=dark] #sidebar #sidebar-nav .ic-tile,html[data-theme=dark] #side
 .pos-account-switch button::after{height:3px}
 .pos-account-switch button.is-active::after{background:#2563eb!important}
 
-/* ===== bigger logo and name, and the menu a little lower ===== */
-#sidebar .sidebar-brand-row{padding:8px 8px 22px;margin-bottom:12px}
-#sidebar .brand{gap:13px}
-#sidebar .brand .mark,#sidebar .brand .mark img{width:52px!important;height:52px!important;border-radius:15px}
-#sidebar .brand-name{font-size:21px!important;font-weight:750!important;letter-spacing:-.02em;line-height:1.15}
-#sidebar .brand small{font-size:13px!important;max-width:none!important;margin-top:3px;font-weight:600}
-#sidebar #sidebar-nav{padding-top:10px}
+/* ===== compact logo and name ===== */
+#sidebar .sidebar-brand-row{padding:4px 8px 14px;margin-bottom:6px}
+#sidebar .brand{gap:10px}
+#sidebar .brand .mark,#sidebar .brand .mark img{width:36px!important;height:36px!important;border-radius:10px}
+#sidebar .brand-name{font-size:15.5px!important;font-weight:750!important;letter-spacing:-.02em;line-height:1.15}
+#sidebar .brand small{font-size:11px!important;max-width:none!important;margin-top:2px;font-weight:600}
+#sidebar #sidebar-nav{padding-top:4px}
 
 /* the numbers in the sidebar: yellow, not italic */
 html #sidebar #sidebar-nav .tag,html #sidebar #sidebar-nav a.nl.on .tag,html[data-theme=dark] #sidebar #sidebar-nav .tag,html[data-theme=dark] #sidebar #sidebar-nav a.nl.on .tag{background:#facc15;color:#3b2e00;font-style:normal;font-weight:750}
@@ -229,3 +229,34 @@ html[data-theme=dark] .pos-source-switch.has-thumb:before,html[data-theme=dark] 
   .topbar{padding-left:max(var(--page-pad),calc((100% - 1500px)/2 + var(--page-pad)));padding-right:max(var(--page-pad),calc((100% - 1500px)/2 + var(--page-pad)))}
 }
 @media (min-width:1001px) and (max-width:1250px){:root{--page-pad:22px}}
+
+/* ===== Restyle (Nov 2026): quiet grey rows; the page or section you are in is a soft blue pill with a blue bar at its edge;
+   counts are small pills; sections that open a menu show an arrow; the pop-up menu matches. The pop-up behaviour itself is unchanged. ===== */
+html:root #sidebar #sidebar-nav .ns-h{margin:18px 12px 6px;font-size:10.5px;font-weight:750;letter-spacing:.08em;color:var(--mute2)}
+html:root #sidebar #sidebar-nav .ng,html:root #sidebar #sidebar-nav .nav-home .nl{position:relative;border-radius:10px;color:var(--mute);font-size:14px;font-weight:650}
+html:root #sidebar #sidebar-nav .ng:hover,html:root #sidebar #sidebar-nav .nav-home .nl:hover{background:var(--surface2);color:var(--ink)}
+html:root #sidebar #sidebar-nav .ic-tile,html:root #sidebar #sidebar-nav .ic-tile[data-c],html:root #sidebar #sidebar-nav a.nl.on .ic-tile,html:root #sidebar #sidebar-nav a.nl.on .ic-tile[data-c]{width:20px;height:20px;border-radius:0;background:transparent;color:inherit}
+html:root #sidebar #sidebar-nav .ic-tile .i{width:18px;height:18px}
+html:root #sidebar #sidebar-nav .current-group>.ng .group-icon{color:inherit}
+
+/* where you are */
+html:root #sidebar #sidebar-nav a.nl.on,html:root #sidebar #sidebar-nav .nav-home a.nl.on,html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) a.nl.on,
+html:root #sidebar #sidebar-nav .current-group>.ng{background-color:var(--primary-soft);background-image:none;color:var(--primary)!important;font-weight:750;box-shadow:none}
+html:root #sidebar #sidebar-nav .nav-home a.nl.on::after,html:root #sidebar #sidebar-nav .current-group>.ng::after{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--primary)}
+html:root #sidebar #sidebar-nav .nav-group.fly-open>.ng{background:var(--surface2);color:var(--ink)}
+html:root #sidebar #sidebar-nav .current-group.fly-open>.ng{background:var(--primary-soft)}
+
+/* counts */
+html:root #sidebar #sidebar-nav .tag,html:root #sidebar #sidebar-nav a.nl.on .tag{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:20px;height:20px;box-sizing:border-box;padding:0 6px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;font-style:normal;line-height:1;font-variant-numeric:tabular-nums}
+html:root #sidebar #sidebar-nav a.nl[href="/issues"] .tag{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+
+@media(min-width:1001px){
+  /* an arrow says "this opens a menu beside it" */
+  html:root #sidebar #sidebar-nav .nav-group>.ng .ng-chev,html:root #sidebar #sidebar-nav .nav-group:not(.collapsed)>.ng .ng-chev{display:block!important;width:13px;height:13px;margin-left:2px;color:var(--mute2);transform:rotate(-90deg)}
+  html:root #sidebar #sidebar-nav .tag+.ng-chev{margin-left:6px}
+  /* the pop-up menu */
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links{width:228px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(15,23,42,.06),0 18px 44px -10px rgba(15,23,42,.26)}
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl{min-height:36px!important;padding:7px 12px!important;border-radius:9px;color:var(--mute);font-size:14px;font-weight:650}
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl:hover{background:var(--surface2);color:var(--ink)}
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on{background:var(--primary-soft);color:var(--primary)!important;font-weight:750}
+}

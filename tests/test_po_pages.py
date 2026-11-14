@@ -1,4 +1,4 @@
-"""The desktop Purchase orders list (value still to arrive, groups, due dates) and a purchase order's delivery steps."""
+"""The desktop Purchase orders list (groups, due dates) and a purchase order's delivery steps."""
 from datetime import timedelta
 
 from sqlalchemy import select
@@ -26,12 +26,11 @@ def _orders(sync, fake, session):
     return made
 
 
-def test_the_list_leads_with_what_is_still_to_arrive_and_groups_by_need(client, sync, fake, session):
+def test_the_list_groups_by_need_without_a_summary_banner(client, sync, fake, session):
     _orders(sync, fake, session)
     add_user(session, 'po_admin', 'admin'); login(client, 'po_admin')
     page = client.get('/purchase-orders').text
-    assert '<b>800.00</b>' in page                                          # the two incoming orders (500 + 300); the stale one is not counted as on the way
-    assert '<b>2</b> on the way' in page and '<b>2</b> due within 3 days' in page and 'class="warn">1</b>' in page
+    assert 'po-big' not in page and 'po-facts' not in page and 'po-note' not in page    # the summary banner was removed by request
     assert page.index('class="po-group stale"') < page.index('class="po-group incoming"')   # needs attention first
     assert 'Due today' in page and 'Due in 2 days' in page and '30 days late' in page
     assert '<span>3</span></a>' in page and 'class="po-pill stale"' in page

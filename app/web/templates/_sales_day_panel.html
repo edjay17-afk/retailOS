@@ -1,0 +1,73 @@
+<div class="sd-panel-inner" data-day-panel="{{ day.isoformat() }}">
+  {% set basket = (summary.net_sales / summary.tx_count) if summary.tx_count else none %}
+  <div class="sd-dr-head-meta" hidden data-title="{{ day|day }}" data-sub="{{ loc_label }} · {{ summary.tx_count|num(0) }} {{ t('transactions') }} · {{ summary.cancelled_count }} {{ t('Cancelled')|lower }}"></div>
+
+  <div class="sd-dr-kpis">
+    <div class="sd-dr-kpi">
+      <span>{{ t('Net sales') }}</span>
+      <b>{{ summary.net_sales|money }}</b>
+    </div>
+    <div class="sd-dr-kpi">
+      <span>{{ t('Transactions') }} / {{ t('Average basket') }}</span>
+      <b>{{ summary.tx_count|num(0) }} &middot; {{ basket|money if basket is not none else '-' }}</b>
+    </div>
+    <div class="sd-dr-kpi">
+      <span>{{ t('Gross sales') }} / {{ t('Returns') }}</span>
+      <b>{{ (summary.gross_sales or summary.net_sales)|money }}{% if summary.returns_total %} &middot; -{{ summary.returns_total|money }}{% endif %}</b>
+    </div>
+    <div class="sd-dr-kpi">
+      <span>{{ t('Tax') }}</span>
+      <b>{{ (summary.tax or 0)|money }}</b>
+    </div>
+  </div>
+
+  {% if hours %}
+  <div>
+    <div class="sd-dr-sec">{{ t('Hourly sales rhythm') }}</div>
+    <div class="sd-dr-bars">
+      {% for h in hours %}
+      <div title="{{ h.label }}: {{ h.val|money }}">
+        <i style="height:{{ [h.pct, 4]|max if h.val > 0 else 4 }}%"></i>
+        <span>{{ h.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div>
+    <div class="sd-dr-sec">{{ t('Payment breakdown') }}</div>
+    <div class="sd-dr-list">
+      {% set m_sum = methods|sum(attribute=1) if methods else 0 %}
+      {% for m_name, m_amt in methods %}
+      <div class="sd-dr-row">
+        <span>{{ m_name }}{% if m_sum > 0 %} <small class="mute">({{ (m_amt / m_sum * 100)|round(0)|int }}%)</small>{% endif %}</span>
+        <b>{{ m_amt|money }}</b>
+      </div>
+      {% else %}
+      <div class="sd-dr-row"><span class="mute">{{ t('No payment breakdown recorded.') }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="sd-dr-sec">{{ t('Top products') }}</div>
+    <div class="sd-dr-list">
+      {% for pname, punits, pnet in top_prods %}
+      <div class="sd-dr-row">
+        <span>{{ pname }} <small class="mute">&middot; {{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</small></span>
+        <b>{{ pnet|money }}</b>
+      </div>
+      {% else %}
+      <div class="sd-dr-row"><span class="mute">{{ t('No product sales recorded for this day.') }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="sd-dr-foot">
+    <a class="btn sec" href="/sales/products?loc={{ loc_q }}&days=custom&frm={{ day.isoformat() }}&to={{ day.isoformat() }}">{{ t('All products') }}</a>
+    {% if can('sales.detail') %}
+    <a class="btn pri" href="/sales/transactions?loc={{ loc_q }}&days=custom&frm={{ day.isoformat() }}&to={{ day.isoformat() }}">{{ t('Transactions') }}</a>
+    {% endif %}
+  </div>
+</div>

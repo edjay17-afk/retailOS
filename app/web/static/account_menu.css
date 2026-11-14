@@ -10,7 +10,7 @@
 .account-menu .i{width:18px;height:18px;flex:none;color:var(--mute)}
 .account-menu a.account-password{border-top:1px solid var(--line);margin-top:5px;border-radius:0 0 8px 8px;padding-top:13px}
 .account-menu .account-signout-form{margin:0}
-.account-menu .account-signout{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:11px 10px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
+.account-menu .account-signout{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;min-height:40px;padding:11px 10px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 .account-menu .account-signout:hover,.account-menu .account-signout:focus-visible{background:color-mix(in srgb,#dc2626 10%,transparent);color:#dc2626}
 .account-menu .account-signout:hover .i,.account-menu .account-signout:focus-visible .i{color:#dc2626}
 .account-menu a.account-password{border-radius:8px}

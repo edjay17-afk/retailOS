@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Z-Reading Reports & Details — 3 Design Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --line-soft: #f1f5f9;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --blue-line: #bfdbfe;
+    --ok: #059669;
+    --ok-soft: #ecfdf5;
+    --ok-line: #a7f3d0;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --warn-line: #fde68a;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --sh1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --sh2: 0 10px 26px rgba(15, 23, 42, 0.07);
+    --mono: "JetBrains Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    background: #eef1f7;
+    color: var(--ink);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .frame {
+    width: 1320px;
+    background: var(--bg);
+    border: 1px solid #dbe1ec;
+    border-radius: 22px;
+    padding: 24px 26px 26px;
+    margin: 0 auto 38px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  }
+  .concept-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 14px;
+  }
+  .concept-tag span {
+    background: var(--ink);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .head h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; }
+  .head h2 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .actions { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 650;
+    text-decoration: none;
+    box-shadow: var(--sh1);
+  }
+  .btn.dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn.blue { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 11.5px; border-radius: 7px; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 7px 9px;
+    box-shadow: var(--sh1);
+    margin-bottom: 12px;
+  }
+  .seg {
+    display: inline-flex;
+    background: #f1f5f9;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 27px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .seg span.on {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15,23,42,.08);
+  }
+  .chip {
+    height: 33px;
+    padding: 0 11px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .chip small { color: var(--muted); font-weight: 500; font-size: 11px; }
+  .search-box {
+    flex: 1;
+    min-width: 170px;
+    height: 33px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 0 11px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .kpi-row.four { grid-template-columns: repeat(4, 1fr); }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 12px 14px;
+    box-shadow: var(--sh1);
+  }
+  .kpi .lbl { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .kpi .val { font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin-top: 3px; }
+  .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill.ok { background: var(--ok-soft); color: #047857; border: 1px solid var(--ok-line); }
+  .pill.warn { background: var(--warn-soft); color: #b45309; border: 1px solid var(--warn-line); }
+  .pill.blue { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-line); }
+  .pill.muted { background: #f1f5f9; color: #475569; border: 1px solid var(--line); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    box-shadow: var(--sh1);
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 750;
+  }
+  .card-head small { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 9px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+  }
+  td {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line-soft);
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  tr:first-child td { border-top: 0; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.interim td { color: #64748b; background: #fafbfc; }
+  tr.tot-row td { background: var(--surface2); font-weight: 750; border-top: 1px solid var(--line); }
+  tr.active td { background: #eff6ff; }
+
+  .split-2 {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .panel-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-soft);
+    border: 1px solid var(--blue-line);
+    border-radius: 6px;
+    padding: 2px 7px;
+    margin-bottom: 8px;
+  }
+
+  /* KV tables inside Z-Read Detail */
+  .kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .kv-table td {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .kv-table td.k { color: #475569; font-weight: 550; }
+  .kv-table td.v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* Opt 2 Split Workspace */
+  .split-master {
+    display: grid;
+    grid-template-columns: 1.02fr 1.15fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .z-list-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .z-list-row:first-child { border-top: 0; }
+  .z-list-row.selected {
+    background: #eff6ff;
+    box-shadow: inset 3px 0 0 var(--blue);
+  }
+  .z-inspector {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--sh2);
+    overflow: hidden;
+  }
+  .insp-top {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    background: linear-gradient(180deg, #fafcff 0%, #ffffff 100%);
+  }
+  .insp-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .meta-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .meta-strip b { display: block; color: var(--ink); font-size: 11.5px; margin-top: 1px; }
+  .meta-strip span { color: var(--muted); }
+
+  /* Opt 3 Store cards + 80mm thermal slip */
+  .store-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--line);
+  }
+  .receipt-80 {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 15px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: #0f172a;
+    box-shadow: var(--sh2);
+  }
+  .receipt-80 .c { text-align: center; }
+  .receipt-80 .dash { border-top: 1px dashed #94a3b8; margin: 6px 0; }
+  .receipt-80 .rl { display: flex; justify-content: space-between; gap: 8px; }
+  .bar-mix {
+    display: flex;
+    height: 6px;
+    width: 96px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #e2e8f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== OPTION 1 ==================== -->
+<section class="frame" id="opt1">
+  <div class="concept-tag"><span>Option 1</span> Studio Audit Ledger + Structured Detail View (Matches Sales &amp; PO Redesign)</div>
+
+  <div class="split-2">
+    <!-- Left: List page -->
+    <div>
+      <div class="panel-badge">1A · /sales/zreadings (Reports List)</div>
+      <div class="head">
+        <div class="head-left">
+          <h1>Z-Reading Reports</h1>
+          <span class="meta-pill">Official StoreHub read-only</span>
+        </div>
+        <div class="actions">
+          <a class="btn sm" href="#">Print slips</a>
+          <a class="btn dark sm" href="#">Download CSV</a>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="seg">
+          <span class="on">All <b>5</b></span>
+          <span>Final <b>4</b></span>
+          <span>Pending <b>0</b></span>
+        </div>
+        <div class="chip"><small>Store</small> All locations ▾</div>
+        <div class="chip"><small>Period</small> Last 14 days ▾</div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="lbl">Reports</div>
+          <div class="val num">4</div>
+          <div class="sub">+ 1 interim, not counted twice</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Total Transactions</div>
+          <div class="val num">842</div>
+          <div class="sub">Final Z-readings only</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Gross Sales (PHP)</div>
+          <div class="val num">₱94,218.50</div>
+          <div class="sub">Official BIR figures</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Close Time</th>
+              <th class="r">Z #</th>
+              <th>Store · Reg</th>
+              <th class="r">Tx</th>
+              <th class="r">Gross Sales</th>
+              <th class="r">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num"><b>11/13/2026 23:59</b></td>
+              <td class="r num">#42</td>
+              <td>Tagbilaran · Reg 5</td>
+              <td class="r num">214</td>
+              <td class="r num"><b>₱24,890.00</b></td>
+              <td class="r" style="white-space:nowrap"><a class="btn sm" href="#">Details</a> <a class="btn sm" href="#">80mm</a></td>
+            </tr>
+            <tr class="interim">
+              <td class="num">
+                11/13/2026 14:15<br>
+                <span class="pill warn" style="margin-top:3px">Interim · in 23:59 report</span>
+              </td>
+              <td class="r num">#42</td>
+              <td>Tagbilaran · Reg 5</td>
+              <td class="r num">88</td>
+              <td class="r num">₱9,420.00</td>
+              <td class="r" style="white-space:nowrap"><a class="btn sm" href="#">Details</a></td>
+            </tr>
+            <tr>
+              <td class="num"><b>11/13/2026 23:59</b></td>
+              <td class="r num">#19</td>
+              <td>Getafe · Reg 2</td>
+              <td class="r num">198</td>
+              <td class="r num"><b>₱21,410.50</b></td>
+              <td class="r" style="white-space:nowrap"><a class="btn sm" href="#">Details</a> <a class="btn sm" href="#">80mm</a></td>
+            </tr>
+            <tr>
+              <td class="num"><b>11/12/2026 23:59</b></td>
+              <td class="r num">#41</td>
+              <td>Tagbilaran · Reg 5</td>
+              <td class="r num">225</td>
+              <td class="r num"><b>₱25,318.00</b></td>
+              <td class="r" style="white-space:nowrap"><a class="btn sm" href="#">Details</a> <a class="btn sm" href="#">80mm</a></td>
+            </tr>
+            <tr class="tot-row">
+              <td colspan="3">Period Total (excluding interim)</td>
+              <td class="r num">842</td>
+              <td class="r num">₱94,218.50</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Z-Read Details page -->
+    <div>
+      <div class="panel-badge">1B · /sales/zreadings/{sh_id} (Z-Reading Details)</div>
+      <div class="head">
+        <div class="head-left">
+          <h2>Z-Reading Details #42</h2>
+          <span class="pill blue">Tagbilaran · Reg 5</span>
+        </div>
+        <div class="actions">
+          <a class="btn dark sm" href="#">80mm receipt</a>
+          <a class="btn sm" href="#">← Back</a>
+        </div>
+      </div>
+
+      <div class="kpi-row four" style="margin-bottom:10px">
+        <div class="kpi">
+          <div class="lbl">Sales for the Day</div>
+          <div class="val num" style="font-size:17px">₱24,890.00</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Net Amount</div>
+          <div class="val num" style="font-size:17px">₱24,620.00</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">VAT Amount</div>
+          <div class="val num" style="font-size:17px">₱2,637.86</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Short / Over</div>
+          <div class="val num" style="font-size:17px;color:var(--ok)">₱0.00</div>
+        </div>
+      </div>
+
+      <div class="kv-grid">
+        <div class="card">
+          <div class="card-head"><span>General &amp; SI Counters</span><small>11/13 06:00–23:59</small></div>
+          <table class="kv-table">
+            <tr><td class="k">Beg. SI #</td><td class="v">00400001812</td></tr>
+            <tr><td class="k">End. SI #</td><td class="v">00400002025</td></tr>
+            <tr><td class="k">SALES Count / VOID</td><td class="v">214 / 2</td></tr>
+            <tr><td class="k">Z Count / Reset</td><td class="v">42 / 0</td></tr>
+            <tr><td class="k">PTU / MIN</td><td class="v">FP-123 / M-991</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>Collections Summary</span><small>214 trans</small></div>
+          <table class="kv-table">
+            <tr><td class="k">Cash (164)</td><td class="v">₱17,840.00</td></tr>
+            <tr><td class="k">GCash (38)</td><td class="v">₱5,420.00</td></tr>
+            <tr><td class="k">Debit / Card (12)</td><td class="v">₱1,360.00</td></tr>
+            <tr class="tot-row"><td class="k">Total Collection</td><td class="v">₱24,620.00</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>Breakdown of Sales</span><small>VAT &amp; Net</small></div>
+          <table class="kv-table">
+            <tr><td class="k">VATABLE SALES</td><td class="v">21,982.14</td></tr>
+            <tr><td class="k">VAT AMOUNT</td><td class="v">2,637.86</td></tr>
+            <tr><td class="k">VAT EXEMPT SALES</td><td class="v">0.00</td></tr>
+            <tr><td class="k">Gross Amount</td><td class="v">24,890.00</td></tr>
+            <tr><td class="k">Less Discount (SC/PWD)</td><td class="v">270.00</td></tr>
+            <tr class="tot-row"><td class="k">Net Amount</td><td class="v">24,620.00</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>Transaction &amp; Drawer</span><small>Audit count</small></div>
+          <table class="kv-table">
+            <tr><td class="k">Opening Fund</td><td class="v">3,000.00</td></tr>
+            <tr><td class="k">Cash in Drawer</td><td class="v">20,840.00</td></tr>
+            <tr><td class="k">GCASH</td><td class="v">5,420.00</td></tr>
+            <tr><td class="k">Less Withdrawal</td><td class="v">0.00</td></tr>
+            <tr class="tot-row"><td class="k">Expected Drawer</td><td class="v">20,840.00</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 2 ==================== -->
+<section class="frame" id="opt2">
+  <div class="concept-tag"><span>Option 2</span> Master–Detail Z-Read Desk (Click Any Z-Read Row to Inspect Full Official Details Inline)</div>
+
+  <div class="head">
+    <div class="head-left">
+      <h1>Z-Reading Reports</h1>
+      <span class="meta-pill">4 final · ₱94,218.50 gross · 842 tx</span>
+    </div>
+    <div class="actions">
+      <div class="chip"><small>Location</small> All locations ▾</div>
+      <div class="chip"><small>Period</small> Last 14 days ▾</div>
+      <a class="btn" href="#">Print slips</a>
+      <a class="btn dark" href="#">Download CSV</a>
+    </div>
+  </div>
+
+  <div class="split-master">
+    <!-- Left master queue -->
+    <div class="card">
+      <div class="card-head">
+        <span>Closed Shifts &amp; Days</span>
+        <small>Click any row to inspect Z-Read</small>
+      </div>
+      <div class="z-list-row selected">
+        <div>
+          <div style="font-weight:750;font-size:13.5px">Tagbilaran · Z #42</div>
+          <div style="font-size:11.5px;color:var(--muted)" class="num">11/13/2026 23:59 · Reg 5 · 214 tx</div>
+        </div>
+        <span class="pill ok">Final</span>
+        <div class="r num" style="font-weight:800;font-size:14px">₱24,890.00</div>
+      </div>
+      <div class="z-list-row" style="background:#fafbfc;opacity:.75">
+        <div>
+          <div style="font-weight:650;font-size:13px">Tagbilaran · Z #42</div>
+          <div style="font-size:11.5px;color:var(--muted)" class="num">11/13/2026 14:15 · Reg 5 · 88 tx</div>
+        </div>
+        <span class="pill warn">Interim → 23:59</span>
+        <div class="r num" style="font-weight:700;font-size:13.5px;color:var(--muted)">₱9,420.00</div>
+      </div>
+      <div class="z-list-row">
+        <div>
+          <div style="font-weight:750;font-size:13.5px">Getafe · Z #19</div>
+          <div style="font-size:11.5px;color:var(--muted)" class="num">11/13/2026 23:59 · Reg 2 · 198 tx</div>
+        </div>
+        <span class="pill ok">Final</span>
+        <div class="r num" style="font-weight:800;font-size:14px">₱21,410.50</div>
+      </div>
+      <div class="z-list-row">
+        <div>
+          <div style="font-weight:750;font-size:13.5px">Tagbilaran · Z #41</div>
+          <div style="font-size:11.5px;color:var(--muted)" class="num">11/12/2026 23:59 · Reg 5 · 225 tx</div>
+        </div>
+        <span class="pill ok">Final</span>
+        <div class="r num" style="font-weight:800;font-size:14px">₱25,318.00</div>
+      </div>
+      <div class="z-list-row">
+        <div>
+          <div style="font-weight:750;font-size:13.5px">Getafe · Z #18</div>
+          <div style="font-size:11.5px;color:var(--muted)" class="num">11/12/2026 23:59 · Reg 2 · 205 tx</div>
+        </div>
+        <span class="pill ok">Final</span>
+        <div class="r num" style="font-weight:800;font-size:14px">₱22,600.00</div>
+      </div>
+    </div>
+
+    <!-- Right inline Z-Read Detail Inspector -->
+    <div class="z-inspector">
+      <div class="insp-top">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em">Live Z-Read Inspector · Read-Only StoreHub</div>
+          <div style="font-size:18px;font-weight:800;margin-top:2px">Z-Reading #42 — Tagbilaran</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" class="num">Close 11/13/2026 23:59 · Register 5 · Report ID SH-Z-88412</div>
+        </div>
+        <div class="actions">
+          <a class="btn sm dark" href="#">80mm Receipt</a>
+          <a class="btn sm" href="#">Open full page →</a>
+        </div>
+      </div>
+
+      <div class="insp-body">
+        <div class="meta-strip num">
+          <div><span>Beg. SI #</span><b>00400001812</b></div>
+          <div><span>End. SI #</span><b>00400002025</b></div>
+          <div><span>VATable / VAT</span><b>21,982 / 2,638</b></div>
+          <div><span>Short / Over</span><b style="color:var(--ok)">₱0.00</b></div>
+        </div>
+
+        <div class="kv-grid">
+          <div class="card">
+            <div class="card-head"><span>Breakdown of Sales</span><small>Official BIR</small></div>
+            <table class="kv-table">
+              <tr><td class="k">Gross Amount</td><td class="v">24,890.00</td></tr>
+              <tr><td class="k">Less Discount (SC/PWD)</td><td class="v">270.00</td></tr>
+              <tr><td class="k">Less Void / Refund</td><td class="v">0.00</td></tr>
+              <tr><td class="k">VATABLE SALES</td><td class="v">21,982.14</td></tr>
+              <tr><td class="k">VAT AMOUNT</td><td class="v">2,637.86</td></tr>
+              <tr class="tot-row"><td class="k">Net Amount</td><td class="v">24,620.00</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span>Collections &amp; Drawer</span><small>214 tx</small></div>
+            <table class="kv-table">
+              <tr><td class="k">Cash (164 tx)</td><td class="v">17,840.00</td></tr>
+              <tr><td class="k">GCash (38 tx)</td><td class="v">5,420.00</td></tr>
+              <tr><td class="k">Debit Card (12 tx)</td><td class="v">1,360.00</td></tr>
+              <tr><td class="k">Opening Fund</td><td class="v">3,000.00</td></tr>
+              <tr><td class="k">Cash in Drawer</td><td class="v">20,840.00</td></tr>
+              <tr class="tot-row"><td class="k">Total Collection</td><td class="v">24,620.00</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPTION 3 ==================== -->
+<section class="frame" id="opt3">
+  <div class="concept-tag"><span>Option 3</span> Store Compliance Register + Live 80mm Official Thermal Receipt Preview</div>
+
+  <div class="split-2" style="grid-template-columns:1.28fr .92fr">
+    <!-- Left: Store-grouped register with SI range & tender mix -->
+    <div>
+      <div class="panel-badge">3A · /sales/zreadings — Store-Grouped Closing Register</div>
+      <div class="head">
+        <div class="head-left">
+          <h1>Z-Reading Reports</h1>
+          <span class="meta-pill">BIR Audit Trail · Last 14 days</span>
+        </div>
+        <div class="actions">
+          <a class="btn sm" href="#">Print 2-up A4</a>
+          <a class="btn dark sm" href="#">Export Full CSV</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="store-group-head">
+          <div><b style="font-size:13.5px">Tagbilaran</b> <span style="font-size:11.5px;color:var(--muted);margin-left:6px">Register 5 · PTU FP-123</span></div>
+          <span class="pill ok">₱50,208.00 · 439 tx</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Close Date &amp; Time</th>
+              <th>Z # &amp; SI Range</th>
+              <th>Tender Mix</th>
+              <th class="r">Gross</th>
+              <th class="r">Report</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="active">
+              <td class="num"><b>11/13/2026 23:59</b></td>
+              <td class="num"><b>Z #42</b><br><small style="color:var(--muted)">1812 → 2025</small></td>
+              <td>
+                <div class="bar-mix"><span style="width:72%;background:#059669"></span><span style="width:22%;background:#2563eb"></span><span style="width:6%;background:#64748b"></span></div>
+                <small style="font-size:10.5px;color:var(--muted)">72% Cash · 22% GCash</small>
+              </td>
+              <td class="r num"><b>₱24,890.00</b></td>
+              <td class="r"><a class="btn blue sm" href="#">Inspecting</a></td>
+            </tr>
+            <tr class="interim">
+              <td class="num" style="padding-left:24px">↳ 14:15 <span class="pill warn">Interim</span></td>
+              <td class="num" style="font-size:11.5px">1812 → 1899</td>
+              <td style="font-size:11px;color:var(--muted)">Excluded (in 23:59)</td>
+              <td class="r num">₱9,420.00</td>
+              <td class="r"><a class="btn sm" href="#">Details</a></td>
+            </tr>
+            <tr>
+              <td class="num"><b>11/12/2026 23:59</b></td>
+              <td class="num"><b>Z #41</b><br><small style="color:var(--muted)">1587 → 1811</small></td>
+              <td>
+                <div class="bar-mix"><span style="width:75%;background:#059669"></span><span style="width:19%;background:#2563eb"></span><span style="width:6%;background:#64748b"></span></div>
+                <small style="font-size:10.5px;color:var(--muted)">75% Cash · 19% GCash</small>
+              </td>
+              <td class="r num"><b>₱25,318.00</b></td>
+              <td class="r"><a class="btn sm" href="#">Details</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="store-group-head">
+          <div><b style="font-size:13.5px">Getafe</b> <span style="font-size:11.5px;color:var(--muted);margin-left:6px">Register 2 · PTU FP-208</span></div>
+          <span class="pill ok">₱44,010.50 · 403 tx</span>
+        </div>
+        <table>
+          <tbody>
+            <tr>
+              <td class="num"><b>11/13/2026 23:59</b></td>
+              <td class="num"><b>Z #19</b> <small style="color:var(--muted)">· 0940→1137</small></td>
+              <td><span class="pill muted">198 tx</span></td>
+              <td class="r num"><b>₱21,410.50</b></td>
+              <td class="r"><a class="btn sm" href="#">Details</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Structured Detail + 80mm Receipt Slip Preview -->
+    <div>
+      <div class="panel-badge">3B · Z-Read Detail + Official 80mm Thermal Receipt Preview</div>
+      <div class="receipt-80">
+        <div class="c"><b>THE DAILY CENTRO - TAGBILARAN</b></div>
+        <div class="c">Operated by: Daily Centro Inc.</div>
+        <div class="c">MIN: M-99102 · PTU: FP-123 · S/N: SN-882</div>
+        <div class="c" style="margin:4px 0;font-size:11px"><b>*** Z-READING REPORT ***</b></div>
+        <div class="dash"></div>
+        <div class="rl"><span>Report Date / Time:</span><b>11/13/2026 23:59</b></div>
+        <div class="rl"><span>Beg. SI # — End. SI #:</span><b>1812 — 2025</b></div>
+        <div class="rl"><span>Z Count / SALES Count:</span><b>42 / 214</b></div>
+        <div class="dash"></div>
+        <div class="c"><b>- - - BREAKDOWN OF SALES - - -</b></div>
+        <div class="rl"><span>VATABLE SALES:</span><span>21,982.14</span></div>
+        <div class="rl"><span>VAT AMOUNT:</span><span>2,637.86</span></div>
+        <div class="rl"><span>Gross Amount:</span><span>24,890.00</span></div>
+        <div class="rl"><span>Less Discount (SC/PWD):</span><span>270.00</span></div>
+        <div class="rl"><b>Net Amount:</b><b>24,620.00</b></div>
+        <div class="dash"></div>
+        <div class="c"><b>- - - COLLECTIONS SUMMARY - - -</b></div>
+        <div class="rl"><span>Cash (164)</span><span>17,840.00</span></div>
+        <div class="rl"><span>GCash (38)</span><span>5,420.00</span></div>
+        <div class="rl"><span>Debit / Card (12)</span><span>1,360.00</span></div>
+        <div class="rl"><b>Total Collection (214):</b><b>24,620.00</b></div>
+        <div class="dash"></div>
+        <div class="c"><b>- - - TRANSACTION SUMMARY - - -</b></div>
+        <div class="rl"><span>Opening Fund:</span><span>3,000.00</span></div>
+        <div class="rl"><span>Cash in Drawer:</span><span>20,840.00</span></div>
+        <div class="rl"><b>Expected Drawer / Short-Over:</b><b>20,840.00 / 0.00</b></div>
+        <div style="display:flex;gap:8px;margin-top:10px;font-family:Inter,sans-serif">
+          <a class="btn blue sm" style="flex:1;justify-content:center" href="#">Print 80mm Receipt</a>
+          <a class="btn sm" style="flex:1;justify-content:center" href="#">Full Detail Tables</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
