@@ -12,3 +12,5 @@ planogram/
 *.db-wal
 ui.log
 uiserver.log
+
+backups/
