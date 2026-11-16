@@ -47,8 +47,10 @@ def new_product_page(barcode: str = "", name: str = "", saved: str = "", c: Ctx 
     pushes = list(c.db.scalars(pq.order_by(StoreHubPush.id.desc()).limit(50)))
     push_lists = {p.list_id for p in pushes if p.list_id}
     have_lists = set(c.db.scalars(select(NewProductList.id).where(NewProductList.id.in_(push_lists)))) if push_lists else set()
+    push_sh_ids = [p.storehub_product_id for p in pushes if p.storehub_product_id]
+    push_images = dict(c.db.execute(select(Product.storehub_id, Product.image_url).where(Product.storehub_id.in_(push_sh_ids), Product.image_url.is_not(None)))) if push_sh_ids else {}
     return render(c, "new_product.html", lst=lst, data=_data(lst), saved=saved, suppliers=npl.suppliers(c.db), categories=npl.categories(c.db),
-                  pushes=pushes, have_lists=have_lists,
+                  pushes=pushes, have_lists=have_lists, push_images=push_images,
                   show_saved=show_saved, barcode=barcode.strip(), prefill_name=name.strip()[:300])
 
 

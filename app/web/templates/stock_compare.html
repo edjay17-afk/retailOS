@@ -147,7 +147,7 @@
       {% for r in rows %}
       <tr>
         <td class="sc-p">
-          <a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a>
+          {{ pimg(r.p) }}<a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a>
           <small>{{ [r.p.barcode or r.p.sku, r.p.category, (t('No stock record') if not r.cells else '')]|select|join(' · ') }}</small>
         </td>
         {% for l in locs %}{% set x = r.cells.get(l.id) %}

@@ -31,7 +31,7 @@
 </section>
 {% endif %}
 <section id="phone-count-recent" class="phone-only">
-{% if counted_lines %}<h2 class="phone-section-title">{{ t('Recently counted') }}</h2>{% for l in (counted_lines|reverse|list)[:3] %}<div class="phone-count-recent-row"><span>{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong><svg class="i" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg></div>{% endfor %}{% endif %}
+{% if counted_lines %}<h2 class="phone-section-title">{{ t('Recently counted') }}</h2>{% for l in (counted_lines|reverse|list)[:3] %}<div class="phone-count-recent-row"><span>{{ pimg(l.product, 24) }}{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong><svg class="i" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg></div>{% endfor %}{% endif %}
 </section>
 <details id="count-review" {{ 'open' if cc.status != 'open' }}><summary><span>{{ t('Review counts') }}</span><span class="count-review-total">{{ cc.lines|length }} {{ t('Items') }}</span></summary>
 <form id="count-review-form" novalidate method="post" action="/counts/{{ cc.id }}/save" data-guard><input type="hidden" name="csrf" value="{{ csrf }}">
@@ -44,7 +44,7 @@
   {% if counted_lines %}<span class="small mute count-review-note">{{ t('Everything counted so far.') }}{% if cc.status != 'approved' %} {{ t('Not approved yet.') }}{% endif %}</span>{% endif %}
 </div>
 <div class="tw count-review-table"><table class="wide rcards"><tr><th scope="col">{{ t('Product') }}</th><th scope="col" class="right">{{ t('System') }}</th><th scope="col" class="right">{{ t('Counted') }}</th><th scope="col" class="right">{{ t('Difference') }}</th><th scope="col">{{ t('Note') }}</th></tr>
-{% for l in cc.lines %}<tr><td>{{ l.product.name }}<div class="small mute">{{ l.product.barcode or '' }}</div></td><td class="right">{{ l.system_qty|num }}</td>
+{% for l in cc.lines %}<tr><td>{{ pimg(l.product) }}{{ l.product.name }}<div class="small mute">{{ l.product.barcode or '' }}</div></td><td class="right">{{ l.system_qty|num }}</td>
 <td class="right">{% if cc.status == 'open' %}<input type="number" step="any" min="0" name="c_{{ l.id }}" value="{{ l.counted_qty|num if l.counted_qty is not none }}" inputmode="decimal">{% else %}{{ l.counted_qty|num if l.counted_qty is not none }}{% endif %}</td>
 <td class="right"><b style="{{ 'color:var(--bad)' if l.variance }}">{{ ('%+g'|format(l.variance)) if l.variance is not none else '' }}</b></td>
 <td>{% if cc.status == 'open' %}<input name="n_{{ l.id }}" value="{{ l.note or '' }}">{% else %}{{ l.note or '' }}{% endif %}</td></tr>{% endfor %}</table></div>{% else %}<div class="count-empty"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg><strong>{{ t('No products counted yet') }}</strong><p>{{ t('Scan your first product above. Saved counts will appear here.') }}</p></div>{% endif %}
@@ -62,7 +62,7 @@
   </div>
   <div class="cd-card cd-recent">
     <h3>{{ t('Recently counted') }}</h3>
-    {% for l in (counted_lines|reverse|list)[:6] %}<div class="cd-recent-row"><span>{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong>{% if l.variance %}<em class="cd-chip">{{ '%+g'|format(l.variance) }}</em>{% else %}<svg class="i cd-ok" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg>{% endif %}</div>
+    {% for l in (counted_lines|reverse|list)[:6] %}<div class="cd-recent-row"><span>{{ pimg(l.product, 24) }}{{ l.product.name }}</span><strong>{{ l.counted_qty|num }}</strong>{% if l.variance %}<em class="cd-chip">{{ '%+g'|format(l.variance) }}</em>{% else %}<svg class="i cd-ok" aria-label="{{ t('Saved') }}"><use href="#i-check"/></svg>{% endif %}</div>
     {% else %}<p class="small mute">{{ t('No products counted yet') }}</p>{% endfor %}
   </div>
 </aside>

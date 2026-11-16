@@ -242,11 +242,15 @@ def supplier_update(sid: int, name: str = Form(...), lead: str | None = Form(Non
 
 # ======================================================================================= product set-up
 @router.get("/products")
-def products_page(q: str = "", filt: str = "", page: int = 1, export: str = "", c: Ctx = Depends(need("settings.manage"))):
+def products_page(q: str = "", filt: str = "", cat: str = "", page: int = 1, export: str = "", c: Ctx = Depends(need("settings.manage"))):
     db = c.db
     stmt = select(Product).where(Product.in_api.is_(True), Product.track_stock.is_(True)).options(selectinload(Product.supplier)).order_by(Product.name)
     if q:
         stmt = stmt.where(Product.name.like(f"%{q}%") | Product.barcode.like(f"%{q}%") | Product.sku.like(f"%{q}%"))
+    if cat == "__none__":
+        stmt = stmt.where(Product.category.is_(None) | (Product.category == ""))
+    elif cat:
+        stmt = stmt.where(Product.category == cat)
     if filt == "no_supplier":
         stmt = stmt.where(Product.supplier_id.is_(None))
     elif filt == "no_case_pack":
@@ -267,7 +271,8 @@ def products_page(q: str = "", filt: str = "", page: int = 1, export: str = "", 
     page = max(page, 1)
     prods = list(db.scalars(stmt.limit(PAGE).offset((page - 1) * PAGE)))
     sups = list(db.scalars(select(Supplier).where(Supplier.active.is_(True)).order_by(Supplier.name)))
-    return render(c, "products.html", vat=1 + float(cfg.get(db, "product.vat_rate") or 0) / 100, prods=prods, sups=sups, q=q, filt=filt, page=page, total=total)
+    cats = list(db.scalars(select(Product.category).where(Product.in_api.is_(True), Product.track_stock.is_(True), Product.category.is_not(None), Product.category != "").distinct().order_by(Product.category)))
+    return render(c, "products.html", vat=1 + float(cfg.get(db, "product.vat_rate") or 0) / 100, prods=prods, sups=sups, q=q, filt=filt, cat=cat, cats=cats, page=page, total=total)
 
 
 @router.post("/products/{pid:int}")
@@ -296,6 +301,42 @@ def product_update(pid: int, supplier: int = Form(0), case_pack: str = Form(""),
     if request is not None and request.headers.get("x-requested-with") == "fetch":  # saved from the page without reloading it
         return JSONResponse({"ok": True, "name": p.name})
     return redirect(back, ok=f"Saved {p.name}")
+
+
+@router.post("/products/{pid:int}/image")
+async def product_image_upload(pid: int, file: UploadFile = File(...), csrf: str = Form(""), source: str = Form("manual"),
+                               src_url: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
+    """A product picture pasted (Ctrl+V), dropped or chosen on the Product settings page, or sent by the n8n image flow. Stored as a shrunken JPEG in RetailOS only."""
+    from ..services import product_images
+    c.check_csrf(csrf)
+    p = c.db.get(Product, pid)
+    if p is None:
+        raise HTTPException(404)
+    raw = await file.read(10 * 1024 * 1024 + 1)
+    if len(raw) > 10 * 1024 * 1024:
+        raise HTTPException(413, "The picture is larger than 10 MB")
+    jpeg = product_images.shrink(raw, min_side=1, max_side=2000)
+    if jpeg is None:
+        raise HTTPException(400, "That is not a picture (use JPEG, PNG or WebP)")
+    source = (source or "manual").strip()[:40] or "manual"
+    product_images.save_picture(p, jpeg, source)
+    after = {"source": source}
+    if src_url.strip():
+        after["url"] = src_url.strip()[:300]
+    audit.log(c.db, actor_type="human", actor_id=c.user.id, action="product.image", entity_type="product", entity_id=pid, before=None, after=after)
+    return JSONResponse({"ok": True, "url": p.image_url})
+
+
+@router.post("/products/{pid:int}/image/remove")
+def product_image_remove(pid: int, csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
+    from ..services import product_images
+    c.check_csrf(csrf)
+    p = c.db.get(Product, pid)
+    if p is None:
+        raise HTTPException(404)
+    product_images.remove_picture(p)
+    audit.log(c.db, actor_type="human", actor_id=c.user.id, action="product.image_remove", entity_type="product", entity_id=pid, before=None, after=None)
+    return JSONResponse({"ok": True})
 
 
 @router.post("/products/import")

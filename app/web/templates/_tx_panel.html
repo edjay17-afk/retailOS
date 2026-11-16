@@ -19,11 +19,11 @@
 
       <div class="txp-items">
         <div class="txp-items-head"><b>{{ t('Items') }}</b><span>{{ qty(units) }} {{ t('items') }}</span></div>
-        {% for line in lines %}{% set l = line[0] %}
+        {% for line in lines %}{% set l = line[0] %}{% set img_url = line[2] if line|length > 2 else none %}
         <div class="txp-line">
           <span class="txp-q">{{ qty(l.qty) }}&times;</span>
           <div class="txp-line-main">
-            <b>{{ line[1] or l.product_sh_id or l.item_type }}</b>
+            {{ pimg({'image_url': img_url}, 28) }}<b>{{ line[1] or l.product_sh_id or l.item_type }}</b>
             <span>{{ l.unit_price|money if l.unit_price is not none else '—' }} {{ t('each') }}{% if l.discount %} <em>&middot; &minus;{{ l.discount|money }}</em>{% endif %}</span>
           </div>
           <b class="txp-amt">{{ l.total|money }}</b>

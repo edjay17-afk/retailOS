@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from .. import settings_service as cfg
-from ..models import StockTransfer, StockTransferImport, StockTransferLine, StockTransferReceipt, StockTransferReceiptLine
+from ..models import Product, StockTransfer, StockTransferImport, StockTransferLine, StockTransferReceipt, StockTransferReceiptLine
 from ..services import stock_transfers, transfer_inbox, transfers
 from ..services import order_documents
 from ..timeutil import now_utc, fmt_local
@@ -144,7 +144,10 @@ def transfer_detail(transfer_id: int, c: Ctx = Depends(need("transfer.view"))):
                                    selectinload(StockTransferReceipt.counter)))
     can_confirm = (receipt is None and rec.status != "Cancelled" and rec.lines
                    and c.can("transfer.confirm") and rec.target_location_id in (c.location_ids or []))
+    pids = [l.product_id for l in rec.lines if l.product_id]
+    products_by_id = {p.id: p for p in c.db.scalars(select(Product).where(Product.id.in_(pids)))} if pids else {}
     return render(c, "stock_transfer_detail.html", rec=rec, receipt=receipt, can_confirm=can_confirm,
+                  products_by_id=products_by_id,
                   document=order_documents.document(c.db, rec, "transfer"),
                   original_document=order_documents.calculate(order_documents.initial(c.db, rec, "transfer")),
                   document_base=f"/stock-transfers/{rec.id}", kind="transfer", exact=order_documents.display)

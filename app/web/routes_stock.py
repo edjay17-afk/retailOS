@@ -573,12 +573,12 @@ def sales(loc: int = 0, days: str = "14", frm: str = "", to: str = "", export: s
         rows = list(db.scalars(select(SalesDay).where(SalesDay.location_id.in_(loc_ids), SalesDay.business_date >= start, SalesDay.business_date <= end).order_by(SalesDay.business_date.desc())))
         if combined:
             rows = _sum_days(rows)
-        top = list(db.execute(select(Product.name, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).join(Product, Product.id == SalesDayProduct.product_id)
+        top = list(db.execute(select(Product.id, Product.name, Product.image_url, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).join(Product, Product.id == SalesDayProduct.product_id)
                               .where(SalesDayProduct.location_id.in_(loc_ids), SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end)
-                              .group_by(Product.name).order_by(func.sum(SalesDayProduct.net_sales).desc()).limit(15)))
-        top_units = list(db.execute(select(Product.name, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).join(Product, Product.id == SalesDayProduct.product_id)
+                              .group_by(Product.id, Product.name, Product.image_url).order_by(func.sum(SalesDayProduct.net_sales).desc()).limit(15)))
+        top_units = list(db.execute(select(Product.id, Product.name, Product.image_url, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales)).join(Product, Product.id == SalesDayProduct.product_id)
                                     .where(SalesDayProduct.location_id.in_(loc_ids), SalesDayProduct.business_date >= start, SalesDayProduct.business_date <= end)
-                                    .group_by(Product.name).order_by(func.sum(SalesDayProduct.units).desc()).limit(8)))
+                                    .group_by(Product.id, Product.name, Product.image_url).order_by(func.sum(SalesDayProduct.units).desc()).limit(8)))
     if export == "csv":
         out = io.StringIO()
         w = csv.writer(out)
@@ -801,10 +801,10 @@ def sales_day_panel(day: str = "", loc: int = 0, c: Ctx = Depends(need("sales.vi
             })
 
     top_prods = list(db.execute(
-        select(Product.name, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales))
+        select(Product.id, Product.name, Product.image_url, func.sum(SalesDayProduct.units), func.sum(SalesDayProduct.net_sales))
         .join(Product, Product.id == SalesDayProduct.product_id)
         .where(SalesDayProduct.location_id.in_(loc_ids), SalesDayProduct.business_date == d)
-        .group_by(Product.name).order_by(func.sum(SalesDayProduct.net_sales).desc()).limit(6)
+        .group_by(Product.id, Product.name, Product.image_url).order_by(func.sum(SalesDayProduct.net_sales).desc()).limit(6)
     ))
     loc_q = 0 if combined else location.id
     return render(
@@ -990,7 +990,7 @@ def sales_tx_panel(txid: int, c: Ctx = Depends(need("sales.detail"))):
     if t is None:
         raise HTTPException(404)
     c.check_loc(t.location_id)
-    lines = list(db.execute(select(SalesLine, Product.name).outerjoin(Product, Product.id == SalesLine.product_id).where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
+    lines = list(db.execute(select(SalesLine, Product.name, Product.image_url).outerjoin(Product, Product.id == SalesLine.product_id).where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
     pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
     emp = db.scalar(select(Employee).where(Employee.storehub_id == t.employee_sh_id)) if t.employee_sh_id else None
     return render(c, "_tx_panel.html", tx=t, lines=lines, pays=pays, emp=emp, loc=db.get(Location, t.location_id), units=sum(l[0].qty or 0 for l in lines))
@@ -1004,7 +1004,7 @@ def sales_tx_detail(txid: int, c: Ctx = Depends(need("sales.detail"))):
     if t is None:
         raise HTTPException(404)
     c.check_loc(t.location_id)
-    lines = list(db.execute(select(SalesLine, Product.name, Product.barcode, Product.sku)
+    lines = list(db.execute(select(SalesLine, Product.name, Product.barcode, Product.sku, Product.image_url)
                             .outerjoin(Product, Product.id == SalesLine.product_id)
                             .where(SalesLine.tx_id == txid).order_by(SalesLine.line_no)))
     pays = list(db.execute(select(Payment.method, Payment.amount).where(Payment.tx_id == txid).order_by(Payment.id)))
@@ -1354,6 +1354,8 @@ def zreading_reports(loc: int = 0, days: str = "14", frm: str = "", to: str = ""
         db.commit()
         return Response("﻿" + out.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="z-readings-{start}-to-{end}.csv"'})
 
+    rows = [r for r in rows if r.id not in replaced]   # the page lists the final reports only: an interim one is already inside the later report of its day (the CSV export keeps both)
+    tot = zreadings.totals(rows)
     by_store: dict[int, list[ZReading]] = {}
     row_meta: dict[int, dict] = {}
     previews: dict[str, dict] = {}

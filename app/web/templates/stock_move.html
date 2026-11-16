@@ -30,7 +30,7 @@
     <tbody>{% for r in rows %}
       <tr data-pid="{{ r.p.id }}">
         <td class="mv-cb">{% if can_sheet %}<input type="checkbox" class="mv-row" name="ids" value="{{ r.p.id }}" aria-label="{{ t('Select') }} {{ r.p.name }}">{% endif %}</td>
-        <td class="mv-p"><b>{{ r.p.name }}</b><small>{{ r.p.barcode or r.p.sku or '' }}</small></td>
+        <td class="mv-p">{{ pimg(r.p) }}<b>{{ r.p.name }}</b><small>{{ r.p.barcode or r.p.sku or '' }}</small></td>
         <td class="r">{{ r.wh|num }}</td>
         <td class="r {{ 'mv-neg' if r.store < 0 else 'mv-zero' if r.store == 0 else '' }}"><b>{{ r.store|num }}</b></td>
         <td class="r">{{ r.ads|num(1) }}/{{ t('day') }}</td>

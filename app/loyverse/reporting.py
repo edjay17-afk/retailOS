@@ -73,7 +73,7 @@ def catalog(db, account, stores, items, suppliers, categories, employees):
             p.in_api = not bool(item.get('deleted_at') or v.get('deleted_at'))
             p.last_seen = now_utc()
             image = item.get('image_url') or ''
-            p.image_url = image if image.startswith('https://') else None
+            p.image_url = image if image.startswith('https://') else (p.image_url if (p.image_url or '').startswith('/uploads/products/') else None)   # a picture uploaded in RetailOS stays
             sup = sups.get(item.get('primary_supplier_id'))
             p.supplier_id = sup.id if sup else None; p.supplier_source = 'loyverse'
             prods[v['variant_id']] = p

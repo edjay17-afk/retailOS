@@ -50,6 +50,9 @@ class Config(BaseSettings):
     robot_every_minutes: int = 5  # fetch when the last import is this old; checked every minute for catch-up after sleep
     robot_headless: bool = True
 
+    product_images_enabled: bool = True  # the image robot finds pictures for products that have none (public barcode databases) and keeps a copy in data/uploads/products
+    product_images_per_run: int = 20  # products looked up per run (every 10 minutes), so the public databases are never hammered
+
     lark_app_id: str = ""
     lark_app_secret: str = ""
     lark_base_token: str = ""

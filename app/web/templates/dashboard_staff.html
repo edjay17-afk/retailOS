@@ -47,7 +47,7 @@
       </ul>
     </div>
     {% if low_items %}<div class="sd-sub">{{ t('Closest to running out') }}</div>
-    {% for it in low_items %}<div class="sd-low"><span class="n">{{ it.name }}</span><span class="v">{{ it.on_hand|num }} / {{ it.warn|num }}</span><div class="bar"><i style="width:{{ it.pct }}%"></i></div></div>{% endfor %}{% endif %}
+    {% for it in low_items %}<div class="sd-low"><span class="n">{{ pimg(it, 24) }}{{ it.name }}</span><span class="v">{{ it.on_hand|num }} / {{ it.warn|num }}</span><div class="bar"><i style="width:{{ it.pct }}%"></i></div></div>{% endfor %}{% endif %}
     {% else %}<p class="sd-empty">{{ t('No stock data for your store yet.') }}</p>{% endif %}
   </section>
 

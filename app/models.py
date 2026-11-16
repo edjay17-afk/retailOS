@@ -133,6 +133,8 @@ class Product(SourceEntity, Base):
     first_seen: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
     last_seen: Mapped[datetime] = mapped_column(DateTime, default=now_utc)
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    image_checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # product image robot: last time it looked for a picture
+    image_source: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)  # where the robot found the picture
     # system-owned configuration (StoreHub has no such fields)
     supplier_id: Mapped[Optional[int]] = mapped_column(ForeignKey("supplier.id"), nullable=True)
     supplier_source: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)  # po_history | manual

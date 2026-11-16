@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 
 from .. import audit, jobs
 from ..config import get_config
-from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Payment, Recommendation, SalesDay, SalesLine, SalesTx, SyncRun, User)
+from ..models import (ApiErrorLog, AuditEvent, DqEvent, Inspection, Issue, Location, Notification, Payment, Product, Recommendation, SalesDay, SalesLine, SalesTx, SyncRun, User)
 from ..security import can_open, create_session, hash_password, load_session, password_problem, verify_password
-from ..services import inspections, backup, brief, dq, freshness, notifications, replenishment, run_now
+from ..services import inspections, backup, brief, dq, freshness, notifications, progress, replenishment, run_now
 from ..timeutil import now_utc, today_local
 from .deps import COOKIE, Ctx, ctx_dep, get_db, need, redirect, render, render_public
 
@@ -118,21 +118,21 @@ def _stock_health(db, ids, today):
                                                                          SalesDayProduct.business_date > today - timedelta(days=30)).distinct()))
     ok = low = out = 0
     lows = []
-    q = (select(InventoryCurrent.product_id, InventoryCurrent.on_hand, InventoryCurrent.warning_stock, Product.name)
+    q = (select(InventoryCurrent.product_id, InventoryCurrent.on_hand, InventoryCurrent.warning_stock, Product.name, Product.image_url)
          .join(Product, Product.id == InventoryCurrent.product_id).where(InventoryCurrent.location_id.in_(ids or [0])))
-    for pid, on_hand, warn, name in db.execute(q):
+    for pid, on_hand, warn, name, img in db.execute(q):
         if pid not in sellers:  # an item nobody buys is not a stock problem
             continue
         if on_hand <= 0:
             out += 1
         elif warn and on_hand <= warn:
             low += 1
-            lows.append((on_hand / warn, name, on_hand, warn))
+            lows.append((on_hand / warn, name, img, on_hand, warn))
         else:
             ok += 1
     lows.sort()
     return {"health": {"ok": ok, "low": low, "out": out, "total": ok + low + out},
-            "low_items": [{"name": n, "on_hand": oh, "warn": w, "pct": max(6, min(100, round(r * 100)))} for r, n, oh, w in lows[:6]]}
+            "low_items": [{"name": n, "image_url": img, "on_hand": oh, "warn": w, "pct": max(6, min(100, round(r * 100)))} for r, n, img, oh, w in lows[:6]]}
 
 
 def _ops_data(db, ids, today, t):
@@ -423,6 +423,42 @@ def audit_page(action: str = "", entity: str = "", actor: str = "", page: int = 
                   chain=(ok, n, bad))
 
 
+@router.get("/audit/image-feed")
+def audit_image_feed(limit: int = 30, c: Ctx = Depends(need("audit.view"))):
+    """Latest product.image audit events as JSON; the live attach monitor (/audit/live) polls this."""
+    db = c.db
+    rows = list(db.scalars(select(AuditEvent).where(AuditEvent.action == "product.image")
+                           .order_by(AuditEvent.id.desc()).limit(min(limit, 100))))
+    pids = [int(r.entity_id) for r in rows if str(r.entity_id or "").isdigit()]
+    prods = {p.id: p for p in db.scalars(select(Product).where(Product.id.in_(pids or [0])))}
+    items = []
+    for r in rows:
+        p = prods.get(int(r.entity_id)) if str(r.entity_id or "").isdigit() else None
+        items.append({"id": r.id, "ts": str(r.ts), "pid": r.entity_id,
+                      "name": p.name if p else "?", "img": (p.image_url or "") if p else "", "after": r.after})
+    return JSONResponse({"items": items})
+
+
+@router.get("/audit/live")
+def audit_image_live(c: Ctx = Depends(need("audit.view"))):
+    """Self-refreshing wall of product pictures as the n8n flow (or a human) attaches them."""
+    return render(c, "image_live.html")
+
+
+@router.post("/progress/note")
+def progress_note(msg: str = Form(""), csrf: str = Form(""), c: Ctx = Depends(need("settings.manage"))):
+    """Heartbeat from the n8n image flow (or any signed-in automation), shown on /audit/live. Not audit data."""
+    c.check_csrf(csrf)
+    if msg.strip():
+        progress.note(msg.strip())
+    return JSONResponse({"ok": True})
+
+
+@router.get("/progress/feed")
+def progress_feed(limit: int = 50, c: Ctx = Depends(need("audit.view"))):
+    return JSONResponse({"items": progress.feed(limit)})
+
+
 # ----------------------------------------------------------------------------------------- health + uploads
 @router.get("/healthz")
 def healthz(db: Session = Depends(get_db)):
@@ -433,6 +469,15 @@ def healthz(db: Session = Depends(get_db)):
         return JSONResponse({"status": "ok" if not stale else "degraded", "stale_domains": stale, "time": now_utc().isoformat()})
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"status": "down", "error": type(e).__name__}, status_code=503)
+
+
+@router.get("/products/images.json")
+def product_images_map(c: Ctx = Depends(ctx_dep())):
+    """Sparse id -> image_url lookup for browser product catalogs."""
+    from ..models import Product
+    rows = c.db.execute(select(Product.id, Product.image_url).where(Product.image_url.is_not(None), Product.image_url != ""))
+    out = {str(pid): url for pid, url in rows if url.startswith("/uploads/products/") or url.startswith("https://api.loyverse.com/")}
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/uploads/{path:path}")

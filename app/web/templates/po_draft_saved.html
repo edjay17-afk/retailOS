@@ -21,7 +21,7 @@
 <div class="po-table">
   <div class="po-row po-ro po-head desk-only"><span>{{ t("Product Name") }}</span><span class="r">{{ t("Qty to Order") }}</span><span class="r">{{ t("Supplier Price (PHP)") }}</span><span class="r">{{ t("Total (PHP)") }}</span></div>
   {% for l in data.lines|reverse %}<div class="po-row po-line po-ro">
-    <div class="po-name"><b>{{ l.name }}</b><div class="small mute po-code">{{ l.barcode or l.sku }}</div></div>
+    <div class="po-name">{{ pimg(l, 30) }}<b>{{ l.name }}</b><div class="small mute po-code">{{ l.barcode or l.sku }}</div></div>
     <div class="po-c r"><span class="po-lab mob-only">{{ t('Qty to Order') }}</span>{{ l.qty }}</div>
     <div class="po-c r"><span class="po-lab mob-only">{{ t('Supplier Price (PHP)') }}</span>{{ show(l.price) }}</div>
     <div class="po-c r po-tot"><span class="po-lab mob-only">{{ t('Total (PHP)') }}</span><b>{{ show(l.total) }}</b></div></div>{% endfor %}

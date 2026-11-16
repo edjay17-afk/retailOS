@@ -99,7 +99,7 @@
     <div class="np-saved">
       {% for p in pushes %}
       <div class="np-srow">
-        <div><b>{{ p.name }}</b><div class="small mute np-mono">{{ p.barcode }}{% if p.price is not none %} · ₱{{ p.price|num }}{% endif %}</div></div>
+        <div>{{ pimg({'image_url': push_images.get(p.storehub_product_id)}, 30) if push_images is defined }}<b>{{ p.name }}</b><div class="small mute np-mono">{{ p.barcode }}{% if p.price is not none %} · ₱{{ p.price|num }}{% endif %}</div></div>
         <div class="np-push-meta">
           {% if p.origin == 'list' %}{% if p.list_id in have_lists %}<a class="np-pill blue" href="/new-product/lists/{{ p.list_id }}">NP-{{ '%05d' % p.list_id }}</a>{% else %}<span class="np-pill slate">NP-{{ '%05d' % (p.list_id or 0) }}</span>{% endif %}
           {% elif p.origin == 'purchase_order' %}<span class="np-pill slate">{{ t('Purchase order') }}</span>

@@ -20,7 +20,7 @@
 </div>
 
 <div class="tw"><table class="wide"><tr><th scope="col">{{ t('Recorded') }}</th><th scope="col">{{ t('Type') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col" class="right">{{ t('Quantity') }}</th><th scope="col">{{ t('By') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('Note') }}</th></tr>
-{% for e in events %}<tr><td class="small nowrap">{{ e.recorded_at|local }}</td><td class="small">{{ t(e.event_type|replace('_', ' ')) }}</td><td class="small">{{ e.location.name if e.location else '' }}</td><td>{{ e.product.name if e.product else '' }}</td>
+{% for e in events %}<tr><td class="small nowrap">{{ e.recorded_at|local }}</td><td class="small">{{ t(e.event_type|replace('_', ' ')) }}</td><td class="small">{{ e.location.name if e.location else '' }}</td><td>{{ pimg(e.product) if e.product }}{{ e.product.name if e.product else '' }}</td>
 <td class="right">{{ e.direction }}{{ e.quantity|num }}</td><td class="small">{{ users.get(e.actor_user_id, '') }}</td>
 <td><span class="badge {{ 'b-ok' if e.reconciliation_status == 'matched' else 'b-bad' if e.reconciliation_status in ('mismatch', 'needs_review') else 'b-warn' }}">{{ t(e.reconciliation_status|replace('_', ' ')) }}</span></td>
 <td class="small">{{ e.reconciliation_note or e.reason_text or '' }}</td></tr>

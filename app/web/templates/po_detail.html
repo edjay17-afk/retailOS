@@ -34,7 +34,7 @@
     <div class="po-docs">{% with kind='po' %}{% include '_order_document_actions.html' %}{% endwith %}</div>
     {% if document.saved %}<h2 class="po-saved-h">{{ t('Original StoreHub items and receiving') }}</h2>{% endif %}
     <div class="tw"><table><tr><th>{{ t('Product') }}</th><th class="right">{{ t('Ordered') }}</th><th class="right">{{ t('Received (StoreHub)') }}</th><th class="right">{{ t('Supplier price') }}</th><th class="right">{{ t('Line total') }}</th></tr>
-    {% for l in po.lines %}<tr><td>{{ l.product.name if l.product else l.product_sh_id }}</td><td class="right"><span class="po-qty">{{ l.ordered_qty|num }}</span></td>
+    {% for l in po.lines %}<tr><td>{{ pimg(l.product) if l.product }}{{ l.product.name if l.product else l.product_sh_id }}</td><td class="right"><span class="po-qty">{{ l.ordered_qty|num }}</span></td>
     <td class="right">{% if l.received_present %}{% if l.received_qty < l.ordered_qty and po.status == 'completed' %}<span class="po-short">{{ t('short') }}</span> {% endif %}<b>{{ l.received_qty|num }}</b>{% else %}<span class="mute">{{ t('none') }}</span>{% endif %}</td>
     <td class="right po-price">{{ (l.price_exact or l.supplier_price)|price6 if l.supplier_price is not none else '' }}</td><td class="right"><b>{{ six(calculated_po.lines[loop.index0].amount) }}</b></td></tr>{% endfor %}</table></div>
     <aside class="po-amounts" aria-labelledby="po-totals-title"><h2 id="po-totals-title">{{ t('Calculated totals') }} <span>PHP</span></h2><dl>

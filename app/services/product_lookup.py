@@ -18,7 +18,7 @@ def search(db, q, location=None):
     rank = case((or_(Product.barcode == term, Product.sku == term), 0),
                 (Product.barcode.like("%" + term, escape="\\") if ends else Product.id < 0, 1), else_=2)
     rows = db.scalars(stmt.order_by(rank, Product.name, Product.id).limit(20))
-    return [{"id": p.id, "name": p.name, "barcode": p.barcode or "", "sku": p.sku or ""} for p in rows]
+    return [{"id": p.id, "name": p.name, "barcode": p.barcode or "", "sku": p.sku or "", "image_url": p.image_url or ""} for p in rows]
 
 
 def only_one(matches, q):

@@ -179,11 +179,12 @@
     foot.hidden=!lines.length; document.getElementById('po-rate').textContent=RATE; document.getElementById('po-sub').textContent=lines.length?show(sub):''; var ti=document.getElementById('po-tax-in'), di=document.getElementById('po-disc-in'), ta=document.getElementById('po-tax-auto'); if(ti&&document.activeElement!==ti) ti.value=lines.length?tax:''; if(di&&document.activeElement!==di) di.value=DISC; if(ta) ta.hidden=TAXM===''; document.getElementById('po-grand').textContent=lines.length?show(g):''; empty.hidden=lines.length>0;
   }
   function cell(cls,label){ var c=document.createElement('div'); c.className=cls; if(label){ var l=document.createElement('span'); l.className='po-lab mob-only'; l.textContent=label; c.appendChild(l) } return c; }
+  function pimgEl(url,sz){ return window.rosPimg?window.rosPimg(url,sz):null; }
   function render(d){
     data=d; list.textContent='';
     d.lines.forEach(function(l){
       var row=document.createElement('div'); row.className='po-row po-line';
-      var nm=cell('po-name'); var b=document.createElement('b'); b.textContent=l.name; nm.appendChild(b); var s=document.createElement('div'); s.className='small mute po-code'; s.textContent=l.barcode||l.sku||''; nm.appendChild(s); row.appendChild(nm);
+      var nm=cell('po-name'), im=pimgEl(l.image_url,32); if(im) nm.appendChild(im); var b=document.createElement('b'); b.textContent=l.name; nm.appendChild(b); var s=document.createElement('div'); s.className='small mute po-code'; s.textContent=l.barcode||l.sku||''; nm.appendChild(s); row.appendChild(nm);
       var q=cell('po-c r',{{ t('Qty to Order')|tojson }}), qi=document.createElement('input'); qi.value=l.qty; qi.setAttribute('inputmode','decimal'); qi.className='po-in'; q.appendChild(qi); row.appendChild(q);
       var p=cell('po-c r',{{ t('Supplier Price (PHP)')|tojson }}), pi=document.createElement('input'); pi.value=l.price; pi.setAttribute('inputmode','decimal'); pi.className='po-in'; p.appendChild(pi); row.appendChild(p);
       var t=cell('po-c r po-tot',{{ t('Total (PHP)')|tojson }}), tv=document.createElement('b'); tv.textContent=show(l.total); t.appendChild(tv); row.appendChild(t);
@@ -213,10 +214,13 @@
   })();
 
   // ---- product search: the product list lives in the browser, so a scan is answered at once
-  var cat=null, byBar={}, bySku={};
+  var cat=null, byBar={}, bySku={}, imgMap={};
   var core=function(b){ b=String(b||'').trim(); return /^\d+$/.test(b)?(b.replace(/^0+/,'')||'0'):b; };
+  fetch('/products/images.json',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():{}}).then(function(m){
+    imgMap=m||{}; if(cat) cat.forEach(function(p){ if(!p.image_url&&imgMap[p.id]) p.image_url=imgMap[p.id]; });
+  }).catch(function(){});
   fetch('/purchase-orders/new/catalog.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(rows){
-    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],price:r[4],po:r[5],hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
+    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],price:r[4],po:r[5],image_url:imgMap[r[0]]||'',hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
     cat.forEach(function(p){ p.barcodes.forEach(function(b){ byBar[core(b)]=p }); if(p.sku) bySku[p.sku]=p });
   }).catch(function(){});
   function lookLocal(code){
@@ -230,6 +234,8 @@
   function totalNow(){ var v=lineTotal(qty.value,price.value); out.textContent=v==null?'—':show(v); out.classList.toggle('on',v!=null); }
   function pick(p){
     picked=p; msg(''); scan.value=''; hideDrop(); picked_.hidden=false;
+    var pwrap=picked_.firstElementChild, oldIm=pwrap.querySelector('.pthumb'); if(oldIm) oldIm.remove();
+    var im=pimgEl(p.image_url,32); if(im) pwrap.insertBefore(im,pwrap.firstChild);
     document.getElementById('po-pname').textContent=p.name;
     var already=onOrder(p.id); document.getElementById('po-psub').textContent=sub(p)+(already?(' · '+app.dataset.mOn+': '+already):'');
     qty.disabled=price.disabled=addBtn.disabled=false; qty.value=''; price.value=p.price||''; totalNow(); qty.focus();
@@ -242,7 +248,7 @@
     var v=scan.value.trim(); if(!cat||v.length<2){ hideDrop(); return }
     var r=lookLocal(v), found=r.exact?[r.exact]:r.matches; if(!found.length){ hideDrop(); return }
     items=found; on=-1; drop.textContent='';
-    found.forEach(function(p,i){ var el=document.createElement('div'), n=document.createElement('div'), s=document.createElement('div'); el.className='ts-opt'; el.setAttribute('role','option'); n.className='ts-opt-name'; n.textContent=p.name; s.className='ts-opt-sub'; s.textContent=sub(p); el.append(n,s);
+    found.forEach(function(p,i){ var el=document.createElement('div'), n=document.createElement('div'), s=document.createElement('div'); el.className='ts-opt'; el.setAttribute('role','option'); var im=pimgEl(p.image_url,30); if(im) el.appendChild(im); n.className='ts-opt-name'; n.textContent=p.name; s.className='ts-opt-sub'; s.textContent=sub(p); el.append(n,s);
       el.addEventListener('mousedown',function(e){ e.preventDefault(); pick(p) }); drop.appendChild(el) });
     drop.hidden=false; scan.setAttribute('aria-expanded','true');
   }

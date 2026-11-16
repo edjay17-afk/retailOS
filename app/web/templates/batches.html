@@ -15,7 +15,7 @@
     </div>
   </div>
   <details style="margin-top:8px"><summary>{{ t('Lines') }}</summary><div class="tw" style="margin-top:8px"><table><tr><th>{{ t('Product') }}</th><th>{{ t('Barcode') }}</th><th class="right">{{ t('Approved') }}</th>{% if b.status == 'received' %}<th class="right">{{ t('Store counted') }}</th>{% endif %}<th class="right">{{ t('Unit cost') }}</th></tr>
-  {% for r in b.lines %}<tr><td>{{ r.product.name }}</td><td class="small">{{ r.product.barcode or '' }}</td><td class="right"><b>{{ r.approved_qty|num }}</b></td>
+  {% for r in b.lines %}<tr><td>{{ pimg(r.product) }}{{ r.product.name }}</td><td class="small">{{ r.product.barcode or '' }}</td><td class="right"><b>{{ r.approved_qty|num }}</b></td>
   {% if b.status == 'received' %}<td class="right">{{ r.received_qty|num }}{% if r.received_qty != r.approved_qty %} <span class="badge b-warn">{{ '%+g'|format(r.received_qty - r.approved_qty) }}</span>{% endif %}</td>{% endif %}
   <td class="right">{{ r.unit_cost|money if r.unit_cost else '' }}</td></tr>{% endfor %}</table></div></details>
   <div class="row noprint" style="margin-top:12px">
@@ -30,7 +30,7 @@
   {% if b.status == 'dispatched' and can('transfer.receive') %}
   <div class="expl" style="margin-top:12px"><b>{{ t('Store count') }}</b> <span class="small mute">{{ t('Count what arrived. Enter 0 if a line did not come.') }}</span>
   <form novalidate method="post" action="/replenishment/batches/{{ b.id }}/receive"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <table>{% for r in b.lines %}<tr><td>{{ r.product.name }}</td><td class="right small mute">{{ t('sent') }} {{ r.approved_qty|num }}</td><td><input type="number" step="any" min="0" name="q_{{ r.id }}" required style="width:90px"></td></tr>{% endfor %}</table>
+    <table>{% for r in b.lines %}<tr><td>{{ pimg(r.product) }}{{ r.product.name }}</td><td class="right small mute">{{ t('sent') }} {{ r.approved_qty|num }}</td><td><input type="number" step="any" min="0" name="q_{{ r.id }}" required style="width:90px"></td></tr>{% endfor %}</table>
     <button class="sm ok" style="margin-top:8px">{{ t('Confirm received') }}</button></form></div>
   {% endif %}
 </div>

@@ -127,7 +127,7 @@ def _notice_page(client, session, sync, fake, user, role, sales, can_open=True):
     return sync_playwright, serve, state
 
 
-def test_a_sale_notice_appears_at_the_top_centre(sync,fake,session,client):
+def test_a_sale_notice_appears_at_the_bottom_right(sync,fake,session,client):
     sales=[{'id':9,'store':'Getafe','total':120.05,'items':3,'pay':'Cash'}]
     sync_playwright,serve,state=_notice_page(client,session,sync,fake,'toast_admin','admin',sales)
     with sync_playwright() as pw:
@@ -143,8 +143,11 @@ def test_a_sale_notice_appears_at_the_top_centre(sync,fake,session,client):
         assert 'Getafe' in text and '120.05' in text and 'Cash' in text and '3 items' in text
         assert page.locator('.sale-toast-av').first.text_content()=='G'
         box=page.locator('.sale-toasts').bounding_box()
-        middle=page.evaluate('document.documentElement.getBoundingClientRect().width/2')   # the middle of what is visible, a scrollbar excluded
-        assert abs((box['x']+box['width']/2)-middle)<2 and box['y']<40  # top centre
+        page.wait_for_timeout(600)                                    # let it finish rising
+        box=page.locator('.sale-toasts').bounding_box()
+        edge=page.evaluate('document.documentElement.getBoundingClientRect().width')   # the visible width, a scrollbar excluded
+        assert abs((box['x']+box['width'])-(edge-22))<2 and box['y']>450  # bottom right, above the Ask AI button
+        assert box['y']+box['height']<900-70
         browser.close()
 
 

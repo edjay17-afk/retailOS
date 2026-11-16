@@ -18,7 +18,7 @@
   </div>
   <div class="sef-row2">
     <div class="sef-field event-location_id"><label for="event-location_id">{{ t('Location') }}</label><select id="event-location_id" name="location_id">{% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if l.id == location_id }}>{{ l.name }}</option>{% endfor %}</select></div>
-    <div class="sef-field event-search"><label for="event-search">{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div id="event-search" class="sef-picked">{{ product.name }}{% if product.barcode %}<small>{{ product.barcode }}</small>{% endif %}</div>
+    <div class="sef-field event-search"><label for="event-search">{{ t('Product') }}</label>{% if product %}<input type="hidden" name="product_id" value="{{ product.id }}"><div id="event-search" class="sef-picked">{{ pimg(product, 30) }}<div>{{ product.name }}{% if product.barcode %}<small>{{ product.barcode }}</small>{% endif %}</div></div>
     {% else %}<input id="event-search" name="search" class="sef-search" placeholder="{{ t('Scan barcode or type product name') }}" required>{% endif %}</div>
   </div>
   <div class="sef-row2 sef-qtyrow">

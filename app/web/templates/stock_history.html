@@ -56,7 +56,7 @@
   {% for m, p, l in g.rows %}
   <div class="se-row se-hrow">
     <span class="se-time">{{ m.occurred_at.strftime('%H:%M') }}</span>
-    <div class="se-prod"><b>{{ p.name }}</b>{% if p.barcode %}<small>{{ p.barcode }}</small>{% endif %}</div>
+    <div class="se-prod">{{ pimg(p) }}<b>{{ p.name }}</b>{% if p.barcode %}<small>{{ p.barcode }}</small>{% endif %}</div>
     <span class="se-store">{{ names.get(l.id, l.name) }}</span>
     <span class="se-act {{ kind(m.action) }}"><i></i>{{ m.action or '—' }}</span>
     <span class="se-emp"><i>{{ (m.employee or '?')[:1]|upper }}</i><em>{{ m.employee or '—' }}</em></span>
@@ -83,7 +83,7 @@
   {% for m, p, l in rows %}<tr>
     <td class="small nowrap">{{ m.occurred_at|day }}<div class="mute">{{ m.occurred_at.strftime('%H:%M') }}</div></td>
     <td class="small">{{ names.get(l.id, l.name) }}</td>
-    <td><b>{{ p.name }}</b>{% if p.barcode %}<div class="small mute">{{ p.barcode }}</div>{% endif %}</td>
+    <td>{{ pimg(p) }}<b>{{ p.name }}</b>{% if p.barcode %}<div class="small mute">{{ p.barcode }}</div>{% endif %}</td>
     <td class="small">{{ m.employee or '—' }}</td>
     <td><span class="badge dot {{ 'b-ok' if m.change > 0 else 'b-warn' if m.change < 0 else '' }}">{{ m.action or '—' }}</span></td>
     <td class="right">{{ m.qty_before|num }}</td>

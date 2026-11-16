@@ -53,7 +53,7 @@
 {% for r in recs %}
 <tr>
 <td class="rt-sel">{% if can('repl.decide') and not r.batch_id and not r.transfer_sheet_id and ((can('transfer.sheet') and r.source_kind == 'transfer' and r.status in ('pending','approved','modified')) or (not can('transfer.sheet') and r.status == 'pending')) %}<input type="checkbox" class="rc" name="ids" value="{{ r.id }}" form="bulk" aria-label="{{ t('Select') }} {{ r.product.name }}">{% endif %}</td>
-<td class="rt-main"><b>{{ r.product.name }}</b><div class="small mute">{{ r.product.barcode or '' }}</div>
+<td class="rt-main">{{ pimg(r.product) }}<b>{{ r.product.name }}</b><div class="small mute">{{ r.product.barcode or '' }}</div>
   <button type="button" class="drawer-link" data-drawer="why-{{ r.id }}" data-drawer-title="{{ r.product.name }} {{ t('— why this number') }}">{{ t('Why this number') }}</button>
   {% if r.needs_review_reasons %}<div class="small" style="color:var(--bad)"><b>{{ t('Needs review:') }}</b>
     {% for x in r.needs_review_reasons %}{{ t(reason_labels.get(x, x|replace('_',' '))) }}{% if fixes.get(x) %} — <a href="{{ fixes[x][0] }}">{{ t(fixes[x][1]) }}</a>{% endif %}{{ '; ' if not loop.last }}{% endfor %}</div>{% endif %}

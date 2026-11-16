@@ -185,6 +185,17 @@ def run_po_prices():
         log.info("purchase order prices: %s", out)
 
 
+@_safe("product_images")
+def run_product_images():
+    """The image robot: a picture for each StoreHub product that has none, found by barcode in the public product databases and kept in RetailOS."""
+    if not get_config().product_images_enabled:
+        return
+    from .services import product_images
+    out = _db_job(product_images.run)
+    if out and (out["found"] or out["unavailable"]):
+        log.info("product images: %s", out)
+
+
 @_safe("transfer_fresh")
 def check_transfer_freshness(): _db_job(transfer_inbox.check_freshness)
 
@@ -314,6 +325,7 @@ def start() -> BackgroundScheduler | None:
     s.add_job(check_transfer_freshness, "cron", minute=10, id="transfer_fresh")
     s.add_job(run_transfer_robot, "interval", minutes=1, next_run_time=soon(240), id="transfer_robot")  # due-check only; actual fetching every 5 minutes
     s.add_job(run_sales_profit, "interval", minutes=15, next_run_time=soon(330), id="sales_profit")
+    s.add_job(run_product_images, "interval", minutes=10, next_run_time=soon(500), id="product_images")
     s.add_job(run_po_prices, "interval", minutes=15, next_run_time=soon(420), id="po_prices")
     s.add_job(run_sales_shifts, "interval", minutes=15, next_run_time=soon(150), id="sales_shifts")
     s.add_job(run_stock_movements, "interval", minutes=5, next_run_time=soon(330), id="stock_movements")

@@ -44,7 +44,7 @@ def test_a_report_alone_or_with_a_different_first_invoice_is_never_dropped(sync,
     assert zreadings.totals(rows)["reports"] == 2
 
 
-def test_the_page_marks_the_interim_report_and_leaves_it_out_of_the_total(client, sync, fake, session):
+def test_the_page_shows_only_the_final_report_and_the_export_keeps_the_interim_one(client, sync, fake, session):
     import datetime as dt
     seeded(sync, fake, session)
     alpha = session.scalar(select(Location).where(Location.storehub_id == "S_A"))
@@ -54,7 +54,7 @@ def test_the_page_marks_the_interim_report_and_leaves_it_out_of_the_total(client
     session.commit()
     add_user(session, "boss", "admin"); login(client, "boss")
     html = client.get(f"/sales/zreadings?loc={alpha.id}&days=7").text
-    assert "Interim, included in the report closed 23:59" in html
+    assert "Interim" not in html and "769.00" not in html                    # the interim report is not listed at all
     assert "19,864.00" in html and "20,633.00" not in html                    # 19,864 + 769 would be the double count
     csv = client.get(f"/sales/zreadings?loc={alpha.id}&days=7&export=csv").text
     assert "Interim: included in the report closed" in csv

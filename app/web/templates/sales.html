@@ -243,23 +243,23 @@
       </div>
 
       {% if top %}
-      {% set top_rev_mx = top[0][2] or 1 %}
+      {% set top_rev_mx = top[0][4] or 1 %}
       <div class="sales-prod-list" data-prod-pane="rev">
-        {% for pname, punits, pnet in top[:7] %}
+        {% for pid, pname, pimg_url, punits, pnet in top[:7] %}
         <div class="sales-prod-row">
           <div class="sales-prod-rank">{{ loop.index }}</div>
-          <div class="sales-prod-name"><b>{{ pname }}</b><small>{{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</small></div>
+          <div class="sales-prod-name">{{ pimg({'image_url': pimg_url}, 30) }}<div class="sales-prod-copy"><a class="sales-prod-link" href="/sales/product/{{ pid }}?loc={{ loc_q }}&days={{ period_q }}">{{ pname }}</a><small>{{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</small></div></div>
           <div class="sales-prod-track"><i style="width:{{ (pnet / top_rev_mx * 100)|round(1) if top_rev_mx else 0 }}%"></i></div>
           <div class="sales-prod-val">{{ pnet|money }}</div>
         </div>
         {% endfor %}
       </div>
-      {% set top_u_mx = top_units[0][1] or 1 if top_units else 1 %}
+      {% set top_u_mx = top_units[0][3] or 1 if top_units else 1 %}
       <div class="sales-prod-list" data-prod-pane="units" hidden>
-        {% for pname, punits, pnet in top_units[:7] %}
+        {% for pid, pname, pimg_url, punits, pnet in top_units[:7] %}
         <div class="sales-prod-row">
           <div class="sales-prod-rank">{{ loop.index }}</div>
-          <div class="sales-prod-name"><b>{{ pname }}</b><small>{{ pnet|money }}</small></div>
+          <div class="sales-prod-name">{{ pimg({'image_url': pimg_url}, 30) }}<div class="sales-prod-copy"><a class="sales-prod-link" href="/sales/product/{{ pid }}?loc={{ loc_q }}&days={{ period_q }}">{{ pname }}</a><small>{{ pnet|money }}</small></div></div>
           <div class="sales-prod-track"><i style="width:{{ (punits / top_u_mx * 100)|round(1) if top_u_mx else 0 }}%"></i></div>
           <div class="sales-prod-val">{{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</div>
         </div>

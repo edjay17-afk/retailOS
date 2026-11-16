@@ -5,21 +5,44 @@
 <div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products" class="on">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
 <p class="small mute">{{ t('StoreHub has no supplier, case pack or minimum order per product. Set them here, one by one or by CSV. Suppliers marked') }} <span class="badge b-warn">{{ t('from PO history') }}</span> {{ t('were inferred from the latest purchase order and should be confirmed.') }}</p>
 <div class="row noprint" style="margin-bottom:10px">
-<a class="btn sec" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&export=csv">{{ t('Export CSV') }}</a>
+<a class="btn sec" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&export=csv">{{ t('Export CSV') }}</a>
 <form novalidate method="post" action="/products/import" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="file" name="file" accept=".csv" required><button class="sec">{{ t('Import CSV') }}</button></form></div>
 <form novalidate class="filters" method="get"><div><label for="products-search">{{ t('Search') }}</label><input id="products-search" data-search name="q" value="{{ q }}"></div>
-<div><label for="products-filter">{{ t('Show') }}</label><select id="products-filter" name="filt"><option value="">{{ t('All tracked products') }}</option><option value="no_supplier" {{ 'selected' if filt == 'no_supplier' }}>{{ t('No supplier') }}</option><option value="no_case_pack" {{ 'selected' if filt == 'no_case_pack' }}>{{ t('No case pack') }}</option><option value="inferred" {{ 'selected' if filt == 'inferred' }}>{{ t('Supplier from PO history') }}</option></select></div><button type="submit">{{ t('Apply') }}</button>{% if q or filt %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</form>
+<div><label for="products-filter">{{ t('Show') }}</label><select id="products-filter" name="filt"><option value="">{{ t('All tracked products') }}</option><option value="no_supplier" {{ 'selected' if filt == 'no_supplier' }}>{{ t('No supplier') }}</option><option value="no_case_pack" {{ 'selected' if filt == 'no_case_pack' }}>{{ t('No case pack') }}</option><option value="inferred" {{ 'selected' if filt == 'inferred' }}>{{ t('Supplier from PO history') }}</option></select></div>
+<div><label for="products-cat">{{ t('Category') }}</label><select id="products-cat" name="cat"><option value="">{{ t('All categories') }}</option><option value="__none__" {{ 'selected' if cat == '__none__' }}>{{ t('No category') }}</option>{% for ct in cats %}<option value="{{ ct }}" {{ 'selected' if cat == ct }}>{{ ct }}</option>{% endfor %}</select></div><button type="submit">{{ t('Apply') }}</button>{% if q or filt or cat %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</form>
 <div class="tw editable-table"><table class="wide"><tr><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort class="right">{{ t('Cost') }}</th><th scope="col" data-sort class="right">{{ t('Retail price') }}</th><th scope="col" data-sort>{{ t('Supplier') }}</th><th scope="col">{{ t('Case pack') }}</th><th scope="col">{{ t('Perish.') }}</th><th scope="col">{{ t('Order') }}</th><th></th></tr>
-{% for p in prods %}<tr><td style="display:none"><form novalidate data-nobusy id="fprod{{ loop.index }}" method="post" action="/products/{{ p.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/products?q={{ q|urlencode }}&filt={{ filt|urlencode }}&page={{ page }}"></form></td>
-<td>{{ p.name }}<div class="small mute">{{ p.barcode or '' }}</div></td>
+{% for p in prods %}<tr><td style="display:none"><form novalidate data-nobusy id="fprod{{ loop.index }}" method="post" action="/products/{{ p.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/products?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page }}"></form></td>
+<td><button type="button" class="pimg" data-pid="{{ p.id }}" data-name="{{ p.name }}" data-url="{{ p.image_url if p.image_url and p.image_url.startswith('/uploads/products/') else '' }}" title="{{ t('Add or change the picture') }}" aria-label="{{ t('Add or change the picture') }}">{% if p.image_url and p.image_url.startswith('/uploads/products/') %}<img src="{{ p.image_url }}" alt="" loading="lazy">{% else %}<span>+</span>{% endif %}</button>{{ p.name }}<div class="small mute">{{ p.barcode or '' }}</div></td>
 <td class="right" data-label="{{ t('Cost') }}">{{ p.cost|money if p.cost is not none else '—' }}</td><td class="right" data-label="{{ t('Retail price') }}">{{ (p.unit_price * vat)|money if p.unit_price is not none else '—' }}</td>
 <td><select form="fprod{{ loop.index }}" name="supplier" style="max-width:170px"><option value="0">-</option>{% for s in sups %}<option value="{{ s.id }}" {{ 'selected' if p.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select>{% if p.supplier_source == 'po_history' %}<div><span class="badge b-warn">{{ t('from PO history') }}</span></div>{% endif %}</td>
 <td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="case_pack" value="{{ p.case_pack|num if p.case_pack }}" style="width:70px"></td>
 <td><input form="fprod{{ loop.index }}" type="checkbox" name="perishable" value="1" {{ 'checked' if p.perishable }}></td><td><input form="fprod{{ loop.index }}" type="checkbox" name="replenish" value="1" {{ 'checked' if p.replenish_enabled }}></td>
 <td><button form="fprod{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>
-{% else %}<tr><td colspan="8"><div class="empty">{{ t('No products.') }}{% if q or filt %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>{% endfor %}</table></div>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
-{% if page * 50 < total %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+{% else %}<tr><td colspan="8"><div class="empty">{{ t('No products.') }}{% if q or filt or cat %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>{% endfor %}</table></div>
+<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
+{% if page * 50 < total %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
+<style>
+.pimg{float:left;margin:0 10px 0 0;width:40px;height:40px;padding:0;border:1px dashed var(--line2,#cbd5e1);border-radius:8px;background:var(--surface2,#f8fafc);color:var(--mute,#64748b);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;overflow:hidden}
+.pimg:hover{border-color:var(--primary,#2563eb);color:var(--primary,#2563eb)}
+.pimg img{width:100%;height:100%;object-fit:cover;object-position:center;border-radius:7px;display:block}
+.pimg:has(img){border-style:solid}
+.pimg-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:200px;padding:16px;border:2px dashed var(--line2,#cbd5e1);border-radius:12px;text-align:center;color:var(--mute,#64748b);outline:none}
+.pimg-zone:focus,.pimg-zone.over{border-color:var(--primary,#2563eb);background:var(--primary-soft,#eff6ff)}
+.pimg-zone img{max-width:100%;max-height:220px;object-fit:contain;border-radius:8px}
+.pimg-msg{min-height:20px;margin:10px 0 0}
+</style>
+<dialog class="modal" id="pimg-dlg" aria-labelledby="pimg-title">
+  <div class="modal-head"><h2 id="pimg-title"></h2><button type="button" class="sm sec" id="pimg-close" aria-label="{{ t('Close') }}">✕</button></div>
+  <div class="modal-body">
+    <div class="pimg-zone" id="pimg-zone" tabindex="0">
+      <img id="pimg-prev" alt="" hidden>
+      <div id="pimg-hint"><b>{{ t('Click here to choose a picture file') }}</b><br>{{ t('or press Ctrl+V to paste a copied picture, or drop a file here.') }}</div>
+    </div>
+    <div class="row" style="margin-top:10px"><button type="button" class="sec" id="pimg-choose">{{ t('Choose a file…') }}</button><button type="button" class="sec" id="pimg-view" hidden>{{ t('View full size') }}</button><input type="file" id="pimg-file" accept="image/*" hidden></div>
+    <p class="small pimg-msg" id="pimg-msg" role="status"></p>
+    <div class="modal-actions"><button type="button" class="sec danger" id="pimg-remove" hidden>{{ t('Remove picture') }}</button><button type="button" id="pimg-done">{{ t('Done') }}</button></div>
+  </div>
+</dialog>
 {% endblock %}
 {% block scripts %}
 <script>
@@ -42,6 +65,52 @@
         setTimeout(function(){ btn.textContent=label; btn.classList.remove('danger'); },3500);
       });
   });
+})();
+</script>
+<script>
+(function(){
+  var dlg=document.getElementById('pimg-dlg'); if(!dlg||!window.fetch) return;
+  var csrf='{{ csrf }}', cur=null, zone=document.getElementById('pimg-zone'), prev=document.getElementById('pimg-prev'), hint=document.getElementById('pimg-hint'),
+      msg=document.getElementById('pimg-msg'), rm=document.getElementById('pimg-remove'), vw=document.getElementById('pimg-view'), fileIn=document.getElementById('pimg-file');
+  function show(url){ if(url){ prev.src=url; prev.hidden=false; hint.hidden=true; } else { prev.hidden=true; hint.hidden=false; } rm.hidden=!url; if(vw) vw.hidden=!url; }
+  function setBtn(url){ cur.dataset.url=url||''; cur.innerHTML=url?'<img alt="" src="'+url+'">':'<span>+</span>'; }
+  function say(t,bad){ msg.textContent=t; msg.style.color=bad?'#b91c1c':''; }
+  document.addEventListener('click',function(ev){
+    var b=ev.target.closest&&ev.target.closest('.pimg'); if(!b) return;
+    cur=b; document.getElementById('pimg-title').textContent=b.dataset.name; show(b.dataset.url); say(''); fileIn.value=''; dlg.showModal(); zone.focus();
+  });
+  function close(){ dlg.close(); }
+  document.getElementById('pimg-close').onclick=close; document.getElementById('pimg-done').onclick=close;
+  function send(file){
+    if(!cur||!file) return;
+    if(file.type&&file.type.indexOf('image/')!==0){ say('{{ t('That is not a picture.') }}',true); return; }
+    var fd=new FormData(); fd.append('file',file,file.name||'pasted.png'); fd.append('csrf',csrf); say('{{ t('Saving…') }}');
+    fetch('/products/'+cur.dataset.pid+'/image',{method:'POST',body:fd,credentials:'same-origin'})
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.detail||r.status); return j; }); })
+      .then(function(j){ setBtn(j.url); show(j.url); say('✓ {{ t('Saved') }}'); })
+      .catch(function(e){ say('{{ t('Not saved') }}: '+e.message,true); });
+  }
+  document.addEventListener('paste',function(ev){
+    if(!dlg.open) return;
+    var items=(ev.clipboardData&&ev.clipboardData.items)||[];
+    for(var i=0;i<items.length;i++){ if(items[i].kind==='file'&&items[i].type.indexOf('image/')===0){ ev.preventDefault(); send(items[i].getAsFile()); return; } }
+    say('{{ t('No picture in the clipboard. Copy a picture first (right-click it, Copy image).') }}',true);
+  });
+  fileIn.addEventListener('change',function(){ send(fileIn.files[0]); });
+  document.getElementById('pimg-choose').onclick=function(){ fileIn.click(); };
+  if(vw) vw.onclick=function(){ if(!cur||!cur.dataset.url||!window.rosOpenImage) return; var u=cur.dataset.url, nm=cur.dataset.name; dlg.close(); window.rosOpenImage(u, nm); };
+  prev.onclick=function(e){ if(!cur||!cur.dataset.url||!window.rosOpenImage) return; e.stopPropagation(); var u=cur.dataset.url, nm=cur.dataset.name; dlg.close(); window.rosOpenImage(u, nm); };
+  zone.addEventListener('click',function(){ fileIn.click(); });
+  zone.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileIn.click(); } });
+  ['dragenter','dragover'].forEach(function(n){ zone.addEventListener(n,function(e){ e.preventDefault(); zone.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(n){ zone.addEventListener(n,function(e){ e.preventDefault(); zone.classList.remove('over'); }); });
+  zone.addEventListener('drop',function(e){ var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) send(f); });
+  rm.onclick=function(){
+    var fd=new FormData(); fd.append('csrf',csrf);
+    fetch('/products/'+cur.dataset.pid+'/image/remove',{method:'POST',body:fd,credentials:'same-origin'})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); setBtn(''); show(''); say('{{ t('Picture removed.') }}'); })
+      .catch(function(e){ say('{{ t('Not saved') }}: '+e.message,true); });
+  };
 })();
 </script>
 {% endblock %}

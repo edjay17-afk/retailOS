@@ -80,7 +80,12 @@ def stock_gaps(db: Session, ids: list[int], today, limit: int = 4) -> list[dict]
     if not rows:
         return []
     top = float(rows[0][1]) or 1.0
-    return [{"name": db.get(Product, pid).name, "per_day": round(float(u) / 30, 1), "pct": round(float(u) / top * 100)} for pid, u in rows]
+    out = []
+    for pid, u in rows:
+        p = db.get(Product, pid)
+        if p:
+            out.append({"name": p.name, "image_url": p.image_url, "per_day": round(float(u) / 30, 1), "pct": round(float(u) / top * 100)})
+    return out
 
 
 def biggest_gap(db: Session, ids: list[int], today) -> dict | None:
@@ -94,7 +99,12 @@ def best_sellers_today(db: Session, ids: list[int], today, limit: int = 4) -> li
         SalesDayProduct.location_id.in_(ids or [0]), SalesDayProduct.business_date == today, SalesDayProduct.units > 0)
         .group_by(SalesDayProduct.product_id).order_by(func.sum(SalesDayProduct.units).desc()).limit(limit)).all()
     top = float(rows[0][1]) if rows else 0
-    return [{"name": db.get(Product, pid).name, "units": float(u), "pct": round(float(u) / top * 100) if top else 0} for pid, u in rows]
+    out = []
+    for pid, u in rows:
+        p = db.get(Product, pid)
+        if p:
+            out.append({"name": p.name, "image_url": p.image_url, "units": float(u), "pct": round(float(u) / top * 100) if top else 0})
+    return out
 
 
 def warehouse_jobs(db: Session, can, recs: tuple) -> list[dict]:

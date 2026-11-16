@@ -21,7 +21,7 @@
 </form>
 
 <div class="tw"><table class="wide rcards wtable"><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Store') }}</th><th scope="col">{{ t('Date Created') }}</th><th scope="col">{{ t('Category') }}</th><th scope="col">{{ t('Supplier') }}</th><th scope="col" class="right">{{ t('Quantity') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('By') }}</th></tr>
-{% for e in rows %}<tr><td class="rc-title">{{ e.product.name }}</td><td class="small" data-label="{{ t('Store') }}">{{ e.location.name }}</td><td class="nowrap" data-label="{{ t('Date Created') }}">{{ e.entry_date }}</td><td class="small" data-label="{{ t('Category') }}">{{ e.category or '-' }}</td><td class="small" data-label="{{ t('Supplier') }}">{{ e.supplier_name or '-' }}</td>
+{% for e in rows %}<tr><td class="rc-title">{{ pimg(e.product) }}{{ e.product.name }}</td><td class="small" data-label="{{ t('Store') }}">{{ e.location.name }}</td><td class="nowrap" data-label="{{ t('Date Created') }}">{{ e.entry_date }}</td><td class="small" data-label="{{ t('Category') }}">{{ e.category or '-' }}</td><td class="small" data-label="{{ t('Supplier') }}">{{ e.supplier_name or '-' }}</td>
 <td class="right" data-label="{{ t('Quantity') }}"><b>{{ e.qty|num }}</b></td><td class="small" data-label="{{ t('Reason') }}">{{ t(e.reason) }}</td><td class="small" data-label="{{ t('By') }}">{{ users.get(e.created_by, '') }}</td></tr>
 {% else %}<tr><td colspan="8" class="empty">{{ t('No wastage recorded in this period.') }}</td></tr>{% endfor %}</table></div>
 {% endblock %}

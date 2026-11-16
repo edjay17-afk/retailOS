@@ -53,9 +53,9 @@
   <div>
     <div class="sd-dr-sec">{{ t('Top products') }}</div>
     <div class="sd-dr-list">
-      {% for pname, punits, pnet in top_prods %}
+      {% for pid, pname, pimg_url, punits, pnet in top_prods %}
       <div class="sd-dr-row">
-        <span>{{ pname }} <small class="mute">&middot; {{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</small></span>
+        <span class="sd-dr-row-main">{{ pimg({'image_url': pimg_url}, 28) }}<span><a href="/sales/product/{{ pid }}">{{ pname }}</a> <small class="mute">&middot; {{ punits|num(0) if punits == punits|round(0) else punits|num(2) }} {{ t('units') }}</small></span></span>
         <b>{{ pnet|money }}</b>
       </div>
       {% else %}

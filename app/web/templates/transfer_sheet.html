@@ -137,11 +137,13 @@
   var list=document.getElementById('ts-lines'), empty=document.getElementById('ts-empty'), total=document.getElementById('ts-total');
   var num=function(n){return String(Math.round(n*100)/100)};
   var feedback=null, post=function(){}, msg=function(){};
+  function pimgEl(url,sz){ return window.rosPimg?window.rosPimg(url,sz):null; }
   function render(d){
     data=d; list.textContent='';
     d.lines.forEach(function(l){
       var row=document.createElement('div'); row.className='tsl';
       var main=document.createElement('div'); main.className='tsl-main';
+      var im=pimgEl(l.image_url,32); if(im) main.appendChild(im);
       var b=document.createElement('b'); b.textContent=l.name; main.appendChild(b);
       var s=document.createElement('div'); s.className='small mute';
       s.textContent=l.barcode||l.sku||'';
@@ -177,10 +179,13 @@
     return feedback.post('/transfer-sheets/'+id+path,f); };
 
   // the product list lives in the browser: a scan is answered at once, with no round trip to the server
-  var cat=null, byBar={}, bySku={};
+  var cat=null, byBar={}, bySku={}, imgMap={};
   var core=function(b){ b=String(b||'').trim(); return /^\d+$/.test(b)?(b.replace(/^0+/,'')||'0'):b; };
+  fetch('/products/images.json',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():{}}).then(function(m){
+    imgMap=m||{}; if(cat) cat.forEach(function(p){ if(!p.image_url&&imgMap[p.id]) p.image_url=imgMap[p.id]; });
+  }).catch(function(){});
   fetch('/transfer-sheets/catalog.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(rows){
-    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],on_hand:r[4],hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
+    cat=rows.map(function(r){ return {id:r[0],name:r[1],sku:r[2],barcodes:r[3],on_hand:r[4],image_url:imgMap[r[0]]||'',hay:(r[1]+' '+r[2]+' '+r[3].join(' ')).toLowerCase()} });
     cat.forEach(function(p){ p.barcodes.forEach(function(b){ byBar[core(b)]=p }); if(p.sku) bySku[p.sku]=p });
   }).catch(function(){});
   function onSheet(pid){ var q=0; data.lines.forEach(function(l){ if(l.product_id===pid) q+=l.qty }); return q; }
@@ -190,9 +195,11 @@
     for(var i=0;i<cat.length&&out.length<8;i++){ var ok=true; for(var w=0;w<words.length;w++){ if(cat[i].hay.indexOf(words[w])<0){ok=false;break} } if(ok) out.push(cat[i]) }
     return {exact:null,matches:out};
   }
-  function card2(p){ return {id:p.id,name:p.name,barcode:(p.barcodes&&p.barcodes[0])||p.barcode||'',sku:p.sku||'',on_hand:p.on_hand,on_sheet:p.on_sheet!=null?p.on_sheet:onSheet(p.id)}; }
+  function card2(p){ return {id:p.id,name:p.name,barcode:(p.barcodes&&p.barcodes[0])||p.barcode||'',sku:p.sku||'',image_url:p.image_url||'',on_hand:p.on_hand,on_sheet:p.on_sheet!=null?p.on_sheet:onSheet(p.id)}; }
   function show(p){
     p=card2(p); picked=p; choices.textContent=''; card.hidden=false; msg('');
+    var topDiv=card.querySelector('.ts-card-top>div'), oldIm=topDiv&&topDiv.querySelector('.pthumb'); if(oldIm) oldIm.remove();
+    var im=pimgEl(p.image_url,32); if(im&&topDiv) topDiv.insertBefore(im,topDiv.firstChild);
     document.getElementById('ts-name').textContent=p.name;
     document.getElementById('ts-sub').textContent=[p.barcode||p.sku, p.on_hand==null?'':(W.stock+' '+num(p.on_hand)), p.on_sheet?('+'+num(p.on_sheet)):''].filter(Boolean).join(' · ');
     warn.textContent=''; qty.value=''; qty.focus();
@@ -210,7 +217,7 @@
     dropItems=list; dropOn=-1; drop.textContent='';
     list.forEach(function(p,i){
       var c=card2(p), el=document.createElement('div'), n=document.createElement('div'), s=document.createElement('div');
-      el.className='ts-opt'; el.setAttribute('role','option'); n.className='ts-opt-name'; n.textContent=c.name; s.className='ts-opt-sub';
+      el.className='ts-opt'; el.setAttribute('role','option'); var im=pimgEl(c.image_url,30); if(im) el.appendChild(im); n.className='ts-opt-name'; n.textContent=c.name; s.className='ts-opt-sub';
       s.textContent=[c.barcode||c.sku, c.on_hand==null?'':(W.stock+' '+num(c.on_hand))].filter(Boolean).join(' · ');
       el.append(n,s);
       el.addEventListener('mousedown',function(e){ e.preventDefault(); pickDrop(i); });   // mousedown: before the box loses focus

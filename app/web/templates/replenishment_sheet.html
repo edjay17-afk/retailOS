@@ -90,10 +90,10 @@
       <td class="rs-p">
         <button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button>
         <div class="rs-p-head">
-          <b>{{ row.p.name }}</b>
+          {{ pimg(row.p) }}<b>{{ row.p.name }}</b>
           <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}">i</button>
         </div>
-        <small class="num">{% if row.supplier %}{{ row.supplier.name }}{% endif %}{% if row.unit %} · ₱{{ row.unit|money }}/unit{% endif %}{% if row.value %} · Total ₱{{ row.value|money }}{% endif %}</small>
+        <small class="num rs-sub">{% if row.supplier %}<span class="rs-sup" title="{{ row.supplier.name }}">{{ row.supplier.name }}</span>{% endif %}{% if row.unit %}<span title="{{ t('Unit price') }}">₱{{ row.unit|money }}</span>{% endif %}{% if row.value %}<b title="{{ t('Total') }}">₱{{ row.value|money }}</b>{% endif %}</small>
         <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template>
       </td>
       {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh"><span class="wh-pill {{ 'short' if row.todo[0] != 'send' }}">WH: {{ row.wh|num }}</span></td>{% endif %}

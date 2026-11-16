@@ -1,0 +1,584 @@
+{
+  "name": "RetailOS - attach product images (warehouse or web)",
+  "id": "7f3a9c2e-5b1d-4e8a-9f6c-2d7b8a4e1c05",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "n01",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "retailosUrl",
+              "type": "string",
+              "value": "http://127.0.0.1:8000"
+            },
+            {
+              "id": "a2",
+              "name": "retailosUser",
+              "type": "string",
+              "value": "admin"
+            },
+            {
+              "id": "a3",
+              "name": "retailosPass",
+              "type": "string",
+              "value": "CHANGE-ME"
+            },
+            {
+              "id": "a4",
+              "name": "warehouseUrl",
+              "type": "string",
+              "value": "http://43.153.215.143"
+            },
+            {
+              "id": "a5",
+              "name": "warehouseUser",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "a6",
+              "name": "warehousePass",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n02",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.retailosUrl }}/login",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "username",
+              "value": "={{ $json.retailosUser }}"
+            },
+            {
+              "name": "password",
+              "value": "={{ $json.retailosPass }}"
+            },
+            {
+              "name": "next",
+              "value": "/products"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false,
+              "maxRedirects": 0
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "n03",
+      "name": "RetailOS Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Config').first().json;\nconst helpers = this.helpers;\n\n// 1) session cookie from the login node (fallback: log in again from here)\nlet rsid = '';\n{\n  const _li = $('RetailOS Login').first(); const h = (_li && _li.json && _li.json.headers) || {};\n  const sc = [].concat(h['set-cookie'] || h['Set-Cookie'] || []);\n  const hit = sc.map(c => String(c).split(';')[0]).find(c => c.startsWith('rsid='));\n  if (hit) rsid = hit.slice(5);\n}\nif (!rsid) {\n  let res = null;\n  try {\n    res = await helpers.httpRequest({\n      method: 'POST', url: cfg.retailosUrl + '/login',\n      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: new URLSearchParams({ username: cfg.retailosUser, password: cfg.retailosPass, next: '/products' }).toString(),\n      returnFullResponse: true, maxRedirects: 0,\n    });\n  } catch (e) { res = { headers: (e && e.response && e.response.headers) || (e && e.headers) || null }; }\n  const sc = res && res.headers ? [].concat(res.headers['set-cookie'] || []) : [];\n  const hit = sc.map(c => String(c).split(';')[0]).find(c => c.startsWith('rsid='));\n  if (hit) rsid = hit.slice(5);\n}\nif (!rsid) throw new Error('RetailOS login failed - check user/password in the Config node (5 wrong tries lock the account)');\n\n// progress notes for the /audit/live page (fire-and-forget; a failed note never breaks the flow)\nlet csrf = '';\nconst beat = async msg => { try { await helpers.httpRequest({ method: 'POST', url: cfg.retailosUrl + '/progress/note', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: 'rsid=' + rsid }, body: new URLSearchParams({ msg, csrf }).toString() }); } catch (e) {} };\n\nconst unescape = s => String(s).replace(/&#34;/g, '\"').replace(/&#39;/g, \"'\").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');\nfunction firstGtin(barcodes) {\n  for (const raw of String(barcodes || '').split(',')) {\n    const c = raw.trim();\n    if (!/^\\d{8}$|^\\d{12}$|^\\d{13}$|^\\d{14}$/.test(c)) continue;\n    const d = [...c].map(Number);\n    const sum = d.slice(0, -1).reverse().reduce((a, v, i) => a + v * (i % 2 ? 1 : 3), 0);\n    if ((10 - sum % 10) % 10 === d[d.length - 1]) return c;\n  }\n  return '';\n}\n\n// 2) walk every page of Settings > Product set-up, keep the products with no picture\nconst out = [];\nconst ROW = /class=\"pimg\" data-pid=\"(\\d+)\" data-name=\"([^\"]*)\" data-url=\"([^\"]*)\"[^>]*>[\\s\\S]*?<div class=\"small mute\">([^<]*)<[/]div>/g;\nfor (let page = 1; page <= 200; page++) {\n  const html = String(await helpers.httpRequest({\n    method: 'GET', url: cfg.retailosUrl + '/products?page=' + page,\n    headers: { Cookie: 'rsid=' + rsid },\n  }));\n  if (page === 1) {\n    if (/name=\"username\"/.test(html)) throw new Error('RetailOS rejected the session (wrong login, locked account, or the user must change password first)');\n    const c = html.match(/var csrf='([^']+)'/) || html.match(/name=\"csrf\" value=\"([^\"]+)\"/);\n    if (!c) throw new Error('Could not find the CSRF token on the /products page');\n    csrf = c[1];\n    await beat('Signed in to RetailOS - scanning the product pages...');\n  }\n  let rows = 0, m;\n  ROW.lastIndex = 0;\n  while ((m = ROW.exec(html))) {\n    rows++;\n    if (m[3]) continue; // data-url set = product already has a picture\n    out.push({ json: {\n      pid: m[1], name: unescape(m[2]), barcode: m[4].trim(), gtin: firstGtin(m[4]),\n      csrf, rsid,\n      retailosUrl: cfg.retailosUrl,\n      warehouseUrl: cfg.warehouseUrl, warehouseUser: cfg.warehouseUser, warehousePass: cfg.warehousePass,\n    } });\n  }\n  await beat('Scanning products page ' + page + ' - ' + out.length + ' without pictures so far');\n  if (rows === 0) break;\n}\nawait beat(out.length ? 'Scan done - ' + out.length + ' products need a picture, attaching one by one' : 'Scan done - every tracked product already has a picture');\nif (!out.length) throw new Error('Every tracked product already has a picture - nothing to do');\nreturn out;"
+      },
+      "id": "n04",
+      "name": "Scan Products Missing Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 1
+        }
+      },
+      "id": "n05",
+      "name": "One Product At A Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Looks for this product's picture on the warehouse site (productlist.php).\n// The site sits behind a login so its markup could not be inspected beforehand:\n// match the 3 spots marked ADJUST to the real page once (open the site, press F12).\nconst item = $input.first().json;\nlet imageUrl = null;\n\nif (item.warehouseUser) {\n  const helpers = this.helpers;\n  try {\n    // 1) sign in (ADJUST: login URL + form field names of the warehouse site)\n    let login = null;\n    try {\n      login = await helpers.httpRequest({\n        method: 'POST', url: item.warehouseUrl + '/login.php', // ADJUST\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n        body: new URLSearchParams({ username: item.warehouseUser, password: item.warehousePass }).toString(), // ADJUST field names\n        returnFullResponse: true, maxRedirects: 0,\n      });\n    } catch (e) { login = e && e.response ? e.response : { headers: {} }; }\n    const cookie = [].concat((login.headers && login.headers['set-cookie']) || [])\n      .map(c => String(c).split(';')[0]).join('; ');\n\n    // 2) search by barcode, fall back to the product name (ADJUST: query parameter name)\n    const q = encodeURIComponent(item.gtin || item.barcode || item.name);\n    const html = String(await helpers.httpRequest({\n      method: 'GET', url: item.warehouseUrl + '/productlist.php?keyword=' + q, // ADJUST\n      headers: cookie ? { Cookie: cookie } : {},\n    }));\n\n    // 3) first product image in the results page (ADJUST: match the site's real <img> markup)\n    const m = html.match(/<img[^>]+src=[\"']([^\"']+\\.(?:jpg|jpeg|png|webp))[^\"']*[\"']/i);\n    if (m && !/logo|icon|blank/i.test(m[1])) imageUrl = new URL(m[1], item.warehouseUrl + '/').href;\n  } catch (e) {\n    // warehouse unreachable: imageUrl stays null and the web branch takes over\n  }\n}\nreturn [{ json: { ...item, imageUrl } }];"
+      },
+      "id": "n06",
+      "name": "Warehouse Find Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-wh",
+              "leftValue": "={{ $json.imageUrl || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n07",
+      "name": "Found On Warehouse?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://world.openfoodfacts.org/api/v2/product/{{ $json.gtin }}.json?fields=image_front_url,image_url",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "RetailOS-ProductImages/1.0 (n8n)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "n08",
+      "name": "Web Open Food Facts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        440
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Warehouse Find Image').first().json;\nlet imageUrl = null;\ntry {\n  const p = $input.first().json;\n  if (p && p.product) imageUrl = p.product.image_front_url || p.product.image_url || null;\n} catch (e) {}\nif (imageUrl && !String(imageUrl).startsWith('https://')) imageUrl = null;\ntry {\n  await this.helpers.httpRequest({ method: 'POST', url: ctx.retailosUrl + '/progress/note',\n    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: 'rsid=' + ctx.rsid },\n    body: new URLSearchParams({ msg: '#' + ctx.pid + ' ' + ctx.name + ' - ' + (imageUrl ? 'found on the web, attaching...' : 'no picture found, skipping'), csrf: ctx.csrf }).toString() });\n} catch (e) {}\nreturn [{ json: { ...ctx, imageUrl } }];"
+      },
+      "id": "n09",
+      "name": "Pick Web Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-web",
+              "leftValue": "={{ $json.imageUrl || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n10",
+      "name": "Found On The Web?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2140,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "outputPropertyName": "data",
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "n11",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2380,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Warehouse Find Image').item.json.retailosUrl }}/products/{{ $('Warehouse Find Image').item.json.pid }}/image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "=rsid={{ $('Warehouse Find Image').item.json.rsid }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formData",
+              "name": "csrf",
+              "value": "={{ $('Warehouse Find Image').item.json.csrf }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "parameterType": "formData",
+              "name": "source",
+              "value": "={{ $('Warehouse Find Image').item.json.imageUrl ? 'n8n-warehouse' : 'n8n-web' }}"
+            },
+            {
+              "parameterType": "formData",
+              "name": "src_url",
+              "value": "={{ $('Warehouse Find Image').item.json.imageUrl || $('Pick Web Image').item.json.imageUrl || '' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n12",
+      "name": "RetailOS Attach Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "id": "n13",
+      "name": "Wait A Second",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn [{ json: { done: true, productsHandled: items.length, finishedAt: new Date().toISOString() } }];"
+      },
+      "id": "n14",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup\n1. In **Config**, set `retailosUser` / `retailosPass` to a RetailOS account that has the **settings.manage** permission and is not in the forced password-change state. 5 wrong logins lock the account for a few minutes.\n2. If n8n runs in Docker on this PC, use `http://host.docker.internal:8000` as `retailosUrl`.\n3. Run once manually, then swap the Manual Trigger for a Schedule Trigger (e.g. weekly).",
+        "height": 240,
+        "width": 380,
+        "color": 4
+      },
+      "id": "note1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Warehouse source (43.153.215.143)\n`productlist.php` is behind a login page, so its search markup could not be verified in advance.\n1. Put the warehouse login into `warehouseUser` / `warehousePass` in **Config**.\n2. Open the site, press F12, and fix the 3 lines marked **ADJUST** in *Warehouse Find Image*: login URL + field names, the search parameter name, and the image regex.\n3. Leave `warehouseUser` empty to skip the warehouse and use web search only.",
+        "height": 300,
+        "width": 400,
+        "color": 3
+      },
+      "id": "note2",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## How it works\n1. Logs into RetailOS, scans **Settings > Product set-up** for products with no picture (`data-url` empty on the `.pimg` button).\n2. Per product: tries the warehouse site (when configured), otherwise Open Food Facts by barcode.\n3. Downloads the image and POSTs it as multipart to `POST /products/{id}/image` with the session cookie + CSRF token — the same endpoint the page's paste/drop feature uses. RetailOS shrinks and stores it as `/uploads/products/{id}.jpg`.",
+        "height": 300,
+        "width": 420,
+        "color": 6
+      },
+      "id": "note3",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "RetailOS Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RetailOS Login": {
+      "main": [
+        [
+          {
+            "node": "Scan Products Missing Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan Products Missing Images": {
+      "main": [
+        [
+          {
+            "node": "One Product At A Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One Product At A Time": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Warehouse Find Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warehouse Find Image": {
+      "main": [
+        [
+          {
+            "node": "Found On Warehouse?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Found On Warehouse?": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Web Open Food Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Open Food Facts": {
+      "main": [
+        [
+          {
+            "node": "Pick Web Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Web Image": {
+      "main": [
+        [
+          {
+            "node": "Found On The Web?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Found On The Web?": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One Product At A Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "RetailOS Attach Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RetailOS Attach Image": {
+      "main": [
+        [
+          {
+            "node": "Wait A Second",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait A Second": {
+      "main": [
+        [
+          {
+            "node": "One Product At A Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {}
+}

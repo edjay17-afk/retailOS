@@ -1,5 +1,66 @@
 /* Chart tooltips and the floating assistant chat. Loaded from base.html (script-src 'self' is allowed by the CSP). */
 (function () {
+  window.rosPimg = function (url, size, name) {
+    if (!url || (url.indexOf('/uploads/products/') !== 0 && url.indexOf('https://api.loyverse.com/') !== 0)) return null;
+    var sz = size || 34, im = document.createElement('img');
+    im.className = 'pthumb'; im.src = url; im.alt = ''; im.width = sz; im.height = sz;
+    if (sz !== 34) { im.style.width = sz + 'px'; im.style.height = sz + 'px'; }
+    if (name) im.dataset.pname = name;
+    im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+    im.onerror = function () { im.remove(); };
+    return im;
+  };
+  (function () {
+    var dlg = null, titleEl = null, fullImg = null;
+    function guessName(im) {
+      if (im.dataset.pname) return im.dataset.pname;
+      var host = im.closest('td,tr,.sales-prod-row,.sd-dr-row,.txp-line,.se-row,.po-row,.tsl,.phone-stock-row,.dash-rank-row,.sd-low,.sef-picked,.page-head,.np-srow');
+      if (!host) return '';
+      var el = host.querySelector('h1, .sales-prod-link, a:not(.np-pill), b, strong');
+      return el ? el.textContent.trim() : '';
+    }
+    function openLightboxUrl(src, name) {
+      if (!dlg) {
+        dlg = document.createElement('dialog');
+        dlg.id = 'ros-img-dlg';
+        dlg.className = 'ros-img-dlg';
+        var head = document.createElement('div'); head.className = 'ros-img-head';
+        titleEl = document.createElement('b');
+        var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ros-img-close';
+        btn.setAttribute('aria-label', t('Close')); btn.textContent = '✕';
+        btn.addEventListener('click', function () { dlg.close(); });
+        head.append(titleEl, btn);
+        var stage = document.createElement('div'); stage.className = 'ros-img-stage';
+        fullImg = document.createElement('img'); fullImg.alt = ''; fullImg.referrerPolicy = 'no-referrer';
+        fullImg.addEventListener('load', function () {
+          fullImg.classList.toggle('can-actual', fullImg.naturalWidth > fullImg.clientWidth + 2 || fullImg.naturalHeight > fullImg.clientHeight + 2);
+        });
+        fullImg.addEventListener('click', function () {
+          if (fullImg.classList.contains('can-actual') || fullImg.classList.contains('is-actual')) {
+            fullImg.classList.toggle('is-actual');
+          }
+        });
+        stage.appendChild(fullImg);
+        dlg.append(head, stage);
+        dlg.addEventListener('click', function (ev) { if (ev.target === dlg) dlg.close(); });
+        document.body.appendChild(dlg);
+      }
+      fullImg.classList.remove('is-actual', 'can-actual');
+      titleEl.textContent = name || t('Product');
+      fullImg.src = src;
+      fullImg.alt = name || '';
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+      else dlg.setAttribute('open', '');
+    }
+    window.rosOpenImage = openLightboxUrl;
+    document.addEventListener('click', function (e) {
+      var im = e.target.closest && e.target.closest('img.pthumb');
+      if (!im || im.closest('[role=listbox]')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openLightboxUrl(im.currentSrc || im.src, guessName(im));
+    });
+  })();
   var messageNode = document.getElementById('ui-messages');
   var messages = messageNode ? JSON.parse(messageNode.textContent) : {};
   function t(key, values) {

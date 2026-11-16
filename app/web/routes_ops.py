@@ -326,7 +326,7 @@ def count_scan(cid: int, code: str = Form(""), product_id: int = Form(0), csrf: 
     except (StoreHubError, countsvc.CountError, ValueError):
         raise HTTPException(503, "Could not fetch current stock from the POS, and there is no earlier sync of this product to use. Please retry.")
     line = next((l for l in cc.lines if l.product_id == product.id), None)
-    out = {"id":product.id,"name":product.name,"system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else "","stale":synced_at is not None}
+    out = {"id":product.id,"name":product.name,"image_url":product.image_url or "","system":qty,"counted":line.counted_qty if line else None,"note":line.note if line else "","stale":synced_at is not None}
     if synced_at is not None:
         from ..timeutil import fmt_clock
         out["notice"] = c.t("The POS could not be reached, so this is the stock from the last sync at {time}. Your count is still saved.").replace("{time}", fmt_clock(synced_at))

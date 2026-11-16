@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inventory List Redesign Options</title>
+<style>
+  :root {
+    --bg: #f6f8fb; --surface: #ffffff; --surface2: #f1f5f9;
+    --ink: #0f172a; --mute: #64748b; --line: #e2e8f0; --line2: #cbd5e1;
+    --primary: #2563eb; --primary-soft: #eff6ff;
+    --ok: #16a34a; --ok-soft: #dcfce7;
+    --warn: #d97706; --warn-soft: #fef3c7;
+    --bad: #dc2626; --bad-soft: #fee2e2;
+    --sh1: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); }
+  .frame { width: 1280px; padding: 28px 34px 36px; background: var(--bg); }
+  .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  h1 { margin: 4px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -.025em; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 650; text-decoration: none; }
+  .btn.pri { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+  .actions { display: flex; gap: 8px; }
+  .sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+  .sync i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); background: linear-gradient(135deg,#2563eb,#0ea5e9); flex: none; }
+  .thumb.warm { background: linear-gradient(135deg,#ea580c,#f59e0b); }
+  .thumb.green { background: linear-gradient(135deg,#16a34a,#10b981); }
+  .thumb.slate { background: linear-gradient(135deg,#475569,#94a3b8); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--mute); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+  .pill.ok { background: var(--ok-soft); color: #15803d; }
+  .pill.warn { background: var(--warn-soft); color: #b45309; }
+  .pill.bad { background: var(--bad-soft); color: #b91c1c; }
+  .pill.cat { background: var(--surface2); border: 1px solid var(--line); color: var(--mute); font-weight: 600; }
+
+  /* Option 1: Studio Stock Workbench */
+  .o1-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .o1-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--sh1); }
+  .o1-kpi.bad { border-color: #fecaca; background: linear-gradient(180deg,#fff,#fef2f2); }
+  .o1-kpi.warn { border-color: #fde68a; background: linear-gradient(180deg,#fff,#fffbeb); }
+  .o1-kpi b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .o1-kpi span { font-size: 12px; color: var(--mute); font-weight: 600; }
+  .o1-bar { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--sh1); margin-bottom: 14px; }
+  .o1-top { display: flex; gap: 10px; align-items: center; }
+  .o1-search { flex: 1; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--mute); }
+  .o1-chips { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--line); font-size: 12.5px; font-weight: 600; }
+  .chip.on { background: var(--primary-soft); border-color: #93c5fd; color: var(--primary); }
+  .tbl-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--sh1); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th { background: var(--surface2); color: var(--mute); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  th.r, td.r { text-align: right; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  .prod-cell { display: flex; align-items: center; gap: 10px; }
+  .prod-cell b { display: block; font-size: 13.5px; }
+  .cov { display: inline-flex; align-items: center; gap: 8px; }
+  .cov i { width: 46px; height: 6px; border-radius: 999px; background: var(--surface2); display: inline-block; overflow: hidden; position: relative; }
+  .cov i::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--w); background: var(--c); border-radius: 999px; }
+
+  /* Option 2: Unified Health Banner + Dense Operational Ledger */
+  .o2-health { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; box-shadow: var(--sh1); margin-bottom: 14px; display: grid; grid-template-columns: 1.4fr 2fr; gap: 20px; align-items: center; }
+  .o2-meter { height: 10px; border-radius: 999px; background: var(--surface2); display: flex; overflow: hidden; gap: 2px; margin: 10px 0 8px; }
+  .o2-segs { display: flex; gap: 16px; font-size: 12px; color: var(--mute); }
+  .o2-segs b { color: var(--ink); }
+  .o2-dense td, .o2-dense th { padding: 8px 12px; }
+  .dot-st { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+  .dot-st i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Option 3: Card-First Command Table */
+  .o3-grid { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+  .o3-side { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--sh1); display: flex; flex-direction: column; gap: 12px; }
+  .o3-stat { padding: 10px 12px; border-radius: 10px; background: var(--surface2); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+  .o3-stat.on { background: var(--primary-soft); color: var(--primary); }
+  .o3-rowcard { display: grid; grid-template-columns: minmax(0,2fr) 90px 90px 90px 110px; gap: 12px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+  .o3-rowcard:last-child { border-bottom: 0; }
+  .o3-thumb { width: 42px; height: 42px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="frame" id="opt1">
+  <div class="head">
+    <div>
+      <div class="eyebrow">Option 1 · Studio Stock Workbench · Bantayan</div>
+      <h1>Stock</h1>
+      <div class="sync"><i></i> Synced <strong>4 minutes ago</strong> · 14 trading days avg</div>
+    </div>
+    <div class="actions">
+      <a class="btn">Compare stores</a>
+      <a class="btn">Export CSV</a>
+      <a class="btn pri">+ Record stock event</a>
+    </div>
+  </div>
+  <div class="o1-kpis">
+    <div class="o1-kpi"><b>1,248</b><span>Products in this view</span></div>
+    <div class="o1-kpi"><b>₱482,910</b><span>Stock value at cost</span></div>
+    <div class="o1-kpi bad"><b style="color:var(--bad)">6</b><span>Negative stock</span></div>
+    <div class="o1-kpi warn"><b style="color:var(--warn)">29</b><span>Zero stock</span></div>
+    <div class="o1-kpi warn"><b style="color:var(--warn)">44</b><span>Under 3 days of cover</span></div>
+  </div>
+  <div class="o1-bar">
+    <div class="o1-top">
+      <div class="chip"><b>Store:</b> Bantayan ▾</div>
+      <div class="o1-search">🔍 Search name, barcode or SKU...</div>
+      <a class="btn pri">Search</a>
+    </div>
+    <div class="o1-chips">
+      <span class="chip on">All</span>
+      <span class="chip">Low cover (&lt;3d)</span>
+      <span class="chip">Zero stock</span>
+      <span class="chip">Negative</span>
+      <span class="chip" style="margin-left:auto">Incoming: All ▾</span>
+      <span class="chip">Category: All ▾</span>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Product</th><th>Category</th><th class="r">Stock now</th><th class="r">Estimated</th><th class="r">Incoming</th><th class="r">Avg/day</th><th class="r">Cover</th><th>Supplier</th></tr></thead>
+      <tbody>
+        <tr><td><div class="prod-cell"><div class="thumb warm"></div><div><b>Cobra Energy Drink Smart 350ml</b><div class="mono">4800016068010</div></div></div></td><td><span class="pill cat">Beverages</span></td><td class="r"><span class="pill ok">24</span></td><td class="r">36</td><td class="r"><span class="pill" style="background:#eff6ff;color:#1d4ed8">+12 · PO #418</span></td><td class="r">4.2</td><td class="r"><span class="cov"><i style="--w:42%;--c:var(--ok)"></i><b>5.7d</b></span></td><td>Asia Brewery</td></tr>
+        <tr><td><div class="prod-cell"><div class="thumb"></div><div><b>Coke Sakto 200ml Glass Bottle</b><div class="mono">4800016068027</div></div></div></td><td><span class="pill cat">Beverages</span></td><td class="r"><span class="pill warn">3</span></td><td class="r">3</td><td class="r" style="color:var(--mute)">—</td><td class="r">2.1</td><td class="r"><span class="cov"><i style="--w:15%;--c:var(--bad)"></i><b style="color:var(--bad)">1.4d</b></span></td><td>Coca-Cola PH</td></tr>
+        <tr><td><div class="prod-cell"><div class="thumb green"></div><div><b>Nissin Cup Noodles Beef 60g</b><div class="mono">4800016068096</div></div></div></td><td><span class="pill cat">Noodles</span></td><td class="r"><span class="pill bad">-2</span></td><td class="r" style="color:var(--bad)">-2</td><td class="r" style="color:var(--mute)">—</td><td class="r">1.5</td><td class="r"><span class="cov"><i style="--w:0%;--c:var(--bad)"></i><b>0.0d</b></span></td><td>Universal Robina</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="frame" id="opt2" style="margin-top:40px">
+  <div class="head">
+    <div>
+      <div class="eyebrow">Option 2 · Health Ribbon + High-Density Ledger</div>
+      <h1>Stock · Bantayan</h1>
+      <div class="sync"><i></i> Synced <strong>4 minutes ago</strong></div>
+    </div>
+    <div class="actions"><a class="btn">Compare stores</a><a class="btn">Export CSV</a><a class="btn pri">Record stock event</a></div>
+  </div>
+  <div class="o2-health">
+    <div>
+      <div class="eyebrow">Branch Valuation</div>
+      <div style="font-size:28px;font-weight:850;margin-top:4px">₱482,910 <small style="font-size:13px;color:var(--mute);font-weight:600">· 1,248 SKUs</small></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700"><span>Stock Health Breakdown</span><span>93.7% In Stock</span></div>
+      <div class="o2-meter"><i style="flex:1169;background:var(--ok)"></i><i style="flex:44;background:var(--warn)"></i><i style="flex:35;background:var(--bad)"></i></div>
+      <div class="o2-segs"><span><b>1,169</b> Healthy</span><span><b>44</b> Low cover (&lt;3d)</span><span><b>29</b> Zero</span><span><b style="color:var(--bad)">6</b> Negative</span></div>
+    </div>
+  </div>
+  <div class="tbl-wrap o2-dense">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;background:var(--surface2)">
+      <div class="o1-search" style="background:#fff;height:34px">🔍 Filter by name, barcode, SKU...</div>
+      <div class="chip" style="background:#fff">Bantayan ▾</div><div class="chip" style="background:#fff">Incoming ▾</div><div class="chip" style="background:#fff">Category ▾</div><a class="btn pri" style="height:34px">Apply</a>
+    </div>
+    <table>
+      <thead><tr><th>Product</th><th>Category</th><th class="r">Stock now</th><th class="r">Est.</th><th class="r">Incoming</th><th class="r">Avg/day</th><th class="r">Cover</th><th>Supplier</th></tr></thead>
+      <tbody>
+        <tr><td><div class="prod-cell"><div class="thumb warm" style="width:30px;height:30px"></div><div><b>Cobra Energy Drink Smart 350ml</b> <span class="mono">· 4800016068010</span></div></div></td><td>Beverages</td><td class="r"><span class="dot-st"><i style="background:var(--ok)"></i>24</span></td><td class="r">36</td><td class="r"><b>+12</b></td><td class="r">4.2</td><td class="r">5.7d</td><td>Asia Brewery</td></tr>
+        <tr><td><div class="prod-cell"><div class="thumb" style="width:30px;height:30px"></div><div><b>Coke Sakto 200ml Glass Bottle</b> <span class="mono">· 4800016068027</span></div></div></td><td>Beverages</td><td class="r"><span class="dot-st" style="color:var(--warn)"><i style="background:var(--warn)"></i>3</span></td><td class="r">3</td><td class="r">—</td><td class="r">2.1</td><td class="r"><b style="color:var(--bad)">1.4d</b></td><td>Coca-Cola PH</td></tr>
+        <tr><td><div class="prod-cell"><div class="thumb green" style="width:30px;height:30px"></div><div><b>Nissin Cup Noodles Beef 60g</b> <span class="mono">· 4800016068096</span></div></div></td><td>Noodles</td><td class="r"><span class="dot-st" style="color:var(--bad)"><i style="background:var(--bad)"></i>-2</span></td><td class="r">-2</td><td class="r">—</td><td class="r">1.5</td><td class="r">0.0d</td><td>Universal Robina</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="frame" id="opt3" style="margin-top:40px">
+  <div class="head">
+    <div>
+      <div class="eyebrow">Option 3 · Sidebar Filter Rail + Card Ledger</div>
+      <h1>Stock · Bantayan</h1>
+    </div>
+    <div class="actions"><a class="btn">Compare stores</a><a class="btn">Export CSV</a><a class="btn pri">Record stock event</a></div>
+  </div>
+  <div class="o3-grid">
+    <aside class="o3-side">
+      <div class="eyebrow">Store &amp; Health</div>
+      <div class="chip" style="width:100%;justify-content:space-between">Bantayan <span>▾</span></div>
+      <div class="o3-stat on"><span>All products</span><b>1,248</b></div>
+      <div class="o3-stat"><span>Low cover (&lt;3d)</span><b style="color:var(--warn)">44</b></div>
+      <div class="o3-stat"><span>Zero stock</span><b style="color:var(--warn)">29</b></div>
+      <div class="o3-stat"><span>Negative stock</span><b style="color:var(--bad)">6</b></div>
+      <div style="border-top:1px solid var(--line);padding-top:10px"><div class="eyebrow">Cost Value</div><div style="font-size:20px;font-weight:800;margin-top:3px">₱482,910</div></div>
+    </aside>
+    <div class="tbl-wrap">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">
+        <div class="o1-search">🔍 Search name, barcode or SKU...</div>
+        <div class="chip">Category ▾</div><div class="chip">Incoming ▾</div>
+      </div>
+      <div class="o3-rowcard" style="background:var(--surface2);padding:9px 16px;font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase">
+        <span>Product</span><span style="text-align:right">On hand</span><span style="text-align:right">Incoming</span><span style="text-align:right">Avg/day</span><span style="text-align:right">Cover</span>
+      </div>
+      <div class="o3-rowcard">
+        <div class="prod-cell"><div class="thumb warm o3-thumb"></div><div><b>Cobra Energy Drink Smart 350ml</b><div class="mono">4800016068010 · Beverages · Asia Brewery</div></div></div>
+        <div style="text-align:right"><b>24</b><div class="mono">Est 36</div></div>
+        <div style="text-align:right"><span class="pill" style="background:#eff6ff;color:#1d4ed8">+12</span></div>
+        <div style="text-align:right">4.2</div>
+        <div style="text-align:right"><span class="pill ok">5.7d</span></div>
+      </div>
+      <div class="o3-rowcard">
+        <div class="prod-cell"><div class="thumb o3-thumb"></div><div><b>Coke Sakto 200ml Glass Bottle</b><div class="mono">4800016068027 · Beverages · Coca-Cola PH</div></div></div>
+        <div style="text-align:right"><b style="color:var(--warn)">3</b><div class="mono">Est 3</div></div>
+        <div style="text-align:right;color:var(--mute)">—</div>
+        <div style="text-align:right">2.1</div>
+        <div style="text-align:right"><span class="pill bad">1.4d</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

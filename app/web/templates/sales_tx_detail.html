@@ -50,8 +50,8 @@
 
         <div class="receipt-table-wrap"><table class="receipt-table" data-keep-table>
           <thead><tr><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Qty') }}</th><th scope="col">{{ t('Price') }}</th>{% if has_disc %}<th scope="col">{{ t('Disc') }}</th>{% endif %}<th scope="col">{{ t('Total') }}</th></tr></thead>
-          <tbody>{% for line in lines %}{% set l = line[0] %}{% set pname = line[1] %}{% set barcode = line[2] %}{% set sku = line[3] if line|length > 3 else none %}<tr>
-            <td class="receipt-product">{% if l.product_id %}<a href="/sales/product/{{ l.product_id }}">{{ pname or l.product_sh_id or l.item_type }}</a>{% else %}{{ pname or l.product_sh_id or l.item_type }}{% endif %}{% if barcode or sku %}<small>{{ barcode or '' }}{% if barcode and sku %} &middot; {% endif %}{{ sku or '' }}</small>{% endif %}
+          <tbody>{% for line in lines %}{% set l = line[0] %}{% set pname = line[1] %}{% set barcode = line[2] %}{% set sku = line[3] if line|length > 3 else none %}{% set img_url = line[4] if line|length > 4 else none %}<tr>
+            <td class="receipt-product">{{ pimg({'image_url': img_url}, 28) }}{% if l.product_id %}<a href="/sales/product/{{ l.product_id }}">{{ pname or l.product_sh_id or l.item_type }}</a>{% else %}{{ pname or l.product_sh_id or l.item_type }}{% endif %}{% if barcode or sku %}<small>{{ barcode or '' }}{% if barcode and sku %} &middot; {% endif %}{{ sku or '' }}</small>{% endif %}
               <div class="receipt-mobile-line"><span>{{ qty(l.qty) }} × {{ l.unit_price|money if l.unit_price is not none else '—' }}</span>
                 <details><summary>{{ t('Details') }}</summary><div>{% if sku %}<span>{{ t('SKU') }}: {{ sku }}</span>{% endif %}<span>{{ t('Discount') }}: {{ l.discount|money }}</span><span>{{ t('Subtotal') }}: {{ l.subtotal|money }}</span><span>{{ t('Tax') }}: {{ l.tax|money }}</span></div></details>
               </div>

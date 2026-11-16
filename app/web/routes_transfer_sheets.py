@@ -36,6 +36,7 @@ def _lines(c: Ctx, s: TransferSheet) -> dict:
         v = l.unit_cost if l.unit_cost is not None else (l.product.cost if l.product else None)
         return None if v is None else round(float(v), 6)
     return {"lines": [{"id": l.id, "product_id": l.product_id, "name": ts.line_name(l), "barcode": ts.line_barcode(l), "sku": (l.product.sku or "") if l.product else "",
+                       "image_url": (l.product.image_url or "") if l.product else "",
                        "qty": l.qty, "on_hand": stock.get(l.product_id), "dest": dest.get(l.product_id), "cost": cost(l),
                        "subtotal": None if cost(l) is None else round(l.qty * cost(l), 2)}
                       for l in sorted(s.lines, key=lambda x: -x.id)],
@@ -99,7 +100,7 @@ def sheet_find(sid: int, code: str = "", c: Ctx = Depends(need(PERM))):
     pick = [exact] if exact else matches
     stock = ts.on_hand(c.db, s.source_location_id, [p.id for p in pick])
     on_sheet = {l.product_id: l.qty for l in s.lines}
-    card = lambda p: {"id": p.id, "name": p.name, "barcode": p.barcode or "", "sku": p.sku or "", "on_hand": stock.get(p.id), "on_sheet": on_sheet.get(p.id, 0)}
+    card = lambda p: {"id": p.id, "name": p.name, "barcode": p.barcode or "", "sku": p.sku or "", "image_url": p.image_url or "", "on_hand": stock.get(p.id), "on_sheet": on_sheet.get(p.id, 0)}
     return JSONResponse({"exact": card(exact) if exact else None, "matches": [card(p) for p in matches], "code": code.strip()})
 
 

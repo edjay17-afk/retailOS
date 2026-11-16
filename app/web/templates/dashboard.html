@@ -242,12 +242,12 @@
       </div>
       <div class="dash-rank-list" data-live="best">
         {% for r in stat.best %}
-        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ r.name }}">{{ r.name }}</span><span class="dash-rank-tr"><i style="width:{{ r.pct }}%"></i></span><span class="dash-rank-v">{{ r.units|num(0) if r.units == r.units|round(0) else r.units|num(1) }}</span></div>
+        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ r.name }}">{{ pimg(r, 22) }}{{ r.name }}</span><span class="dash-rank-tr"><i style="width:{{ r.pct }}%"></i></span><span class="dash-rank-v">{{ r.units|num(0) if r.units == r.units|round(0) else r.units|num(1) }}</span></div>
         {% else %}<p class="small mute">{{ t('No sales yet.') }}</p>{% endfor %}
       </div>
       <div class="dash-rank-list" id="dash-vel-gaps" hidden>
         {% for g in stat.gaps %}
-        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ g.name }}">{{ g.name }}</span><span class="dash-rank-tr bad"><i style="width:{{ g.pct }}%"></i></span><span class="dash-rank-v">{{ g.per_day }}/day</span></div>
+        <div class="dash-rank-row"><span class="dash-rank-n">{{ loop.index }}</span><span class="dash-rank-nm" title="{{ g.name }}">{{ pimg(g, 22) }}{{ g.name }}</span><span class="dash-rank-tr bad"><i style="width:{{ g.pct }}%"></i></span><span class="dash-rank-v">{{ g.per_day }}/day</span></div>
         {% else %}<p class="small mute">{{ t('No out-of-stock 30-day sellers.') }}</p>{% endfor %}
       </div>
     </section>

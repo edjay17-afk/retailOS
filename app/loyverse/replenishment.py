@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal, ROUND_CEILING
 from sqlalchemy import select
-from ..models import LoyverseAccount, LoyverseStore, LoyverseVariant, LoyverseReceipt
+from ..models import LoyverseAccount, LoyverseStore, LoyverseVariant, LoyverseReceipt, Product
 from ..timeutil import today_local, now_utc
 from .. import settings_service
 
@@ -30,6 +30,7 @@ def report(db, account="", store="", search="", allowed_pairs=None):
             units[key]+=Decimal(line["quantity"])*(1 if receipt.receipt_type=="SALE" else -1)
             names[key]=line["name"]
     variants={(v.account_key,v.variant_id):v for v in db.scalars(select(LoyverseVariant))}
+    images={(p.source_account,p.external_id):p.image_url for p in db.scalars(select(Product).where(Product.source=="loyverse",Product.image_url.is_not(None)))}
     rows=[];term=search.strip().casefold()
     for (akey,sid,vid),net in units.items():
         if net<=0:continue
@@ -43,7 +44,7 @@ def report(db, account="", store="", search="", allowed_pairs=None):
         available=bool(variant and variant.active)
         average=net/Decimal(days)
         qty=(average*cover).quantize(Decimal("0.001") if variant and variant.sold_by_weight else Decimal("1"),rounding=ROUND_CEILING)
-        rows.append(dict(account=akey,store_id=sid,store=selected[(akey,sid)].name,variant_id=vid,name=name,sku=variant.sku if variant else "",barcode=variant.barcode if variant else "",units=net,days=days,average=average,quantity=qty if ready and available else None,
+        rows.append(dict(account=akey,store_id=sid,store=selected[(akey,sid)].name,variant_id=vid,name=name,sku=variant.sku if variant else "",barcode=variant.barcode if variant else "",image_url=images.get((akey,vid),""),units=net,days=days,average=average,quantity=qty if ready and available else None,
                          reason="Sync unavailable or stale" if not ready else "Item unavailable in catalog" if not available else "Short sales history" if days<int(settings_service.get(db,"repl.min_trading_days")) else "Ready",
                          composite=bool(variant and variant.composite),rounding=Decimal("0.001") if variant and variant.sold_by_weight else Decimal("1")))
     rows.sort(key=lambda r:(r['store'].casefold(),-r['units'],r['name'].casefold()))

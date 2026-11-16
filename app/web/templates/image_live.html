@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Live images') }}{% endblock %}
+{% block content %}
+<h1>{{ t('Product images · live') }}</h1>
+<p class="mute small">{{ t('Refreshes itself every 3 seconds while the image flow runs.') }} <span id="st"></span></p>
+<div id="log" class="small" style="margin:2px 0 14px;max-height:220px;overflow:auto;border:1px solid #c9d1d9;border-radius:8px;padding:8px 10px"></div>
+<div id="wall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
+<style>
+.lvcard{border:1px solid #c9d1d9;border-radius:8px;padding:6px;background:var(--card,#fff)}
+.lvcard img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:6px}
+.lvcard.new{animation:lvpop 1.4s}
+@keyframes lvpop{0%{box-shadow:0 0 0 3px #2da44e}100%{box-shadow:none}}
+</style>
+<script>
+(function () {
+  var lastMax = 0;
+  function txt(tag, cls, s) { var el = document.createElement(tag); if (cls) el.className = cls; el.textContent = s; return el; }
+  function tick() {
+    fetch('/audit/image-feed?limit=30', { headers: { 'Accept': 'application/json' } }).then(function (res) {
+      if (!res.ok) { document.getElementById('st').textContent = 'feed error ' + res.status; return; }
+      return res.json();
+    }).then(function (data) {
+      if (!data) return;
+      var items = data.items || [];
+      var wall = document.getElementById('wall');
+      wall.innerHTML = '';
+      items.forEach(function (it) {
+        var card = txt('div', 'lvcard' + (lastMax && it.id > lastMax ? ' new' : ''), '');
+        if (it.img) { var img = document.createElement('img'); img.src = it.img; img.alt = ''; card.appendChild(img); }
+        card.appendChild(txt('div', 'small', '#' + it.pid + ' ' + it.name));
+        var when = it.ts;
+        try { when = new Date(it.ts.replace(' ', 'T') + 'Z').toLocaleTimeString(); } catch (e) {}
+        var src = '';
+        if (it.after) {
+          try { var a = (typeof it.after === 'string') ? JSON.parse(it.after) : it.after; src = a.source || ''; } catch (e) {}
+        }
+        card.appendChild(txt('div', 'small mute', when + (src ? ' · ' + src : '')));
+        wall.appendChild(card);
+      });
+      if (items.length) lastMax = items[0].id;
+      document.getElementById('st').textContent = '· updated ' + new Date().toLocaleTimeString();
+    }).catch(function (e) { document.getElementById('st').textContent = String(e); });
+  }
+  function tickLog() {
+    fetch('/progress/feed?limit=15', { headers: { 'Accept': 'application/json' } }).then(function (res) {
+      if (!res.ok) return;
+      return res.json();
+    }).then(function (data) {
+      if (!data) return;
+      var log = document.getElementById('log');
+      log.innerHTML = '';
+      (data.items || []).slice().reverse().forEach(function (n) {
+        var when = n.ts;
+        try { when = new Date(n.ts.replace(' ', 'T') + 'Z').toLocaleTimeString(); } catch (e) {}
+        var line = txt('div', 'mute', when + '  ' + n.msg);
+        line.style.padding = '1px 0';
+        log.appendChild(line);
+      });
+    }).catch(function () {});
+  }
+  tick();
+  tickLog();
+  setInterval(tick, 3000);
+  setInterval(tickLog, 3000);
+})();
+</script>
+{% endblock %}

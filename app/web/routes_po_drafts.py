@@ -42,7 +42,7 @@ def _draft(c: Ctx, did: int) -> PoDraft:
 
 def _data(d: PoDraft) -> dict:
     lines = [{"id": l.id, "product_id": l.product_id, "name": l.product.name, "barcode": l.product.barcode or "", "sku": l.product.sku or "",
-              "qty": l.qty, "price": l.price, "total": pod.total_of(l.qty, l.price)} for l in sorted(d.lines, key=lambda x: -x.id)]
+              "image_url": l.product.image_url or "", "qty": l.qty, "price": l.price, "total": pod.total_of(l.qty, l.price)} for l in sorted(d.lines, key=lambda x: -x.id)]
     sm = pod.summary(d)
     return {"lines": lines, "total_lines": len(lines), "subtotal": sm["subtotal"], "tax": sm["tax"], "total": sm["total"], "rate": sm["rate"],
             "discount": d.discount or "", "tax_manual": d.tax_amount or ""}

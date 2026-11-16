@@ -56,7 +56,7 @@
   {% for e in g.rows %}{% set out = e.kind == 'write_off' %}
   <div class="se-row">
     <span class="se-circle {{ 'out' if out else 'in' }}" title="{{ t('Write-off') if out else t('Unplanned receipt') }}">{{ '−' if out else '+' }}{{ e.qty|num }}</span>
-    <div class="se-prod"><b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<small>{{ e.product.barcode }}</small>{% endif %}</div>
+    <div class="se-prod">{{ pimg(e.product) if e.product }}<b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<small>{{ e.product.barcode }}</small>{% endif %}</div>
     <span class="se-store">{{ e.location.name|replace('The Daily Centro - ', '') if e.location else '' }}</span>
     <div class="se-why"><span class="se-tag {{ 'out' if out else 'in' }}">{{ t(e.reason) }}</span>{% if e.note %}<small>{{ e.note }}</small>{% endif %}</div>
     <div class="se-when"><b>{{ e.created_at|local('%H:%M') }}</b><small>{{ t('By') }} {{ users.get(e.created_by, '') }}</small></div>
@@ -70,7 +70,7 @@
 <div class="tw stick1 stock-change-table"><table class="wide"><tr><th scope="col">{{ t('When') }}</th><th scope="col">{{ t('Kind') }}</th><th scope="col">{{ t('Product') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col" class="right">{{ t('Qty') }}</th><th scope="col">{{ t('Reason') }}</th><th scope="col">{{ t('Photo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('By') }}</th></tr>
 {% for e in rows %}<tr class="stock-event-row"><td class="small nowrap ev-date">{{ e.created_at|local('%d %b') }}<div class="mute">{{ e.created_at|local('%H:%M') }}</div></td>
 <td class="ev-kind"><span class="badge dot {{ 'b-bad' if e.kind == 'write_off' else 'b-warn' }}">{{ t('Write-off') if e.kind == 'write_off' else t('Unplanned receipt') }}</span></td>
-<td class="ev-product"><b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<div class="small mute">{{ e.product.barcode }}</div>{% endif %}</td>
+<td class="ev-product">{{ pimg(e.product) if e.product }}<b>{{ e.product.name if e.product else '?' }}</b>{% if e.product and e.product.barcode %}<div class="small mute">{{ e.product.barcode }}</div>{% endif %}</td>
 <td class="small ev-location">{{ e.location.name if e.location else '' }}</td>
 <td class="right ev-qty">{% if e.kind == 'write_off' %}<b style="color:var(--bad)">&minus;{{ e.qty|num }}</b>{% else %}<b style="color:var(--ok)">+{{ e.qty|num }}</b>{% endif %}</td>
 <td class="small ev-reason">{{ t(e.reason) }}{% if e.note %}<div class="small mute">{{ e.note }}</div>{% endif %}</td>
