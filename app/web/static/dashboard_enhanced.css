@@ -1,0 +1,113 @@
+/* Today dashboard: enhancement pass. Same layout, same blue brand, same sections.
+   Softer page background, roomier cards, a small icon and a chart in every stat cell, and one quiet color per kind of information:
+   blue = sales, teal = transactions and healthy stock, amber = stock problems, violet = operations and AI. Red is kept for genuine alerts only.
+   Loaded after dashboard_redesign.css, so these rules win by order; the colour rules stay out of dark mode. */
+@media screen and (min-width: 701px) {
+  /* icon chips in the stat labels (work in both themes: tinted, not solid) */
+  .lv-ic2 { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; margin-right: 9px; flex: none; vertical-align: middle; }
+  .lv-ic2 svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .lv-ic2.c-blue { background: rgba(37, 99, 235, .13); color: #2f6bf0; }
+  .lv-ic2.c-teal { background: rgba(13, 148, 136, .15); color: #0f9488; }
+  .lv-ic2.c-amber { background: rgba(217, 119, 6, .16); color: #c47a0a; }
+  .lv-ic2.c-violet { background: rgba(124, 92, 245, .16); color: #7c5cf5; }
+  html body .lv-big small { display: flex; align-items: center; }
+  html body .lv-k { align-items: center; }
+  .lv-ax .lv-pk { font-weight: 700; color: #0f9488; }
+
+  /* bigger numbers, roomier cells */
+  html body .lv-big, html body .lv-t, html body .lv-t.red { padding: 22px 24px !important; }
+  html body .lv-big small, html body .lv-k { font-size: 12.5px; font-weight: 700; }
+  html body .lv-big strong { font-size: 32px; margin: 12px 0 4px; }
+  html body .lv-v { font-size: 32px; margin: 12px 0 4px; }
+  html body .lv-herobars, html body .lv-hours { min-height: 100px; }
+
+    /* page and chrome */
+    html:not([data-theme="dark"]) body:has(#live-store-sales) { background: #f5f7fb; }
+    html:not([data-theme="dark"]) body:has(#live-store-sales) .topbar { background: #fff; }
+
+    /* one shared card look */
+    html:not([data-theme="dark"]) body .lv-hero, html:not([data-theme="dark"]) body .lv-card, html:not([data-theme="dark"]) body .dash-card, html:not([data-theme="dark"]) body .dash-workspace > .desktop-work-queue {
+      border-radius: 18px; border-color: #e6e8f1;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 14px 30px -24px rgba(15, 23, 42, .18);
+    }
+    html:not([data-theme="dark"]) body .lv-hero { background: #fff; }
+    html:not([data-theme="dark"]) body .lv-big, html:not([data-theme="dark"]) body .lv-t { border-right-color: #edf0f6 !important; }
+    html:not([data-theme="dark"]) body .dash-head-left h1 { font-size: 28px; font-weight: 800; }
+    html:not([data-theme="dark"]) body .dash-sec-head h2 { font-size: 17px; font-weight: 800; }
+    html:not([data-theme="dark"]) body .dash-seg, html:not([data-theme="dark"]) body .dash-cta { border-radius: 12px; }
+    html:not([data-theme="dark"]) body .dash-cta.pri { box-shadow: 0 8px 18px -8px rgba(37, 99, 235, .7); }
+    html:not([data-theme="dark"]) body .dash-live-pill { background: #e3f6ef; border-color: transparent; color: #0b6b52; font-weight: 700; }
+    html:not([data-theme="dark"]) body .dash-live-pill i { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .22); }
+
+    /* charts: blue for sales, teal for transactions */
+    html:not([data-theme="dark"]) body .lv-herobars .hv-bar, html:not([data-theme="dark"]) body .lv-spark .hv-bar { background: #cddcfb; }
+    html:not([data-theme="dark"]) body .lv-herobars .hv-bar.last, html:not([data-theme="dark"]) body .lv-spark .hv-bar.last { background: #2563eb; }
+    html:not([data-theme="dark"]) body .lv-herobars.hot .hv-bar.on, html:not([data-theme="dark"]) body .lv-spark.hot .hv-bar.on { background: #1d4ed8; }
+    html:not([data-theme="dark"]) body .lv-hours .hv-bar { background: #bfe8e2; opacity: 1; }
+    html:not([data-theme="dark"]) body .lv-hours .hv-bar.peak { background: #0f9488; }
+    html:not([data-theme="dark"]) body .lv-hours.hot .hv-bar.on { background: #0f9488; }
+    html:not([data-theme="dark"]) body .lv-hn, html:not([data-theme="dark"]) body .lv-ax { color: #7b869b; }
+
+    /* out of stock: amber bars, no red fill */
+    html:not([data-theme="dark"]) body .lv-by u { background: #f3f4f8; }
+    html:not([data-theme="dark"]) body .lv-by u i { background: #f59e0b; opacity: 1; }
+
+    /* operations: violet ring and soft to-do tiles */
+    html:not([data-theme="dark"]) body .lv-jr .lv-ring { background: conic-gradient(#7c5cf5 calc(var(--p) * 1%), #ece8fd 0); }
+    html:not([data-theme="dark"]) body .lv-todo a { background: #f6f8fc; border-radius: 10px; }
+    html:not([data-theme="dark"]) body .lv-todo a:hover { background: #ece8fd; color: #5a3fd0 !important; }
+
+    /* store cards */
+    html:not([data-theme="dark"]) body .lv-card .lv-in { padding: 20px 22px; }
+    html:not([data-theme="dark"]) body .b-big { font-size: 28px; }
+    html:not([data-theme="dark"]) body .lv-spark { height: 64px; min-height: 64px; }
+    html:not([data-theme="dark"]) body .lv-badge { background: #e8efff; border-color: transparent; color: #1d4ed8; }
+    html:not([data-theme="dark"]) body .lv-share { height: 6px; background: #eef1f7; }
+    html:not([data-theme="dark"]) body .lv-share i { background: #2563eb; opacity: 1; }
+    html:not([data-theme="dark"]) body .lv-health { height: 7px; background: transparent; }
+    html:not([data-theme="dark"]) body .lv-health i:nth-child(1) { background: #14b8a6 !important; }
+    html:not([data-theme="dark"]) body .lv-health i:nth-child(2) { background: #f3c46b !important; }
+    html:not([data-theme="dark"]) body .lv-health i:nth-child(3) { background: #ee9a52 !important; opacity: 1; }
+    html:not([data-theme="dark"]) body .lv-hl .hl-out { color: #b45f1a; }
+    html:not([data-theme="dark"]) body .lv-foot { border-top: 0; padding-top: 4px; column-gap: 8px; }
+    html:not([data-theme="dark"]) body .lv-mini { background: #f6f8fc; border-radius: 12px; padding: 9px 12px; }
+    html:not([data-theme="dark"]) body .lv-mini + .lv-mini { border-left: 0; padding-left: 12px; }
+    html:not([data-theme="dark"]) body .lv-mini b { font-size: 16px; font-weight: 800; }
+
+    /* priority queue: a quiet color per kind */
+    html:not([data-theme="dark"]) body .dq-item { border-radius: 14px; border-color: #edf0f6; padding: 13px 15px; }
+    html:not([data-theme="dark"]) body .dq-ico { width: 36px; height: 36px; border-radius: 11px; border: 0; background: #e8efff; color: #1d4ed8; }
+    html:not([data-theme="dark"]) body .dq-ico.high { background: #fdecd8; color: #b45309; }
+    html:not([data-theme="dark"]) body .dq-ico.k-recs { background: #ece8fd; color: #5a3fd0; }
+    html:not([data-theme="dark"]) body .dq-ico.k-cl { background: #dcf4ef; color: #0b6b52; }
+    html:not([data-theme="dark"]) body .dq-tag { background: #eef1f7; color: #5b6475; }
+    html:not([data-theme="dark"]) body .dq-tag.high { background: #fdecd8; color: #b45309; }
+    html:not([data-theme="dark"]) body .dq-tag.k-po, html:not([data-theme="dark"]) body .dq-tag.k-sheets { background: #e8efff; color: #1d4ed8; }
+    html:not([data-theme="dark"]) body .dq-tag.k-recs { background: #ece8fd; color: #5a3fd0; }
+    html:not([data-theme="dark"]) body .dq-tag.k-cl { background: #dcf4ef; color: #0b6b52; }
+    html:not([data-theme="dark"]) body .dq-act { border-radius: 10px; }
+
+    /* AI briefing: soft violet */
+    html:not([data-theme="dark"]) body .dash-card-ai { background: linear-gradient(180deg, #f5f2ff, #fff 70%); border-color: #e4dcfb; }
+    html:not([data-theme="dark"]) body .dash-ai-badge { background: #6a49e8; border-color: transparent; color: #fff; }
+    html:not([data-theme="dark"]) body .dash-ai-title { font-size: 16px; }
+    html:not([data-theme="dark"]) body .dash-ai-headline { font-size: 15px; font-weight: 700; }
+    html:not([data-theme="dark"]) body .dash-ai-pt { border-top-color: #e9e3fb; }
+    html:not([data-theme="dark"]) body .dash-ai-pt i { background: #6a49e8; }
+    html:not([data-theme="dark"]) body .dash-ai-pt i.high { background: #ee9a52; }
+    html:not([data-theme="dark"]) body .dash-ai-foot { border-top-color: #e9e3fb; }
+
+    /* best sellers and gaps */
+    html:not([data-theme="dark"]) body .dash-rank-row:first-child .dash-rank-n { background: #e8efff; color: #1d4ed8; }
+    html:not([data-theme="dark"]) body .dash-rank-tr { background: #eef1f7; }
+    html:not([data-theme="dark"]) body .dash-rank-tr i { opacity: 1; }
+    html:not([data-theme="dark"]) body .dash-rank-tr.bad i { background: #f59e0b; opacity: 1; }
+
+    /* operations strip */
+    html:not([data-theme="dark"]) body .dash-ops-mini { padding: 18px 22px; }
+    html:not([data-theme="dark"]) body .dash-ops-big { font-size: 24px; }
+    html:not([data-theme="dark"]) body .dash-fpill { background: #e3f6ef; border-color: transparent; color: #0b6b52; }
+    html:not([data-theme="dark"]) body .dash-fpill::before { background: #10b981; }
+    html:not([data-theme="dark"]) body .dash-fpill.stale { background: #fdecd8; color: #b45309; }
+    html:not([data-theme="dark"]) body .dash-fpill.stale::before { background: #ee9a52; }
+}

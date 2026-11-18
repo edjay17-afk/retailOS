@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Today') }}{% endblock %}
-{% block page_styles %}<link rel="stylesheet" href="/static/roll_number.css?v={{ asset_v('roll_number.css') }}"><link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}"><link rel="stylesheet" href="/static/dashboard_redesign.css?v={{ asset_v('dashboard_redesign.css') }}">{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/roll_number.css?v={{ asset_v('roll_number.css') }}"><link rel="stylesheet" href="/static/dashboard_b.css?v={{ asset_v('dashboard_b.css') }}"><link rel="stylesheet" href="/static/dashboard_lv.css?v={{ asset_v('dashboard_lv.css') }}"><link rel="stylesheet" href="/static/dashboard_redesign.css?v={{ asset_v('dashboard_redesign.css') }}"><link rel="stylesheet" href="/static/dashboard_enhanced.css?v={{ asset_v('dashboard_enhanced.css') }}">{% endblock %}
 {% block source_aside %}<span class="date-chip" aria-label="{{ brief.date|day }}"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>{{ brief.date|day }}</span>{% endblock %}
 {% block content %}
 {% set completed = insp.get('completed', 0) + insp.get('late', 0) + insp.get('submitted', 0) %}
@@ -39,7 +39,7 @@
 <div id="live-store-sales">
 <div class="lv-hero">
   <a class="lv-big" href="/sales">
-    <small>{{ t('All stores, net sales today') }}</small>
+    <small><span class="lv-ic2 c-blue" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/></svg></span>{{ t('All stores, net sales today') }}</small>
     <strong id="lv-total" data-raw="{{ sales.today }}" data-total="{{ sales.today|money }}">PHP <span id="live-sales-today">{{ sales.today|money }}</span></strong>
     <span class="lv-pill">{{ t('Yesterday full day:') }} <b>PHP <span id="live-sales-yesterday">{{ sales.yesterday|money }}</span></b></span>
     {% if sales.series %}{% set hpeak = sales.series|max %}
@@ -52,7 +52,7 @@
   </a>
 
   <section class="lv-t">
-    <div class="lv-k"><i style="background:var(--primary)"></i>{{ t('Transactions today') }}</div>
+    <div class="lv-k"><i style="background:var(--primary)"></i><span class="lv-ic2 c-teal" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h4"/></svg></span>{{ t('Transactions today') }}</div>
     <div class="lv-v" id="live-tx-today">{{ stat.tx|num(0) }}</div>
     <div class="lv-s">{{ t('Average basket') }} <b>PHP <span id="live-avg-basket">{{ stat.avg_basket|money }}</span></b></div>
     {% if stat.hourly %}
@@ -60,12 +60,12 @@
       {% for h in stat.hourly %}<span class="hv-bar{{ ' peak' if h.peak else '' }}" tabindex="0" role="img" style="--h:{{ h.pct }}%;--i:{{ loop.index0 }}" data-label="{{ h.label }}" data-amount="{{ h.n }}" aria-label="{{ h.label }}: {{ h.n }} {{ t('transactions') }}"></span>{% endfor %}
       <div class="hv-tip" hidden><b></b><span></span></div>
     </div>
-    <div class="lv-ax"><span>{{ stat.hourly[0].label }}</span><span>{{ t('now') }}</span></div>
+    {% set pk = (stat.hourly|selectattr('peak')|list|first) %}<div class="lv-ax"><span>{{ stat.hourly[0].label }}</span>{% if pk %}<span class="lv-pk">{{ t('Peak') }} {{ pk.label }}</span>{% endif %}<span>{{ t('now') }}</span></div>
     {% endif %}
   </section>
 
   <section class="lv-t red">
-    <div class="lv-k"><i style="background:var(--bad)"></i>{{ t('Out of stock') }}</div>
+    <div class="lv-k"><i style="background:var(--bad)"></i><span class="lv-ic2 c-amber" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg></span>{{ t('Out of stock') }}</div>
     <div class="lv-v">{{ stat.out_total|num(0) }} <small>{{ t('products') }}</small></div>
     <div class="lv-s">{{ t('They sold in the last 30 days') }}</div>
     <div class="lv-by">{% for r in stat.out_by_store %}<div><span>{{ r.name }}</span><u><i style="width:{{ r.pct }}%"></i></u><b>{{ r.n }}</b></div>{% endfor %}</div>
@@ -73,7 +73,7 @@
   </section>
 
   <section class="lv-t">
-    <div class="lv-k"><i style="background:var(--warn)"></i>{{ t('Operations & checklists') }}</div>
+    <div class="lv-k"><i style="background:var(--warn)"></i><span class="lv-ic2 c-violet" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg></span>{{ t('Operations & checklists') }}</div>
     <div class="lv-jr" data-live="jobs-head"><div class="lv-v">{{ stat.jobs_total|num(0) }}</div>
       {% if stat.checks_total %}<div class="lv-ring" style="--p:{{ stat.checks_pct }}"><b>{{ stat.checks_done }}/{{ stat.checks_total }}</b></div><small class="lv-s">{{ t('checklists done') }}</small>{% endif %}</div>
     <div class="lv-todo" data-live="jobs-list">
@@ -158,7 +158,7 @@
       {% set is_hi = i.priority == 'high' %}
       <article class="dq-item" data-cat="{{ 'urgent' if is_hi else 'stock' }}">
         <div class="dq-left">
-          <div class="dq-ico{{ ' high' if is_hi }}">{{ '!' if is_hi else '•' }}</div>
+          <div class="dq-ico{{ ' high' if is_hi }}{{ '' if is_hi else ' k-stock' }}">{{ '!' if is_hi else '•' }}</div>
           <div>
             <div class="dq-title">{{ t(i.title) }} <span class="dq-tag{{ ' high' if is_hi }}">{{ t('Urgent') if is_hi else t(i.priority) }}</span></div>
             <div class="dq-desc">{{ t(i.recommendation) }}</div>
@@ -171,13 +171,13 @@
       {% for j in wjobs %}
       <article class="dq-item" data-cat="stock">
         <div class="dq-left">
-          <div class="dq-ico">{{ {'po': 'PO', 'sheets': 'TR', 'recs': 'OR'}[j.key] }}</div>
+          <div class="dq-ico k-{{ j.key }}">{{ {'po': 'PO', 'sheets': 'TR', 'recs': 'OR'}[j.key] }}</div>
           <div>
             <div class="dq-title">
               <b>{{ j.n }}</b>
-              {% if j.key == 'po' %}{{ t('purchase orders waiting to be received') }} <span class="dq-tag">{{ t('Warehouse') }}</span>
-              {% elif j.key == 'sheets' %}{{ t('transfer sheets not in StoreHub yet') }} <span class="dq-tag">{{ t('Warehouse') }}</span>
-              {% else %}{{ t('order suggestions to review') }} <span class="dq-tag">{{ t('Replenish') }}</span>{% endif %}
+              {% if j.key == 'po' %}{{ t('purchase orders waiting to be received') }} <span class="dq-tag k-po">{{ t('Warehouse') }}</span>
+              {% elif j.key == 'sheets' %}{{ t('transfer sheets not in StoreHub yet') }} <span class="dq-tag k-sheets">{{ t('Warehouse') }}</span>
+              {% else %}{{ t('order suggestions to review') }} <span class="dq-tag k-recs">{{ t('Replenish') }}</span>{% endif %}
             </div>
             <div class="dq-desc">
               {% if j.key == 'po' %}{{ t('Oldest') }}: PO{{ j.oldest_no }}{% if j.supplier %}, {{ j.supplier }}{% endif %}{% if j.oldest_days is not none %}, {{ j.oldest_days }} {{ t('days') }}{% endif %}
@@ -193,9 +193,9 @@
       {% for task in my_tasks[:4] %}
       <article class="dq-item" data-cat="checks">
         <div class="dq-left">
-          <div class="dq-ico">CL</div>
+          <div class="dq-ico k-cl">CL</div>
           <div>
-            <div class="dq-title">{{ t(task.template.name|replace(' checklist', '')) }} <span class="dq-tag">{{ t('Checklist') }}</span></div>
+            <div class="dq-title">{{ t(task.template.name|replace(' checklist', '')) }} <span class="dq-tag k-cl">{{ t('Checklist') }}</span></div>
             <div class="dq-desc">{{ task.location.name|replace('The Daily Centro - ', '') }} &middot; {{ t('Late · ') if task.due_at < now }}{{ task.due_at|clock }}</div>
           </div>
         </div>
@@ -211,7 +211,7 @@
 
   <div class="dash-side-col">
     {% if ai %}
-    <section class="dash-card">
+    <section class="dash-card dash-card-ai">
       <div class="dash-ai-head">
         <h2 class="dash-ai-title"><span class="dash-ai-badge" aria-hidden="true"><svg class="i"><use href="#i-sparkles"/></svg></span> {{ t('AI briefing') }}</h2>
         <a class="dq-act" href="/assistant">{{ t('Open assistant') }}</a>

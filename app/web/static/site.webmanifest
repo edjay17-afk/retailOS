@@ -1,0 +1,21 @@
+{
+  "name": "Retail OS",
+  "short_name": "Retail OS",
+  "icons": [
+    {
+      "src": "/static/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "theme_color": "#2563eb",
+  "background_color": "#f8fafc",
+  "display": "standalone"
+}

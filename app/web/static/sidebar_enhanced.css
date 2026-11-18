@@ -1,0 +1,125 @@
+/* Sidebar enhancement pass: same structure and behaviour (pop-up sub-menu, collapsed rail, phone drawer), a clearer look.
+   Soft colored icon tiles (blue, teal, amber, violet: the same meanings as the Today page), a solid tile for the page you are on,
+   a thin line after each heading, a bordered collapse button, and a sub-menu with a title, dots and a clear current page.
+   Loaded after sidebar_a.css; rules use the same selector chain so they win by order. */
+
+/* ---- brand row ---- */
+html:root #sidebar .rail-toggle { width: 32px; height: 32px; min-height: 32px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--mute); }
+html:root #sidebar .rail-toggle:hover { background: var(--surface2); color: var(--ink); }
+
+/* ---- headings: a thin line after the words ---- */
+html:root #sidebar #sidebar-nav .ns-h { display: flex; align-items: center; gap: 10px; margin: 20px 10px 6px; color: var(--mute2); }
+html:root #sidebar #sidebar-nav .ns-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ---- rows ---- */
+html:root #sidebar #sidebar-nav .ng,
+html:root #sidebar #sidebar-nav .nav-home .nl { min-height: 44px; padding: 6px 10px 6px 7px !important; gap: 11px; border-radius: 12px; font-size: 14px; font-weight: 650; }
+html:root #sidebar #sidebar-nav .ng .ng-chev { color: #a3adc0; }
+html:root #sidebar #sidebar-nav .ng:hover .ng-chev { color: var(--primary); }
+
+/* ---- icon tiles ---- */
+html:root #sidebar #sidebar-nav .ic-tile,
+html:root #sidebar #sidebar-nav .ic-tile[data-c] { width: 30px; height: 30px; border-radius: 10px; background: rgba(37, 99, 235, .12); color: #2f6bf0; flex: none; }
+html:root #sidebar #sidebar-nav .ic-tile .i { width: 16px; height: 16px; stroke-width: 1.9; }
+html:root #sidebar #sidebar-nav .ic-tile[data-c="blue"]   { background: rgba(37, 99, 235, .12);  color: #2f6bf0; }
+html:root #sidebar #sidebar-nav .ic-tile[data-c="green"]  { background: rgba(13, 148, 136, .15); color: #0f9488; }
+html:root #sidebar #sidebar-nav .ic-tile[data-c="amber"],
+html:root #sidebar #sidebar-nav .ic-tile[data-c="red"]    { background: rgba(217, 119, 6, .16);  color: #c47a0a; }
+html:root #sidebar #sidebar-nav .ic-tile[data-c="purple"],
+html:root #sidebar #sidebar-nav .ic-tile[data-c="pink"]   { background: rgba(124, 92, 245, .16); color: #7c5cf5; }
+html:root #sidebar #sidebar-nav .ic-tile[data-c="grey"]   { background: rgba(100, 116, 139, .15); color: #64748b; }
+
+/* the page or section you are in: a solid blue tile */
+html:root #sidebar #sidebar-nav a.nl.on .ic-tile,
+html:root #sidebar #sidebar-nav a.nl.on .ic-tile[data-c],
+html:root #sidebar #sidebar-nav .current-group > .ng .ic-tile,
+html:root #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c] { background: #2563eb; color: #fff; box-shadow: 0 6px 12px -6px rgba(37, 99, 235, .8); }
+
+/* ---- counts: amber, never red ---- */
+html:root #sidebar #sidebar-nav .tag,
+html:root #sidebar #sidebar-nav a.nl.on .tag,
+html:root #sidebar #sidebar-nav a.nl[href="/issues"] .tag { background: rgba(217, 119, 6, .16); color: #b45309; }
+
+/* ---- the sub-menu (pop-up beside the sidebar) ---- */
+@media (min-width: 1001px) {
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links { width: 236px; padding: 10px; border-radius: 16px; }
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl { display: flex; align-items: center; gap: 10px; min-height: 38px !important; padding: 8px 10px !important; border-radius: 10px; font-size: 13.5px; }
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl::before,
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on::before { content: ""; display: block; position: static; width: 6px; height: 6px; margin: 0; border-radius: 50%; background: #cbd3e4; flex: none; }
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on::before { background: #2563eb; }
+  html:root #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl .nav-label { flex: 1; }
+}
+
+/* ---- the phone drawer: pages open inline, with a guide line and a dot on the current page ---- */
+@media (max-width: 1000px) {
+  html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links { margin: 2px 0 8px 22px; padding-left: 0; border-left: 1.5px solid var(--line); }
+  html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl { margin: 0; padding: 8px 10px 8px 18px !important; border-radius: 0 10px 10px 0; }
+  html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on { background: linear-gradient(90deg, var(--primary-soft), transparent); }
+  html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on::before { content: ""; display: block; position: absolute; left: -5px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #2563eb; box-shadow: 0 0 0 3px var(--surface); }
+}
+
+/* ---- no blue edge bar on the current page; stronger text ---- */
+html:root #sidebar #sidebar-nav .nav-home a.nl.on::after,
+html:root #sidebar #sidebar-nav .current-group > .ng::after,
+html:root #sidebar #sidebar-nav .nav-home a.nl.on::before { display: none !important; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .ng,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-home .nl { color: #263042; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .ns-h { color: #5b6679; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .ng .ng-chev { color: #7d889c; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .ng:hover,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-home .nl:hover { color: #0f172a; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-home a.nl.on,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng { color: #1e40af !important; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .tag { color: #92400e; }
+@media (min-width: 1001px) {
+  html:root:not([data-theme="dark"]) #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl { color: #263042; }
+  html:root:not([data-theme="dark"]) #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl:hover { color: #0f172a; }
+  html:root:not([data-theme="dark"]) #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on { color: #1e40af !important; }
+}
+@media (max-width: 1000px) {
+  html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl { color: #263042; }
+  html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on { color: #1e40af !important; }
+  html:root #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links { border-left-color: #d5dbe6; }
+}
+
+/* ---- the current page, calm: a neutral grey row, dark text, and a white icon tile that keeps its own colour (light mode) ---- */
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-home a.nl.on,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group.fly-open > .ng { background-color: #eceff5; background-image: none; color: #0f172a !important; box-shadow: none; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile,
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c] { background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .12), 0 0 0 1px rgba(15, 23, 42, .05); color: #2f6bf0; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="green"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c="green"] { color: #0f9488; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="amber"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="red"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c="amber"] { color: #c47a0a; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="purple"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="pink"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c="purple"] { color: #7c5cf5; }
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav a.nl.on .ic-tile[data-c="grey"],
+html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c="grey"] { color: #64748b; }
+@media (min-width: 1001px) {
+  html:root:not([data-theme="dark"]) #sidebar:not(.is-searching) #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on { background: #eceff5; color: #0f172a !important; }
+}
+@media (max-width: 1000px) {
+  html:root:not([data-theme="dark"]) #sidebar #sidebar-nav .nav-group:not(.nav-home) .ng-links .nl.on { background: #eceff5; color: #0f172a !important; }
+}
+
+/* a little room above the first row */
+html:root #sidebar #sidebar-nav { padding-top: 12px; }
+
+/* every row is exactly the same height, so nothing shifts when the current page changes */
+html:root #sidebar #sidebar-nav .ng,
+html:root #sidebar #sidebar-nav .nav-home .nl,
+html:root #sidebar #sidebar-nav .nav-home a.nl.on,
+html:root #sidebar #sidebar-nav .current-group > .ng { height: 42px; min-height: 42px !important; box-sizing: border-box; }
+html:root #sidebar #sidebar-nav .ic-tile,
+html:root #sidebar #sidebar-nav .ic-tile[data-c],
+html:root #sidebar #sidebar-nav a.nl.on .ic-tile,
+html:root #sidebar #sidebar-nav a.nl.on .ic-tile[data-c],
+html:root #sidebar #sidebar-nav .current-group > .ng .ic-tile,
+html:root #sidebar #sidebar-nav .current-group > .ng .ic-tile[data-c] { width: 30px; height: 30px; border-radius: 10px; }

@@ -16,6 +16,7 @@
 {% if path != "/" %}<link rel="stylesheet" href="/static/list_workspace.css?v={{ asset_v('list_workspace.css') }}">{% endif %}
 <link rel="stylesheet" href="/static/sidebar.css?v={{ asset_v('sidebar.css') }}">
 <link rel="stylesheet" href="/static/sidebar_a.css?v={{ asset_v('sidebar_a.css') }}">
+<link rel="stylesheet" href="/static/sidebar_enhanced.css?v={{ asset_v('sidebar_enhanced.css') }}">
 <link rel="stylesheet" href="/static/mobile.css?v={{ asset_v('mobile.css') }}">
 <link rel="icon" type="image/svg+xml" href="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}">
 <link rel="stylesheet" href="/static/dark.css?v={{ asset_v('dark.css') }}">
@@ -54,7 +55,7 @@
     </div>
     <nav id="sidebar-nav" aria-label="{{ t('Main navigation') }}">
     {% set group_icons = {'Store operations':'clipboard','Inventory':'box','Purchasing':'file','Transfers':'sync','Auto replenishment':'trend','Sales':'chart','Team':'user','Settings':'settings'} %}
-    {% set tile = {'Inventory':'green','Transfers':'blue','Purchasing':'amber','Auto replenishment':'purple','Sales':'green','Team':'pink','Settings':'grey','/':'green','/issues':'red','/inspections':'green','/compliance':'amber','/planogram':'blue'} %}
+    {% set tile = {'Inventory':'green','Transfers':'blue','Purchasing':'amber','Auto replenishment':'purple','Sales':'blue','Team':'purple','Settings':'grey','/':'blue','/issues':'amber','/inspections':'green','/compliance':'blue','/planogram':'purple'} %}
     {% set g = {} %}{% for title, links in nav_groups %}{% if g.update({title: links}) %}{% endif %}{% endfor %}
     {% set sections = [(none, ['Today']), ('Run the stores', ['Store operations']), ('Stock', ['Inventory', 'Transfers', 'Purchasing', 'Auto replenishment']), ('Insight', ['Sales', 'Team', 'Settings'])] %}
     {% for heading, names in sections %}
@@ -88,6 +89,7 @@
       {% endif %}
     {% endfor %}
     </nav>
+    <script>(function(){var n=document.getElementById('sidebar-nav');if(!n)return;try{var y=parseInt(sessionStorage.getItem('ros-nav-y'),10);if(y>0)n.scrollTop=y;n.addEventListener('scroll',function(){try{sessionStorage.setItem('ros-nav-y',n.scrollTop)}catch(e){}},{passive:true})}catch(e){}})();</script>
 
     <div class="sidebar-footer">
       <div class="sf-card">
@@ -201,6 +203,11 @@ document.querySelectorAll('[data-ask]').forEach(function(c){c.addEventListener('
   </div>
 </section>
 <div id="tip" class="tip" role="tooltip" hidden></div>
+<div id="ros-nav-loader" class="ros-nav-loader" aria-hidden="true">
+  <div class="ros-nav-loader-mark">
+    <img src="/static/retailos-mark.svg?v={{ asset_v('retailos-mark.svg') }}" alt="" width="44" height="44">
+  </div>
+</div>
 <script id="ui-messages" type="application/json">{{ ui_messages|tojson }}</script>
 <script src="/static/app.js?v={{ asset_v('app.js') }}"></script>
 <script src="/static/crumbs.js?v={{ asset_v('crumbs.js') }}"></script>

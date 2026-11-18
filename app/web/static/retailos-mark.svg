@@ -1,6 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="17" fill="#2563eb"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M16 15H35C43 15 48 20 48 28C48 36 43 41 35 41H25V50H16V15ZM25 24V32H34C37 32 39 31 39 28C39 25 37 24 34 24H25Z" fill="#FFFFFF"/>
-  <path d="M30 36H41L48 43V38H54V52H40V46H44L30 36Z" fill="#dbeafe"/>
-  <path d="M16 15H25V24H16V15Z" fill="#dbeafe"/>
+  <defs>
+    <linearGradient id="ros-bg" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="55%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#ros-bg)"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M16 15H35C43 15 48 20 48 27.5C48 35 43 40 35 40H25V50H16V15ZM25 23.5V31.5H34C37.2 31.5 39 30 39 27.5C39 25 37.2 23.5 34 23.5H25Z" fill="#ffffff"/>
+  <path d="M16 15H25V23.5H16V15Z" fill="#dbeafe"/>
+  <path d="M31 36H41L47 42V37.5H53V51H39.5V45H43.5L31 36Z" fill="#dbeafe"/>
 </svg>
