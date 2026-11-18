@@ -137,8 +137,15 @@
           if (/^(#|no\.?)$/i.test(labels[i])) td.classList.add('rc-hide'); // a bare row number adds nothing on a card
           else if (!td.textContent.trim() && !td.querySelector('img,svg,input,button,a,video,.bar')) td.classList.add('rc-empty'); // no value, so no label either
         });
-        var titleIdx = -1; // the first column that has a value is the card's title
-        cells.forEach(function (td, i) { if (titleIdx < 0 && labels[i] && !/^(#|no\.?)$/i.test(labels[i]) && td.textContent.trim()) titleIdx = i; });
+        var titleIdx = -1; // the first non-badge column that has a value is the card's title
+        cells.forEach(function (td, i) {
+          if (titleIdx >= 0 || !labels[i] || /^(#|no\.?)$/i.test(labels[i]) || !td.textContent.trim()) return;
+          if (/^(sev|severity|priority)$/i.test(labels[i]) || (td.querySelector('.badge') && td.children.length === 1 && td.textContent.trim().length <= 4)) return;
+          titleIdx = i;
+        });
+        if (titleIdx < 0) {
+          cells.forEach(function (td, i) { if (titleIdx < 0 && labels[i] && !/^(#|no\.?)$/i.test(labels[i]) && td.textContent.trim()) titleIdx = i; });
+        }
         if (titleIdx >= 0) cells[titleIdx].classList.add('rc-title');
         var last = cells[cells.length - 1];
         if (last && last !== cells[titleIdx] && last.querySelector('.btn,button,form,details')) last.classList.add('rc-act');
@@ -156,21 +163,50 @@
     if (document.querySelector('script[src*="documents.js"]')) return false; // the document editor saves in place and manages its own buttons
     return (f.method || '').toLowerCase() === 'post';
   }
+  var navLoadTimer = null;
+  function startNavLoading() {
+    document.body.classList.add('nav-loading');
+    if (navLoadTimer) clearTimeout(navLoadTimer);
+    navLoadTimer = setTimeout(releaseBusy, 12000);
+  }
+  function isExportForm(f) {
+    var act = f.getAttribute('action') || '';
+    return /\.(csv|pdf|xlsx?)(\?|$)/i.test(act) || /\/export\b|export=/i.test(act);
+  }
   function releaseBusy() {
+    if (navLoadTimer) { clearTimeout(navLoadTimer); navLoadTimer = null; }
     document.body.classList.remove('nav-loading');
     document.querySelectorAll('form.is-busy').forEach(function (f) {
       f.classList.remove('is-busy'); f.removeAttribute('aria-busy');
       f.querySelectorAll('button').forEach(function (b) { b.disabled = false; b.classList.remove('btn-busy'); });
     });
   }
-  window.addEventListener('pageshow', function (e) { if (e.persisted) releaseBusy(); });
+  window.addEventListener('pageshow', releaseBusy);
+  var skipUnloadLoader = false;
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (a.target || a.hasAttribute('download') || a.hasAttribute('data-modal') || /^(#|mailto:|tel:|javascript:)/.test(a.getAttribute('href'))) return;
-    if (a.origin !== window.location.origin || /\.(csv|pdf|xlsx?)(\?|$)/i.test(a.pathname) || /export=|\/export\b/.test(a.search + a.pathname)) return; // downloads do not leave the page
-    document.body.classList.add('nav-loading');
+    if (a.origin !== window.location.origin || /\.(csv|pdf|xlsx?)(\?|$)/i.test(a.pathname) || /export=|\/export\b/.test(a.search + a.pathname)) {
+      skipUnloadLoader = true;
+      setTimeout(function () { skipUnloadLoader = false; }, 600);
+      return; // downloads do not leave the page
+    }
+    startNavLoading();
   });
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!(f instanceof HTMLFormElement) || e.defaultPrevented || f.target || f.hasAttribute('data-nobusy') || f.hasAttribute('data-explain') || isExportForm(f)) return;
+    if (f.id && /^chat/.test(f.id)) return;
+    startNavLoading();
+  });
+  if (typeof HTMLFormElement !== 'undefined' && HTMLFormElement.prototype.submit) {
+    var origFormSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function () {
+      if (!this.target && !this.hasAttribute('data-nobusy') && !isExportForm(this)) startNavLoading();
+      return origFormSubmit.apply(this, arguments);
+    };
+  }
   // Postel's law: be forgiving in what people type. Spaces around text are dropped before a form is checked or sent.
   document.addEventListener('submit', function (e) {
     var f = e.target;
@@ -198,7 +234,10 @@
     });
   }
   bindGuard(document);
-  window.addEventListener('beforeunload', function (e) { if (guardDirty) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) {
+    if (guardDirty) { e.preventDefault(); e.returnValue = ''; return; }
+    if (!skipUnloadLoader) startNavLoading();
+  });
   // Shared workspace navigation. Layout preference never stores business data.
   var railToggle = document.getElementById('rail-toggle');
   function setRail(expanded) {
@@ -706,3 +745,13 @@
 
   // Chat is implemented in assistant_chat.js.
 })();
+
+window.rosNoImg = function (img) {
+  var s = document.createElement('span');
+  var sz = parseInt(img.getAttribute('width'), 10) || 34;
+  s.className = img.className + ' pthumb-none';
+  s.setAttribute('aria-hidden', 'true');
+  s.style.cssText = 'width:' + sz + 'px;height:' + sz + 'px;font-size:' + Math.max(6, Math.round(sz * 2.5) / 10) + 'px';
+  s.textContent = img.getAttribute('data-empty') || 'NO IMG';
+  if (img.parentNode) img.parentNode.replaceChild(s, img);
+};

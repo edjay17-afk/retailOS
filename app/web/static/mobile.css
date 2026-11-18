@@ -58,11 +58,17 @@
   .page-head .eyebrow,.page-head h1{display:none}
   .page-head p,.page-head .sync-note{display:none}
   .page-head .row,.page-head>.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .pos-source-toolbar{margin:0 -16px 12px!important;padding:0 16px 10px!important;overflow:visible;flex-wrap:nowrap!important}
+  .pos-source-toolbar{margin:0 -16px 12px!important;padding:0 16px 10px!important;border-bottom:0!important;overflow:visible;flex-wrap:nowrap!important}
   .pos-source-picker{display:none!important}
   .pos-source-mobile{display:flex!important;width:100%;margin:0}
   .pos-source-mobile select{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font-size:16px}
   .pos-source-aside{display:none}
+  .dash-drawer:not(.open),.sales-drawer:not(.open){visibility:hidden;pointer-events:none}
+  main>h1,.sales-head h1,.tx-head h1,.zr-head h1,.ts-head{display:none!important}
+  .page-head .row,.page-head>.row{justify-content:flex-start}
+  .page-head .row .btn,.page-head>.row .btn,.page-head>.row>button{flex:0 1 auto}
+  .users-page .page-head>button{width:100%}
+  .grid.g4{grid-template-columns:1fr}
 
   /* ---- comfortable controls ---- */
   main .btn,main button:not(.mt):not(.iconbtn):not(.mf-toggle):not(.drp-day):not(.drp-nav),main select,main input:not([type=checkbox]):not([type=radio]):not([type=hidden]){min-height:46px}
@@ -103,13 +109,16 @@
   table.mcards{display:block;width:100%;min-width:0!important;border:0}
   table.mcards thead,table.mcards tr:has(>th){display:none}
   table.mcards tbody,table.mcards tfoot{display:block;width:100%}
-  table.mcards tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;background:var(--surface);border:1px solid #dbe7ff;border-radius:16px;padding:14px 16px;margin:0 0 12px;position:relative}
-  table.mcards td{display:block;padding:0;border:0;background:none!important;text-align:left!important;font-size:15px;color:#475f8a}
-  table.mcards td::before{display:none}
-  table.mcards td:first-child{flex:1 0 100%;color:var(--ink);font-weight:750;font-size:17px}
+  table.mcards tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:8px 12px;background:var(--surface);border:1px solid var(--line,#dbe7ff);border-radius:16px;padding:14px 16px;margin:0 0 12px;position:relative;box-shadow:var(--sh1)}
+  table.mcards td{display:block;min-width:0;padding:0;border:0;background:none!important;text-align:left!important;font-size:14px;color:var(--mute,#475f8a);overflow-wrap:anywhere}
+  table.mcards:not(.rcards) td::before{display:none}
+  table.mcards:not(.rcards) td:first-child{grid-column:1/-1;color:var(--ink);font-weight:750;font-size:16px}
+  table.mcards td.rc-title{grid-column:1/-1;width:100%;color:var(--ink);font-weight:750;font-size:16px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  table.mcards td.rc-act{grid-column:1/-1;width:100%;padding-top:10px;margin-top:2px;border-top:1px solid var(--line)}
+  table.mcards td.rc-hide,table.mcards td.rc-empty{display:none!important}
   /* simple: a title plus two details; the rest is on the page the card opens (cells with a button, link or form always stay) */
   table.mcards td.mx{display:none}
-  table.mcards tr[data-go]{cursor:pointer}
+  table.mcards tr[data-go],table.mcards tr[data-href]{cursor:pointer}
   table.mcards tr[data-go]:after{content:"›";position:absolute;right:16px;top:12px;font-size:24px;line-height:1;color:#6b7fa8}
   table.mcards td:empty{display:none}
   table.mcards td[colspan]{display:block;grid-column:1/-1;text-align:center!important}

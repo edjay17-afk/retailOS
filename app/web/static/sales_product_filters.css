@@ -125,5 +125,10 @@ html[data-theme=dark] .sp-rank.r3{background:rgba(249,115,22,.22);color:#fdba74}
   main:has(#product-sales-filters) .tw table td:nth-child(6),
   main:has(#product-sales-filters) .tw table td:nth-child(7),
   main:has(#product-sales-filters) .tw table td:nth-child(8){display:none!important}
+  main:has(#product-sales-filters) .sp-table.mcards td:nth-child(2){grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  main:has(#product-sales-filters) .sp-table.mcards td:nth-child(2) .pimg{flex:none}
+  main:has(#product-sales-filters) .sp-table.mcards td:nth-child(2) .sp-prod-name{flex:1 1 0;min-width:0;font-size:15.5px;color:var(--ink)}
+  main:has(#product-sales-filters) .sp-table.mcards td:nth-child(2) .sp-prod-sku{flex:1 0 100%;padding-left:0}
+  main:has(#product-sales-filters) .sp-table.mcards td:nth-child(2)::before{display:none!important}
 }
 @media(prefers-reduced-motion:reduce){.psf-search,.content .filters .psf-chip,#main-content #product-sales-filters .psf-seg>a,#main-content #product-sales-filters .psf-seg .drp .drp-btn{transition:none}}

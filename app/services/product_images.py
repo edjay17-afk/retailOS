@@ -28,7 +28,7 @@ HOSTS = ("world.openfoodfacts.org", "world.openbeautyfacts.org", "world.openprod
 USER_AGENT = "RetailOS-ProductImages/1.0"   # generic on purpose: the public databases ask bots to identify themselves, nothing personal
 RETRY_DAYS = 30
 MAX_BYTES = 6 * 1024 * 1024
-SIZE = 600   # longest side of the stored picture, in pixels
+SIZE = 1000   # longest side of the stored picture, in pixels (it is shown large when a thumbnail is clicked)
 PAUSE = 1.0  # seconds between two requests
 
 

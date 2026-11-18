@@ -36,6 +36,19 @@
   .sla{display:grid;grid-template-columns:auto 96px 96px;gap:6px 10px;align-items:center}
   .sla .hd{font-size:11.5px;color:var(--mute);font-weight:700}
   .sla input{width:96px;text-align:right}
+  @media(max-width:700px){
+    .set-head{display:none}
+    .tabs-row{gap:10px}
+    .set-filter{margin-left:0;width:100%;font-size:16px}
+    .setgroup>.card-head{flex-direction:column;align-items:flex-start;gap:2px}
+    .setrow{flex-direction:column;align-items:stretch;gap:10px;padding:14px 2px}
+    .setctl{width:100%;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+    .setctl input[type=text],.setctl input[type=number],.setctl select,.setctl textarea{flex:1 1 160px;width:100%;min-width:0;max-width:100%;text-align:left}
+    .setctl .tgl{margin:0}
+    .setctl button{margin-left:auto}
+    .sla{grid-template-columns:minmax(0,1fr) 72px 72px;width:100%;gap:8px}
+    .sla input{width:100%;min-width:0;text-align:right}
+  }
 </style>
 <div class="set-head">
   <h1>{{ t('Settings') }}</h1>

@@ -21,7 +21,7 @@
  body.has-mtabs #live-store-sales .lv-hero{display:block;margin:0}
  body.has-mtabs #live-store-sales .lv-hero>.lv-t{display:none}
  html body.has-mtabs #live-store-sales .lv-big{background:none;color:var(--ink);border:0;box-shadow:none;padding:12px 0 18px;border-radius:0}
- body.has-mtabs #live-store-sales .lv-big:after{display:none}
+  body.has-mtabs #live-store-sales .lv-big:after,.lv-ic2{display:none}
  body.has-mtabs #live-store-sales .lv-big small{color:var(--mute);font-size:13px}
  body.has-mtabs #live-store-sales .lv-big strong{color:var(--ink);font-size:clamp(27px,8vw,36px);letter-spacing:-.04em;margin:8px 0}
  body.has-mtabs #live-store-sales .lv-pill{background:none;color:var(--mute);padding:0;font-size:12px}

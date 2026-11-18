@@ -401,6 +401,49 @@ table.ta td.r:last-child {
   padding-right: 18px;
 }
 
+/* a box is always kept for the product picture; with no picture it says NO IMG */
+.ta .sc-pm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ta .sc-pt {
+  min-width: 0;
+}
+.ta .sc-img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ta .sc-img .pthumb {
+  float: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.ta .sc-img:empty {
+  border-style: dashed;
+  background: transparent;
+}
+.ta .sc-img:empty::before {
+  content: attr(data-empty);
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: .02em;
+  text-align: center;
+  color: var(--mute2, #94a3b8);
+}
 .ta .sc-p a {
   display: block;
   color: var(--ink);

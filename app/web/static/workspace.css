@@ -514,9 +514,15 @@ a.sd-card:hover{text-decoration:none;color:var(--ink);border-color:#bcd0f7}
 .auth .hero .mute,.auth .hero .small,.auth .hero footer{color:rgba(255,255,255,.78)!important}
 
 /* ---------- Laws of UX ----------
-   Doherty threshold: instant feedback. A loading bar crosses the top of the page, and the pressed button shows a spinner while its form is sent. */
-body.nav-loading::before{content:"";position:fixed;top:0;left:0;height:3px;width:0;z-index:300;background:linear-gradient(90deg,#2563eb,#305b97);animation:nav-load 1.8s cubic-bezier(.2,.7,.2,1) forwards}
-@keyframes nav-load{from{width:0}to{width:88%}}
+   Doherty threshold: instant feedback. A centered logo loader appears during navigation, and the pressed button shows a spinner while its form is sent. */
+.ros-nav-loader{position:fixed;inset:0;z-index:295;display:grid;place-items:center;background:rgba(248,250,252,.42);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease 0s,visibility 0s linear .16s}
+html[data-theme=dark] .ros-nav-loader{background:rgba(11,17,32,.46)}
+body.nav-loading .ros-nav-loader{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .18s ease .12s,visibility 0s linear .12s}
+.ros-nav-loader-mark{position:relative;width:72px;height:72px;display:grid;place-items:center;border-radius:50%;background:var(--surface,#fff);box-shadow:0 12px 32px rgba(15,23,42,.14),0 2px 8px rgba(37,99,235,.12);transform:scale(.92);transition:transform .2s cubic-bezier(.2,.8,.2,1) .12s}
+body.nav-loading .ros-nav-loader-mark{transform:scale(1)}
+.ros-nav-loader-mark::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2.5px solid transparent;border-top-color:#2563eb;border-right-color:rgba(37,99,235,.35);animation:spin .75s linear infinite}
+.ros-nav-loader-mark img{width:42px;height:42px;border-radius:11px;display:block;animation:ros-breathe 1.4s ease-in-out infinite}
+@keyframes ros-breathe{0%,100%{transform:scale(1)}50%{transform:scale(.93)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn-busy{cursor:progress}
 .btn-busy::after{content:"";width:13px;height:13px;margin-left:8px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite;flex:none}
@@ -533,8 +539,8 @@ body.nav-loading::before{content:"";position:fixed;top:0;left:0;height:3px;width
   .sidebar a.nl{min-height:46px}
   .tw td a:not(.btn),.checklist-row,.sd-task,.sd-attn{min-height:44px}
 }
-@media(prefers-reduced-motion:reduce){body.nav-loading::before{animation:none;width:60%}.btn-busy::after{animation-duration:2s}}
-@media print{body.nav-loading::before{display:none}}
+@media(prefers-reduced-motion:reduce){.btn-busy::after{animation-duration:2s}.ros-nav-loader-mark::before,.ros-nav-loader-mark img{animation:none}}
+@media print{.ros-nav-loader{display:none!important}}
 
 /* ---------- operations charts on the admin and warehouse overview */
 .ops-head{margin:6px 0 12px}

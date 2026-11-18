@@ -233,19 +233,26 @@ def localized_top_item(context, row):
 
 
 templates.env.filters.update(store_item=localized_store_item, top_item=localized_top_item)
-def _pimg(p, size: int = 34, cls: str = "", eager: bool = False):
-    """A product's picture as a small thumbnail (nothing when it has none). Works with a Product or a dict-like with image_url."""
+@pass_context
+def _pimg(context, p, size: int = 34, cls: str = "", eager: bool = False, empty: bool = True):
+    """A product's picture as a small thumbnail. Works with a Product or a dict-like with image_url.
+    With no picture it gives a same-size box that says NO IMG (empty=False gives nothing instead)."""
     from markupsafe import Markup
     url = p.get("image_url") if isinstance(p, dict) else getattr(p, "image_url", None)
+    label = i18n.translate(context.get("lang", "en"), "NO IMG")
+    size_attr = Markup(f' style="width:{int(size)}px;height:{int(size)}px"') if size != 34 else Markup("")
     if not url or not (url.startswith("/uploads/products/") or url.startswith("https://api.loyverse.com/")):
-        return ""
+        if not empty:
+            return ""
+        fs = max(6.0, round(size * 0.25, 1))
+        style = Markup(' style="width:%dpx;height:%dpx;font-size:%spx"') % (int(size), int(size), fs)
+        return Markup('<span class="pthumb pthumb-none %s" aria-hidden="true"%s>%s</span>') % (cls, style, label)
     name = p.get("name") if isinstance(p, dict) else getattr(p, "name", None)
     classes = f"pthumb {cls}".strip()
     load_attr = Markup("") if eager else Markup(' loading="lazy"')
-    size_attr = Markup(f' style="width:{int(size)}px;height:{int(size)}px"') if size != 34 else Markup("")
     name_attr = Markup(' data-pname="%s"') % (name,) if name else Markup("")
-    return Markup('<img class="%s" src="%s" alt=""%s width="%d" height="%d"%s%s referrerpolicy="no-referrer" onerror="this.remove()">') % (
-        classes, url, load_attr, size, size, size_attr, name_attr
+    return Markup('<img class="%s" src="%s" alt=""%s width="%d" height="%d"%s%s data-empty="%s" referrerpolicy="no-referrer" onerror="window.rosNoImg?rosNoImg(this):this.remove()">') % (
+        classes, url, load_attr, size, size, size_attr, name_attr, label
     )
 
 

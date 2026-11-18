@@ -146,10 +146,11 @@
     <tbody>
       {% for r in rows %}
       <tr>
-        <td class="sc-p">
-          {{ pimg(r.p) }}<a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a>
-          <small>{{ [r.p.barcode or r.p.sku, r.p.category, (t('No stock record') if not r.cells else '')]|select|join(' · ') }}</small>
-        </td>
+        <td class="sc-p"><div class="sc-pm">
+          <span class="sc-img" data-empty="{{ t('NO IMG') }}">{{ pimg(r.p, empty=False) }}</span>
+          <div class="sc-pt"><a href="/sales/product/{{ r.p.id }}">{{ r.p.name }}</a>
+          <small>{{ [r.p.barcode or r.p.sku, r.p.category, (t('No stock record') if not r.cells else '')]|select|join(' · ') }}</small></div>
+        </div></td>
         {% for l in locs %}{% set x = r.cells.get(l.id) %}
         <td class="r{{ ' ta-focus' if l.id == loc }}">
           {% if x %}
