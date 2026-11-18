@@ -1,9 +1,10 @@
 {# Shared AI building blocks #}
-{% macro statement(st, anchor_prefix='', facts=None) %}
+{% macro statement(st, anchor_prefix='', facts=None, plain=False) %}
 <div class="st {{ 'bad' if st.check in ('unsupported_number','no_citation','bad_reference','bad_type') }}">
-  {% if st.type != 'message' %}<span class="ty ty-{{ st.type if st.type in ('fact','calculation','hypothesis','recommendation') else 'hypothesis' }}">{{ t({'fact':'Fact','calculation':'Calc','hypothesis':'Maybe','recommendation':'Advice'}.get(st.type, st.type)) }}</span>{% endif %}
-  <div class="tx">{{ st.text }}{% for r in st.refs or [] %}{% set fc = facts.get(r) if facts else none %}{% if fc %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}" data-tip="[{{ fc.section|replace('_',' ') }}] {{ fc.text }}" aria-label="{{ r }}: {{ fc.text }}">{{ r }}</a>{% else %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}">{{ r }}</a>{% endif %}{% endfor %}
-    {% if st.check == 'derived' %}<div class="flag d">{{ t('Derived by the AI from the cited facts, not read directly from data') }}</div>
+  {% if st.type != 'message' and not plain %}<span class="ty ty-{{ st.type if st.type in ('fact','calculation','hypothesis','recommendation') else 'hypothesis' }}">{{ t({'fact':'Fact','calculation':'Calc','hypothesis':'Maybe','recommendation':'Advice'}.get(st.type, st.type)) }}</span>{% endif %}
+  <div class="tx">{{ st.text }}{% if not plain %}{% for r in st.refs or [] %}{% set fc = facts.get(r) if facts else none %}{% if fc %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}" data-tip="[{{ fc.section|replace('_',' ') }}] {{ fc.text }}" aria-label="{{ r }}: {{ fc.text }}">{{ r }}</a>{% else %}<a class="cite" href="#{{ anchor_prefix }}{{ r }}">{{ r }}</a>{% endif %}{% endfor %}{% endif %}
+    {% if plain %}{% if st.check in ('unsupported_number','no_citation','bad_reference','bad_type') %}<div class="flag">{{ t('This may not match the system data. Open Details to check.') }}</div>{% endif %}
+    {% elif st.check == 'derived' %}<div class="flag d">{{ t('Derived by the AI from the cited facts, not read directly from data') }}</div>
     {% elif st.check == 'unsupported_number' %}<div class="flag">{{ t('Unverified: contains a number that is not in the cited facts') }}</div>
     {% elif st.check == 'no_citation' %}<div class="flag">{{ t('Unverified: no source cited') }}</div>
     {% elif st.check in ('bad_reference','bad_type') %}<div class="flag">{{ t('Unverified: invalid citation') }}</div>{% endif %}</div>

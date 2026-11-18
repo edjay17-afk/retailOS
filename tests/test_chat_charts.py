@@ -52,9 +52,10 @@ def test_chat_endpoint_answers_with_checked_statements(client, session, ai, sync
     tok = csrf_of(client, "/assistant")
     r = client.post("/assistant/chat", data={"question": "What first?", "csrf": tok, "history": json.dumps([{"role": "user", "text": "earlier"}])})
     d = r.json()
-    assert d["ok"] and "Nothing is cited here." in d["html"] and "And the warehouse?" in d["html"] and "supporting details" in d["html"]
+    assert d["ok"] and "Nothing is cited here." in d["html"] and "And the warehouse?" in d["html"]
+    assert "supporting details" not in d["html"] and "statements verified" not in d["html"]  # a plain reply: no sources box or verification line
     assert "EARLIER IN THIS CHAT" in fm.calls[0][1][0]["content"]  # the previous turns are passed on as context only
-    assert "unverified" in d["html"].lower() or "statements verified" in d["html"]  # the fact-checker result is shown
+    assert "may not match the system data" in d["html"]  # the fact-checker still flags an answer it cannot support, quietly
 
 
 def test_chat_endpoint_rejects_missing_csrf_and_reports_model_errors(client, session, ai, sync, fake):
@@ -214,12 +215,14 @@ def test_citations_show_the_fact_they_point_to(client, session, sync, fake, ai):
     tok = csrf_of(client, "/assistant")
     d = client.post("/assistant/chat", data={"question": "is the data fresh?", "csrf": tok},
                     headers={"X-Requested-With": "fetch"}).json()
-    assert d["ok"] and 'data-tip="[' in d["html"]  # the F1 chip carries the fact's section and text
+    assert d["ok"] and "Sales data is fresh" in d["html"]
+    assert 'data-tip="[' not in d["html"] and 'class="cite"' not in d["html"] and 'class="ty ' not in d["html"]  # a plain reply: no citation chips or Fact badges
     from sqlalchemy import select
     from app.models import AiOutput
     row = session.scalar(select(AiOutput).order_by(AiOutput.id.desc()))
     f1 = next(f for f in row.context_json["facts"] if f["id"] == "F1")
-    assert f1["section"] in d["html"] and f1["text"][:30].split("\n")[0] in d["html"].replace("&quot;", '"')
+    detail = client.get(f"/assistant/output/{row.id}").text  # the evidence stays one click away on the details page
+    assert f1["text"][:30].split("\n")[0] in detail.replace("&quot;", '"')
 
 
 def test_sales_and_performance_accept_a_custom_range(client, session, sync, fake):

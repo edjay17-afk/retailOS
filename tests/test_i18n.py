@@ -161,7 +161,7 @@ def test_chinese_chat_fragment_and_browser_messages(client, session, sync, fake,
     assert messages["Something went wrong."] == "出现错误。"
     result = client.post("/assistant/chat", data={"question": "销售如何？", "csrf": csrf_of(client, "/assistant")}).json()
     assert result["ok"]
-    assert "业务回答" in result["html"] and "推测" in result["html"] and "证据" in result["html"]
+    assert "业务回答" in result["html"] and "推测" not in result["html"]  # the type badges are no longer shown in chat
     assert client.get(f"/assistant/output/{result['id']}").status_code == 200
 
 
