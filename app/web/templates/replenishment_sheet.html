@@ -2,6 +2,7 @@
 {% block title %}{{ t('Auto replenishment') }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/replenishment_sheet.css?v={{ asset_v('replenishment_sheet.css') }}">
+<link rel="stylesheet" href="/static/replenishment_enhanced.css?v={{ asset_v('replenishment_enhanced.css') }}">
 {% set qs = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&todo=' ~ todo ~ '&search=' ~ (search|urlencode) %}
 {% set base_filter = 'status=' ~ status ~ '&loc=' ~ loc ~ '&supplier=' ~ supplier ~ '&search=' ~ (search|urlencode) %}
 {% set here = '/replenishment/sheet?' ~ qs ~ '&page=' ~ page %}
@@ -10,7 +11,7 @@
 <div class="page-head rs-head">
   <div class="rs-title-group">
     <h1>{{ t('Auto replenishment') }}</h1>
-    <span class="rs-pill num" title="{% if sales_only %}Sales-only · {{ cover_days }}d cover{% endif %}{% if last %} · {{ last.run_at|local }} ({{ t(last.status) }}){% endif %}">{{ counts.get('pending', 0) }} ready · {{ counts.get('needs_review', 0) }} review · {{ decided_n }} decided</span>
+    <span class="rs-pill rs-pill-quiet num" title="{% if sales_only %}Sales-only · {{ cover_days }}d cover{% endif %}{% if last %} · {{ last.run_at|local }} ({{ t(last.status) }}){% endif %}">{{ counts.get('pending', 0) }} ready · {{ counts.get('needs_review', 0) }} review · {{ decided_n }} decided</span>
     {% if last and last.status != 'ok' %}
       <span class="rs-pill bad">{{ last.run_at|local }} · {{ t(last.status) }}</span>
     {% endif %}
@@ -22,6 +23,14 @@
   </div>
 </div>
 
+<div class="rs-stats" aria-label="{{ t('Progress') }}">
+  <div class="rs-stat s-blue"><small><i class="rs-stat-ic"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i>{{ t('Ready to approve') }}</small><b class="num">{{ counts.get('pending', 0) }}</b><em>{{ t('clear suggestions') }}</em></div>
+  <div class="rs-stat s-amber"><small><i class="rs-stat-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></i>{{ t('Needs review') }}</small><b class="num">{{ counts.get('needs_review', 0) }}</b><em>{{ t('sales spike or stale data') }}</em></div>
+  <div class="rs-stat s-teal"><small><i class="rs-stat-ic"><svg class="i" aria-hidden="true"><use href="#i-sync"/></svg></i>{{ t('Decided') }}</small><b class="num">{{ decided_n }}</b><em>{{ t('ready for batches') }}</em></div>
+  <div class="rs-stat s-violet"><small><i class="rs-stat-ic"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg></i>{{ t('Suggested value') }}</small><b class="num">₱{{ kpi.value|money }}</b><em>{{ kpi.products|num(0) }} SKUs</em></div>
+</div>
+
+<div class="rs-toolcard">
 <form novalidate class="rs-tools{{ ' rs-filters-open' if loc or todo }}" method="get">
   <div class="rs-tools-top">
     <div class="rs-action-seg" role="navigation" aria-label="{{ t('What to do') }}">
@@ -69,7 +78,10 @@
     <a class="rs-list-link" href="/replenishment?view=list">{{ t('List view') }}</a>
   </div>
 </div>
+</div>
 
+<div class="rs-layout">
+<div class="rs-main">
 <div class="rs-wrap">
   <table class="rs{{ ' rs-wh-view' if wh_view }}{{ ' rs-no-wh' if not has_wh }}">
     <thead class="rs-sr">
@@ -85,22 +97,26 @@
     </thead>
     <tbody>
     {% for row in rows %}
-    <tr class="rs-row" data-todo="{{ row.todo[0] }}" data-pid="{{ row.p.id }}" data-wh="{{ '' if row.wh is none else (row.wh|int) }}">
+    <tr class="rs-row" data-todo="{{ row.todo[0] }}" data-pid="{{ row.p.id }}" data-wh="{{ '' if row.wh is none else (row.wh|int) }}" data-supplier="{{ row.supplier.name if row.supplier else '' }}">
       <td class="rs-cb">{% if row.selectable %}<input type="checkbox" class="rs-row-check" aria-label="{{ t('Select') }} {{ row.p.name }}">{% endif %}</td>
       <td class="rs-p">
         <button type="button" class="rs-phone-open" aria-expanded="false" data-open-label="{{ t('Review') }}" data-close-label="{{ t('Close') }}">{{ t('Review') }}</button>
-        <div class="rs-p-head">
-          {{ pimg(row.p) }}<b>{{ row.p.name }}</b>
-          <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}">i</button>
+        <div class="rs-p-main">
+        {{ pimg(row.p) }}
+        <div class="rs-p-text">
+        <div class="rs-p-head"><span class="rs-p-title"><b>{{ row.p.name }}</b>
+          <button type="button" class="drawer-link rs-why" data-drawer="why-p{{ row.p.id }}" data-drawer-title="{{ row.p.name }} {{ t('— why this number') }}" title="{{ t('Why this number') }}" aria-label="{{ t('Why this number') }}">i</button></span>
         </div>
-        <small class="num rs-sub">{% if row.supplier %}<span class="rs-sup" title="{{ row.supplier.name }}">{{ row.supplier.name }}</span>{% endif %}{% if row.unit %}<span title="{{ t('Unit price') }}">₱{{ row.unit|money }}</span>{% endif %}{% if row.value %}<b title="{{ t('Total') }}">₱{{ row.value|money }}</b>{% endif %}</small>
+        <small class="num rs-sub">{% if has_wh and row.wh is not none %}<span class="rs-wh-inline wh-pill {{ 'short' if row.todo[0] != 'send' }}" title="{{ t('Warehouse has') }}">WH: {{ row.wh|num }}</span>{% endif %}{% if row.supplier %}<span class="rs-sup" title="{{ row.supplier.name }}">{{ row.supplier.name }}</span>{% endif %}{% if row.unit %}<span title="{{ t('Unit price') }}">₱{{ row.unit|money }}</span>{% endif %}{% if row.value %}<b title="{{ t('Total') }}">₱{{ row.value|money }}</b>{% endif %}</small>
+        </div>
+        </div>
         <template id="why-p{{ row.p.id }}">{% for l in stores %}{% set x = row.cells.get(l.id) %}{% if x %}{% set r = x.r %}<h3 class="rs-ex-h">{{ short(l.name) }}</h3>{% include "_repl_explain.html" %}{% endif %}{% endfor %}</template>
       </td>
       {% if has_wh %}<td data-label="{{ t('Warehouse has') }}" class="r rs-wh"><span class="wh-pill {{ 'short' if row.todo[0] != 'send' }}">WH: {{ row.wh|num }}</span></td>{% endif %}
       <td class="c rs-chips-cell">
         <div class="rs-chips">
           {% for l in stores %}{% set x = row.cells.get(l.id) %}
-          <div class="s-chip{{ ' rs-z' if not x }}{{ ' urg' if x and x.level == 'u' }}" data-label="{{ short(l.name) }}">
+          <div class="s-chip{{ ' rs-z' if not x }}{{ ' urg' if x and x.level == 'u' }}" data-label="{{ short(l.name) }}" data-loc="{{ l.id }}">
             <span class="s-chip-name">{{ short(l.name) }}</span>
             {% if not x %}<span class="q z" title="{{ t('Nothing suggested') }}">0</span>
             {% else %}{% set r = x.r %}{% set tip = r.product.name ~ ' · ' ~ short(l.name) ~ ': ' ~ t('sells') ~ ' ' ~ (r.ads|num) ~ '/' ~ t('day') ~ (' · ' ~ t('on hand') ~ ' ' ~ (r.on_hand|num) if not sales_only else '') ~ (' · +' ~ (r.incoming|num) ~ ' ' ~ t('incoming') if r.incoming else '') ~ ' · ' ~ t('Suggested') ~ ' ' ~ (r.final_qty|num) %}
@@ -153,6 +169,24 @@
   {% if page > 1 %}<a class="btn sec sm" href="?{{ qs }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
   <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + pages - 1) // pages) or 1 }} · {{ total }} {{ t('products') }}</span>
   {% if page * pages < total %}<a class="btn sec sm" href="?{{ qs }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}
+</div>
+</div>
+
+{% if can('repl.decide') %}
+<aside class="rs-panel noprint" id="rs-panel" aria-label="{{ t('Ready to create') }}" data-one="{{ t('Create 1 document') }}" data-many="{{ t('Create {n} documents') }}" data-default="{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}" data-can-docs="{{ '1' if (can('transfer.sheet') or can('po.create')) else '' }}" data-has-wh="{{ '1' if has_wh else '' }}" data-selected="{{ t('products selected') }}" data-selected-one="{{ t('product selected') }}" data-none="{{ t('Nothing selected yet') }}" data-line="{{ t('line') }}" data-lines="{{ t('lines') }}" data-units="{{ t('units') }}" data-to="{{ t('Warehouse to') }}" data-multi="{{ t('These products belong to more than one supplier. Pick one supplier in the filter before you proceed.') }}">
+  <div class="rs-panel-card">
+    <div class="rs-panel-top"><span>{{ t('Ready to create') }}</span><button type="button" class="rs-panel-clear" id="rsp-clear">{{ t('Clear') }}</button></div>
+    <div class="rs-panel-total"><b class="num" id="rsp-value">₱0.00</b><small id="rsp-count-line">{{ t('Nothing selected yet') }}</small></div>
+    <p class="rs-panel-empty" id="rsp-empty">{{ t('Tick the products you have checked to see the transfers and orders they will create.') }}</p>
+    <div class="rs-panel-sec rs-ps-send" id="rsp-send" hidden><h3><svg class="i" aria-hidden="true"><use href="#i-sync"/></svg>{{ t('Stock Transfers from warehouse') }}</h3><div id="rsp-send-list"></div></div>
+    <div class="rs-panel-sec rs-ps-order" id="rsp-order" hidden><h3><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>{{ t('Purchase orders to suppliers') }}</h3><div id="rsp-order-list"></div></div>
+    <p class="rs-panel-warn" id="rsp-warn" hidden></p>
+    <button type="submit" form="bulk" class="rs-panel-go" id="rsp-proceed" disabled>{{ t('Create Stock Transfer') if can('transfer.sheet') else t('Approve selected') }}</button>
+    <p class="rs-panel-hint" id="rsp-hint" hidden>{{ t('Save edited quantities before proceeding.') }}</p>
+    <p class="rs-panel-note">{{ t('Change a number and it saves by itself.') }} {{ t('Managers can approve up to') }} {{ limit|money }} {{ t('per line') }}.</p>
+  </div>
+</aside>
+{% endif %}
 </div>
 
 <div class="drawer-scrim" id="drawer-scrim" hidden></div>

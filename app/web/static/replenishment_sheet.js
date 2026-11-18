@@ -3,6 +3,7 @@
   'use strict';
   var msg = document.currentScript.dataset;
   var bulk = document.getElementById('bulk'), all = document.getElementById('repl-select-all'), bar = document.getElementById('repl-selection');
+  var panel = document.getElementById('rs-panel');
   var rowChecks = Array.prototype.slice.call(document.querySelectorAll('.rs-row-check'));
   var recChecks = Array.prototype.slice.call(document.querySelectorAll('.rc[form="bulk"]'));
   var forms = Array.prototype.slice.call(document.querySelectorAll('.repl-quantity'));
@@ -44,6 +45,66 @@
     tr.querySelectorAll('.rc[form="bulk"]').forEach(function (c) { var f = formOf(c.value), q = f ? Number(f.elements.qty.value) : 0; v += (q || 0) * Number(c.dataset.unit || 0); });
     return v;
   }
+  // What the warehouse sends to each store and what is left to order. The warehouse stock is shared between the stores in order, as the server does it when you proceed.
+  function planRow(tr) {
+    var cells = [];
+    tr.querySelectorAll('.s-chip[data-loc]').forEach(function (chip) {
+      var c = chip.querySelector('.rc[form="bulk"]');
+      if (!c) return;
+      var f = formOf(c.value);
+      cells.push({ loc: Number(chip.dataset.loc), name: chip.dataset.label || '', qty: f ? Number(f.elements.qty.value) || 0 : Number(c.dataset.qty || 0), unit: Number(c.dataset.unit || 0) });
+    });
+    cells.sort(function (a, b) { return a.loc - b.loc; });
+    var hasWh = !panel || panel.dataset.hasWh === '1';
+    var whRaw = tr.dataset.wh != null && tr.dataset.wh !== '' ? Math.max(0, Number(tr.dataset.wh)) : null;
+    var left = whRaw === null ? (hasWh ? 0 : Infinity) : Math.floor(whRaw);
+    var need = 0, send = 0, sends = [], unit = 0;
+    cells.forEach(function (x) {
+      var s = Math.min(x.qty, left); left -= s; need += x.qty; send += s; unit = unit || x.unit;
+      if (s > 0) sends.push({ name: x.name, qty: s });
+    });
+    var order = Math.max(0, need - send);
+    return { send: send, order: order, sends: sends, po: order > 0 ? { supplier: tr.dataset.supplier || '', qty: order, value: order * unit } : null };
+  }
+  function docLine(parent, title, sub, amount, cls) {
+    var row = document.createElement('div'); row.className = 'rs-doc ' + cls;
+    var ic = document.createElement('span'); ic.className = 'rs-doc-ic'; ic.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-' + (cls === 'send' ? 'sync' : 'file') + '"/></svg>';
+    var copy = document.createElement('div'), b = document.createElement('b'), small = document.createElement('small');
+    b.textContent = title; small.textContent = sub; copy.appendChild(b); copy.appendChild(small);
+    row.appendChild(ic); row.appendChild(copy);
+    if (amount) { var a = document.createElement('span'); a.className = 'rs-doc-amt num'; a.textContent = amount; row.appendChild(a); }
+    parent.appendChild(row);
+  }
+  function renderPanel(keys, value, unsaved) {
+    if (!panel) return;
+    var d = panel.dataset, transfers = {}, orders = {}, nTransfers = 0, suppliers = 0;
+    keys.forEach(function (k) {
+      (store[k].sends || []).forEach(function (x) { var t = transfers[x.name] || (transfers[x.name] = { lines: 0, units: 0 }); t.lines++; t.units += x.qty; });
+      var po = store[k].po;
+      if (po) { var o = orders[po.supplier] || (orders[po.supplier] = { lines: 0, units: 0, value: 0 }); o.lines++; o.units += po.qty; o.value += po.value; }
+    });
+    var sendList = document.getElementById('rsp-send-list'), orderList = document.getElementById('rsp-order-list');
+    sendList.textContent = ''; orderList.textContent = '';
+    Object.keys(transfers).sort().forEach(function (name) {
+      var t = transfers[name]; nTransfers++;
+      docLine(sendList, d.to + ' ' + name, t.lines + ' ' + (t.lines === 1 ? d.line : d.lines) + ' · ' + Math.round(t.units) + ' ' + d.units, '', 'send');
+    });
+    Object.keys(orders).sort().forEach(function (name) {
+      var o = orders[name]; suppliers++;
+      docLine(orderList, name || '—', o.lines + ' ' + (o.lines === 1 ? d.line : d.lines) + ' · ' + Math.round(o.units) + ' ' + d.units, '₱' + money.format(o.value), 'order');
+    });
+    document.getElementById('rsp-send').hidden = nTransfers === 0;
+    document.getElementById('rsp-order').hidden = suppliers === 0;
+    document.getElementById('rsp-empty').hidden = keys.length > 0;
+    document.getElementById('rsp-value').textContent = '₱' + money.format(value);
+    document.getElementById('rsp-count-line').textContent = keys.length ? keys.length + ' ' + (keys.length === 1 ? d.selectedOne : d.selected) : d.none;
+    var multi = suppliers > 1, warn = document.getElementById('rsp-warn');
+    warn.hidden = !multi; warn.textContent = multi ? d.multi : '';
+    document.getElementById('rsp-hint').hidden = !unsaved;
+    var go = document.getElementById('rsp-proceed'), docs = nTransfers + (suppliers ? 1 : 0);
+    go.disabled = !keys.length || unsaved || multi;
+    go.textContent = d.canDocs && docs ? (docs === 1 ? d.one : d.many.replace('{n}', docs)) : d.default;
+  }
   function update() {
     var selected = recChecks.filter(function (c) { return c.checked; });
     var unsaved = selected.some(function (c) { var f = formOf(c.value); return f && (dirty(f) || f.dataset.saving === 'true'); });
@@ -52,17 +113,16 @@
       var pid = pidOf(rc), tr = rc.closest('tr');
       if (!pid) return;
       if (rc.checked) {
-        var totalQty = 0;
-        tr.querySelectorAll('.rc[form="bulk"]').forEach(function (c) { var f = formOf(c.value); totalQty += f ? Number(f.elements.qty.value) || 0 : Number(c.dataset.qty || 0); });
-        var wh = tr.dataset.wh != null && tr.dataset.wh !== '' ? Math.max(0, Number(tr.dataset.wh)) : null;
-        var sq = wh === null ? totalQty : Math.min(totalQty, wh);
-        var oq = Math.max(0, totalQty - sq);
-        store[pid] = { ids: Array.prototype.map.call(tr.querySelectorAll('.rc[form="bulk"]'), function (c) { return c.value; }), value: rowValue(tr), todo: tr.dataset.todo || 'send', send: sq, order: oq };
+        var plan = planRow(tr);
+        store[pid] = { ids: Array.prototype.map.call(tr.querySelectorAll('.rc[form="bulk"]'), function (c) { return c.value; }), value: rowValue(tr), todo: tr.dataset.todo || 'send', send: plan.send, order: plan.order, sends: plan.sends, po: plan.po };
       }
       else delete store[pid];
     });
     persist();
     var keys = Object.keys(store), value = 0, sendSum = 0, orderSum = 0, kinds = {};
+    keys.forEach(function (k) { value += store[k].value || 0; });
+    renderPanel(keys, value, unsaved);
+    value = 0;
     keys.forEach(function (k) { value += store[k].value || 0; sendSum += store[k].send || 0; orderSum += store[k].order || 0; kinds[store[k].todo || 'send'] = true; });
     if (bar) {
       bar.hidden = keys.length === 0;
@@ -142,12 +202,12 @@
     });
     store = {}; persist();
   });
-  var clear = document.getElementById('repl-clear');
-  if (clear) clear.addEventListener('click', function () {
+  function clearAll() {
     store = {};
     rowChecks.forEach(function (rc) { rc.checked = false; rc.dispatchEvent(new Event('change')); });
     update();
-  });
+  }
+  ['repl-clear', 'rsp-clear'].forEach(function (id) { var b = document.getElementById(id); if (b) b.addEventListener('click', clearAll); });
   function alignDock() {
     if (!bar || bar.hidden) return;
     if (phone.matches) { bar.style.left = ''; bar.style.right = ''; bar.style.transform = ''; return; }

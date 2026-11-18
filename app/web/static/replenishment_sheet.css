@@ -370,7 +370,7 @@ table.rs tbody {
 }
 table.rs tbody tr.rs-row {
   display: grid;
-  grid-template-columns: 20px 250px 84px 1fr 185px;
+  grid-template-columns: 20px 300px 84px 1fr 185px;
   align-items: center;
   gap: 14px;
   background: var(--surface);
@@ -381,10 +381,10 @@ table.rs tbody tr.rs-row {
   transition: border-color .15s ease, background .15s ease;
 }
 table.rs.rs-no-wh tbody tr.rs-row {
-  grid-template-columns: 20px 250px 1fr 185px;
+  grid-template-columns: 20px 300px 1fr 185px;
 }
 table.rs.rs-wh-view tbody tr.rs-row {
-  grid-template-columns: 20px 260px 88px 100px 1fr 185px;
+  grid-template-columns: 20px 310px 88px 100px 1fr 185px;
 }
 table.rs tbody tr.rs-row:hover {
   border-color: #cbd5e1;
@@ -446,11 +446,47 @@ table.rs td.rs-p {
   border-color: #2563eb;
   color: #2563eb;
 }
-.rs-sub {
+.rs-p-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.rs-p-main .pthumb {
+  float: none;
+  flex: none;
+  margin: 0;
+}
+.pthumb-empty {
+  display: block;
+  border-style: dashed;
+  background: transparent;
+  opacity: .55;
+}
+.rs-p-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rs-p-head {
+  display: block;
+}
+.rs-p-title {
+  display: inline;
+}
+.rs-p-title .rs-why {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.rs-p small.rs-sub {
   display: flex;
   align-items: baseline;
   gap: 0 6px;
   white-space: nowrap;
+  min-width: 0;
+}
+.rs-sub > * {
+  flex: none;
 }
 .rs-sub > * + *::before {
   content: "·";
@@ -458,9 +494,9 @@ table.rs td.rs-p {
   color: var(--mute2, #94a3b8);
   font-weight: 400;
 }
-.rs-sub .rs-sup {
+.rs-sub > .rs-sup {
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
