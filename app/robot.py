@@ -91,13 +91,16 @@ def _export_once(dest_dir: Path | None = None) -> Path:
             page.wait_for_load_state("networkidle", timeout=60000)
             try:
                 page.get_by_text("Export to CSV").first.click(timeout=20000)
-                box = page.locator("#includeItems")  # a styled checkbox: the real input is hidden, so the visible label is clicked
+                # StoreHub's current (v2) page marks the modal with data-test-id; the older page used #includeItems and an <a class="btn">.
+                box = page.locator("[data-test-id=stock-transfers-export-include-items-checkbox], #includeItems").first
+                box.wait_for(state="attached", timeout=15000)
                 if not box.is_checked():
-                    page.get_by_text("Include item details").first.click(timeout=15000)
+                    page.get_by_text("Include item details").first.click(timeout=15000)  # a styled checkbox: the visible label is clicked
                 if not box.is_checked():
                     raise RobotError("Could not tick 'Include item details'")
+                ok = page.locator("[data-test-id=stock-transfers-export-modal-ok-btn], .modal a.btn, [role=dialog] a.btn", has_text=re.compile(r"^\s*Export\s*$")).first
                 with page.expect_download(timeout=120000) as download:
-                    page.locator(".modal a.btn, [role=dialog] a.btn", has_text=re.compile(r"^\s*Export\s*$")).first.click(timeout=15000)
+                    ok.click(timeout=15000)
             except Exception as e:  # noqa: BLE001
                 raise RobotError(f"The Stock Transfer export did not work: {type(e).__name__}. StoreHub may have changed the page.") from e
             target = dest_dir / f"StockTransfers-{datetime.now():%Y%m%d-%H%M%S}.csv"
