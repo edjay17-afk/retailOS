@@ -1,46 +1,194 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Product set-up') }}{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/products_page.css?v={{ asset_v('products_page.css') }}">{% endblock %}
 {% block content %}
-<h1>{{ t('Product set-up') }}</h1>
-<div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers">{{ t('Suppliers') }}</a><a href="/products" class="on">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
-<p class="small mute">{{ t('StoreHub has no supplier, case pack or minimum order per product. Set them here, one by one or by CSV. Suppliers marked') }} <span class="badge b-warn">{{ t('from PO history') }}</span> {{ t('were inferred from the latest purchase order and should be confirmed.') }}</p>
-<div class="row noprint" style="margin-bottom:10px">
-<a class="btn sec" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&export=csv">{{ t('Export CSV') }}</a>
-<form novalidate method="post" action="/products/import" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="file" name="file" accept=".csv" required><button class="sec">{{ t('Import CSV') }}</button></form></div>
-<form novalidate class="filters" method="get"><div><label for="products-search">{{ t('Search') }}</label><input id="products-search" data-search name="q" value="{{ q }}"></div>
-<div><label for="products-filter">{{ t('Show') }}</label><select id="products-filter" name="filt"><option value="">{{ t('All tracked products') }}</option><option value="no_supplier" {{ 'selected' if filt == 'no_supplier' }}>{{ t('No supplier') }}</option><option value="no_case_pack" {{ 'selected' if filt == 'no_case_pack' }}>{{ t('No case pack') }}</option><option value="inferred" {{ 'selected' if filt == 'inferred' }}>{{ t('Supplier from PO history') }}</option></select></div>
-<div><label for="products-cat">{{ t('Category') }}</label><select id="products-cat" name="cat"><option value="">{{ t('All categories') }}</option><option value="__none__" {{ 'selected' if cat == '__none__' }}>{{ t('No category') }}</option>{% for ct in cats %}<option value="{{ ct }}" {{ 'selected' if cat == ct }}>{{ ct }}</option>{% endfor %}</select></div><button type="submit">{{ t('Apply') }}</button>{% if q or filt or cat %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</form>
-<div class="tw editable-table"><table class="wide"><tr><th scope="col" data-sort>{{ t('Product') }}</th><th scope="col" data-sort class="right">{{ t('Cost') }}</th><th scope="col" data-sort class="right">{{ t('Retail price') }}</th><th scope="col" data-sort>{{ t('Supplier') }}</th><th scope="col">{{ t('Case pack') }}</th><th scope="col">{{ t('Perish.') }}</th><th scope="col">{{ t('Order') }}</th><th></th></tr>
-{% for p in prods %}<tr><td style="display:none"><form novalidate data-nobusy id="fprod{{ loop.index }}" method="post" action="/products/{{ p.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="back" value="/products?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page }}"></form></td>
-<td><button type="button" class="pimg" data-pid="{{ p.id }}" data-name="{{ p.name }}" data-url="{{ p.image_url if p.image_url and p.image_url.startswith('/uploads/products/') else '' }}" title="{{ t('Add or change the picture') }}" aria-label="{{ t('Add or change the picture') }}">{% if p.image_url and p.image_url.startswith('/uploads/products/') %}<img src="{{ p.image_url }}" alt="" loading="lazy">{% else %}<span>+</span>{% endif %}</button>{{ p.name }}<div class="small mute">{{ p.barcode or '' }}</div></td>
-<td class="right" data-label="{{ t('Cost') }}">{{ p.cost|money if p.cost is not none else '—' }}</td><td class="right" data-label="{{ t('Retail price') }}">{{ (p.unit_price * vat)|money if p.unit_price is not none else '—' }}</td>
-<td><select form="fprod{{ loop.index }}" name="supplier" style="max-width:170px"><option value="0">-</option>{% for s in sups %}<option value="{{ s.id }}" {{ 'selected' if p.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select>{% if p.supplier_source == 'po_history' %}<div><span class="badge b-warn">{{ t('from PO history') }}</span></div>{% endif %}</td>
-<td><input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="case_pack" value="{{ p.case_pack|num if p.case_pack }}" style="width:70px"></td>
-<td><input form="fprod{{ loop.index }}" type="checkbox" name="perishable" value="1" {{ 'checked' if p.perishable }}></td><td><input form="fprod{{ loop.index }}" type="checkbox" name="replenish" value="1" {{ 'checked' if p.replenish_enabled }}></td>
-<td><button form="fprod{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>
-{% else %}<tr><td colspan="8"><div class="empty">{{ t('No products.') }}{% if q or filt or cat %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}</div></td></tr>{% endfor %}</table></div>
-<div class="pager">{% if page > 1 %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}<span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
-{% if page * 50 < total %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}</div>
-<style>
-.pimg{float:left;margin:0 10px 0 0;width:40px;height:40px;padding:0;border:1px dashed var(--line2,#cbd5e1);border-radius:8px;background:var(--surface2,#f8fafc);color:var(--mute,#64748b);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;overflow:hidden}
-.pimg:hover{border-color:var(--primary,#2563eb);color:var(--primary,#2563eb)}
-.pimg img{width:100%;height:100%;object-fit:cover;object-position:center;border-radius:7px;display:block}
-.pimg:has(img){border-style:solid}
-.pimg-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:200px;padding:16px;border:2px dashed var(--line2,#cbd5e1);border-radius:12px;text-align:center;color:var(--mute,#64748b);outline:none}
-.pimg-zone:focus,.pimg-zone.over{border-color:var(--primary,#2563eb);background:var(--primary-soft,#eff6ff)}
-.pimg-zone img{max-width:100%;max-height:220px;object-fit:contain;border-radius:8px}
-.pimg-msg{min-height:20px;margin:10px 0 0}
-</style>
+<div class="prod-head">
+  <div>
+    <h1>{{ t('Product set-up') }}</h1>
+    <p class="prod-head-desc">{{ t('StoreHub has no supplier, case pack or minimum order per product. Set them here, one by one or by CSV. Suppliers marked') }} <span class="badge b-warn">{{ t('from PO history') }}</span> {{ t('were inferred from the latest purchase order and should be confirmed.') }}</p>
+  </div>
+  <div class="prod-head-actions noprint">
+    <button type="button" class="btn sec" data-modal="product-csv-modal">{{ t('Import / Export CSV') }}</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/settings">{{ t('Locations and rules') }}</a>
+  <a href="/suppliers">{{ t('Suppliers') }}</a>
+  <a href="/products" class="on">{{ t('Product set-up') }}</a>
+  <a href="/users">{{ t('Users') }}</a>
+</div>
+
+<div class="prod-kpis">
+  <a class="prod-kpi {{ 'on' if not filt else '' }}" href="?q={{ q|urlencode }}&cat={{ cat|urlencode }}">
+    <div class="prod-kpi-lbl">{{ t('All tracked products') }}</div>
+    <div class="prod-kpi-val">{{ stats.tracked if stats is defined else total }}</div>
+    <div class="prod-kpi-sub">{{ t('Products') }}</div>
+  </a>
+  <a class="prod-kpi {{ 'on' if filt == 'no_supplier' else '' }}" href="?filt=no_supplier&q={{ q|urlencode }}&cat={{ cat|urlencode }}">
+    <div class="prod-kpi-lbl">{{ t('No supplier') }}</div>
+    <div class="prod-kpi-val {{ 'is-bad' if (stats is defined and stats.no_supplier) else '' }}">{{ stats.no_supplier if stats is defined else 0 }}</div>
+    <div class="prod-kpi-sub">{{ t('Supplier') }}</div>
+  </a>
+  <a class="prod-kpi {{ 'on' if filt == 'no_case_pack' else '' }}" href="?filt=no_case_pack&q={{ q|urlencode }}&cat={{ cat|urlencode }}">
+    <div class="prod-kpi-lbl">{{ t('No case pack') }}</div>
+    <div class="prod-kpi-val {{ 'is-warn' if (stats is defined and stats.no_case_pack) else '' }}">{{ stats.no_case_pack if stats is defined else 0 }}</div>
+    <div class="prod-kpi-sub">{{ t('Case pack') }}</div>
+  </a>
+  <a class="prod-kpi {{ 'on' if filt == 'inferred' else '' }}" href="?filt=inferred&q={{ q|urlencode }}&cat={{ cat|urlencode }}">
+    <div class="prod-kpi-lbl">{{ t('Supplier from PO history') }}</div>
+    <div class="prod-kpi-val {{ 'is-warn' if (stats is defined and stats.inferred) else '' }}">{{ stats.inferred if stats is defined else 0 }}</div>
+    <div class="prod-kpi-sub">{{ t('from PO history') }}</div>
+  </a>
+</div>
+
+<form novalidate class="prod-toolbar" method="get">
+  <div class="prod-toolbar-l">
+    <input id="products-search" data-search name="q" value="{{ q }}" placeholder="{{ t('Search') }}..." aria-label="{{ t('Search') }}">
+    <select id="products-filter" name="filt" aria-label="{{ t('Show') }}">
+      <option value="">{{ t('All tracked products') }}</option>
+      <option value="no_supplier" {{ 'selected' if filt == 'no_supplier' }}>{{ t('No supplier') }}</option>
+      <option value="no_case_pack" {{ 'selected' if filt == 'no_case_pack' }}>{{ t('No case pack') }}</option>
+      <option value="inferred" {{ 'selected' if filt == 'inferred' }}>{{ t('Supplier from PO history') }}</option>
+    </select>
+    <select id="products-cat" name="cat" aria-label="{{ t('Category') }}">
+      <option value="">{{ t('All categories') }}</option>
+      <option value="__none__" {{ 'selected' if cat == '__none__' }}>{{ t('No category') }}</option>
+      {% for ct in cats %}<option value="{{ ct }}" {{ 'selected' if cat == ct }}>{{ ct }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="sm">{{ t('Apply') }}</button>
+    {% if q or filt or cat %}<a class="btn sec sm" href="/products">{{ t('Clear filters') }}</a>{% endif %}
+  </div>
+  <span class="small mute">{{ total }} {{ t('products') }}</span>
+</form>
+
+<div class="prod-table-wrap editable-table">
+  <table class="prod-table wide">
+    <thead>
+      <tr>
+        <th scope="col" data-sort>{{ t('Product') }}</th>
+        <th scope="col" data-sort class="right">{{ t('Cost') }}</th>
+        <th scope="col" data-sort class="right">{{ t('Retail price') }}</th>
+        <th scope="col" data-sort>{{ t('Supplier') }}</th>
+        <th scope="col">{{ t('Case pack') }}</th>
+        <th scope="col">{{ t('Perish.') }}</th>
+        <th scope="col">{{ t('Order') }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in prods %}
+      {% set retail = (p.unit_price * vat) if p.unit_price is not none else none %}
+      <tr><td style="display:none"><form novalidate data-nobusy id="fprod{{ loop.index }}" method="post" action="/products/{{ p.id }}">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <input type="hidden" name="back" value="/products?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page }}">
+          </form>
+        </td>
+        <td>
+          <div class="prod-cell">
+            <button type="button" class="pimg" data-pid="{{ p.id }}" data-name="{{ p.name }}" data-url="{{ p.image_url if p.image_url and p.image_url.startswith('/uploads/products/') else '' }}" title="{{ t('Add or change the picture') }}" aria-label="{{ t('Add or change the picture') }}">
+              {% if p.image_url and p.image_url.startswith('/uploads/products/') %}<img src="{{ p.image_url }}" alt="" loading="lazy">{% else %}<span>+</span>{% endif %}
+            </button>
+            <div>
+              <div class="prod-name">{{ p.name }}</div>
+              <div class="prod-meta">{{ p.barcode or '' }}{% if p.category %}{{ ' · ' if p.barcode else '' }}{{ p.category }}{% endif %}</div>
+            </div>
+          </div>
+        </td>
+        <td class="right num" data-label="{{ t('Cost') }}">{{ p.cost|money if p.cost is not none else '—' }}</td>
+        <td class="right num" data-label="{{ t('Retail price') }}">{% if retail is not none %}<span>{{ retail|money }}</span>{% if p.cost is not none and retail > 0 %}{% set margin = ((retail - p.cost) / retail * 100) %}<span class="badge {{ 'b-ok' if margin >= 15 else 'b-warn' if margin > 0 else 'b-bad' }} prod-margin">{{ '%.0f'|format(margin) }}%</span>{% endif %}{% else %}—{% endif %}</td>
+        <td>
+          <select form="fprod{{ loop.index }}" name="supplier" aria-label="{{ t('Supplier') }}">
+            <option value="0">-</option>
+            {% for s in sups %}<option value="{{ s.id }}" {{ 'selected' if p.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}
+          </select>
+          {% if p.supplier_source == 'po_history' %}
+            <div style="margin-top:4px"><span class="badge b-warn">{{ t('from PO history') }}</span></div>
+          {% endif %}
+        </td>
+        <td>
+          <input form="fprod{{ loop.index }}" type="number" step="any" min="0" name="case_pack" value="{{ p.case_pack|num if p.case_pack }}" aria-label="{{ t('Case pack') }}">
+        </td>
+        <td>
+          <label class="prod-switch" aria-label="{{ t('Perish.') }}">
+            <input form="fprod{{ loop.index }}" type="checkbox" name="perishable" value="1" {{ 'checked' if p.perishable }}>
+            <span class="prod-slider"></span>
+          </label>
+        </td>
+        <td>
+          <label class="prod-switch" aria-label="{{ t('Order') }}">
+            <input form="fprod{{ loop.index }}" type="checkbox" name="replenish" value="1" {{ 'checked' if p.replenish_enabled }}>
+            <span class="prod-slider"></span>
+          </label>
+        </td>
+        <td style="text-align:right">
+          <button form="fprod{{ loop.index }}" class="sec sm">{{ t('Save') }}</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8">
+          <div class="empty">
+            {{ t('No products.') }}
+            {% if q or filt or cat %}<a class="btn sec" href="/products">{{ t('Clear filters') }}</a>{% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pager">
+  {% if page > 1 %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page-1 }}">{{ t('Previous') }}</a>{% endif %}
+  <span class="mute small">{{ t('Page') }} {{ page }} {{ t('of') }} {{ ((total + 49) // 50) or 1 }} {{ t('· showing') }} {{ 0 if total == 0 else (page-1)*50 + 1 }}&ndash;{{ page*50 if page*50 < total else total }} {{ t('of') }} {{ total }} {{ t('products') }}</span>
+  {% if page * 50 < total %}<a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&page={{ page+1 }}">{{ t('Next') }}</a>{% endif %}
+</div>
+
+<!-- Import / Export CSV Modal -->
+<dialog class="modal" id="product-csv-modal" aria-labelledby="product-csv-title">
+  <div class="modal-head">
+    <h2 id="product-csv-title">{{ t('Import / Export CSV') }}</h2>
+    <button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <div class="prod-modal-sec">
+      <b>{{ t('Export CSV') }}</b>
+      <p class="small mute" style="margin:4px 0 8px">{{ t('StoreHub has no supplier, case pack or minimum order per product. Set them here, one by one or by CSV.') }}</p>
+      <a class="btn sec sm" href="?q={{ q|urlencode }}&filt={{ filt|urlencode }}&cat={{ cat|urlencode }}&export=csv">{{ t('Export CSV') }}</a>
+    </div>
+    <div class="prod-modal-sec">
+      <b>{{ t('Import CSV') }}</b>
+      <form novalidate method="post" action="/products/import" enctype="multipart/form-data" class="prod-dropzone" style="margin-top:8px">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="file" name="file" accept=".csv" required style="max-width:260px">
+        <button class="sm">{{ t('Import CSV') }}</button>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<!-- Product Picture Modal -->
 <dialog class="modal" id="pimg-dlg" aria-labelledby="pimg-title">
-  <div class="modal-head"><h2 id="pimg-title"></h2><button type="button" class="sm sec" id="pimg-close" aria-label="{{ t('Close') }}">✕</button></div>
+  <div class="modal-head">
+    <h2 id="pimg-title"></h2>
+    <button type="button" class="sm sec" id="pimg-close" aria-label="{{ t('Close') }}">✕</button>
+  </div>
   <div class="modal-body">
     <div class="pimg-zone" id="pimg-zone" tabindex="0">
       <img id="pimg-prev" alt="" hidden>
       <div id="pimg-hint"><b>{{ t('Click here to choose a picture file') }}</b><br>{{ t('or press Ctrl+V to paste a copied picture, or drop a file here.') }}</div>
     </div>
-    <div class="row" style="margin-top:10px"><button type="button" class="sec" id="pimg-choose">{{ t('Choose a file…') }}</button><button type="button" class="sec" id="pimg-view" hidden>{{ t('View full size') }}</button><input type="file" id="pimg-file" accept="image/*" hidden></div>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="sec" id="pimg-choose">{{ t('Choose a file…') }}</button>
+      <button type="button" class="sec" id="pimg-view" hidden>{{ t('View full size') }}</button>
+      <input type="file" id="pimg-file" accept="image/*" hidden>
+    </div>
     <p class="small pimg-msg" id="pimg-msg" role="status"></p>
-    <div class="modal-actions"><button type="button" class="sec danger" id="pimg-remove" hidden>{{ t('Remove picture') }}</button><button type="button" id="pimg-done">{{ t('Done') }}</button></div>
+    <div class="modal-actions">
+      <button type="button" class="sec danger" id="pimg-remove" hidden>{{ t('Remove picture') }}</button>
+      <button type="button" id="pimg-done">{{ t('Done') }}</button>
+    </div>
   </div>
 </dialog>
 {% endblock %}
@@ -48,6 +196,14 @@
 <script>
 (function(){
   var saved='{{ t('Saved') }}', saving='{{ t('Saving…') }}', failed='{{ t('Not saved — retry') }}', label='{{ t('Save') }}';
+  function markDirty(el){
+    var fid=el.getAttribute('form'); if(!fid||fid.indexOf('fprod')!==0) return;
+    var tr=el.closest('tr'), btn=document.querySelector('button[form="'+fid+'"]');
+    if(tr) tr.classList.add('is-dirty');
+    if(btn){ btn.classList.remove('sec'); btn.classList.add('pri'); }
+  }
+  document.addEventListener('change', function(ev){ markDirty(ev.target); });
+  document.addEventListener('input', function(ev){ if(ev.target.name==='case_pack') markDirty(ev.target); });
   document.addEventListener('submit',function(ev){
     var f=ev.target; if(!f.id||f.id.indexOf('fprod')!==0||!window.fetch) return;   // product rows only; other forms behave as before
     ev.preventDefault();
@@ -56,9 +212,9 @@
     fetch(f.action,{method:'POST',body:new FormData(f),credentials:'same-origin',headers:{'X-Requested-With':'fetch'}})
       .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
       .then(function(){
-        btn.classList.remove('btn-busy'); btn.textContent='✓ '+saved; btn.classList.add('ok');
-        if(row){ row.classList.add('row-saved'); var tag=row.querySelector('.badge.b-warn'); if(tag) tag.remove(); }   // a hand-set supplier is no longer "from PO history"
-        setTimeout(function(){ btn.textContent=label; btn.classList.remove('ok'); if(row) row.classList.remove('row-saved'); btn.disabled=false; },1600);
+        btn.classList.remove('btn-busy','pri'); btn.textContent='✓ '+saved; btn.classList.add('ok');
+        if(row){ row.classList.remove('is-dirty'); row.classList.add('row-saved'); var tag=row.querySelector('.badge.b-warn'); if(tag) tag.remove(); }   // a hand-set supplier is no longer "from PO history"
+        setTimeout(function(){ btn.textContent=label; btn.classList.remove('ok'); btn.classList.add('sec'); if(row) row.classList.remove('row-saved'); btn.disabled=false; },1600);
       })
       .catch(function(){
         btn.classList.remove('btn-busy'); btn.textContent=failed; btn.classList.add('danger'); btn.disabled=false;

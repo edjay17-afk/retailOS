@@ -272,7 +272,14 @@ def products_page(q: str = "", filt: str = "", cat: str = "", page: int = 1, exp
     prods = list(db.scalars(stmt.limit(PAGE).offset((page - 1) * PAGE)))
     sups = list(db.scalars(select(Supplier).where(Supplier.active.is_(True)).order_by(Supplier.name)))
     cats = list(db.scalars(select(Product.category).where(Product.in_api.is_(True), Product.track_stock.is_(True), Product.category.is_not(None), Product.category != "").distinct().order_by(Product.category)))
-    return render(c, "products.html", vat=1 + float(cfg.get(db, "product.vat_rate") or 0) / 100, prods=prods, sups=sups, q=q, filt=filt, cat=cat, cats=cats, page=page, total=total)
+    base_q = select(func.count()).select_from(Product).where(Product.in_api.is_(True), Product.track_stock.is_(True))
+    stats = {
+        "tracked": db.scalar(base_q) or 0,
+        "no_supplier": db.scalar(base_q.where(Product.supplier_id.is_(None))) or 0,
+        "no_case_pack": db.scalar(base_q.where(Product.case_pack.is_(None))) or 0,
+        "inferred": db.scalar(base_q.where(Product.supplier_source == "po_history")) or 0,
+    }
+    return render(c, "products.html", vat=1 + float(cfg.get(db, "product.vat_rate") or 0) / 100, prods=prods, sups=sups, q=q, filt=filt, cat=cat, cats=cats, page=page, total=total, stats=stats)
 
 
 @router.post("/products/{pid:int}")

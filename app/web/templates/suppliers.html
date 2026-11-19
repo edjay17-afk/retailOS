@@ -1,33 +1,239 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Suppliers') }}{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/suppliers_page.css?v={{ asset_v('suppliers_page.css') }}">{% endblock %}
 {% block content %}
-<h1>{{ t('Suppliers') }}</h1>
-<div class="tabs"><a href="/settings">{{ t('Locations and rules') }}</a><a href="/suppliers" class="on">{{ t('Suppliers') }}</a><a href="/products">{{ t('Product set-up') }}</a><a href="/users">{{ t('Users') }}</a></div>
-<p class="small mute">{{ t('StoreHub only gives a supplier id on purchase orders, so the real supplier names are set here. Each supplier lists the products assigned to it in Product set-up.') }}</p>
-<details class="card" style="margin:10px 0">
-  <summary><b>{{ t('Add a supplier') }}</b></summary>
-  <p class="small mute">{{ t('Add a supplier that is not in the list. You can then assign it to products in Product set-up.') }}</p>
-  <form novalidate method="post" action="/suppliers/new"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <div class="row">
-      <div><label for="new-supplier-name">{{ t('Supplier name') }}</label><input id="new-supplier-name" name="name" required maxlength="160" autocomplete="organization"></div>
-      <div><label for="new-supplier-contact">{{ t('Contact') }}</label><input id="new-supplier-contact" name="contact" maxlength="200"></div>
+{% set ns = namespace(active=0, local=0, inactive=0, linked_products=0) %}
+{% for s in sups %}
+  {% if s.active %}{% set ns.active = ns.active + 1 %}{% else %}{% set ns.inactive = ns.inactive + 1 %}{% endif %}
+  {% if not s.storehub_id %}{% set ns.local = ns.local + 1 %}{% endif %}
+  {% set ns.linked_products = ns.linked_products + (items.get(s.id, [])|length) %}
+{% endfor %}
+
+<div class="sup-head">
+  <div>
+    <h1>{{ t('Suppliers') }}</h1>
+    <p class="sup-head-desc">{{ t('StoreHub only gives a supplier id on purchase orders, so the real supplier names are set here. Each supplier lists the products assigned to it in Product set-up.') }}</p>
+  </div>
+  <div class="sup-head-actions">
+    <button type="button" class="btn sec" data-modal="supplier-import">{{ t('Import / Export CSV') }}</button>
+    <button type="button" class="btn pri" data-modal="supplier-add">+ {{ t('Add a supplier') }}</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/settings">{{ t('Locations and rules') }}</a>
+  <a href="/suppliers" class="on">{{ t('Suppliers') }}</a>
+  <a href="/products">{{ t('Product set-up') }}</a>
+  <a href="/users">{{ t('Users') }}</a>
+</div>
+
+<div class="sup-kpis">
+  <div class="sup-kpi">
+    <div class="sup-kpi-lbl">{{ t('Total suppliers') }}</div>
+    <div class="sup-kpi-val">{{ sups|length }}</div>
+    <div class="sup-kpi-sub">{{ sups|length - ns.local }} StoreHub · {{ ns.local }} {{ t('Local') }}</div>
+  </div>
+  <div class="sup-kpi">
+    <div class="sup-kpi-lbl">{{ t('Still unnamed') }}</div>
+    <div class="sup-kpi-val {{ 'is-warn' if unnamed else '' }}">{{ unnamed }}</div>
+    <div class="sup-kpi-sub">{{ t('Auto-created from POs') }}</div>
+  </div>
+  <div class="sup-kpi">
+    <div class="sup-kpi-lbl">{{ t('Active') }}</div>
+    <div class="sup-kpi-val">{{ ns.active }}</div>
+    <div class="sup-kpi-sub">{{ ns.inactive }} {{ t('Inactive') }}</div>
+  </div>
+  <div class="sup-kpi">
+    <div class="sup-kpi-lbl">{{ t('Products') }}</div>
+    <div class="sup-kpi-val">{{ ns.linked_products }}</div>
+    <div class="sup-kpi-sub">{{ t('Assigned in Product set-up') }}</div>
+  </div>
+</div>
+
+<div class="sup-toolbar">
+  <div class="sup-seg" id="sup-filters" role="group" aria-label="{{ t('Filter suppliers') }}">
+    <button type="button" class="on" data-filter="all">{{ t('All') }} ({{ sups|length }})</button>
+    <button type="button" data-filter="unnamed">{{ t('Still unnamed') }} ({{ unnamed }})</button>
+    <button type="button" data-filter="local">{{ t('Local') }} ({{ ns.local }})</button>
+    <button type="button" data-filter="inactive">{{ t('Inactive') }} ({{ ns.inactive }})</button>
+  </div>
+  <input type="search" id="sup-search" class="sup-search" placeholder="{{ t('Search supplier, code, or product...') }}" aria-label="{{ t('Search suppliers') }}">
+</div>
+
+<div class="sup-table-wrap">
+  <table class="sup-table" id="sup-table">
+    <thead>
+      <tr>
+        <th scope="col">{{ t('Name') }}</th>
+        <th scope="col">{{ t('Products') }}</th>
+        <th scope="col">{{ t('Contact') }}</th>
+        <th scope="col">{{ t('Active') }}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sups %}
+      {% set code = s.storehub_id[-6:] if s.storehub_id else 'LOCAL-' ~ s.id %}
+      {% set k = clues.get(s.id) %}
+      {% set plist = items.get(s.id, []) %}
+      {% set clue_text = (k['items']|join(', ')) if k and k['items'] else '' %}
+      {% set meta_text = t('Code') ~ ' ' ~ code ~ ((' · ' ~ k.pos ~ ' ' ~ t('PO') ~ ('s' if k.pos != 1 and lang != 'zh' else '') ~ ((t(', last') ~ ' ' ~ (k.last|day)) if k.last else '')) if k else '') %}
+      <tr tabindex="0"
+          data-id="{{ s.id }}"
+          data-name="{{ s.name }}"
+          data-code="{{ code }}"
+          data-meta="{{ meta_text }}"
+          data-clues="{{ clue_text }}"
+          data-contact="{{ s.contact or '' }}"
+          data-active="{{ '1' if s.active else '0' }}"
+          data-unnamed="{{ '1' if s.name_source == 'auto' else '0' }}"
+          data-local="{{ '1' if not s.storehub_id else '0' }}"
+          data-badge-unnamed="{{ t('Unnamed') }}"
+          data-badge-active="{{ t('Active') }}"
+          data-badge-inactive="{{ t('Inactive') }}"
+          data-search="{{ s.name }} {{ code }} {{ s.contact or '' }} {{ clue_text }} {{ plist|join(' ') }}">
+        <td>
+          <div class="sup-name-row">
+            <span>{{ s.name }}</span>
+            {% if s.name_source == 'auto' %}<span class="badge b-warn">{{ t('Unnamed') }}</span>{% endif %}
+            {% if not s.storehub_id %}<span class="badge b-mute">{{ t('Local') }}</span>{% endif %}
+          </div>
+          <div class="sup-meta">{{ meta_text }}</div>
+          {% if clue_text %}<div class="sup-clues">{{ t('Usually:') }} {{ clue_text }}</div>{% endif %}
+        </td>
+        <td class="sup-products">
+          {% if plist %}
+          <div class="sup-prod-count">{{ plist|length }} {{ t('products') }}</div>
+          <ul class="sup-ul">{% for pn in plist %}<li>{{ pn }}</li>{% endfor %}</ul>
+          {% else %}
+          <span class="mute">—</span>
+          {% endif %}
+        </td>
+        <td>{{ s.contact or '—' }}</td>
+        <td>
+          {% if s.active %}
+          <span class="badge b-ok">{{ t('Active') }}</span>
+          {% else %}
+          <span class="badge b-mute">{{ t('Inactive') }}</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right">
+          <button type="button" class="btn sec sm">{{ t('Edit') }}</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="sup-empty" id="sup-empty" hidden>{{ t('No suppliers match your filter.') }}</div>
+</div>
+
+<!-- Add Supplier Modal -->
+<dialog class="modal" id="supplier-add" aria-labelledby="supplier-add-title">
+  <div class="modal-head">
+    <h2 id="supplier-add-title">{{ t('Add a supplier') }}</h2>
+    <button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <p class="small mute" style="margin-top:0">{{ t('Add a supplier that is not in the list. You can then assign it to products in Product set-up.') }}</p>
+    <form novalidate method="post" action="/suppliers/new">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label for="new-supplier-name">{{ t('Supplier name') }}</label>
+          <input id="new-supplier-name" name="name" required maxlength="160" autocomplete="organization">
+        </div>
+        <div>
+          <label for="new-supplier-contact">{{ t('Contact') }}</label>
+          <input id="new-supplier-contact" name="contact" maxlength="200">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="sec" data-modal-close>{{ t('Cancel') }}</button>
+        <button type="submit">{{ t('Create supplier') }}</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Import / Export Modal -->
+<dialog class="modal" id="supplier-import" aria-labelledby="supplier-import-title">
+  <div class="modal-head">
+    <h2 id="supplier-import-title">{{ t('Import / Export CSV') }}</h2>
+    <button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <div class="sup-modal-sec">
+      <b>{{ t('Best way: upload the StoreHub purchase order export') }}</b>
+      <p class="small mute" style="margin:4px 0 8px">{{ t('In the StoreHub back office, export your purchase orders (CSV) and upload it here. Each PO number is matched to its supplier, so the real names fill in by themselves. Names you typed yourself are never overwritten.') }}</p>
+      <form novalidate method="post" action="/suppliers/import-po-export" enctype="multipart/form-data" class="sup-dropzone">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="file" name="file" accept=".csv,text/csv" required style="max-width:260px">
+        <button class="sm">{{ t('Upload PO export') }}</button>
+      </form>
     </div>
-    <p><button type="submit">{{ t('Create supplier') }}</button></p>
+    <div class="sup-modal-sec">
+      <b>{{ t('Fill in the real supplier names') }}{% if unnamed %} <span class="badge b-warn">{{ unnamed }} {{ t('still unnamed') }}</span>{% endif %}</b>
+      <p class="small mute" style="margin:4px 0 8px">{{ t('StoreHub does not tell us the names, only a code. Each row below shows what the supplier usually delivers to help you recognise it. Type the name and press Save, or download the list, fill in the last column in Excel, and upload it here.') }}</p>
+      <form novalidate method="post" action="/suppliers/import" enctype="multipart/form-data" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <a class="btn sec sm" href="/suppliers?export=csv">{{ t('Download list (CSV)') }}</a>
+        <input type="file" name="file" accept=".csv,text/csv" required style="max-width:240px">
+        <button class="sm">{{ t('Upload names') }}</button>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<!-- Slide-Over Inspector Drawer -->
+<div class="sup-backdrop" id="supplier-drawer-backdrop"></div>
+<aside class="sup-drawer" id="supplier-drawer" aria-hidden="true" aria-labelledby="dr-title">
+  <div class="sup-drawer-head">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2 id="dr-title">{{ t('Suppliers') }}</h2>
+        <span class="badge" id="dr-badge" hidden></span>
+      </div>
+      <div class="sup-code" id="dr-code" style="margin-top:3px"></div>
+    </div>
+    <button type="button" class="iconbtn" data-drawer-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <form novalidate method="post" id="supplier-drawer-form" style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="sup-drawer-body">
+      <div class="sup-clue-box" id="dr-clues" hidden>
+        <div class="sup-clue-title">{{ t('Usually:') }}</div>
+        <div class="small" id="dr-clues-text"></div>
+      </div>
+      <div class="sup-drawer-fields">
+        <div>
+          <label for="dr-name">{{ t('Supplier name') }}</label>
+          <input id="dr-name" name="name" required maxlength="160">
+        </div>
+        <div>
+          <label for="dr-contact">{{ t('Contact') }}</label>
+          <input id="dr-contact" name="contact" maxlength="200">
+        </div>
+      </div>
+      <div class="sup-drawer-prods-sec">
+        <div class="sup-drawer-prods-head">
+          <div class="small" style="font-weight:700">{{ t('Products') }} (<span id="dr-prods-count">0</span>)</div>
+          <input type="search" id="dr-prods-search" placeholder="{{ t('Filter products...') }}" aria-label="{{ t('Filter products') }}">
+        </div>
+        <div class="sup-drawer-prods" id="dr-prods"></div>
+        <div class="small mute" id="dr-prods-empty" hidden>—</div>
+      </div>
+    </div>
+    <div class="sup-drawer-foot">
+      <label style="display:flex;align-items:center;gap:7px;margin:0;cursor:pointer;font-size:13px;font-weight:600">
+        <input type="checkbox" id="dr-active" name="active" value="1">
+        <span>{{ t('Active') }}</span>
+      </label>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="sec" data-drawer-close>{{ t('Cancel') }}</button>
+        <button type="submit">{{ t('Save') }}</button>
+      </div>
+    </div>
   </form>
-</details>
-<div class="card" style="margin:10px 0">
-  <b>{{ t('Fill in the real supplier names') }}{% if unnamed %} <span class="badge b-warn">{{ unnamed }} {{ t('still unnamed') }}</span>{% endif %}</b>
-  <p class="small mute" style="margin:4px 0 8px">{{ t('StoreHub does not tell us the names, only a code. Each row below shows what the supplier usually delivers to help you recognise it. Type the name and press Save, or download the list, fill in the last column in Excel, and upload it here.') }}</p>
-  <form novalidate method="post" action="/suppliers/import" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <a class="btn sec sm" href="/suppliers?export=csv">{{ t('Download list (CSV)') }}</a><input type="file" name="file" accept=".csv,text/csv" required style="max-width:260px"><button class="sm">{{ t('Upload names') }}</button></form></div>
-<div class="card" style="margin:10px 0">
-  <b>{{ t('Best way: upload the StoreHub purchase order export') }}</b>
-  <p class="small mute" style="margin:4px 0 8px">{{ t('In the StoreHub back office, export your purchase orders (CSV) and upload it here. Each PO number is matched to its supplier, so the real names fill in by themselves. Names you typed yourself are never overwritten.') }}</p>
-  <form novalidate method="post" action="/suppliers/import-po-export" enctype="multipart/form-data" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <input type="file" name="file" accept=".csv,text/csv" required style="max-width:260px"><button class="sm">{{ t('Upload PO export') }}</button></form></div>
-<div class="tw editable-table"><table class="wide"><tr><th scope="col">{{ t('Name') }}</th><th scope="col">{{ t('Products') }}</th><th scope="col">{{ t('Contact') }}</th><th scope="col">{{ t('Active') }}</th><th></th></tr>
-{% for s in sups %}<tr><td style="display:none"><form novalidate id="fsup{{ loop.index }}" method="post" action="/suppliers/{{ s.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"></form></td>
-<td><input form="fsup{{ loop.index }}" name="name" value="{{ s.name }}" style="width:170px"><div class="small mute">{{ t('Code') }} {{ s.storehub_id[-6:] if s.storehub_id else 'LOCAL-' ~ s.id }}{% set k = clues.get(s.id) %}{% if k %} &middot; {{ k.pos }} {{ t('PO') }}{{ 's' if k.pos != 1 and lang != 'zh' }}{% if k.last %}{{ t(', last') }} {{ k.last|day }}{% endif %}{% endif %}</div>{% if k and k['items'] %}<div class="small" style="color:var(--mute);max-width:240px">{{ t('Usually:') }} {{ k['items']|join(', ') }}</div>{% endif %}</td><td class="sup-products">{% set plist = items.get(s.id, []) %}{% if plist %}<div class="small mute">{{ plist|length }} {{ t('products') }}</div><ul class="sup-ul">{% for pn in plist %}<li>{{ pn }}</li>{% endfor %}</ul>{% else %}<span class="mute">—</span>{% endif %}</td>
-<td><input form="fsup{{ loop.index }}" name="contact" value="{{ s.contact or '' }}" style="width:150px"></td>
-<td><input form="fsup{{ loop.index }}" type="checkbox" name="active" value="1" {{ 'checked' if s.active }}></td><td><button form="fsup{{ loop.index }}" class="sm">{{ t('Save') }}</button></td></tr>{% endfor %}</table></div>
+</aside>
 {% endblock %}
+{% block scripts %}<script src="/static/suppliers_page.js?v={{ asset_v('suppliers_page.js') }}"></script>{% endblock %}

@@ -1,35 +1,165 @@
 {% extends "base.html" %}
 {% block title %}{{ t('Permits') }}{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="/static/permits_page.css?v={{ asset_v('permits_page.css') }}">{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ t('Permits') }}</h1><p class="page-desc">{{ t('Your permits with the date each was processed and when it expires. You are alerted 30, 14 and 7 days before expiry, and when it has expired.') }}</p></div></div>
-{% if can('compliance.manage') %}
-<div class="card permit-add-card"><div class="card-head"><h2>{{ t('Add a permit') }}</h2></div>
-<form novalidate method="post" action="/compliance/add"><input type="hidden" name="csrf" value="{{ csrf }}">
-<div class="permit-add-fields">
-<div><label for="permit-add-name">{{ t('Permit') }}</label><input id="permit-add-name" name="name" placeholder="{{ t('Permit name, e.g. Mayor\'s permit') }}" required></div>
-<div><label for="permit-add-processed">{{ t('Processed on') }}</label><input type="date" id="permit-add-processed" name="processed"></div>
-<div><label for="permit-add-expiry">{{ t('Expires on') }}</label><input type="date" id="permit-add-expiry" name="expiry"></div>
-<div><label for="permit-add-location_id">{{ t('Location') }}</label><select id="permit-add-location_id" name="location_id"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
-<div><label for="permit-add-reference">{{ t('Reference no.') }}</label><input id="permit-add-reference" name="reference"></div>
-<div><button>{{ t('Add') }}</button></div></div></form></div>
-{% endif %}
-<div class="tw"><table class="wide"><tr><th scope="col">{{ t('Permit') }}</th><th scope="col">{{ t('Location') }}</th><th scope="col">{{ t('Processed on') }}</th><th scope="col">{{ t('Expires on') }}</th><th scope="col">{{ t('Status') }}</th><th></th></tr>
-{% for i, left in items %}<tr>
-<td><b>{{ i.name }}</b><div class="small mute">{{ i.reference or '' }}</div></td><td class="small">{{ i.location.name if i.location else t('All') }}</td><td class="nowrap">{{ i.processed_date or '-' }}</td><td class="nowrap">{{ i.due_date or '-' }}</td>
-<td>{% if left is none %}<span class="badge">{{ t('No Expiry') }}</span>{% else %}<span class="badge {{ 'b-bad' if left <= 7 else 'b-warn' if left <= 30 else 'b-ok' }}">{{ t('overdue by ') ~ (-left) ~ t(' d') if left < 0 else (t('due today') if left == 0 else left ~ t(' days left')) }}</span>{% endif %}</td>
-<td>{% if can('compliance.manage') %}<button type="button" class="sm sec" data-modal="permit-{{ i.id }}">{{ t('Update') }}</button>
-<dialog class="modal" id="permit-{{ i.id }}" aria-labelledby="permit-{{ i.id }}-t">
-  <div class="modal-head"><h2 id="permit-{{ i.id }}-t">{{ t('Update permit') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>
-  <div class="modal-body">
-    <p class="modal-sub"><b>{{ i.name }}</b>{% if i.reference %} &middot; {{ i.reference }}{% endif %}<br><span class="small mute">{{ t('Expires on') }} {{ i.due_date or t('No Expiry') }}</span></p>
-    <form novalidate method="post" action="/compliance/{{ i.id }}/renew"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <label>{{ t('Processed on') }}</label><input type="date" name="processed" style="width:100%">
-      <label>{{ t('New expiry date') }}</label><input type="date" name="new_due" required style="width:100%">
-      <label>{{ t('Note') }}</label><input name="note" style="width:100%">
-      <div class="modal-actions"><button type="button" class="sec" data-modal-close>{{ t('Cancel') }}</button><button class="ok">{{ t('Renewed') }}</button></div>
-    </form>
-    <form novalidate method="post" action="/compliance/{{ i.id }}/retire" class="modal-remove"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="sm sec" data-confirm="{{ t('Remove this permit from the list?') }}">{{ t('Remove from list') }}</button></form>
+{% set ns = namespace(urgent=0, soon=0, valid=0) %}
+{% for i, left in items %}
+  {% if left is not none and left <= 7 %}{% set ns.urgent = ns.urgent + 1 %}
+  {% elif left is not none and left <= 30 %}{% set ns.soon = ns.soon + 1 %}
+  {% else %}{% set ns.valid = ns.valid + 1 %}{% endif %}
+{% endfor %}
+
+<div class="permits-head">
+  <div>
+    <h1>{{ t('Permits') }}</h1>
+    <p class="page-desc">{{ t('Your permits with the date each was processed and when it expires. You are alerted 30, 14 and 7 days before expiry, and when it has expired.') }}</p>
   </div>
-</dialog>{% endif %}</td></tr>
-{% else %}<tr><td colspan="6" class="empty">{{ t('No permits recorded yet. Add your permits with their expiry dates.') }}</td></tr>{% endfor %}</table></div>
+  <div class="permits-head-actions">
+    <span class="permits-alert-pill"><i aria-hidden="true"></i>{{ t('Alerts at 30, 14 & 7 days') }}</span>
+    {% if can('compliance.manage') %}
+    <button type="button" class="btn pri permits-add-btn" data-modal="permit-add">+ {{ t('Add a permit') }}</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if can('compliance.manage') %}
+<dialog class="modal" id="permit-add" aria-labelledby="permit-add-title">
+  <div class="modal-head">
+    <h2 id="permit-add-title">{{ t('Add a permit') }}</h2>
+    <button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <form novalidate method="post" action="/compliance/add">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="permit-modal-grid">
+        <div class="full"><label for="permit-add-name">{{ t('Permit') }}</label><input id="permit-add-name" name="name" placeholder="{{ t('Permit name, e.g. Mayor\'s permit') }}" required></div>
+        <div><label for="permit-add-processed">{{ t('Processed on') }}</label><input type="date" id="permit-add-processed" name="processed"></div>
+        <div><label for="permit-add-expiry">{{ t('Expires on') }}</label><input type="date" id="permit-add-expiry" name="expiry"></div>
+        <div><label for="permit-add-location_id">{{ t('Location') }}</label><select id="permit-add-location_id" name="location_id"><option value="0">{{ t('All locations') }}</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+        <div><label for="permit-add-reference">{{ t('Reference no.') }}</label><input id="permit-add-reference" name="reference" placeholder="{{ t('Optional') }}"></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="sec" data-modal-close>{{ t('Cancel') }}</button><button class="ok">{{ t('Add') }}</button></div>
+    </form>
+  </div>
+</dialog>
+{% endif %}
+
+{% if items %}
+<div class="permits-toolbar">
+  <div class="permits-tb-left">
+    <div class="permits-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="permit-search" type="search" placeholder="{{ t('Search permit or reference no...') }}" aria-label="{{ t('Search') }}">
+    </div>
+    <select id="permit-loc-filter" class="permits-loc" aria-label="{{ t('Location') }}">
+      <option value="all">{{ t('All locations') }}</option>
+      <option value="0">{{ t('All') }}</option>
+      {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="permits-chips" id="permit-status-chips" role="group" aria-label="{{ t('Status') }}">
+    <button type="button" class="permits-chip on" data-filter="all" aria-pressed="true">{{ t('All') }} ({{ items|length }})</button>
+    <button type="button" class="permits-chip" data-filter="urgent" aria-pressed="false">{{ t('Urgent') }} ({{ ns.urgent }})</button>
+    <button type="button" class="permits-chip" data-filter="soon" aria-pressed="false">{{ t('Soon') }} ({{ ns.soon }})</button>
+    <button type="button" class="permits-chip" data-filter="valid" aria-pressed="false">{{ t('Valid') }} ({{ ns.valid }})</button>
+  </div>
+</div>
+{% endif %}
+
+<div class="tw permits-tw">
+  <table class="wide permits-table" id="permit-table">
+    <thead>
+      <tr>
+        <th scope="col">{{ t('Permit') }}</th>
+        <th scope="col">{{ t('Location') }}</th>
+        <th scope="col">{{ t('Processed on') }}</th>
+        <th scope="col">{{ t('Expires on') }}</th>
+        <th scope="col">{{ t('Validity') }}</th>
+        <th scope="col">{{ t('Status') }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i, left in items %}
+      {% set row_status = 'urgent' if (left is not none and left <= 7) else ('soon' if (left is not none and left <= 30) else 'valid') %}
+      {% set loc_val = i.location_id if i.location_id else '0' %}
+      {% if left is none %}
+        {% set pct = 100 %}{% set track_cls = 'mute' %}{% set v_left = t('Permanent') %}{% set v_span = t('No renewal') %}
+      {% elif i.processed_date and i.due_date and i.due_date > i.processed_date %}
+        {% set span_days = (i.due_date - i.processed_date).days %}
+        {% set elapsed_days = (today - i.processed_date).days %}
+        {% set pct = [0, [100, (elapsed_days / span_days * 100)|round(0)|int]|min]|max %}
+        {% set track_cls = 'bad' if left <= 7 else ('warn' if left <= 30 else '') %}
+        {% set v_left = t('Expired') if left < 0 else (t('Due today') if left == 0 else left ~ 'd') %}
+        {% set v_span = span_days ~ 'd ' ~ t('term') %}
+      {% else %}
+        {% set pct = 100 if left <= 0 else (92 if left <= 7 else (75 if left <= 30 else 35)) %}
+        {% set track_cls = 'bad' if left <= 7 else ('warn' if left <= 30 else '') %}
+        {% set v_left = t('Expired') if left < 0 else (t('Due today') if left == 0 else left ~ 'd') %}
+        {% set v_span = (pct ~ '%') %}
+      {% endif %}
+      <tr class="{{ 'row-urgent' if row_status == 'urgent' else ('row-warn' if row_status == 'soon' else '') }}" data-status="{{ row_status }}" data-loc="{{ loc_val }}" data-search="{{ (i.name ~ ' ' ~ (i.reference or ''))|lower }}">
+        <td><b>{{ i.name }}</b>{% if i.reference %}<div class="permit-ref">{{ i.reference }}</div>{% endif %}</td>
+        <td><span class="permit-loc-pill">{{ i.location.name if i.location else t('All') }}</span></td>
+        <td class="nowrap">{{ i.processed_date or '-' }}</td>
+        <td class="nowrap {{ 'permit-exp-bad' if left is not none and left <= 7 }}">{{ i.due_date or '-' }}</td>
+        <td>
+          <div class="permit-validity">
+            <div class="permit-track {{ track_cls }}"><i style="width:{{ pct }}%"></i></div>
+            <div class="permit-vsub"><span>{{ v_left }}</span><span>{{ v_span }}</span></div>
+          </div>
+        </td>
+        <td>
+          {% if left is none %}<span class="badge">{{ t('No Expiry') }}</span>
+          {% else %}<span class="badge {{ 'b-bad' if left <= 7 else 'b-warn' if left <= 30 else 'b-ok' }}">{{ t('overdue by ') ~ (-left) ~ t(' d') if left < 0 else (t('due today') if left == 0 else left ~ t(' days left')) }}</span>{% endif %}
+        </td>
+        <td>
+          {% if can('compliance.manage') %}
+          <button type="button" class="sm {{ 'pri' if row_status == 'urgent' else 'sec' }}" data-modal="permit-{{ i.id }}">{{ t('Update') }}</button>
+          <dialog class="modal" id="permit-{{ i.id }}" aria-labelledby="permit-{{ i.id }}-t">
+            <div class="modal-head"><h2 id="permit-{{ i.id }}-t">{{ t('Update permit') }}</h2><button type="button" class="iconbtn" data-modal-close aria-label="{{ t('Close') }}"><svg class="i"><use href="#i-x"/></svg></button></div>
+            <div class="modal-body">
+              <div class="permit-modal-summary">
+                <div class="permit-modal-sum-top">
+                  <div>
+                    <b>{{ i.name }}</b>
+                    {% if i.reference %}<div class="permit-ref">{{ i.reference }}</div>{% endif %}
+                  </div>
+                  {% if left is none %}<span class="badge">{{ t('No Expiry') }}</span>
+                  {% else %}<span class="badge {{ 'b-bad' if left <= 7 else 'b-warn' if left <= 30 else 'b-ok' }}">{{ t('overdue by ') ~ (-left) ~ t(' d') if left < 0 else (t('due today') if left == 0 else left ~ t(' days left')) }}</span>{% endif %}
+                </div>
+                <div class="permit-modal-sum-meta">
+                  <span class="permit-loc-pill">{{ i.location.name if i.location else t('All') }}</span>
+                  <span class="small mute">{{ t('Expires on') }} {{ i.due_date or t('No Expiry') }}</span>
+                </div>
+              </div>
+              <form novalidate method="post" action="/compliance/{{ i.id }}/renew">
+                <input type="hidden" name="csrf" value="{{ csrf }}">
+                <div class="permit-modal-grid">
+                  <div><label for="permit-{{ i.id }}-proc">{{ t('Processed on') }}</label><input type="date" id="permit-{{ i.id }}-proc" name="processed"></div>
+                  <div><label for="permit-{{ i.id }}-due">{{ t('New expiry date') }}</label><input type="date" id="permit-{{ i.id }}-due" name="new_due" required></div>
+                  <div class="full"><label for="permit-{{ i.id }}-note">{{ t('Note') }}</label><input id="permit-{{ i.id }}-note" name="note" placeholder="{{ t('Receipt / OR number or filing note') }}"></div>
+                </div>
+                <div class="permit-modal-foot">
+                  <button type="submit" form="permit-retire-{{ i.id }}" class="sm sec permit-remove-btn" data-confirm="{{ t('Remove this permit from the list?') }}">{{ t('Remove from list') }}</button>
+                  <div class="permit-modal-foot-right">
+                    <button type="button" class="sec" data-modal-close>{{ t('Cancel') }}</button>
+                    <button class="ok">{{ t('Renewed') }}</button>
+                  </div>
+                </div>
+              </form>
+              <form id="permit-retire-{{ i.id }}" novalidate method="post" action="/compliance/{{ i.id }}/retire" hidden><input type="hidden" name="csrf" value="{{ csrf }}"></form>
+            </div>
+          </dialog>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty">{{ t('No permits recorded yet. Add your permits with their expiry dates.') }}</td></tr>
+      {% endfor %}
+      {% if items %}<tr id="permit-filter-empty" hidden><td colspan="7" class="permit-filter-empty">{{ t('No permits match your filter.') }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
+{% block scripts %}<script src="/static/permits_page.js?v={{ asset_v('permits_page.js') }}"></script>{% endblock %}

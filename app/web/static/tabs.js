@@ -39,6 +39,20 @@
     }
     return out;
   }
+  function syncStyles(doc) {   // load any page-specific stylesheet (e.g. suppliers_page.css, products_page.css) before swapping
+    var have = {}; document.querySelectorAll('link[rel="stylesheet"]').forEach(function (l) { have[l.getAttribute('href')] = 1; });
+    var pending = [];
+    doc.querySelectorAll('head link[rel="stylesheet"]').forEach(function (l) {
+      var href = l.getAttribute('href');
+      if (!href || have[href]) return;
+      have[href] = 1;
+      var link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = href;
+      pending.push(new Promise(function (res) { link.onload = res; link.onerror = res; setTimeout(res, 1500); }));
+      document.head.appendChild(link);
+    });
+    return Promise.all(pending);
+  }
   function runNewScripts(doc) {   // a page-specific script the current page does not have yet (never one that already runs here)
     var have = {}; document.querySelectorAll('script').forEach(function (s) { have[s.src || ('inline:' + s.textContent.trim())] = 1; });
     doc.querySelectorAll('script').forEach(function (s) {
@@ -60,7 +74,9 @@
       var doc = new DOMParser().parseFromString(html, 'text/html'), nmain = doc.getElementById('main-content');
       var nbar = nmain && nmain.querySelector('.tabs');
       if (!nmain || !nbar || !bar || nbar.querySelectorAll('a').length !== bar.querySelectorAll('a').length) { hardGo(url); return; }
-      runNewScripts(doc);
+      return syncStyles(doc).then(function () {
+        if (token !== seq) return;
+        runNewScripts(doc);
       // the live tab bar stays where it is (so its highlight can glide); only its links and active tab are brought up to date
       var nlinks = nbar.querySelectorAll('a');
       bar.querySelectorAll('a').forEach(function (a, i) { a.setAttribute('href', nlinks[i].getAttribute('href')); a.classList.toggle('on', nlinks[i].classList.contains('on')); });
@@ -76,6 +92,7 @@
       if (window.RetailOSEnhance) window.RetailOSEnhance(main);
       place(bar, true);
       setTimeout(function () { main.classList.remove('tab-swap'); laterNodes(bar).forEach(function (n) { n.classList.remove('tab-in'); }); }, 400);
+      });
     }).catch(function () { if (token === seq) hardGo(url); });
   }
 
